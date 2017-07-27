@@ -74,7 +74,10 @@ namespace NEST {
 //        double fExcitons;   // like nExcitons but without fluctuations
 //        double fIons;       // .. same for nIons
 //    };
-//
+    struct YieldResult{
+        double PhotonYield;
+        double ElectronYield;
+    };
 //    struct PhotonElectronRes {
 //        double recombProby; // recombination probability for ions
 //        int    nPhotons;
@@ -132,7 +135,7 @@ namespace NEST {
     public:
         NESTcalc();
         
-        std::vector<double> GetQuanta( int species, double energy, double density, double dfield );
+        YieldResult GetYields( int species, double energy, double density, double dfield );
 
 //        void SetRandomSeed(unsigned long int);
 //        unsigned long int GetRandomSeed();

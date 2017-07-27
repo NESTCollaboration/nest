@@ -45,13 +45,13 @@ int NESTcalc::BinomFluct(int N0, double prob) {
 
 }
 
-vector<double> NEST::NESTcalc::GetQuanta(int species, double energy, double density, double dfield) {
+YieldResult NEST::NESTcalc::GetYields(int species, double energy, double density, double dfield) {
 
-    vector<double> yields(2);
+  
     double massNum = 4., m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2., deltaT_ns = 400.;
-    double Ly, Qy, totQ, Ne, Nph, Ni, recombProb, ThomasImel, densCorr;
+    double Ne = -999; double Nph=-999;
 
-    double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
+    const double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
     double alpha = 0.067366 + density * 0.039693;
     switch (species) {
         case NR:
@@ -60,43 +60,48 @@ vector<double> NEST::NESTcalc::GetQuanta(int species, double energy, double dens
         case DD:
         case AmBe:
         case Cf:
+        {
             double epsilon = 11.5 * energy * pow(54., (-7. / 3.));
-            densCorr = 13.7 / Wq_eV;
+            double densCorr = 13.7 / Wq_eV;
             double peter = 0.;
             double power = 0.28884 * pow(dfield, -0.045639);
-            Qy = 8.494 / pow(1. + pow(energy / 5.1215, 1.671), power);
-            totQ = 12.256 * pow(energy, 1.0770) - peter / epsilon;
+            double Qy = 8.494 / pow(1. + pow(energy / 5.1215, 1.671), power);
+            double totQ = 12.256 * pow(energy, 1.0770) - peter / epsilon;
             Nph = densCorr * (totQ - energy * Qy);
-            Ly = Nph / energy;
+            double Ly = Nph / energy;
             Qy = Qy + (totQ / energy - (Ly + Qy));
             Ne = Qy * energy;
             double a = 0.0, b = 1.0;
             Nph *= 1. / (1. + a * pow(epsilon, b));
+        } break;
         case ion:
-
+        {
             double L = 0.96446 / (1. + pow(massNum * massNum / 19227., 0.99199));
             if (massNum == 4) L = 0.56136 * pow(energy, 0.056972);
             double ThomasImel = 0.0067 / pow(1. + pow(dfield / 95.768, 8.5673), 0.060318) * pow(density / 2.857, 0.3);
-            totQ = 1e3 * L * energy / Wq_eV;
-            Ni = totQ / (1. + alpha);
-            recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
+            double totQ = 1e3 * L * energy / Wq_eV;
+            double Ni = totQ / (1. + alpha);
+            double recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
             Nph = totQ * alpha / (1. + alpha) + recombProb*Ni;
             Ne = totQ - Nph;
+        } break;
         case gammaRay:
+        {
             double m1 = 35.028 + (5.7254 - 35.028) / (1. + pow(dfield / 78.904, .60422));
             double m5 = 21.416 + (10.737 - 21.416) / (1. + pow(dfield / 220.71, 1.7433));
             double m7 = 66.825 + (829.25 - 66.825) / (1. + pow(dfield / 43.608, .83344));
-            densCorr = 0.32856 + 0.23187 * density;
-            totQ = energy * 1000. / Wq_eV;
-            Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
+            double densCorr = 0.32856 + 0.23187 * density;
+            double totQ = energy * 1000. / Wq_eV;
+            double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
             Qy /= 73. * Wq_eV * 1e-3;
-            Ly = (73. - Qy) * densCorr / (73. * Wq_eV * 0.001);
+            double Ly = (73. - Qy) * densCorr / (73. * Wq_eV * 0.001);
             Qy = Qy + (totQ / energy - (Ly + Qy));
             Ne = Qy * energy;
             Nph = Ly * energy;
+        } break;
         case Kr83m:
-            
-            totQ = energy * 1000. / Wq_eV;
+        {
+            double totQ = energy * 1000. / Wq_eV;
             if (energy == 9.4) {
                 double m1 = 99678. - 21574. * log10(dfield);
                 m2 = 47.364 + (131.69 - 47.364) / pow(1. + pow(dfield / 71.368, 2.4130), 0.060318);
@@ -104,29 +109,33 @@ vector<double> NEST::NESTcalc::GetQuanta(int species, double energy, double dens
             } else
                 Nph = energy * (0.51987 + (1.0036 - 0.51987) / (1. + pow(dfield / 309.98, 1.0844)))*65.5;
             Ne = totQ - Nph;
+        } break;
         default: //beta, CH3T
-            
+        {
             double m1 = 37.609 + (9.4398 - 37.609) / (1. + pow(dfield / 95.192, .65711));
             double m5 = 24.159;
             double m7 = 27.663 + (694.46 - 27.663) / (1. + pow(dfield / 28.595, .84217));
-            densCorr = 0.32856 + 0.23187 * density;
-            totQ = energy * 1000. / Wq_eV;
-            Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
+            double densCorr = 0.32856 + 0.23187 * density;
+            double totQ = energy * 1000. / Wq_eV;
+            double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
             Qy /= 73. * Wq_eV * 1e-3;
-            Ly = (73. - Qy) * densCorr / (73. * Wq_eV * 0.001);
+            double Ly = (73. - Qy) * densCorr / (73. * Wq_eV * 0.001);
             Qy = Qy + (totQ / energy - (Ly + Qy));
             Ne = Qy * energy;
             Nph = Ly * energy;
+        } break;
     }
 
     if (Ne > m2 * energy) Ne = m2 * energy;
     if (Nph < 0.) Nph = 0.;
     if (Ne < 0.) Ne = 0.;
 
-    yields.insert(yields.begin() + 0, Nph);
-    yields.insert(yields.begin() + 1, Ne);
+    YieldResult result;
+    result.PhotonYield=Nph;
+    result.ElectronYield=Ne;
+    
 
-    return yields;
+    return result;
 
 }
 
@@ -136,7 +145,7 @@ NESTcalc::NESTcalc() {
 
 int main(int argc, char** argv) {
 
-    vector<double> quanta(2);
+    
 
     string type = argv[1];
     int type_num;
@@ -156,8 +165,8 @@ int main(int argc, char** argv) {
     double rho = atof(argv[3]);
     double field = atof(argv[4]);
     NEST::NESTcalc n;
-    quanta = n.GetQuanta(type_num, keV, rho, field);
-    cout << quanta[0] << "\t" << quanta[1] << endl;
+    YieldResult yields = n.GetYields(type_num, keV, rho, field);
+    cout <<"Photon Yield: "<< yields.PhotonYield << "\tElectron Yield: " << yields.ElectronYield << endl;
 
     return 1;
 

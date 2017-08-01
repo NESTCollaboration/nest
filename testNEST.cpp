@@ -12,8 +12,10 @@
  */
 
 #include <NEST.hh>
+#include <iostream>
 
 using namespace std;
+using namespace NEST;
 
 /*
  * 
@@ -42,7 +44,7 @@ int main(int argc, char** argv) {
     double field = atof(argv[4]);
     NEST::NESTcalc n;
     NEST::YieldResult yields = n.GetYields(type_num, keV, rho, field);
-    cout <<"Photon Yield: "<< yields.PhotonYield << "\tElectron Yield: " << yields.ElectronYield << endl;
+    std::cout <<"Photon Yield: "<< yields.PhotonYield << "\tElectron Yield: " << yields.ElectronYield << std::endl;
 
     return 1;
 

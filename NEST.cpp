@@ -1,5 +1,5 @@
 
-#include "libNEST.hh"
+#include "NEST.hh"
 #include <iostream>
 
 using namespace NEST;
@@ -34,8 +34,7 @@ int NESTcalc::BinomFluct(int N0, double prob) {
             if (rand_uniform() < prob) N1++;
         }
     } else {
-        N1 =
-                int(floor(rand_gauss(mean, sigma) + 0.5));
+        N1 = int(floor(rand_gauss(mean, sigma) + 0.5));
     }
 
     if (N1 > N0) N1 = N0;
@@ -48,7 +47,8 @@ int NESTcalc::BinomFluct(int N0, double prob) {
 YieldResult NEST::NESTcalc::GetYields(int species, double energy, double density, double dfield) {
 
   
-    double massNum = 4., m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2., deltaT_ns = 400.;
+    double massNum = 4.;
+    const double m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2., deltaT_ns = 400.;
     double Ne = -999; double Nph=-999;
 
     const double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
@@ -104,10 +104,12 @@ YieldResult NEST::NESTcalc::GetYields(int species, double energy, double density
             double totQ = energy * 1000. / Wq_eV;
             if (energy == 9.4) {
                 double m1 = 99678. - 21574. * log10(dfield);
-                m2 = 47.364 + (131.69 - 47.364) / pow(1. + pow(dfield / 71.368, 2.4130), 0.060318);
-                Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2) / 0.21;
-            } else
+                double m2a = 47.364 + (131.69 - 47.364) / pow(1. + pow(dfield / 71.368, 2.4130), 0.060318);
+                Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2a) / 0.21;
+            }
+            else{
                 Nph = energy * (0.51987 + (1.0036 - 0.51987) / (1. + pow(dfield / 309.98, 1.0844)))*65.5;
+            }
             Ne = totQ - Nph;
         } break;
         default: //beta, CH3T
@@ -126,6 +128,7 @@ YieldResult NEST::NESTcalc::GetYields(int species, double energy, double density
         } break;
     }
 
+    assert(Ne!=-999 && Nph !=-999);
     if (Ne > m2 * energy) Ne = m2 * energy;
     if (Nph < 0.) Nph = 0.;
     if (Ne < 0.) Ne = 0.;
@@ -143,31 +146,4 @@ NESTcalc::NESTcalc() {
     rng.seed(0);
 }
 
-int main(int argc, char** argv) {
 
-    
-
-    string type = argv[1];
-    int type_num;
-    if (type == "NR") type_num = NR;
-    else if (type == "WIMP")type_num = WIMP;
-    else if (type == "B8") type_num = B8;
-    else if (type == "DD") type_num = DD;
-    else if (type == "AmBe")type_num = AmBe;
-    else if (type == "Cf") type_num = Cf;
-    else if (type == "ion") type_num = ion;
-    else if (type == "gamma")type_num = gammaRay;
-    else if (type == "beta")type_num = beta;
-    else if (type == "CH3T")type_num = CH3T;
-    else type_num = Kr83m;
-
-    double keV = atof(argv[2]);
-    double rho = atof(argv[3]);
-    double field = atof(argv[4]);
-    NEST::NESTcalc n;
-    YieldResult yields = n.GetYields(type_num, keV, rho, field);
-    cout <<"Photon Yield: "<< yields.PhotonYield << "\tElectron Yield: " << yields.ElectronYield << endl;
-
-    return 1;
-
-}

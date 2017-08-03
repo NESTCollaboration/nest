@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     
 
     string type = argv[1];
-    int type_num;
+    INTERACTION_TYPE type_num;
     if (type == "NR") type_num = NR;
     else if (type == "WIMP")type_num = WIMP;
     else if (type == "B8") type_num = B8;

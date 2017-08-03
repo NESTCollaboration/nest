@@ -1,6 +1,7 @@
 
 #include "NEST.hh"
 #include <iostream>
+#include <assert.h>
 
 using namespace NEST;
 using namespace std;
@@ -44,7 +45,70 @@ int NESTcalc::BinomFluct(int N0, double prob) {
 
 }
 
-YieldResult NEST::NESTcalc::GetYields(int species, double energy, double density, double dfield) {
+NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield){
+    NESTresult result;
+    result.yields = GetYields(species,energy,density,dfield);
+    result.quanta = GetQuanta(result.yields);
+    result.photon_times = GetPhotonTimes(/*stuff*/);
+    return result;
+}
+
+double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton){
+    //old code put here by Jason
+    //times in ns
+    double return_time=0;
+    double tau1 = rand_gauss(3.1,.7); //err from wgted avg.
+    double tau3 = rand_gauss(24.,1.); //ibid.
+    //these singlet and triplet times may not be the ones you're
+    //used to, but are the world average: Kubota 79, Hitachi 83 (2
+    //data sets), Teymourian 11, Morikawa 89, and Akimov '02
+    double SingTripRatioX, SingTripRatioR;
+    if(species==beta || species==Kr83m || species == gammaRay){ //these classes are questionable
+        //disregard tauR from original model--it's very small for any electric field.
+        SingTripRatioX = rand_gauss(0.17,0.05);
+        SingTripRatioR = rand_gauss(0.8, 0.2);
+    }
+    else if(species==ion){ //these classes are questionable
+        SingTripRatioR = rand_gauss(2.3,0.51);
+        SingTripRatioX = SingTripRatioR;
+    }
+    else{//NR //these classes are questionable
+        SingTripRatioR = rand_gauss(7.8,1.5);
+        SingTripRatioX = SingTripRatioR;
+    }
+    if(exciton){
+        if (rand_uniform() < SingTripRatioR / (1 + SingTripRatioR))
+            return_time = tau1 * -log(rand_uniform());
+        else return_time = tau3 * -log(rand_uniform());
+    } else {
+        if (rand_uniform() < SingTripRatioX / (1 + SingTripRatioX))
+            return_time = tau1 * -log(rand_uniform());
+        else return_time = tau3 * -log(rand_uniform());
+    }
+    
+    return return_time;
+}
+
+photonstream NESTcalc::GetPhotonTimes(/*inputs*/){
+    //TODO by MATTHEW
+    photonstream return_photons;
+    return_photons.push_back(PhotonTime(beta,true));//example line, modify
+    return return_photons;
+    
+}
+
+
+QuantaResult NESTcalc::GetQuanta(YieldResult yields){
+    //TODO by MATTHEW
+    QuantaResult result;
+    result.photons = yields.PhotonYield; //fake, fix this
+    result.electrons = yields.ElectronYield;
+}
+
+
+
+
+YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double density, double dfield) {
 
   
     double massNum = 4.;
@@ -140,6 +204,10 @@ YieldResult NEST::NESTcalc::GetYields(int species, double energy, double density
 
     return result;
 
+}
+
+void NESTcalc::SetRandomSeed(unsigned long int s){
+    rng.seed(s);
 }
 
 NESTcalc::NESTcalc() {

@@ -4,6 +4,9 @@ set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 project(NEST)
 
+option(G4 "Build integration with Geant4" ON)
+
+
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
    MESSAGE(STATUS "Using default installation directory in build directory")
  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
@@ -35,6 +38,14 @@ include_directories("${PROJECT_SOURCE_DIR}")
 
 add_library(NEST SHARED NEST.cpp NEST.hh)
 set_target_properties(NEST PROPERTIES PUBLIC_HEADER "NEST.hh")
+
+if(G4)
+    find_package(Geant4 REQUIRED)
+    include_directories(${Geant4_INCLUDE_DIR})
+    file(GLOB g4code ${PROJECT_SOURCE_DIR}/G4integration/*)
+    add_library(NEST_G4 SHARED ${g4code})
+endif()
+
 install(TARGETS NEST
   # IMPORTANT: Add the foo library to the "export-set"
   EXPORT NESTTargets

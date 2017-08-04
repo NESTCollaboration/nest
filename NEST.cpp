@@ -111,7 +111,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields){
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double density, double dfield) {
 
   
-    double massNum = 4.;
+    double massNum = 4.;//TODO: make this flexible
     const double m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2., deltaT_ns = 400.;
     double Ne = -999; double Nph=-999;
 

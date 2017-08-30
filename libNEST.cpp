@@ -150,8 +150,17 @@ vector<double> GetQuanta ( int species, double energy, double density, double df
 int main ( int argc, char** argv ) {
   
   vector<double> quanta(2);
+  double keV;
   
-  string type = argv[1]; int type_num;
+  if ( argc < 7 ) {
+    cout << "This program takes 6 inputs." << endl;
+    cout << "numEvts type_interaction E_min[keV] E_max[keV] density[g/cm^3] field_drift[V/cm]" << endl;
+    return 0;
+  }
+  
+  unsigned long int numEvts = atoi(argv[1]);
+  
+  string type = argv[2]; int type_num;
   if ( type == "NR" ) type_num = NR;
   else if ( type == "WIMP")type_num = WIMP;
   else if ( type == "B8" ) type_num = B8;
@@ -164,12 +173,23 @@ int main ( int argc, char** argv ) {
   else if ( type =="CH3T" )type_num = CH3T;
   else type_num = Kr83m;
   
-  double keV = atof(argv[2]);
-  double rho = atof(argv[3]);
-  double fld = atof(argv[4]);
+  double eMin = atof(argv[3]);
+  double eMax = atof(argv[4]);
+  double rho = atof(argv[5]);
+  double field = atof(argv[6]);
   
-  quanta = GetQuanta(type_num,keV,rho,fld);
-  cout << quanta[0] << "\t" << quanta[1] << endl;
+  fprintf(stdout,"E [keV]\tNph\tNe-\n");
+  for ( unsigned long int j = 0; j < numEvts; j++ ) {
+    switch ( type_num ) {
+    default:
+      keV = eMin + ( eMax - eMin ) * rand_uniform();
+      break;
+    }
+    if ( keV > eMax ) keV = eMax;
+    if ( keV < eMin ) keV = eMin;
+    quanta = GetQuanta(type_num,keV,rho,field);
+    cout << keV << "\t" << quanta[0] << "\t" << quanta[1] << endl;
+  }
   
   return 1;
 

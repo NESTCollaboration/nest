@@ -148,9 +148,16 @@ vector<double> GetQuanta ( int species, double energy, double density, double df
 }
 
 int main ( int argc, char** argv ) {
-  
+
+  if (argc != 5) {
+    cout << "Enter particle type, recoil energy [keV], "
+      << "Xe density [g/cm^3] E-field (V/cm)." << endl << "Particle type "
+      << "can be NR, WIMP, B8, DD, AmBe, Cf, ion, gamma, beta, CH3T, Kr83m."
+      << endl;
+    return 2;
+  }  
   vector<double> quanta(2);
-  
+
   string type = argv[1]; int type_num;
   if ( type == "NR" ) type_num = NR;
   else if ( type == "WIMP")type_num = WIMP;
@@ -162,7 +169,8 @@ int main ( int argc, char** argv ) {
   else if ( type =="gamma")type_num = gammaRay;
   else if ( type =="beta" )type_num = beta;
   else if ( type =="CH3T" )type_num = CH3T;
-  else type_num = Kr83m;
+  else if (type == "Kr83m")type_num = Kr83m;
+  else {cout << "Invalid particle type.\n"; return 3;};
   
   double keV = atof(argv[2]);
   double rho = atof(argv[3]);

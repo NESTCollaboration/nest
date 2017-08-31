@@ -4,7 +4,7 @@ set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 project(NEST)
 
-option(G4 "Build integration with Geant4" ON)
+option(G4 "Build integration with Geant4" OFF)
 
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

@@ -64,6 +64,8 @@ namespace NEST {
     public:
         NESTcalc();
         double rand_uniform();
+      std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
+				     double xTest,double yTest,double fValue);
         NESTresult FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield);
         double PhotonTime(INTERACTION_TYPE species,bool exciton);
         photonstream GetPhotonTimes(/*inputs*/);

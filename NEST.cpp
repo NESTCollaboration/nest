@@ -19,7 +19,25 @@ double NESTcalc::rand_gauss(double mean, double sigma) {
 
 }
 
-double VonNeumann(double xMin, double xMax, double yMin, double yMax);
+vector<double> NESTcalc::VonNeumann(double xMin, double xMax, double yMin,double yMax,
+				    double xTest,double yTest,double fValue){
+  
+  vector<double> xyTry(3);
+  
+  xyTry.insert(xyTry.begin() +0, xTest );
+  xyTry.insert(xyTry.begin() +1, yTest );
+  
+  if ( xyTry[1] > fValue ) {
+    xyTry.insert(xyTry.begin() + 0, xMin+(xMax-xMin)*rand_uniform() );
+    xyTry.insert(xyTry.begin() + 1, yMin+(yMax-yMin)*rand_uniform() );
+    xyTry.insert(xyTry.begin() + 2, 1. );
+  }
+  else
+    xyTry.insert(xyTry.begin() + 2, 0. );
+  
+  return xyTry; //doing a vector means you can return 2 values at the same time
+  
+}
 
 int NESTcalc::BinomFluct(int N0, double prob) {
 

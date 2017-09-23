@@ -24,7 +24,7 @@ using namespace NEST;
 
 int main ( int argc, char** argv ) {
   
-  double keV, m_e, aa, ZZ, xMax, yMax, FuncValue, B, x;
+  double keV, m_e, aa, ZZ, xMax, yMax, xMin, yMin, FuncValue, B, x;
   vector<double> xyTry(3);
   
   if (argc < 7) {
@@ -62,9 +62,10 @@ int main ( int argc, char** argv ) {
       m_e = 510.9989461; //e- rest mass-energy [keV]
       aa = 0.0072973525664; //fine structure constant
       ZZ = 2.;
-      xMax = 18.5898; //tritium beta decay endpoint [keV]
+      xMax = eMax; if(xMax>18.5898)xMax=18.5898; //tritium beta decay endpoint [keV]
+      xMin = eMin; if(xMin<0.)xMin=0.;
       yMax = 1.1e7; //top of the beta decay E histogram
-      xyTry[0] = xMax * n.rand_uniform();
+      xyTry[0] = xMin+(xMax-xMin)*n.rand_uniform();
       xyTry[1] = yMax * n.rand_uniform();
       xyTry[2] = 1.;
       while ( xyTry[2] > 0. ) {
@@ -72,16 +73,30 @@ int main ( int argc, char** argv ) {
 	x = (2.*M_PI*ZZ*aa)*(xyTry[0] + m_e)/sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e);
 	FuncValue = (sqrt(2.*xyTry[0]*m_e) *
 		(xyTry[0] + m_e) *
-		(xMax-xyTry[0]) * (xMax-xyTry[0]) *
+		(18.5898-xyTry[0]) * (18.5898-xyTry[0]) *
 		x*(1./(1.-exp(-x)))*(1.002037-0.001427*(B)));
-	xyTry = n.VonNeumann(0.,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
       }
-      keV = xyTry[0];
+      break;
+    case B8: //normalize this to ~3500 / 10-ton / year, for E-threshold of 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
+      xMax = eMax; if(xMax>3.)xMax=3.;
+      xMin = eMin; if(xMin<0.)xMin=0.;
+      yMax = 28666.6;
+      xyTry[0] = xMin+(xMax-xMin)*n.rand_uniform();
+      xyTry[1] = yMax * n.rand_uniform();
+      xyTry[2] = 1.;
+      B =   5.8335;
+      x = 104.35404758803;
+      while ( xyTry[2] > 0. ) {
+	FuncValue = (3484889.3845409*(pow(xyTry[0],B)+2.4276915393899*pow(xyTry[0],B-1.)+x)/pow(pow(xyTry[0],B)+x,2.)-4728.26850918)*pow(.090455252325381,xyTry[0]);
+	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+      }
       break;
     default:
-      keV = eMin + (eMax - eMin) * n.rand_uniform();
+      xyTry[0] = eMin + (eMax - eMin) * n.rand_uniform();
       break;
     }
+    keV = xyTry[0];
     if (keV > eMax) keV = eMax;
     if (keV < eMin) keV = eMin;
     

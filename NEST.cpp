@@ -121,6 +121,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields){
     QuantaResult result;
     result.photons = yields.PhotonYield; //fake, fix this
     result.electrons = yields.ElectronYield;
+    return result;
 }
 
 
@@ -187,10 +188,10 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             if (energy == 9.4) {
                 double m1 = 99678. - 21574. * log10(dfield);
                 double m2a = 47.364 + (131.69 - 47.364) / pow(1. + pow(dfield / 71.368, 2.4130), 0.060318);
-                Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2a) / 0.21;
+                Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2a) / 0.21 / 1.05;
             }
             else{
-                Nph = energy * (0.51987 + (1.0036 - 0.51987) / (1. + pow(dfield / 309.98, 1.0844)))*65.5;
+                Nph = energy * (0.51987 + (1.0036 - 0.51987) / (1. + pow(dfield / 309.98, 1.0844)))*65.5/1.05;
             }
             Ne = totQ - Nph;
         } break;
@@ -211,8 +212,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
     }
 
     assert(Ne!=-999 && Nph !=-999);
+    if (Nph> m2 * energy) Nph= m2 * energy;
     if (Ne > m2 * energy) Ne = m2 * energy;
-    if (Nph < 0.) Nph = 0.;
+    if (Nph <0.) Nph =0.;
     if (Ne < 0.) Ne = 0.;
 
     YieldResult result;

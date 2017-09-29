@@ -28,9 +28,9 @@ int main ( int argc, char** argv ) {
   vector<double> xyTry(3);
   
   if (argc < 7) {
-    cout << "This program takes 6 inputs." << endl;
-    cout << "numEvts type_interaction E_min[keV] E_max[keV] density[g/cm^3] field_drift[V/cm]" << endl;
-    cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl;
+    cout << "This program takes 6 (or 7) inputs." << endl;
+    cout << "numEvts type_interaction E_min[keV] E_max[keV] density[g/cm^3] field_drift[V/cm] {optional:seed}" << endl;
+    cout << "for 8B or WIMPs, numEvts is kg-days of exposure (still an integer)" << endl;
     return 0;
   }
   
@@ -56,7 +56,7 @@ int main ( int argc, char** argv ) {
   double field = atof(argv[6]);
   
   fprintf(stdout, "E [keV]\tNph\tNe-\n");
-  NEST::NESTcalc n;
+  NEST::NESTcalc n; if ( argc >= 8 ) n.SetRandomSeed(atoi(argv[7]));
   for (unsigned long int j = 0; j < numEvts; j++) {
     xyTry[2] = 1.;
     switch (type_num) {

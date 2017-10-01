@@ -55,7 +55,7 @@ int main ( int argc, char** argv ) {
   double rho = atof(argv[5]);
   double field = atof(argv[6]);
   
-  fprintf(stdout, "E [keV]\tNph\tNe-\n");
+  fprintf(stdout, "E [keV]\t\tNph\t\tNe-\n");
   NEST::NESTcalc n; if ( argc >= 8 ) n.SetRandomSeed(atoi(argv[7]));
   for (unsigned long int j = 0; j < numEvts; j++) {
     xyTry[2] = 1.;
@@ -93,13 +93,43 @@ int main ( int argc, char** argv ) {
       }
       break;
     case AmBe: //for ZEPLIN-III FSR from HA (Pal '98)
+    case Cf:
       if(xMax>200.)xMax=200.;
       if(xMin<0.00)xMin=0.00;
+      if ( type_num == Cf )
+	yMax = 2.;
+      else
+	yMax = 1.;
       xyTry[0] = xMin+(xMax-xMin)*n.rand_uniform();
-      xyTry[1] = n.rand_uniform();
+      xyTry[1] = yMax * n.rand_uniform();
       while ( xyTry[2] > 0. ) {
 	FuncValue = exp(-sqrt(xyTry[0]))*(1.+pow(pow(xyTry[0]/31.566,5.),0.45132));
-	xyTry = n.VonNeumann(xMin,xMax,0.,1.,xyTry[0],xyTry[1],FuncValue);
+	if ( type_num == Cf ) FuncValue *=
+				1.9929
+				- .033214 * pow(xyTry[0],1.)
+			        +.00032857* pow(xyTry[0],2.)
+				-1.000e-6 * pow(xyTry[0],3.);
+	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+      }
+      break;
+    case DD:
+      if(xMax>74.15)xMax=74.15;
+      if(xMin<0.000)xMin=0.000;
+      yMax = 1.2368e+6;
+      xyTry[0] = xMin+(xMax-xMin)*n.rand_uniform();
+      xyTry[1] = yMax * n.rand_uniform();
+      while ( xyTry[2] > 0. ) {
+        FuncValue =
+	   1.2368e+6*pow(xyTry[0],0.)
+	  -1.5285e+5*pow(xyTry[0],1.)
+	  + 7531.4 * pow(xyTry[0],2.)
+	  - 120.36 * pow(xyTry[0],3.)
+	  - 4.1124 * pow(xyTry[0],4.)
+	  +0.23758 * pow(xyTry[0],5.)
+	  -0.0047675*pow(xyTry[0],6.)
+	  +4.4851e-5*pow(xyTry[0],7.)
+	  -1.6501e-7*pow(xyTry[0],8.);
+	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
       }
       break;
     default:
@@ -112,7 +142,7 @@ int main ( int argc, char** argv ) {
     
     
     NEST::YieldResult yields = n.GetYields(type_num, keV, rho, field);
-    cout << keV << "\t" << yields.PhotonYield << "\t" << yields.ElectronYield << endl;
+    printf("%.6f\t%.6f\t%.6f\n",keV,yields.PhotonYield,yields.ElectronYield);
   }
   
   return 1;

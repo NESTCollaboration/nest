@@ -13,6 +13,7 @@
 
 #include <NEST.hh>
 #include <iostream>
+#include <stdlib.h>
 
 using namespace std;
 using namespace NEST;
@@ -46,7 +47,8 @@ int main(int argc, char** argv) {
     else if (type == "gamma")type_num = gammaRay;
     else if (type == "beta")type_num = beta;
     else if (type == "CH3T")type_num = CH3T;
-    else type_num = Kr83m;
+    else if (type == "Kr83m") type_num = Kr83m;
+    else {cout << "Invalid particle type.\n"; return 2;}
 
     double eMin = atof(argv[3]);
     double eMax = atof(argv[4]);
@@ -55,6 +57,8 @@ int main(int argc, char** argv) {
 
     fprintf(stdout, "E [keV]\tNph\tNe-\n");
     NEST::NESTcalc n;
+    n.rng.seed(std::random_device()());
+
     for (unsigned long int j = 0; j < numEvts; j++) {
         switch (type_num) {
             default:

@@ -19,6 +19,13 @@ double NESTcalc::rand_gauss(double mean, double sigma) {
 
 }
 
+double NESTcalc::rand_exponential(double half_life) {
+
+    double r = rand_uniform();
+    return log(1 - r) * -1 * half_life / 0.693147;
+
+}
+
 double VonNeumann(double xMin, double xMax, double yMin, double yMax);
 
 int NESTcalc::BinomFluct(int N0, double prob) {
@@ -110,9 +117,9 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields){
 
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double density, double dfield) {
 
-  
     double massNum = 4.;//TODO: make this flexible
-    const double m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2., deltaT_ns = 400.;
+// ~Vetri Velan 9/12/17    const double m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2., deltaT_ns = 154.;
+    const double m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2., deltaT_ns_halflife = 157.;
     double Ne = -999; double Nph=-999;
 
     const double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
@@ -169,6 +176,8 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             if (energy == 9.4) {
                 double m1 = 99678. - 21574. * log10(dfield);
                 double m2a = 47.364 + (131.69 - 47.364) / pow(1. + pow(dfield / 71.368, 2.4130), 0.060318);
+                double deltaT_ns = rand_exponential(deltaT_ns_halflife);
+                std::cout << "Delta T: " << deltaT_ns << "\t";
                 Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2a) / 0.21;
             }
             else{

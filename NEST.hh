@@ -56,14 +56,18 @@ namespace NEST {
 
 
     protected:
-        std::ranlux24 rng;
+//        std::ranlux24 rng;
         
         double rand_gauss( double mean, double sigma );
         int BinomFluct(int, double);
 
     public:
+
+        std::ranlux24 rng;
+
         NESTcalc();
         double rand_uniform();
+        double rand_exponential(double half_life);
         NESTresult FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield);
         double PhotonTime(INTERACTION_TYPE species,bool exciton);
         photonstream GetPhotonTimes(/*inputs*/);

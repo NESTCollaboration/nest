@@ -19,6 +19,7 @@ double NESTcalc::rand_gauss(double mean, double sigma) {
 
 }
 
+<<<<<<< HEAD
 double NESTcalc::rand_exponential(double half_life) {
 
     double r = rand_uniform();
@@ -27,6 +28,27 @@ double NESTcalc::rand_exponential(double half_life) {
 }
 
 double VonNeumann(double xMin, double xMax, double yMin, double yMax);
+=======
+vector<double> NESTcalc::VonNeumann(double xMin, double xMax, double yMin,double yMax,
+				    double xTest,double yTest,double fValue){
+  
+  vector<double> xyTry(3);
+  
+  xyTry.insert(xyTry.begin() +0, xTest );
+  xyTry.insert(xyTry.begin() +1, yTest );
+  
+  if ( xyTry[1] > fValue ) {
+    xyTry.insert(xyTry.begin() + 0, xMin+(xMax-xMin)*rand_uniform() );
+    xyTry.insert(xyTry.begin() + 1, yMin+(yMax-yMin)*rand_uniform() );
+    xyTry.insert(xyTry.begin() + 2, 1. );
+  }
+  else
+    xyTry.insert(xyTry.begin() + 2, 0. );
+  
+  return xyTry; //doing a vector means you can return 2 values at the same time
+  
+}
+>>>>>>> cf359b9a4967535d85d7d2630b9cfa7c5d9cef7d
 
 int NESTcalc::BinomFluct(int N0, double prob) {
 
@@ -110,6 +132,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields){
     QuantaResult result;
     result.photons = yields.PhotonYield; //fake, fix this
     result.electrons = yields.ElectronYield;
+    return result;
 }
 
 
@@ -176,12 +199,16 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             if (energy == 9.4) {
                 double m1 = 99678. - 21574. * log10(dfield);
                 double m2a = 47.364 + (131.69 - 47.364) / pow(1. + pow(dfield / 71.368, 2.4130), 0.060318);
+<<<<<<< HEAD
                 double deltaT_ns = rand_exponential(deltaT_ns_halflife);
                 std::cout << "Delta T: " << deltaT_ns << "\t";
                 Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2a) / 0.21;
+=======
+                Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2a) / 0.21 / 1.05;
+>>>>>>> cf359b9a4967535d85d7d2630b9cfa7c5d9cef7d
             }
             else{
-                Nph = energy * (0.51987 + (1.0036 - 0.51987) / (1. + pow(dfield / 309.98, 1.0844)))*65.5;
+                Nph = energy * (0.51987 + (1.0036 - 0.51987) / (1. + pow(dfield / 309.98, 1.0844)))*65.5/1.05;
             }
             Ne = totQ - Nph;
         } break;
@@ -202,8 +229,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
     }
 
     assert(Ne!=-999 && Nph !=-999);
+    if (Nph> m2 * energy) Nph= m2 * energy;
     if (Ne > m2 * energy) Ne = m2 * energy;
-    if (Nph < 0.) Nph = 0.;
+    if (Nph <0.) Nph =0.;
     if (Ne < 0.) Ne = 0.;
 
     YieldResult result;

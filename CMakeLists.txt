@@ -55,12 +55,6 @@ install(TARGETS NEST
 add_executable(testNEST testNEST.cpp)
 target_link_libraries(testNEST NEST)
 
-add_executable(photonTimes photonTimes.cpp)
-target_link_libraries(photonTimes NEST)
-
-add_executable(randomExponential randomExponential.cpp)
-target_link_libraries(randomExponential NEST)
-
 export(PACKAGE NEST)
 export(TARGETS NEST
   FILE "${PROJECT_BINARY_DIR}/NESTTargets.cmake")

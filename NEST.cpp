@@ -22,7 +22,7 @@ double NESTcalc::rand_gauss(double mean, double sigma) {
 double NESTcalc::rand_exponential(double half_life) {
 
     double r = rand_uniform();
-    return log(1 - r) * -1 * half_life / 0.693147;
+    return log(1 - r) * -1 * half_life / log(2.);
 
 }
 
@@ -139,7 +139,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
   
     double massNum = 4.;//TODO: make this flexible
     const double m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2.;
-    const double deltaT_ns_halflife = 157.;
+    const double deltaT_ns_halflife = 154.4;
     double Ne = -999; double Nph=-999;
 
     const double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));

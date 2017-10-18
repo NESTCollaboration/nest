@@ -199,9 +199,6 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
                 double deltaT_ns = rand_exponential(deltaT_ns_halflife);
                 std::cout << deltaT_ns << "\t";
                 Nph = (m1 * pow(2. * deltaT_ns + 10., -1.5) + m2a) / 0.21 / 1.05;
-                if (Nph > totQ) {
-                    Nph = totQ;
-                }
             }
             else{
                 Nph = energy * (0.51987 + (1.0036 - 0.51987) / (1. + pow(dfield / 309.98, 1.0844)))*65.5/1.05;

@@ -9,14 +9,16 @@ G4StackManager* NESTStackingAction::savedManager=0;
 G4ClassificationOfNewTrack NESTStackingAction::ClassifyNewTrack(const G4Track* track) 
 {
     savedManager=stackManager;
-//  return Analysis::GetInstance()->ClassifyNewTrack(track);
+    if (track->GetDefinition() == G4OpticalPhoton::OpticalPhotonDefinition()) {
+        return fWaiting;
+    }
+    return fUrgent;
 }
 
 bool NESTStackingAction::isUrgentEmpty(){
     return savedManager->GetNUrgentTrack()==0;
 }
 void NESTStackingAction::NewStage() {
-//    NESTAnalysis::GetInstance()->NewStage(stackManager);
 
     
 }

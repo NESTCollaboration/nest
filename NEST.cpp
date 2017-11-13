@@ -162,7 +162,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             double Ly = Nph / energy;
             Qy = Qy + (totQ / energy - (Ly + Qy));
             Ne = Qy * energy;
-            double a = 0.0, b = 1.0;
+            double a = 0.393821, b = 0.498445;//new coeff for bi-exciton quenching
             Nph *= 1. / (1. + a * pow(epsilon, b));
         } break;
         case ion:

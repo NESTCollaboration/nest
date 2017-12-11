@@ -52,7 +52,7 @@ install(TARGETS NEST
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
 
-add_executable(testNEST testNEST.cpp)
+add_executable(testNEST testNEST.cpp TestSpectra.cpp)
 target_link_libraries(testNEST NEST)
 
 export(PACKAGE NEST)

@@ -31,16 +31,16 @@ vector<double> NESTcalc::VonNeumann(double xMin, double xMax, double yMin,double
   
   vector<double> xyTry(3);
   
-  xyTry.insert(xyTry.begin() +0, xTest );
-  xyTry.insert(xyTry.begin() +1, yTest );
+  xyTry[0]= xTest ;
+  xyTry[1]= yTest ;
   
   if ( xyTry[1] > fValue ) {
-    xyTry.insert(xyTry.begin() + 0, xMin+(xMax-xMin)*rand_uniform() );
-    xyTry.insert(xyTry.begin() + 1, yMin+(yMax-yMin)*rand_uniform() );
-    xyTry.insert(xyTry.begin() + 2, 1. );
+    xyTry[0] = xMin+(xMax-xMin)*rand_uniform() ;
+    xyTry[1] = yMin+(yMax-yMin)*rand_uniform() ;
+    xyTry[2] = 1. ;
   }
   else
-    xyTry.insert(xyTry.begin() + 2, 0. );
+    xyTry[2] = 0. ;
   
   return xyTry; //doing a vector means you can return 2 values at the same time
   

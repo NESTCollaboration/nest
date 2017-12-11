@@ -65,7 +65,7 @@ namespace NEST {
         NESTcalc();
         double rand_uniform();
         double rand_exponential(double half_life);
-      std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
+        std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
 				     double xTest,double yTest,double fValue);
         NESTresult FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield);
         double PhotonTime(INTERACTION_TYPE species,bool exciton);

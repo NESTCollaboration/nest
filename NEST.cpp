@@ -178,8 +178,8 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
         } break;
         case gammaRay:
         {
-            double m1 = 35.028 + (5.7254 - 35.028) / (1. + pow(dfield / 78.904, .60422));
-            double m5 = 21.416 + (10.737 - 21.416) / (1. + pow(dfield / 220.71, 1.7433));
+            double m1 = 33.951 + (3.3284 - 33.951) / (1. + pow(dfield / 165.34, .72665));
+            double m5 = 23.156 + (10.737 - 23.156) / (1. + pow(dfield / 34.195, .87459));
             double m7 = 66.825 + (829.25 - 66.825) / (1. + pow(dfield / 43.608, .83344));
             double densCorr = 0.32856 + 0.23187 * density;
             double totQ = energy * 1000. / Wq_eV;

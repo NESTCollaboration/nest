@@ -28,10 +28,11 @@ int main(int argc, char** argv) {
 
 
     if (argc < 7) {
-        cout << "This program takes 6 (or 7) inputs." << endl;
-        cout << "numEvts type_interaction E_min[keV] E_max[keV] density[g/cm^3] field_drift[V/cm] {optional:seed}" << endl;
-        cout << "for 8B or WIMPs, numEvts is kg-days of exposure (still an integer)" << endl;
-        return 0;
+      cout << "This program takes 6 (or 7) inputs." << endl << endl;
+      cout << "numEvts type_interaction E_min[keV] E_max[keV] density[g/cm^3] field_drift[V/cm] {optional:seed}" << endl;
+      cout << "for 8B or WIMPs, numEvts is kg-days of exposure (still an integer)" << endl << endl;
+      cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] density[g/cm^3] field_drift[V/cm] {optional:seed}" << endl;
+      return 0;
     }
 
     unsigned long int numEvts = atoi(argv[1]);
@@ -56,11 +57,14 @@ int main(int argc, char** argv) {
     double eMax = atof(argv[4]);
     double rho = atof(argv[5]);
     double field = atof(argv[6]);
-
-    fprintf(stdout, "E [keV]\t\tNph\t\tNe-\n");
+    
+    if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
+      fprintf(stdout, "t [ns]\t\tE [keV]\t\tNph\t\tNe-\n");
+    else
+      fprintf(stdout, "E [keV]\t\tNph\t\tNe-\n");
     NEST::NESTcalc n;
     if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
-
+    
     double kev = -999;
     for (unsigned long int j = 0; j < numEvts; j++) {
         if (eMin == eMax) {

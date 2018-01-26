@@ -42,8 +42,10 @@ int main(int argc, char** argv) {
     if (type == "NR") type_num = NR;
     else if (type == "WIMP")type_num = WIMP;
     else if (type == "B8") {
-        type_num = B8;
-        numEvts = (unsigned long int) (floor(atof(argv[1])*1.1 / 365. + 0.5));
+      type_num = B8;
+      std::default_random_engine generator;
+      std::poisson_distribution<int> distribution(atof(argv[1])/365.);
+      numEvts = distribution(generator);
     } else if (type == "DD") type_num = DD;
     else if (type == "AmBe")type_num = AmBe;
     else if (type == "Cf") type_num = Cf;
@@ -65,41 +67,41 @@ int main(int argc, char** argv) {
     NEST::NESTcalc n;
     if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
     
-    double kev = -999;
+    double keV = -999;
     for (unsigned long int j = 0; j < numEvts; j++) {
-        if (eMin == eMax) {
-            kev = eMin;
-        } else {
-            switch (type_num) {
-                case CH3T:
-                    kev = CH3T_spectrum(eMin, eMax, n);
-                    break;
-                case B8: //normalize this to ~3500 / 10-ton / year, for E-threshold of 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
-                    kev = B8_spectrum(eMin, eMax, n);
-                    break;
-                case AmBe: //for ZEPLIN-III FSR from HA (Pal '98)
-                    kev = AmBe_spectrum(eMin, eMax, n);
-                    break;
-                case Cf:
-                    kev = Cf_spectrum(eMin, eMax, n);
-                    break;
-                case DD:
-                    kev = DD_spectrum(eMin, eMax, n);
-                    break;
-                default:
-                    kev = eMin + (eMax - eMin) * n.rand_uniform();
-                    break;
-            }
-        }
-
-        if (kev > eMax) kev = eMax;
-        if (kev < eMin) kev = eMin;
-
-
-        NEST::YieldResult yields = n.GetYields(type_num, kev, rho, field);
-        printf("%.6f\t%.6f\t%.6f\n", kev, yields.PhotonYield, yields.ElectronYield);
+      if (eMin == eMax) {
+	keV = eMin;
+      } else {
+	switch (type_num) {
+	case CH3T:
+	  keV = CH3T_spectrum(eMin, eMax, n);
+	  break;
+	case B8: //normalize this to ~3500 / 10-ton / year, for E-threshold of 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
+	  keV = B8_spectrum(eMin, eMax, n);
+	  break;
+	case AmBe: //for ZEPLIN-III FSR from HA (Pal '98)
+	  keV = AmBe_spectrum(eMin, eMax, n);
+	  break;
+	case Cf:
+	  keV = Cf_spectrum(eMin, eMax, n);
+	  break;
+	case DD:
+	  keV = DD_spectrum(eMin, eMax, n);
+	  break;
+	default:
+	  keV = eMin + (eMax - eMin) * n.rand_uniform();
+	  break;
+	}
+      }
+      
+      if (keV > eMax) keV = eMax;
+      if (keV < eMin) keV = eMin;
+      
+      
+      NEST::YieldResult yields = n.GetYields(type_num, keV, rho, field);
+      printf("%.6f\t%.6f\t%.6f\n", keV, yields.PhotonYield, yields.ElectronYield);
     }
-
+    
     return 1;
-
+    
 }

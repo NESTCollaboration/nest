@@ -54,33 +54,47 @@ double NEST::B8_spectrum(double xMin, double xMax, NESTcalc& n){
 double NEST::AmBe_spectrum(double xMin, double xMax, NESTcalc& n){
     if(xMax>200.)xMax=200.;
       if(xMin<0.00)xMin=0.00;
-    double yMax = 1.;
+      double yMax = pow(10.,3.7488);
       vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
 			      yMax * n.rand_uniform(),1.};
       while ( xyTry[2] > 0. ) {
-	double FuncValue = exp(-sqrt(xyTry[0]))*(1.+pow(pow(xyTry[0]/31.566,5.),0.45132));
+	double FuncValue =
+	   3.74880*pow(log10(xyTry[0]),0.)
+          -0.77942*pow(log10(xyTry[0]),1.)
+          +1.30300*pow(log10(xyTry[0]),2.)
+	  -2.75280*pow(log10(xyTry[0]),3.)
+	  +1.57310*pow(log10(xyTry[0]),4.)
+	  -0.30072*pow(log10(xyTry[0]),5.);
+	FuncValue = pow(10.,FuncValue);
 	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
       }
       return xyTry[0];
 }
 
 double NEST::Cf_spectrum(double xMin, double xMax, NESTcalc& n){
-    if(xMax>200.)xMax=200.;
-      if(xMin<0.00)xMin=0.00;
-    double yMax = 2.;
-    
-      vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-            yMax * n.rand_uniform(),1.};
-      while ( xyTry[2] > 0. ) {
-	double FuncValue = exp(-sqrt(xyTry[0]))*(1.+pow(pow(xyTry[0]/31.566,5.),0.45132));
-	 FuncValue *=
-				1.9929
-				- .033214 * pow(xyTry[0],1.)
-			        +.00032857* pow(xyTry[0],2.)
-				-1.000e-6 * pow(xyTry[0],3.);
-	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
-      }
-      return xyTry[0];
+  if(xMax>200.)xMax=200;
+  if(xMin<0.0 )xMin=0.0;
+  double yMax = 2.*pow(10.,3.7488);
+  
+  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
+			  yMax * n.rand_uniform(),1.};
+  while ( xyTry[2] > 0. ) {
+    double FuncValue =
+       3.74880*pow(log10(xyTry[0]),0.)
+      -0.77942*pow(log10(xyTry[0]),1.)
+      +1.30300*pow(log10(xyTry[0]),2.)
+      -2.75280*pow(log10(xyTry[0]),3.)
+      +1.57310*pow(log10(xyTry[0]),4.)
+      -0.30072*pow(log10(xyTry[0]),5.);
+    FuncValue = pow(10.,FuncValue);
+    FuncValue *=
+      1.9929
+      - .033214 * pow(xyTry[0],1.)
+      +.00032857* pow(xyTry[0],2.)
+      -1.000e-6 * pow(xyTry[0],3.);
+    xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+  }
+  return xyTry[0];
 }
 
 double NEST::DD_spectrum(double xMin, double xMax, NESTcalc& n){  //JV LUX, most closely like JENDL-4. See arXiv:1608.05381. Lower than G4/LUXSim

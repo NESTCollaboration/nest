@@ -22,11 +22,12 @@ using namespace NEST;
  * 
  */
 double dRate ( double ER, double mWimp );
+NEST::NESTcalc n; std::default_random_engine generator;
 int main ( int argc, char** argv ) {
   
   double EnergySpec[101], base[100], exponent[100];
-  vector<double> xyTry;
-  double xMin, xMax, yMax, FuncValue; std::default_random_engine generator;
+  vector<double> xyTry, scint(8);
+  double xMin, xMax, yMax, FuncValue;
   
   if (argc < 7) {
     cout << "This program takes 6 (or 7) inputs." << endl << endl;
@@ -73,10 +74,10 @@ int main ( int argc, char** argv ) {
     double field = atof(argv[6]);
     
     if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-      fprintf(stdout, "t [ns]\t\tE [keV]\t\tNph\t\tNe-\n");
+      fprintf(stdout, "t [ns]\t\tE [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
     else
-      fprintf(stdout, "E [keV]\t\tNph\t\tNe-\n");
-    NEST::NESTcalc n;
+      fprintf(stdout, "E [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+
     if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
     
     double keV = -999;
@@ -128,11 +129,74 @@ int main ( int argc, char** argv ) {
       }
       
       NEST::YieldResult yields = n.GetYields(type_num, keV, rho, field);
-      printf("%.6f\t%.6f\t%.6f\n", keV, yields.PhotonYield, yields.ElectronYield);
+      scint = n.GetS1(int(floor(yields.PhotonYield+0.5)));
+      printf("%.6f\t%d\t%d\t", keV, int(floor(yields.PhotonYield+0.5)), int(floor(yields.ElectronYield+0.5)));
+      printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[6]);
+      scint = n.GetS2(int(floor(yields.ElectronYield+0.5)));
+      printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
     }
     
     return 1;
     
+}
+
+vector<double> NESTcalc::GetS1 ( int Nph ) {
+  
+  vector<double> scintillation(8);
+  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, spikeRes = 0.1;
+  double posDep = 0.9 + n.rand_uniform()*(1.1-0.9);
+  
+  int nHits=n.BinomFluct(Nph,g1*posDep); int Nphe=nHits;
+  for ( int i = 0; i < nHits; i++ )
+    if ( n.rand_uniform() < P_dphe ) Nphe++;
+  double pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+  double pulseAreaC= pulseArea / posDep;
+  double Nphd = pulseArea / (1.+P_dphe);
+  double NphdC= pulseAreaC/ (1.+P_dphe);
+  double spike= n.rand_gauss(nHits,spikeRes*sqrt(nHits));
+  double spikeC=spike / posDep;
+  
+  scintillation[0] = nHits; scintillation[1] = Nphe;
+  scintillation[2] = pulseArea; scintillation[3] = pulseAreaC;
+  scintillation[4] = Nphd; scintillation[5] = NphdC;
+  scintillation[6] = spike; scintillation[7] = spikeC;
+  
+  return scintillation;
+  
+}
+
+vector<double> NESTcalc::GetS2 ( int Ne ) {
+  
+  vector<double> ionization(8); double P_dphe = 0.2, sPEres = 0.5;
+  double alpha = 0.137, beta = 177., gamma = 45.7, eLife_us = 500.;
+  double g1_gas = 0.10, gasGap_cm = 0.5, p_bar = 1.5, E_gas = 10., epsilon = 1.85;
+  double driftTime = 0.0 + n.rand_uniform()*(500.-0.0);
+  
+  double E_liq = E_gas / epsilon; //kV per cm
+  double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
+  if ( ExtEff > 1. ) ExtEff = 1.;
+  if ( ExtEff < 0. ) ExtEff = 0.;
+  int Nee = n.BinomFluct(Ne,ExtEff*exp(-driftTime/eLife_us));
+  
+  double elYield = Nee*
+    (alpha*E_gas*1000.-beta*p_bar-gamma)*
+    gasGap_cm; // arXiv:1207.2292
+  std::poisson_distribution<int> distribution(elYield);
+  int Nph = distribution(generator);
+  int nHits = n.BinomFluct(Nph,g1_gas);
+  int Nphe = nHits + n.BinomFluct(nHits,P_dphe);
+  double pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+  double pulseAreaC= pulseArea/exp(-driftTime/eLife_us);
+  double Nphd = pulseArea / (1.+P_dphe);
+  double NphdC= pulseAreaC/ (1.+P_dphe);
+  
+  ionization[0] = Nee; ionization[1] = Nph;
+  ionization[2] = nHits; ionization[3] = Nphe;
+  ionization[4] = pulseArea; ionization[5] = pulseAreaC;
+  ionization[6] = Nphd; ionization[7] = NphdC;
+  
+  return ionization;
+  
 }
 
 //------++++++------++++++------++++++------++++++------++++++------++++++------

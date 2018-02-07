@@ -65,6 +65,8 @@ namespace NEST {
         NESTcalc();
         double rand_uniform();
         double rand_exponential(double half_life);
+      std::vector<double> GetS1(int num_photons);
+      std::vector<double> GetS2(int num_electrons);
         std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
 				     double xTest,double yTest,double fValue);
         NESTresult FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield);

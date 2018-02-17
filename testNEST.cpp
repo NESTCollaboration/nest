@@ -143,23 +143,54 @@ int main ( int argc, char** argv ) {
 vector<double> NESTcalc::GetS1 ( int Nph ) {
   
   vector<double> scintillation(8);
-  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, spikeRes = 0.1;
+  int coinLevel = 3,numPMTs = 100;
+  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, spikeRes = 0.1, sPEeff = 0.92, sPEthr = 0.25;
   double posDep = 0.9 + n.rand_uniform()*(1.1-0.9);
   
-  int nHits=n.BinomFluct(Nph,g1*posDep); int Nphe=nHits;
-  for ( int i = 0; i < nHits; i++ )
-    if ( n.rand_uniform() < P_dphe ) Nphe++;
-  double pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+  int nHits=n.BinomFluct(Nph,g1*posDep), Nphe = nHits;
+  double pulseArea = 0.;
+  if ( sPEeff < 1. || sPEthr > 0. ) {
+    nHits = 0;
+    for ( int i = 0; i < Nphe; i++ ) {
+      double phe1 = n.rand_gauss(1.,sPEres);
+      if ( n.rand_uniform() > sPEeff ) phe1 = 0.;
+      double phe2 = 0.;
+      if ( n.rand_uniform() < P_dphe ) {
+	phe2 = n.rand_gauss(1.,sPEres);
+	if ( n.rand_uniform() > sPEeff ) phe2 = 0.;
+      }
+      if ( (phe1+phe2) > sPEthr ) { nHits++; pulseArea += phe1 + phe2; }
+    }
+  }
+  else {
+    Nphe += n.BinomFluct(nHits,P_dphe);
+    pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+  }
+  if ( pulseArea < 0. ) pulseArea = 0.;
   double pulseAreaC= pulseArea / posDep;
   double Nphd = pulseArea / (1.+P_dphe);
   double NphdC= pulseAreaC/ (1.+P_dphe);
   double spike= n.rand_gauss(nHits,spikeRes*sqrt(nHits));
-  double spikeC=spike / posDep;
+  if ( spike < 0. ) spike = 0.;
+  double spikeC = spike / posDep;
   
   scintillation[0] = nHits; scintillation[1] = Nphe;
   scintillation[2] = pulseArea; scintillation[3] = pulseAreaC;
   scintillation[4] = Nphd; scintillation[5] = NphdC;
   scintillation[6] = spike; scintillation[7] = spikeC;
+  
+  if ( nHits >= coinLevel && n.rand_uniform() < 1.-pow((double)numPMTs,1.-(double)nHits) )
+    { ; }
+  else {
+    scintillation[0] *= -1.;
+    scintillation[1] *= -1.;
+    scintillation[2] *= -1.;
+    scintillation[3] *= -1.;
+    scintillation[4] *= -1.;
+    scintillation[5] *= -1.;
+    scintillation[6] *= -1.;
+    scintillation[7] *= -1.;
+  }
   
   return scintillation;
   

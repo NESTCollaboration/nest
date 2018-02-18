@@ -64,9 +64,9 @@ int main ( int argc, char** argv ) {
     else if (type == "Cf") type_num = Cf;
     else if (type == "ion") type_num = ion;
     else if (type == "gamma")type_num = gammaRay;
-    else if (type == "beta")type_num = beta;
+    else if (type == "Kr83m")type_num=Kr83m;
     else if (type == "CH3T")type_num = CH3T;
-    else type_num = Kr83m;
+    else type_num = beta;
 
     double eMin = atof(argv[3]);
     double eMax = atof(argv[4]);
@@ -128,9 +128,9 @@ int main ( int argc, char** argv ) {
 	if (keV < eMin) keV = eMin;
       }
       
-      NEST::YieldResult yields = n.GetYields(type_num, keV, rho, field);
+      NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field );
       scint = n.GetS1(int(floor(yields.PhotonYield+0.5)));
-      printf("%.6f\t%d\t%d\t", keV, int(floor(yields.PhotonYield+0.5)), int(floor(yields.ElectronYield+0.5)));
+      printf("%.6f\t%.6f\t%.6f\t", keV, yields.PhotonYield, yields.ElectronYield);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[6]);
       scint = n.GetS2(int(floor(yields.ElectronYield+0.5)));
       printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);

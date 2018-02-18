@@ -131,40 +131,34 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields){
     return result;
 }
 
-
-
-
-YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double density, double dfield) {
-
+YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield ) {
   
-    double massNum = 4.;//TODO: make this flexible
-    const double m2 = 78.324, m3 = 2., m4 = 2., m6 = 0., m8 = 2.;
-    const double deltaT_ns_halflife = 154.4;
-    double Ne = -999; double Nph=-999;
-
-    const double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
-    double alpha = 0.067366 + density * 0.039693;
-    switch (species) {
-        case NR:
-        case WIMP:
-        case B8:
-        case DD:
-        case AmBe:
-        case Cf:
-        {
-            double epsilon = 11.5 * energy * pow(54., (-7. / 3.));
-            double densCorr = 13.7 / Wq_eV;
-            double peter = 0.;
-            double power = 0.28884 * pow(dfield, -0.045639);
-            double Qy = 8.494 / pow(1. + pow(energy / 5.1215, 1.671), power);
-            double totQ = 12.256 * pow(energy, 1.0770) - peter / epsilon;
-            Nph = densCorr * (totQ - energy * Qy);
-            double Ly = Nph / energy;
-            Qy = Qy + (totQ / energy - (Ly + Qy));
-            Ne = Qy * energy;
-            double a = 0.393821, b = 0.498445;//new coeff for bi-exciton quenching
-            Nph *= 1. / (1. + a * pow(epsilon, b));
-        } break;
+  double massNum = 4.; //TODO: make this flexible
+  const double m3 = 2., m4 = 2., m6 = 0.;
+  double Ne = -999; double Nph = -999, m8 = 2.;
+  const double deltaT_ns_halflife = 154.4;
+  
+  double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
+  const double alpha = 0.067366 + density * 0.039693;
+  switch ( species ) {
+  case NR:
+  case WIMP:
+  case B8:
+  case DD:
+  case AmBe:
+  case Cf:
+    {
+      double Nq = 12.6*pow(energy,1.05);
+      double TIB = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
+      double Qy = 1. / (TIB*sqrt(energy+9.75));
+      double Ly = Nq / energy - Qy;
+      Ne = Qy * energy;
+      Nph= Ly * energy;
+      double NexONi = 1.00*erf(0.01*energy);
+      double Ni = Nq/(1.+NexONi); double Nex = Nq - Ni;
+      double elecFrac = Ne / Nq;
+      double recombProb = 1.-(NexONi+1.)*elecFrac;
+    } break;
         case ion:
         {
             double L = 0.96446 / (1. + pow(massNum * massNum / 19227., 0.99199));
@@ -176,20 +170,24 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             Nph = totQ * alpha / (1. + alpha) + recombProb*Ni;
             Ne = totQ - Nph;
         } break;
-        case gammaRay:
-        {
-            double m1 = 33.951 + (3.3284 - 33.951) / (1. + pow(dfield / 165.34, .72665));
-            double m5 = 23.156 + (10.737 - 23.156) / (1. + pow(dfield / 34.195, .87459));
-            double m7 = 66.825 + (829.25 - 66.825) / (1. + pow(dfield / 43.608, .83344));
-            double densCorr = 0.32856 + 0.23187 * density;
-            double totQ = energy * 1000. / Wq_eV;
-            double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
-            Qy /= 73. * Wq_eV * 1e-3;
-            double Ly = (73. - Qy) * densCorr / (73. * Wq_eV * 0.001);
-            Qy = Qy + (totQ / energy - (Ly + Qy));
-            Ne = Qy * energy;
-            Nph = Ly * energy;
-        } break;
+  case gammaRay:
+    {
+      double m1 = 33.951 + (3.3284 - 33.951) / (1. + pow(dfield / 165.34, .72665));
+      double m2 = 1000 / Wq_eV;
+      double m5 = 23.156 + (10.737 - 23.156) / (1. + pow(dfield / 34.195, .87459));
+      double densCorr = 240720. / pow ( density, 8.2076 );
+      double m7 = 66.825 + (829.25 - 66.825) / (1. + pow(dfield /densCorr,.83344));
+      double totQ = energy * 1000. / Wq_eV;
+      if ( density < 1. ) m8 = -2.;
+      double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
+      double Ly = totQ/energy-Qy;
+      Ne = Qy * energy;
+      Nph =Ly * energy;
+      double NexONi = alpha*erf(0.05*energy);
+      double Ni = totQ/(1.+NexONi); double Nex = totQ - Ni;
+      double elecFrac = Ne / totQ;
+      double recombProb = 1.-(NexONi+1.)*elecFrac;
+    } break;
         case Kr83m:
         {
             double totQ = energy * 1000. / Wq_eV;
@@ -205,25 +203,30 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             }
             Ne = totQ - Nph;
         } break;
-        default: //beta, CH3T
-        {
-            double m1 = 37.609 + (9.4398 - 37.609) / (1. + pow(dfield / 95.192, .65711));
-            double m5 = 24.159;
-            double m7 = 27.663 + (694.46 - 27.663) / (1. + pow(dfield / 28.595, .84217));
-            double densCorr = 0.32856 + 0.23187 * density;
-            double totQ = energy * 1000. / Wq_eV;
-            double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
-            Qy /= 73. * Wq_eV * 1e-3;
-            double Ly = (73. - Qy) * densCorr / (73. * Wq_eV * 0.001);
-            Qy = Qy + (totQ / energy - (Ly + Qy));
-            Ne = Qy * energy;
-            Nph = Ly * energy;
-        } break;
+  default: //beta, CH3T
+    {
+      double QyLvllowE = 1e3/Wq_eV+6.5*(1.-1./(1.+pow(dfield/47.408,1.9851)));
+      double QyLvlmedE =32.988-32.988/(1.+pow(dfield/(0.026715*exp(density/0.33926)),0.6705));
+      double DokeBirks = 1652.264+(1.415935e10-1652.264)/(1.+pow(dfield/0.02673144,1.564691));
+      double totQuanta = energy * 1e3 / ( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
+      double LET_power = -2.;
+      if ( density < 1. ) LET_power = 2.;
+      double QyLvlhighE =28.;
+      if ( density > 3. ) QyLvlhighE=49.;
+      double Qy = QyLvlmedE+(QyLvllowE-QyLvlmedE)/pow(1.+1.304*pow(energy,2.1393),0.35535)+QyLvlhighE/(1.+DokeBirks*pow(energy,LET_power));
+      double Ly = totQuanta/energy-Qy;
+      Ne = Qy * energy;
+      Nph= Ly * energy;
+      double NexONi = alpha*erf(0.05*energy);
+      double Ni = totQuanta/(1.+NexONi); double Nex = totQuanta - Ni;
+      double elecFrac = Ne / totQuanta;
+      double recombProb = 1.-(NexONi+1.)*elecFrac;
+    } break;
     }
 
     assert(Ne!=-999 && Nph !=-999);
-    if (Nph> m2 * energy) Nph= m2 * energy;
-    if (Ne > m2 * energy) Ne = m2 * energy;
+    //if (Nph> m2 * energy) Nph= m2 * energy;
+    //if (Ne > m2 * energy) Ne = m2 * energy;
     if (Nph <0.) Nph =0.;
     if (Ne < 0.) Ne = 0.;
 

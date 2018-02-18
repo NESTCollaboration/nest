@@ -198,10 +198,10 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
 
 vector<double> NESTcalc::GetS2 ( int Ne ) {
   
-  vector<double> ionization(8); double P_dphe = 0.2, sPEres = 0.5;
-  double alpha = 0.137, beta = 177., gamma = 45.7, eLife_us = 500.;
-  double g1_gas = 0.10, gasGap_cm = 0.5, p_bar = 1.5, E_gas = 10., epsilon = 1.85;
+  vector<double> ionization(8);
+  double alpha = 0.137, beta = 177., gamma = 45.7, eLife_us = 500., P_dphe = 0.2, sPEres = 0.5, Fano = 3., S2botTotRatio = 0.4;
   double driftTime = 0.0 + n.rand_uniform()*(500.-0.0);
+  double g1_gas = 0.10, gasGap_cm = 0.5, p_bar = 1.5, E_gas = 10.0, epsilon = 1.85;
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
@@ -212,14 +212,16 @@ vector<double> NESTcalc::GetS2 ( int Ne ) {
   double elYield = Nee*
     (alpha*E_gas*1000.-beta*p_bar-gamma)*
     gasGap_cm; // arXiv:1207.2292
-  std::poisson_distribution<int> distribution(elYield);
-  int Nph = distribution(generator);
+  int Nph = int(floor(rand_gauss(elYield,sqrt(Fano*elYield))+0.5));
   int nHits = n.BinomFluct(Nph,g1_gas);
   int Nphe = nHits + n.BinomFluct(nHits,P_dphe);
-  double pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+  double pulseArea=n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
   double pulseAreaC= pulseArea/exp(-driftTime/eLife_us);
   double Nphd = pulseArea / (1.+P_dphe);
   double NphdC= pulseAreaC/ (1.+P_dphe);
+  
+  double S2b = n.rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
+  double S2bc= S2b / exp(-driftTime/eLife_us);
   
   ionization[0] = Nee; ionization[1] = Nph;
   ionization[2] = nHits; ionization[3] = Nphe;

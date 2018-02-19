@@ -74,9 +74,9 @@ int main ( int argc, char** argv ) {
     double field = atof(argv[6]);
     
     if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-      fprintf(stdout, "t [ns]\t\tE [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+      fprintf(stdout, "t [ns]\t\tE [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
     else
-      fprintf(stdout, "E [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+      fprintf(stdout, "E [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
 
     if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
     
@@ -131,7 +131,7 @@ int main ( int argc, char** argv ) {
       NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field );
       scint = n.GetS1(int(floor(yields.PhotonYield+0.5)));
       printf("%.6f\t%.6f\t%.6f\t", keV, yields.PhotonYield, yields.ElectronYield);
-      printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[6]);
+      printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
       scint = n.GetS2(int(floor(yields.ElectronYield+0.5)));
       printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
     }
@@ -144,34 +144,31 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
   
   vector<double> scintillation(8);
   int coinLevel = 3,numPMTs = 100;
-  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, spikeRes = 0.1, sPEeff = 0.92, sPEthr = 0.25;
+  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, sPEeff = 0.92, sPEthr = 0.25;
   double posDep = 0.9 + n.rand_uniform()*(1.1-0.9);
   
-  int nHits=n.BinomFluct(Nph,g1*posDep), Nphe = nHits;
-  double pulseArea = 0.;
+  int nHits=n.BinomFluct(Nph,g1*posDep), Nphe = 0;
+  double pulseArea = 0., spike = 0.;
   if ( sPEeff < 1. || sPEthr > 0. ) {
-    nHits = 0;
-    for ( int i = 0; i < Nphe; i++ ) {
-      double phe1 = n.rand_gauss(1.,sPEres);
+    for ( int i = 0; i < nHits; i++ ) {
+      double phe1 = n.rand_gauss(1.,sPEres); Nphe++;
       if ( n.rand_uniform() > sPEeff ) phe1 = 0.;
       double phe2 = 0.;
       if ( n.rand_uniform() < P_dphe ) {
-	phe2 = n.rand_gauss(1.,sPEres);
+	phe2 = n.rand_gauss(1.,sPEres); Nphe++;
 	if ( n.rand_uniform() > sPEeff ) phe2 = 0.;
       }
-      if ( (phe1+phe2) > sPEthr ) { nHits++; pulseArea += phe1 + phe2; }
+      if ( (phe1+phe2) > sPEthr ) { spike++; pulseArea += phe1 + phe2; }
     }
   }
   else {
-    Nphe += n.BinomFluct(nHits,P_dphe);
+    Nphe = nHits + n.BinomFluct(nHits,P_dphe);
     pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
   }
   if ( pulseArea < 0. ) pulseArea = 0.;
   double pulseAreaC= pulseArea / posDep;
   double Nphd = pulseArea / (1.+P_dphe);
   double NphdC= pulseAreaC/ (1.+P_dphe);
-  double spike= n.rand_gauss(nHits,spikeRes*sqrt(nHits));
-  if ( spike < 0. ) spike = 0.;
   double spikeC = spike / posDep;
   
   scintillation[0] = nHits; scintillation[1] = Nphe;
@@ -201,7 +198,7 @@ vector<double> NESTcalc::GetS2 ( int Ne ) {
   vector<double> ionization(8);
   double alpha = 0.137, beta = 177., gamma = 45.7, eLife_us = 500., P_dphe = 0.2, sPEres = 0.5, Fano = 3., S2botTotRatio = 0.4;
   double driftTime = 0.0 + n.rand_uniform()*(500.-0.0);
-  double g1_gas = 0.10, gasGap_cm = 0.5, p_bar = 1.5, E_gas = 10.0, epsilon = 1.85;
+  double g1_gas = 0.10, gasGap_cm = 0.5,p_bar = 1.5,E_gas=10.,epsilon=1.85/1.00126;
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032

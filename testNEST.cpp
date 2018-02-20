@@ -164,6 +164,7 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
   else {
     Nphe = nHits + n.BinomFluct(nHits,P_dphe);
     pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+    spike = (double)nHits;
   }
   if ( pulseArea < 0. ) pulseArea = 0.;
   double pulseAreaC= pulseArea / posDep;
@@ -176,7 +177,7 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
   scintillation[4] = Nphd; scintillation[5] = NphdC;
   scintillation[6] = spike; scintillation[7] = spikeC;
   
-  if ( nHits >= coinLevel && n.rand_uniform() < 1.-pow((double)numPMTs,1.-(double)nHits) )
+  if ( spike >= coinLevel && n.rand_uniform() < 1.-pow((double)numPMTs,1.-(double)spike) )
     { ; }
   else {
     scintillation[0] *= -1.;

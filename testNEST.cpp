@@ -18,11 +18,15 @@
 
 using namespace std;
 using namespace NEST;
+
 /*
  * 
  */
+
 double dRate ( double ER, double mWimp );
 NEST::NESTcalc n; std::default_random_engine generator;
+double nCr ( double n, double r );
+
 int main ( int argc, char** argv ) {
   
   double EnergySpec[101], base[100], exponent[100];
@@ -148,22 +152,23 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
   double posDep = 0.9 + n.rand_uniform()*(1.1-0.9);
   
   int nHits=n.BinomFluct(Nph,g1*posDep), Nphe = 0;
-  double pulseArea = 0., spike = 0.;
-  if ( sPEeff < 1. || sPEthr > 0. ) {
+  double pulseArea = 0., spike = 0., prob;
+  if ( sPEthr > 0. ) {
     for ( int i = 0; i < nHits; i++ ) {
       double phe1 = n.rand_gauss(1.,sPEres); Nphe++;
-      if ( n.rand_uniform() > sPEeff ) phe1 = 0.;
+      prob = n.rand_uniform();
+      if ( prob > sPEeff ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
       double phe2 = 0.;
       if ( n.rand_uniform() < P_dphe ) {
 	phe2 = n.rand_gauss(1.,sPEres); Nphe++;
-	if ( n.rand_uniform() > sPEeff ) phe2 = 0.;
+	if ( n.rand_uniform() > sPEeff && prob > sPEeff ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
       }
       if ( (phe1+phe2) > sPEthr ) { spike++; pulseArea += phe1 + phe2; }
     }
   }
   else {
     Nphe = nHits + n.BinomFluct(nHits,P_dphe);
-    pulseArea = n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+    pulseArea = n.rand_gauss(n.BinomFluct(Nphe,1.-(1.-sPEeff)/(1.+P_dphe)),sPEres*sqrt(Nphe));
     spike = (double)nHits;
   }
   if ( pulseArea < 0. ) pulseArea = 0.;
@@ -177,15 +182,23 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
   scintillation[4] = Nphd; scintillation[5] = NphdC;
   scintillation[6] = spike; scintillation[7] = spikeC;
   
-  if ( spike >= coinLevel && n.rand_uniform() < 1.-pow((double)numPMTs,1.-(double)spike) )
+  if ( spike >= coinLevel ) { double numer, denom;
+    for ( int i = spike; i > 0; i-- ) {
+      denom += nCr ( numPMTs, i );
+      if ( i >= coinLevel ) numer += nCr ( numPMTs, i );
+    }
+    prob = numer / denom;
+  } else prob = 0.; if ( spike > 10 ) prob = 1.;
+  
+  if ( n.rand_uniform() < prob )
     { ; }
   else {
-    scintillation[0] *= -1.;
-    scintillation[1] *= -1.;
+    //scintillation[0] *= -1.;
+    //scintillation[1] *= -1.;
     scintillation[2] *= -1.;
     scintillation[3] *= -1.;
-    scintillation[4] *= -1.;
-    scintillation[5] *= -1.;
+    //scintillation[4] *= -1.;
+    //scintillation[5] *= -1.;
     scintillation[6] *= -1.;
     scintillation[7] *= -1.;
   }
@@ -330,5 +343,18 @@ double dRate ( double ER, double mWimp ) {
   dSpec *= (((Z * fp) + ((A - Z) * fn)) / fn) * (((Z * fp) + ((A - Z) * fn)) / fn) * zeta * FormFactor*FormFactor * SecondsPerDay / keVperGeV;
   
   return dSpec;
+  
+}
+
+long double Factorial ( double x ) {
+  
+  return tgammal ( x + 1. );
+  
+}
+
+double nCr ( double n, double r ) {
+  
+  return Factorial(n) /
+    ( Factorial(r) * Factorial(n-r) );
   
 }

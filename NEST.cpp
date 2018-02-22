@@ -19,6 +19,13 @@ double NESTcalc::rand_gauss(double mean, double sigma) {
 
 }
 
+int NESTcalc::poisson_draw(double mean)
+{
+  std::poisson_distribution<int> distribution(mean);
+  return distribution(rng);
+}
+
+
 double NESTcalc::rand_exponential(double half_life) {
 
     double r = rand_uniform();

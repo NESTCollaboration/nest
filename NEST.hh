@@ -64,6 +64,7 @@ namespace NEST {
     public:
         NESTcalc();
         double rand_uniform();
+        int poisson_draw(double mean);
         double rand_exponential(double half_life);
       std::vector<double> GetS1(int num_photons);
       std::vector<double> GetS2(int num_electrons);

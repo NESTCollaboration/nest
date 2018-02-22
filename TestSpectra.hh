@@ -17,11 +17,23 @@
 #include <NEST.hh>
 
 namespace NEST{
-    double CH3T_spectrum(double emin,double emax, NESTcalc& n);
-    double B8_spectrum(double emin,double emax, NESTcalc& n);
-    double AmBe_spectrum(double emin,double emax, NESTcalc& n);
-    double Cf_spectrum(double emin,double emax, NESTcalc& n);
-    double DD_spectrum(double emin,double emax, NESTcalc& n);
+  struct WIMP_spectrum_prep{
+    double base[100]={1};
+    double exponent[100]={0};
+    double integral=0;
+    double xMax=0;
+  };
+  
+  
+  double CH3T_spectrum(double emin,double emax, NESTcalc& n);
+  double B8_spectrum(double emin,double emax, NESTcalc& n);
+  double AmBe_spectrum(double emin,double emax, NESTcalc& n);
+  double Cf_spectrum(double emin,double emax, NESTcalc& n);
+  double DD_spectrum(double emin,double emax, NESTcalc& n);
+  double WIMP_dRate(double ER, double mWimp);
+  WIMP_spectrum_prep WIMP_prep_spectrum(double mass);
+  double WIMP_spectrum(WIMP_spectrum_prep wprep, double mass, NESTcalc& n);
+    
 }
 
 #endif /* TESTSPECTRA_HH */

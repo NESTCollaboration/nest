@@ -17,29 +17,12 @@
 //#include "G4ThermalElectron.hh"
 #include "G4ProductionCuts.hh"
 #include "G4MaterialCutsCouple.hh"
-//#include "Analysis.hh"
 #include "NEST.hh"
-//#include "LUXSimManager.hh"
+
 
 #define AVO 6.022e23 //Avogadro's number (#/mol)
 #define EMASS 9.109e-31*kg
 #define MillerDriftSpeed true
-
-#define GASGAP 0.25*cm //S2 generation region
-#define BORDER 0*cm //liquid-gas border z-coordinate
-
-#define QE_EFF 1 //a base or maximum quantum efficiency
-#define phe_per_e 1 //S2 gain for quick studies
-
-// different field regions, for gamma-X studies
-//#define WIN 0*mm //top Cu block (also, quartz window)
-//#define TOP 0 //top grid wires
-//#define ANE 0 //anode mesh
-//#define SRF 0 //liquid-gas interface
-//#define GAT 0 //gate grid
-//#define CTH 0 //cathode grid
-//#define BOT 0 //bottom PMT grid
-//#define PMT 0 //bottom Cu block and PMTs
 
 namespace NEST{
     struct Vertex {

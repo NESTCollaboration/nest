@@ -23,12 +23,13 @@ using namespace NEST;
  * 
  */
 
-NEST::NESTcalc n; std::default_random_engine generator;
 double nCr ( double n, double r );
+vector<double> GetS1 ( int Ne, NESTcalc nc );
+vector<double> GetS2 ( int Ne, NESTcalc nc );
 
 int main ( int argc, char** argv ) {
   
-  
+  NEST::NESTcalc n;
 //  double xMin, xMax, yMax, FuncValue;
   
   if (argc < 7)
@@ -113,10 +114,10 @@ int main ( int argc, char** argv ) {
       }
       
       NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field );
-      vector<double> scint = n.GetS1(int(floor(yields.PhotonYield+0.5)));
+      vector<double> scint = GetS1(int(floor(yields.PhotonYield+0.5)),n);
       printf("%.6f\t%.6f\t%.6f\t", keV, yields.PhotonYield, yields.ElectronYield);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
-      scint = n.GetS2(int(floor(yields.ElectronYield+0.5)));
+      scint = GetS2(int(floor(yields.ElectronYield+0.5)),n);
       printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
     }
     
@@ -124,31 +125,31 @@ int main ( int argc, char** argv ) {
     
 }
 
-vector<double> NESTcalc::GetS1 ( int Nph ) {
+vector<double> GetS1 ( int Nph, NESTcalc nc) {
   
   vector<double> scintillation(8);
   int coinLevel = 3,numPMTs = 100;
   double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, sPEeff = 0.92, sPEthr = 0.25;
-  double posDep = 0.9 + n.rand_uniform()*(1.1-0.9);
+  double posDep = 0.9 + nc.rand_uniform()*(1.1-0.9);
   
-  int nHits=n.BinomFluct(Nph,g1*posDep), Nphe = 0;
+  int nHits=nc.BinomFluct(Nph,g1*posDep), Nphe = 0;
   double pulseArea = 0., spike = 0., prob;
   if ( sPEthr > 0. ) {
     for ( int i = 0; i < nHits; i++ ) {
-      double phe1 = n.rand_gauss(1.,sPEres); Nphe++;
-      prob = n.rand_uniform();
+      double phe1 = nc.rand_gauss(1.,sPEres); Nphe++;
+      prob = nc.rand_uniform();
       if ( prob > sPEeff ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
       double phe2 = 0.;
-      if ( n.rand_uniform() < P_dphe ) {
-	phe2 = n.rand_gauss(1.,sPEres); Nphe++;
-	if ( n.rand_uniform() > sPEeff && prob > sPEeff ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
+      if ( nc.rand_uniform() < P_dphe ) {
+	phe2 = nc.rand_gauss(1.,sPEres); Nphe++;
+	if ( nc.rand_uniform() > sPEeff && prob > sPEeff ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
       }
       if ( (phe1+phe2) > sPEthr ) { spike++; pulseArea += phe1 + phe2; }
     }
   }
   else {
-    Nphe = nHits + n.BinomFluct(nHits,P_dphe);
-    pulseArea = n.rand_gauss(n.BinomFluct(Nphe,1.-(1.-sPEeff)/(1.+P_dphe)),sPEres*sqrt(Nphe));
+    Nphe = nHits + nc.BinomFluct(nHits,P_dphe);
+    pulseArea = nc.rand_gauss(nc.BinomFluct(Nphe,1.-(1.-sPEeff)/(1.+P_dphe)),sPEres*sqrt(Nphe));
     spike = (double)nHits;
   }
   if ( pulseArea < 0. ) pulseArea = 0.;
@@ -170,7 +171,7 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
     prob = numer / denom;
   } else prob = 0.; if ( spike > 10 ) prob = 1.;
   
-  if ( n.rand_uniform() < prob )
+  if ( nc.rand_uniform() < prob )
     { ; }
   else {
     //scintillation[0] *= -1.;
@@ -187,31 +188,31 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
   
 }
 
-vector<double> NESTcalc::GetS2 ( int Ne ) {
+vector<double> GetS2 ( int Ne, NESTcalc nc ) {
   
   vector<double> ionization(8);
   double alpha = 0.137, beta = 177., gamma = 45.7, eLife_us = 500., P_dphe = 0.2, sPEres = 0.5, Fano = 3., S2botTotRatio = 0.4;
-  double driftTime = 0.0 + n.rand_uniform()*(500.-0.0);
+  double driftTime = 0.0 + nc.rand_uniform()*(500.-0.0);
   double g1_gas = 0.10, gasGap_cm = 0.5,p_bar = 1.5,E_gas=10.,epsilon=1.85/1.00126;
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
   if ( ExtEff > 1. ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
-  int Nee = n.BinomFluct(Ne,ExtEff*exp(-driftTime/eLife_us));
+  int Nee = nc.BinomFluct(Ne,ExtEff*exp(-driftTime/eLife_us));
   
   double elYield = Nee*
     (alpha*E_gas*1000.-beta*p_bar-gamma)*
     gasGap_cm; // arXiv:1207.2292
-  int Nph = int(floor(rand_gauss(elYield,sqrt(Fano*elYield))+0.5));
-  int nHits = n.BinomFluct(Nph,g1_gas);
-  int Nphe = nHits + n.BinomFluct(nHits,P_dphe);
-  double pulseArea=n.rand_gauss(Nphe,sPEres*sqrt(Nphe));
+  int Nph = int(floor(nc.rand_gauss(elYield,sqrt(Fano*elYield))+0.5));
+  int nHits = nc.BinomFluct(Nph,g1_gas);
+  int Nphe = nHits + nc.BinomFluct(nHits,P_dphe);
+  double pulseArea=nc.rand_gauss(Nphe,sPEres*sqrt(Nphe));
   double pulseAreaC= pulseArea/exp(-driftTime/eLife_us);
   double Nphd = pulseArea / (1.+P_dphe);
   double NphdC= pulseAreaC/ (1.+P_dphe);
   
-  double S2b = n.rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
+  double S2b = nc.rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
   double S2bc= S2b / exp(-driftTime/eLife_us);
   
   ionization[0] = Nee; ionization[1] = Nph;

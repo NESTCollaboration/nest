@@ -58,8 +58,7 @@ namespace NEST {
     protected:
         std::ranlux24 rng;
         
-        double rand_gauss( double mean, double sigma );
-        int BinomFluct(int, double);
+        
 
     public:
         NESTcalc();
@@ -70,6 +69,8 @@ namespace NEST {
       std::vector<double> GetS2(int num_electrons);
         std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
 				     double xTest,double yTest,double fValue);
+        double rand_gauss( double mean, double sigma );
+        int BinomFluct(int, double);
         NESTresult FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield);
         double PhotonTime(INTERACTION_TYPE species,bool exciton);
         photonstream GetPhotonTimes(/*inputs*/);

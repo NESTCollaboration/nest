@@ -65,8 +65,6 @@ namespace NEST {
         double rand_uniform();
         int poisson_draw(double mean);
         double rand_exponential(double half_life);
-      std::vector<double> GetS1(int num_photons);
-      std::vector<double> GetS2(int num_electrons);
         std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
 				     double xTest,double yTest,double fValue);
         double rand_gauss( double mean, double sigma );

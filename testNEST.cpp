@@ -24,7 +24,7 @@ using namespace NEST;
  */
 
 double nCr ( double n, double r );
-vector<double> GetS1 ( int Ne, NESTcalc& nc );
+vector<double> GetS1 ( int Nph,NESTcalc& nc );
 vector<double> GetS2 ( int Ne, NESTcalc& nc );
 
 int main ( int argc, char** argv ) {
@@ -125,12 +125,12 @@ int main ( int argc, char** argv ) {
     
 }
 
-vector<double> GetS1 ( int Nph, NESTcalc& nc) {
+vector<double> GetS1 ( int Nph, NESTcalc& nc ) {
   
   vector<double> scintillation(8);  // return vector
   int coinLevel = 3,numPMTs = 100;
-  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, sPEeff = 0.92, sPEthr = 0.25;
-
+  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, sPEeff = 0.92, sPEthr = 0.25, noise[2] = {0.0,0.1};
+  
   // Add some variability in g1 drawn from a uniform random distribution
   double posDep = 0.9 + nc.rand_uniform()*(1.1-0.9);
   
@@ -145,16 +145,16 @@ vector<double> GetS1 ( int Nph, NESTcalc& nc) {
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area
-      double phe1 = nc.rand_gauss(1.,sPEres); Nphe++;
+      double phe1 = nc.rand_gauss(1.,sPEres) + nc.rand_gauss(noise[0],noise[1]); Nphe++;
       prob = nc.rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
       if ( prob > sPEeff ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
       // Generate a double photo electron if random draw allows it
       double phe2 = 0.;
       if ( nc.rand_uniform() < P_dphe ) {
-        // generate area and increment the photo-electron counter
-	phe2 = nc.rand_gauss(1.,sPEres); Nphe++;
-        // zero the area if phe wouldn't have been observed
+	// generate area and increment the photo-electron counter
+	phe2 = nc.rand_gauss(1.,sPEres) + nc.rand_gauss(noise[0],noise[1]); Nphe++;
+	// zero the area if phe wouldn't have been observed
 	if ( nc.rand_uniform() > sPEeff && prob > sPEeff ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
 	// The dphe occurs simultaneously to the first one from the same source photon. If the first one is seen, so should be the second one
       }
@@ -228,7 +228,7 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc ) {
   double NphdC= pulseAreaC/ (1.+P_dphe);
   
   double S2b = nc.rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
-  double S2bc= S2b / exp(-driftTime/eLife_us);// for detectors using S2 bottom-only in their analyses
+  double S2bc= S2b / exp(-driftTime/eLife_us); // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; ionization[1] = Nph;
   ionization[2] = nHits; ionization[3] = Nphe;

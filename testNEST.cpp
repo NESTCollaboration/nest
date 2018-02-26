@@ -126,27 +126,42 @@ int main ( int argc, char** argv ) {
 
 vector<double> NESTcalc::GetS1 ( int Nph ) {
   
-  vector<double> scintillation(8);
+  vector<double> scintillation(8);  // return vector
   int coinLevel = 3,numPMTs = 100;
   double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, sPEeff = 0.92, sPEthr = 0.25;
+
+  // Add some variability in g1 drawn from a uniform random distribution
   double posDep = 0.9 + n.rand_uniform()*(1.1-0.9);
   
+  // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
   int nHits=n.BinomFluct(Nph,g1*posDep), Nphe = 0;
+  
+  // Initialize the pulse area and spike count variables
   double pulseArea = 0., spike = 0., prob;
+  
+  // If single photo-electron efficiency is under 1 and the threshold is above 0 (some phe will be below threshold)
   if ( sPEthr > 0. ) {
+    // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
+      // generate photo electron, integer count and area
       double phe1 = n.rand_gauss(1.,sPEres); Nphe++;
       prob = n.rand_uniform();
+      // zero the area if random draw determines it wouldn't have been observed.
       if ( prob > sPEeff ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
+      // Generate a double photo electron if random draw allows it
       double phe2 = 0.;
       if ( n.rand_uniform() < P_dphe ) {
+	// generate area and increment the photo-electron counter
 	phe2 = n.rand_gauss(1.,sPEres); Nphe++;
+	// zero the area if phe wouldn't have been observed
 	if ( n.rand_uniform() > sPEeff && prob > sPEeff ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
+	// The dphe occurs simultaneously to the first one from the same source photon. If the first one is seen, so should be the second one
       }
+      // Save the phe area and increment the spike count (very perfect spike count) if area is above threshold
       if ( (phe1+phe2) > sPEthr ) { spike++; pulseArea += phe1 + phe2; }
     }
   }
-  else {
+  else { // apply just an empirical efficiency by itself, without direct area threshold
     Nphe = nHits + n.BinomFluct(nHits,P_dphe);
     pulseArea = n.rand_gauss(n.BinomFluct(Nphe,1.-(1.-sPEeff)/(1.+P_dphe)),sPEres*sqrt(Nphe));
     spike = (double)nHits;
@@ -170,9 +185,9 @@ vector<double> NESTcalc::GetS1 ( int Nph ) {
     prob = numer / denom;
   } else prob = 0.; if ( spike > 10 ) prob = 1.;
   
-  if ( n.rand_uniform() < prob )
+  if ( n.rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
-  else {
+  else { // some of these are set to -1 to flag them as having been below threshold
     //scintillation[0] *= -1.;
     //scintillation[1] *= -1.;
     scintillation[2] *= -1.;
@@ -212,7 +227,7 @@ vector<double> NESTcalc::GetS2 ( int Ne ) {
   double NphdC= pulseAreaC/ (1.+P_dphe);
   
   double S2b = n.rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
-  double S2bc= S2b / exp(-driftTime/eLife_us);
+  double S2bc= S2b / exp(-driftTime/eLife_us); // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; ionization[1] = Nph;
   ionization[2] = nHits; ionization[3] = Nphe;

@@ -14,6 +14,7 @@
 #include <NEST.hh>
 #include <TestSpectra.hh>
 #include <float.h>
+#include <detector.hh>
 #include <iostream>
 
 using namespace std;
@@ -128,8 +129,6 @@ int main ( int argc, char** argv ) {
 vector<double> GetS1 ( int Nph, NESTcalc& nc ) {
   
   vector<double> scintillation(8);  // return vector
-  int coinLevel = 3,numPMTs = 100;
-  double g1 = 0.10, sPEres = 0.5, P_dphe = 0.2, sPEeff = 0.92, sPEthr = 0.25, noise[2] = {0.0,0.1};
   
   // Add some variability in g1 drawn from a uniform random distribution
   double posDep = 0.9 + nc.rand_uniform()*(1.1-0.9);
@@ -206,9 +205,9 @@ vector<double> GetS1 ( int Nph, NESTcalc& nc ) {
 vector<double> GetS2 ( int Ne, NESTcalc& nc ) {
   
   vector<double> ionization(8);
-  double alpha = 0.137, beta = 177., gamma = 45.7, eLife_us = 500., P_dphe = 0.2, sPEres = 0.5, Fano = 3., S2botTotRatio = 0.4;
-  double driftTime = 0.0 + nc.rand_uniform()*(500.-0.0);
-  double g1_gas = 0.10, gasGap_cm = 0.5,p_bar = 1.5,E_gas=10.,epsilon=1.85/1.00126;
+  double alpha = 0.137, beta = 177., gamma = 45.7;
+  double driftTime = dt_min + nc.rand_uniform()*(dt_max-dt_min);
+  double epsilon = 1.85 / 1.00126;
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
@@ -219,7 +218,7 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc ) {
   double elYield = Nee*
     (alpha*E_gas*1000.-beta*p_bar-gamma)*
     gasGap_cm; // arXiv:1207.2292
-  int Nph = int(floor(nc.rand_gauss(elYield,sqrt(Fano*elYield))+0.5));
+  int Nph = int(floor(nc.rand_gauss(elYield,sqrt(s2Fano*elYield))+0.5));
   int nHits = nc.BinomFluct(Nph,g1_gas);
   int Nphe = nHits + nc.BinomFluct(nHits,P_dphe);
   double pulseArea=nc.rand_gauss(Nphe,sPEres*sqrt(Nphe));

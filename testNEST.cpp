@@ -24,6 +24,7 @@ using namespace NEST;
  * 
  */
 
+double SetDriftVelocity ( double T, double F );
 double nCr ( double n, double r );
 vector<double> GetS1 ( int Nph,NESTcalc& nc );
 vector<double> GetS2 ( int Ne, NESTcalc& nc );
@@ -250,5 +251,57 @@ double nCr ( double n, double r ) {
   
   return Factorial(n) /
     ( Factorial(r) * Factorial(n-r) );
+  
+}
+
+double SetDriftVelocity ( double Kelvin, double eField ) {
+  
+  double speed = 0.0; // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
+  int i, j; double vi, vf, slope, Ti, Tf, offset;
+  
+  double polyExp[10][7] = { { -3.1046, 27.037, -2.1668, 193.27, -4.8024, 646.04, 9.2471 },
+			    { -2.7394, 22.760, -1.7775, 222.72, -5.0836, 724.98, 8.7189 },
+			    { -2.3646, 164.91, -1.6984, 21.473, -4.4752, 1202.2, 7.9744 },
+			    { -1.8097, 235.65, -1.7621, 36.855, -3.5925, 1356.2, 6.7865 },
+			    { -1.5746, 85.966, .084954, 62.912, -1.1144, 1344.7, 2.7590 },
+			    { -1.5389, 26.602, -.44589, 196.08, -1.1516, 1810.8, 2.8912 },
+			    { -1.5000, 28.510, -.21948, 183.49, -1.4320, 1652.9, 2.884 },
+			    { -1.1781, 49.072, -1.3008, 3438.4, -.14817, 312.12, 2.8049 },
+			    {  1.2466, 85.975, -.88005, 918.57, -3.0085, 27.568, 2.3823 },
+			    { 334.60 , 37.556, 0.92211, 345.27, -338.00, 37.346, 1.9834 } };
+  
+  double Temperatures[10] = { 100., 120., 140., 155., 163., 165., 167., 184., 200., 230. };
+  
+  if ( Kelvin >= Temperatures[0] && Kelvin < Temperatures[1] ) i = 0;
+  else if ( Kelvin >= Temperatures[1] && Kelvin < Temperatures[2] ) i = 1;
+  else if ( Kelvin >= Temperatures[2] && Kelvin < Temperatures[3] ) i = 2;
+  else if ( Kelvin >= Temperatures[3] && Kelvin < Temperatures[4] ) i = 3;
+  else if ( Kelvin >= Temperatures[4] && Kelvin < Temperatures[5] ) i = 4;
+  else if ( Kelvin >= Temperatures[5] && Kelvin < Temperatures[6] ) i = 5;
+  else if ( Kelvin >= Temperatures[6] && Kelvin < Temperatures[7] ) i = 6;
+  else if ( Kelvin >= Temperatures[7] && Kelvin < Temperatures[8] ) i = 7;
+  else if ( Kelvin >= Temperatures[8] && Kelvin <= Temperatures[9] ) i = 8;
+  else {
+    cout << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
+  }
+  
+  j = i + 1;
+  Ti = Temperatures[i];
+  Tf = Temperatures[j];
+  vi = polyExp[i][0]*exp(-eField/polyExp[i][1])+polyExp[i][2]*exp(-eField/polyExp[i][3])+polyExp[i][4]*exp(-eField/polyExp[i][5])+polyExp[i][6];
+  vf = polyExp[j][0]*exp(-eField/polyExp[j][1])+polyExp[j][2]*exp(-eField/polyExp[j][3])+polyExp[j][4]*exp(-eField/polyExp[j][5])+polyExp[j][6];
+  if ( Kelvin == Ti ) return vi;
+  if ( Kelvin == Tf ) return vf;
+  if ( vf < vi ) {
+    offset = (sqrt((Tf*(vf-vi)-Ti*(vf-vi)-4.)*(vf-vi))+sqrt(Tf-Ti)*(vf+vi))/(2.*sqrt(Tf-Ti));
+    slope = -(sqrt(Tf-Ti)*sqrt((Tf*(vf-vi)-Ti*(vf-vi)-4.)*(vf-vi))-(Tf+Ti)*(vf-vi))/(2.*(vf-vi));
+    speed = 1. / ( Kelvin - slope ) + offset;
+  }
+  else {
+    slope = ( vf - vi ) / ( Tf - Ti );
+    speed = slope * ( Kelvin - Ti ) + vi;
+  }
+  
+  return speed;
   
 }

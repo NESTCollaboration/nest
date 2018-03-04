@@ -115,7 +115,7 @@ int main ( int argc, char** argv ) {
 	if (keV < eMin) keV = eMin;
       }
       
-      NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field );
+      NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field ); cout << SetDriftVelocity ( T_Kelvin, field ) << endl;
       vector<double> scint = GetS1(int(floor(yields.PhotonYield+0.5)),n);
       printf("%.6f\t%.6f\t%.6f\t", keV, yields.PhotonYield, yields.ElectronYield);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
@@ -259,18 +259,19 @@ double SetDriftVelocity ( double Kelvin, double eField ) {
   double speed = 0.0; // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j; double vi, vf, slope, Ti, Tf, offset;
   
-  double polyExp[10][7] = { { -3.1046, 27.037, -2.1668, 193.27, -4.8024, 646.04, 9.2471 },
-			    { -2.7394, 22.760, -1.7775, 222.72, -5.0836, 724.98, 8.7189 },
-			    { -2.3646, 164.91, -1.6984, 21.473, -4.4752, 1202.2, 7.9744 },
-			    { -1.8097, 235.65, -1.7621, 36.855, -3.5925, 1356.2, 6.7865 },
-			    { -1.5746, 85.966, .084954, 62.912, -1.1144, 1344.7, 2.7590 },
-			    { -1.5389, 26.602, -.44589, 196.08, -1.1516, 1810.8, 2.8912 },
-			    { -1.5000, 28.510, -.21948, 183.49, -1.4320, 1652.9, 2.884 },
-			    { -1.1781, 49.072, -1.3008, 3438.4, -.14817, 312.12, 2.8049 },
-			    {  1.2466, 85.975, -.88005, 918.57, -3.0085, 27.568, 2.3823 },
-			    { 334.60 , 37.556, 0.92211, 345.27, -338.00, 37.346, 1.9834 } };
+  double polyExp[11][7] = { { -3.1046, 27.037, -2.1668, 193.27, -4.8024, 646.04, 9.2471 }, //100K
+			    { -2.7394, 22.760, -1.7775, 222.72, -5.0836, 724.98, 8.7189 }, //120
+			    { -2.3646, 164.91, -1.6984, 21.473, -4.4752, 1202.2, 7.9744 }, //140
+			    { -1.8097, 235.65, -1.7621, 36.855, -3.5925, 1356.2, 6.7865 }, //155
+			    { -1.6160, 187.45, -.49621, 40.877, -2.9240, 1390.4, 5.4803 }, //157
+			    { -1.5526, 88.057, 0.13884, 114.47, -1.1511, 1375.1, 2.7566 }, //163
+			    { -1.5389, 26.602, -.44589, 196.08, -1.1516, 1810.8, 2.8912 }, //165
+			    { -1.5000, 28.510, -.21948, 183.49, -1.4320, 1652.9, 2.884 }, //167
+			    { -1.1781, 49.072, -1.3008, 3438.4, -.14817, 312.12, 2.8049 }, //184
+			    {  1.2466, 85.975, -.88005, 918.57, -3.0085, 27.568, 2.3823 }, //200
+			    { 334.60 , 37.556, 0.92211, 345.27, -338.00, 37.346, 1.9834 } }; //230
   
-  double Temperatures[10] = { 100., 120., 140., 155., 163., 165., 167., 184., 200., 230. };
+  double Temperatures[11] = { 100., 120., 140., 155., 157., 163., 165., 167., 184., 200., 230. };
   
   if ( Kelvin >= Temperatures[0] && Kelvin < Temperatures[1] ) i = 0;
   else if ( Kelvin >= Temperatures[1] && Kelvin < Temperatures[2] ) i = 1;
@@ -280,7 +281,8 @@ double SetDriftVelocity ( double Kelvin, double eField ) {
   else if ( Kelvin >= Temperatures[5] && Kelvin < Temperatures[6] ) i = 5;
   else if ( Kelvin >= Temperatures[6] && Kelvin < Temperatures[7] ) i = 6;
   else if ( Kelvin >= Temperatures[7] && Kelvin < Temperatures[8] ) i = 7;
-  else if ( Kelvin >= Temperatures[8] && Kelvin <= Temperatures[9] ) i = 8;
+  else if ( Kelvin >= Temperatures[8] && Kelvin < Temperatures[9] ) i = 8;
+  else if ( Kelvin >= Temperatures[9] && Kelvin <= Temperatures[10] ) i = 9;
   else {
     cout << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
   }
@@ -288,6 +290,7 @@ double SetDriftVelocity ( double Kelvin, double eField ) {
   j = i + 1;
   Ti = Temperatures[i];
   Tf = Temperatures[j];
+  // functional form from http://zunzun.com
   vi = polyExp[i][0]*exp(-eField/polyExp[i][1])+polyExp[i][2]*exp(-eField/polyExp[i][3])+polyExp[i][4]*exp(-eField/polyExp[i][5])+polyExp[i][6];
   vf = polyExp[j][0]*exp(-eField/polyExp[j][1])+polyExp[j][2]*exp(-eField/polyExp[j][3])+polyExp[j][4]*exp(-eField/polyExp[j][5])+polyExp[j][6];
   if ( Kelvin == Ti ) return vi;

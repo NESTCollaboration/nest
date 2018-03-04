@@ -25,6 +25,7 @@ using namespace NEST;
  */
 
 double SetDriftVelocity ( double T, double F );
+double SetDensity ( double T );
 double nCr ( double n, double r );
 vector<double> GetS1 ( int Nph,NESTcalc& nc );
 vector<double> GetS2 ( int Ne, NESTcalc& nc );
@@ -115,7 +116,7 @@ int main ( int argc, char** argv ) {
 	if (keV < eMin) keV = eMin;
       }
       
-      NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field ); cout << SetDriftVelocity ( T_Kelvin, field ) << endl;
+      NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field );
       vector<double> scint = GetS1(int(floor(yields.PhotonYield+0.5)),n);
       printf("%.6f\t%.6f\t%.6f\t", keV, yields.PhotonYield, yields.ElectronYield);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
@@ -306,5 +307,18 @@ double SetDriftVelocity ( double Kelvin, double eField ) {
   }
   
   return speed;
+  
+}
+
+double SetDensity ( double Kelvin ) { // currently only for fixed pressure (saturated vapor pressure); will add pressure dependence later
+  
+  if ( Kelvin < 161.40 ) // solid Xenon
+    return 3.41; // from Yoo at 157K; other sources say 3.100 (Wikipedia, 'max') and 3.64 g/mL at unknown T's
+  
+  return 
+    2.9970938084691329E+02 * exp ( -8.2598864714323525E-02 * Kelvin ) - 1.8801286589442915E+06 * exp ( - pow ( ( Kelvin - 4.0820251276172212E+02 ) / 2.7863170223154846E+01, 2. ) )
+                                                                      - 5.4964506351743057E+03 * exp ( - pow ( ( Kelvin - 6.3688597345042672E+02 ) / 1.1225818853661815E+02, 2. ) )
+                                                                      + 8.3450538370682614E+02 * exp ( - pow ( ( Kelvin + 4.8840568924597342E+01 ) / 7.3804147172071107E+03, 2. ) )
+    - 8.3086310405942265E+02; // in grams per cubic centimeter based on zunzun fit to NIST data; will add gas later
   
 }

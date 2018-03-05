@@ -132,23 +132,57 @@ photonstream NESTcalc::GetPhotonTimes(/*inputs*/){
   
 }
 
-QuantaResult NESTcalc::GetQuanta(YieldResult yields){
-  //TODO by MATTHEW
+QuantaResult NESTcalc::GetQuanta ( YieldResult yields ) {
+  
   QuantaResult result;
-  result.photons = yields.PhotonYield; //fake, fix this
-  result.electrons = yields.ElectronYield;
-  return result;
+  
+  double NexONi = yields.ExcitonRatio;
+  double Nq_mean = yields.PhotonYield + yields.ElectronYield;
+  
+  int Nph= int(floor(yields.PhotonYield+0.5));
+  int Ne = int(floor(yields.ElectronYield+0.5));
+  int Nq_actual = Nph + Ne;
+  
+  int Ni = int(floor(Nq_actual/(1.+NexONi)+0.5));
+  int Nex = Nq_actual - Ni;
+  
+  if ( Nex < 0 ) Nex = 0;
+  if ( Ni < 0 ) Ni = 0;
+  if ( Nex > Nq_actual ) Nex = Nq_actual;
+  if ( Ni > Nq_actual ) Ni = Nq_actual;
+  
+  double elecFrac = yields.ElectronYield / Nq_mean;
+  if ( elecFrac > 1. ) elecFrac = 1.;
+  if ( elecFrac < 0. ) elecFrac = 0.;
+  
+  double recombProb = 1.-(NexONi+1.)*elecFrac;
+  if ( recombProb < 0. ) recombProb = 0.;
+  if ( recombProb > 1. ) recombProb = 1.;
+  
+  if ( Nph < 0 ) Nph = 0;
+  if ( Ne < 0 ) Ne = 0;
+  if ( Ne > Ni ) Ne = Ni;
+  if ( Nph < Nex ) Nph = Nex;
+  
+  if ( (Nph+Ne) != (Nex+Ni) )
+    cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
+  
+  result.photons =Nph;
+  result.electrons=Ne;
+  
+  return result; //quanta returned with recomb fluctuations
+  
 }
 
 YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield ) {
   
   double massNum = 4.; //TODO: make this flexible
   const double m3 = 2., m4 = 2., m6 = 0.;
-  double Ne = -999; double Nph = -999, m8 = 2.;
+  double Ne = -999; double Nph = -999; double NexONi = -999; double m8 = 2., L = 1.;
   const double deltaT_ns_halflife = 154.4;
   
   double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
-  double alpha = 0.067366 + density * 0.039693, NexONi, Ni, Nex, elecFrac, recombProb, Nq, Ly, Qy, ThomasImel;
+  double alpha = 0.067366 + density * 0.039693, Ni, recombProb, Nq, Ly, Qy, ThomasImel, Nex, elecFrac;
   switch ( species ) {
   case NR:
   case WIMP:
@@ -164,10 +198,11 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       Ne = Qy * energy;
       Nph= Ly * energy;
       NexONi = 1.00*erf(0.01*energy);
+      L = ( Nq / energy ) * Wq_eV * 1e-3;
     } break;
   case ion:
     {
-      double L = 0.96446 / (1. + pow(massNum * massNum / 19227., 0.99199));
+      L = 0.96446 / (1. + pow(massNum * massNum / 19227., 0.99199));
       if (massNum == 4) L = 0.56136 * pow(energy, 0.056972);
       ThomasImel = 0.0067 / pow(1. + pow(dfield / 95.768, 8.5673), 0.060318) * pow(density / 2.857, 0.3);
       Nq = 1e3 * L * energy / Wq_eV;
@@ -228,21 +263,22 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   }
   
-  assert(Ne!=-999 && Nph !=-999);
+  assert(Ne!=-999 && Nph!=-999
+	 && NexONi!=-999);
   //if (Nph> m2 * energy) Nph= m2 * energy;
   //if (Ne > m2 * energy) Ne = m2 * energy;
-  if (Nph <0.) Nph =0.;
-  if (Ne < 0.) Ne = 0.;
+  if ( Nph < 0.) Nph = 0.;
+  if ( Ne < 0.) Ne = 0.;
+  if ( NexONi < 0. ) NexONi = 0.;
+  if ( L < 0. ) L = 0.;
+  if ( L > 1. ) L = 1.; //Lindhard Factor
   
   YieldResult result;
-  result.PhotonYield =Nph;
+  result.PhotonYield = Nph;
   result.ElectronYield=Ne;
-  
-  Ni = Nq/(1.+NexONi); Nex = Nq - Ni;
-  elecFrac = Ne / Nq;
-  recombProb = 1.-(NexONi+1.)*elecFrac;
-  
-  return result;
+  result.ExcitonRatio =NexONi;
+  result.Lindhard = L;
+  return result; //everything needed to calculate fluctuations
   
 }
 

@@ -117,10 +117,11 @@ int main ( int argc, char** argv ) {
       }
       
       NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field );
-      vector<double> scint = GetS1(int(floor(yields.PhotonYield+0.5)),n);
-      printf("%.6f\t%.6f\t%.6f\t", keV, yields.PhotonYield, yields.ElectronYield);
+      NEST::QuantaResult quanta = n.GetQuanta ( yields );
+      vector<double> scint = GetS1(quanta.photons,n);
+      printf("%.6f\t%d\t%d\t",keV,quanta.photons,quanta.electrons);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
-      scint = GetS2(int(floor(yields.ElectronYield+0.5)),n);
+      scint = GetS2(quanta.electrons,n);
       printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
     }
     

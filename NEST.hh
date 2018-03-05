@@ -28,13 +28,14 @@ namespace NEST {
         Kr83m = 10,
 
     } INTERACTION_TYPE;
-    
-
-    struct YieldResult{
-        double PhotonYield;
-        double ElectronYield;
-    };
-    
+  
+  struct YieldResult {
+    double PhotonYield;
+    double ElectronYield;
+    double ExcitonRatio;
+    double Lindhard;
+  };
+  
     struct QuantaResult{
         int photons;
         int electrons;

@@ -182,7 +182,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   const double deltaT_ns_halflife = 154.4;
   
   double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
-  double alpha = 0.067366 + density * 0.039693, Ni, recombProb, Nq, Ly, Qy, ThomasImel, Nex, elecFrac;
+  double alpha = 0.067366 + density * 0.039693, Ni, recombProb, Nq, Ly, Qy, ThomasImel;
   switch ( species ) {
   case NR:
   case WIMP:
@@ -267,8 +267,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
 	 && NexONi!=-999);
   //if (Nph> m2 * energy) Nph= m2 * energy;
   //if (Ne > m2 * energy) Ne = m2 * energy;
-  if ( Nph < 0.) Nph = 0.;
-  if ( Ne < 0.) Ne = 0.;
+  if ( Nph < 0. ) Nph = 0.; if ( Ne < 0. ) Ne = 0.;
   if ( NexONi < 0. ) NexONi = 0.;
   if ( L < 0. ) L = 0.;
   if ( L > 1. ) L = 1.; //Lindhard Factor

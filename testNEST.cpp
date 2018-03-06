@@ -24,11 +24,11 @@ using namespace NEST;
  * 
  */
 
-double SetDriftVelocity ( double T, double F );
+double SetDriftVelocity ( double T, double F ); double vD;
 double SetDensity ( double T );
 double nCr ( double n, double r );
-vector<double> GetS1 ( int Nph,NESTcalc& nc );
-vector<double> GetS2 ( int Ne, NESTcalc& nc );
+vector<double> GetS1 ( int Nph,NESTcalc& nc, double dz );
+vector<double> GetS2 ( int Ne, NESTcalc& nc, double dz );
 
 int main ( int argc, char** argv ) {
   
@@ -37,10 +37,10 @@ int main ( int argc, char** argv ) {
   
   if (argc < 7)
   {
-    cout << "This program takes 6 (or 7) inputs." << endl << endl;
-    cout << "numEvts type_interaction E_min[keV] E_max[keV] density[g/cm^3] field_drift[V/cm] {optional:seed}" << endl;
+    cout << "This program takes 6 (or 7) inputs, with Z position in cm from bottom of detector." << endl << endl;
+    cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] z-position[cm] {optional:seed}" << endl;
     cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl << endl;
-    cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] density[g/cm^3] field_drift[V/cm] {optional:seed}" << endl;
+    cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] z-position[cm] {optional:seed}" << endl;
     return 0;
   }
   unsigned long int numEvts = atoi(argv[1]);
@@ -69,13 +69,14 @@ int main ( int argc, char** argv ) {
 
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
-  double rho = atof(argv[5]);
-  double field = atof(argv[6]);
+  double rho = SetDensity(T_Kelvin);
+  double field = atof(argv[5]); vD = SetDriftVelocity(T_Kelvin,field);
+  double pos_z = atof(argv[6]); 
 
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
 
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
     
@@ -116,12 +117,17 @@ int main ( int argc, char** argv ) {
 	if (keV < eMin) keV = eMin;
       }
       
-      NEST::YieldResult yields = n.GetYields ( type_num, keV, rho, field );
-      NEST::QuantaResult quanta = n.GetQuanta ( yields );
-      vector<double> scint = GetS1(quanta.photons,n);
-      printf("%.6f\t%d\t%d\t",keV,quanta.photons,quanta.electrons);
+      double dz_max = liquidBorder - vD * dt_min; // mm - (mm/us)*us = mm
+      double dz_min = liquidBorder - vD * dt_max; // ditto
+      if ( atof(argv[6]) == -1. )
+	pos_z = ( dz_min + ( dz_max - dz_min ) * n.rand_uniform() ) * 0.1; //cm
+      
+      NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
+      NEST::QuantaResult quanta = n.GetQuanta(yields);
+      vector<double> scint = GetS1(quanta.photons,n,pos_z);
+      printf("%.6f\t%.6f\t%d\t%d\t",keV,pos_z,quanta.photons,quanta.electrons);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
-      scint = GetS2(quanta.electrons,n);
+      scint = GetS2(quanta.electrons,n,pos_z);
       printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
     }
     
@@ -129,12 +135,21 @@ int main ( int argc, char** argv ) {
     
 }
 
-vector<double> GetS1 ( int Nph, NESTcalc& nc ) {
+vector<double> GetS1 ( int Nph, NESTcalc& nc, double dz ) {
   
   vector<double> scintillation(8);  // return vector
   
-  // Add some variability in g1 drawn from a uniform random distribution
-  double posDep = 0.9 + nc.rand_uniform()*(1.1-0.9);
+  // Add some variability in g1 drawn from a polynomial spline fit
+  double posDep = s1poly[0] + s1poly[1] * dz +
+    s1poly[2] * pow(dz,2.)+
+    s1poly[3] * pow(dz,3.)+
+    s1poly[4] * pow(dz,4.);
+  double dz_center = liquidBorder - vD * dtCntr; //go from t to z
+  posDep /= s1poly[0]+
+    s1poly[1] * pow(dz_center/10.,1.)+
+    s1poly[2] * pow(dz_center/10.,2.)+
+    s1poly[3] * pow(dz_center/10.,3.)+
+    s1poly[4] * pow(dz_center/10.,4.); //factor 10 for mm to cm conversion
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
   int nHits=nc.BinomFluct(Nph,g1*posDep), Nphe = 0;
@@ -205,11 +220,11 @@ vector<double> GetS1 ( int Nph, NESTcalc& nc ) {
   
 }
 
-vector<double> GetS2 ( int Ne, NESTcalc& nc ) {
+vector<double> GetS2 ( int Ne, NESTcalc& nc, double dz ) {
   
   vector<double> ionization(8);
   double alpha = 0.137, beta = 177., gamma = 45.7;
-  double driftTime = dt_min + nc.rand_uniform()*(dt_max-dt_min);
+  double driftTime = ( liquidBorder - dz*10. ) / vD;
   double epsilon = 1.85 / 1.00126;
   
   double E_liq = E_gas / epsilon; //kV per cm

@@ -13,7 +13,7 @@ int numPMTs = 100; //For coincidence calculation
 
 //S1 PDE quartic polynomial for function of z
 //s1polA + s1polB*z[cm] + s1polC*z^2+... (QE included, for binomial distribution)
-double s1poly[5] = {1.,0.,0.,0.,0.}; // unitless, 1.000 at detector center
+double s1poly[5] = {1.1,-0.002,0.,0.,0.}; // unitless, 1.000 at detector center
 
 //Drift electric field as function of Z in cm
 //The coefficients for a quintic poly, in rising order
@@ -30,7 +30,7 @@ double eLife_us = 500.; //the drift electron mean lifetime in micro-seconds
 
  // Thermodynamic Properties
 
-double T_Kelvin = 175.; //for liquid drift speed calculation
+double T_Kelvin = 177.58957091275; //for liquid drift speed calculation
 double p_bar = 1.5; //gas pressure in units of bars, it controls S2 size
 
  // Data Analysis Parameters and Geometry

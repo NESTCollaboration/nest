@@ -28,12 +28,12 @@ double SetDriftVelocity ( double T, double F ); double vD;
 double SetDensity ( double T );
 double nCr ( double n, double r );
 vector<double> GetS1 ( int Nph,NESTcalc& nc, double dz );
-vector<double> GetS2 ( int Ne, NESTcalc& nc, double dz );
+vector<double> GetS2 ( int Ne, NESTcalc& nc, double dt );
 
 int main ( int argc, char** argv ) {
   
   NEST::NESTcalc n;
-//  double xMin, xMax, yMax, FuncValue;
+  double pos_z, driftTime;
   
   if (argc < 7)
   {
@@ -71,12 +71,11 @@ int main ( int argc, char** argv ) {
   double eMax = atof(argv[4]);
   double rho = SetDensity(T_Kelvin);
   double field = atof(argv[5]); vD = SetDriftVelocity(T_Kelvin,field);
-  double pos_z = atof(argv[6]); 
-
+  
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
 
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
     
@@ -117,17 +116,20 @@ int main ( int argc, char** argv ) {
 	if (keV < eMin) keV = eMin;
       }
       
-      double dz_max = liquidBorder - vD * dt_min; // mm - (mm/us)*us = mm
-      double dz_min = liquidBorder - vD * dt_max; // ditto
-      if ( atof(argv[6]) == -1. )
+      if ( atof(argv[6]) == -1. ) { // -1 means default, random location mode
+	double dz_max = liquidBorder - vD * dt_min; // mm - (mm/us)*us = mm
+	double dz_min = liquidBorder - vD * dt_max; // ditto
 	pos_z = ( dz_min + ( dz_max - dz_min ) * n.rand_uniform() ) * 0.1; //cm
+      }
+      else pos_z = atof(argv[6]);
+      driftTime = ( liquidBorder - pos_z*10. ) / vD;
       
       NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
       NEST::QuantaResult quanta = n.GetQuanta(yields);
       vector<double> scint = GetS1(quanta.photons,n,pos_z);
-      printf("%.6f\t%.6f\t%d\t%d\t",keV,pos_z,quanta.photons,quanta.electrons);
+      printf("%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,driftTime,pos_z,quanta.photons,quanta.electrons);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
-      scint = GetS2(quanta.electrons,n,pos_z);
+      scint = GetS2(quanta.electrons,n,driftTime);
       printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
     }
     
@@ -195,13 +197,19 @@ vector<double> GetS1 ( int Nph, NESTcalc& nc, double dz ) {
   scintillation[4] = Nphd; scintillation[5] = NphdC;
   scintillation[6] = spike; scintillation[7] = spikeC;
   
-  if ( spike >= coinLevel ) { double numer, denom;
-    for ( int i = spike; i > 0; i-- ) {
-      denom += nCr ( numPMTs, i );
-      if ( i >= coinLevel ) numer += nCr ( numPMTs, i );
+  if ( spike > 10 )
+    prob = 1.;
+  else {
+    if ( spike >= coinLevel ) { double numer, denom;
+      for ( int i = spike; i > 0; i-- ) {
+	denom += nCr ( numPMTs, i );
+	if ( i >= coinLevel ) numer += nCr ( numPMTs, i );
+      }
+      prob = numer / denom;
     }
-    prob = numer / denom;
-  } else prob = 0.; if ( spike > 10 ) prob = 1.;
+    else
+      prob = 0.;
+  }
   
   if ( nc.rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
@@ -220,18 +228,17 @@ vector<double> GetS1 ( int Nph, NESTcalc& nc, double dz ) {
   
 }
 
-vector<double> GetS2 ( int Ne, NESTcalc& nc, double dz ) {
+vector<double> GetS2 ( int Ne, NESTcalc& nc, double dt ) {
   
   vector<double> ionization(8);
   double alpha = 0.137, beta = 177., gamma = 45.7;
-  double driftTime = ( liquidBorder - dz*10. ) / vD;
   double epsilon = 1.85 / 1.00126;
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
   if ( ExtEff > 1. ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
-  int Nee = nc.BinomFluct(Ne,ExtEff*exp(-driftTime/eLife_us));
+  int Nee = nc.BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
   
   double elYield = Nee*
     (alpha*E_gas*1000.-beta*p_bar-gamma)*
@@ -240,12 +247,12 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc, double dz ) {
   int nHits = nc.BinomFluct(Nph,g1_gas);
   int Nphe = nHits + nc.BinomFluct(nHits,P_dphe);
   double pulseArea=nc.rand_gauss(Nphe,sPEres*sqrt(Nphe));
-  double pulseAreaC= pulseArea/exp(-driftTime/eLife_us);
+  double pulseAreaC= pulseArea/exp(-dt/eLife_us);
   double Nphd = pulseArea / (1.+P_dphe);
   double NphdC= pulseAreaC/ (1.+P_dphe);
   
   double S2b = nc.rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
-  double S2bc= S2b / exp(-driftTime/eLife_us); // for detectors using S2 bottom-only in their analyses
+  double S2bc= S2b / exp(-dt/eLife_us); // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; ionization[1] = Nph;
   ionization[2] = nHits; ionization[3] = Nphe;

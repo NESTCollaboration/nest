@@ -265,8 +265,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   
   assert(Ne!=-999 && Nph!=-999
 	 && NexONi!=-999);
-  //if (Nph> m2 * energy) Nph= m2 * energy;
-  //if (Ne > m2 * energy) Ne = m2 * energy;
+  if ( Nph> energy / 7e-3 ) Nph= energy / 7e-3; //yields can never exceed 1 / [ W ~ 7 eV ]
+  if ( Ne > energy / 7e-3 ) Ne = energy / 7e-3;
   if ( Nph < 0. ) Nph = 0.; if ( Ne < 0. ) Ne = 0.;
   if ( NexONi < 0. ) NexONi = 0.;
   if ( L < 0. ) L = 0.;

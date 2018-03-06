@@ -33,7 +33,7 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc, double dt );
 int main ( int argc, char** argv ) {
   
   NEST::NESTcalc n;
-  double pos_z, driftTime;
+  double pos_z, driftTime, field;
   
   if (argc < 7)
   {
@@ -70,12 +70,11 @@ int main ( int argc, char** argv ) {
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
   double rho = SetDensity(T_Kelvin);
-  double field = atof(argv[5]); vD = SetDriftVelocity(T_Kelvin,field);
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
 
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
     
@@ -122,12 +121,25 @@ int main ( int argc, char** argv ) {
 	pos_z = ( dz_min + ( dz_max - dz_min ) * n.rand_uniform() ) * 0.1; //cm
       }
       else pos_z = atof(argv[6]);
+      
+      if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
+        field = efpoly[0] + efpoly[1] * pos_z +
+          efpoly[2] * pow(pos_z,2.)+
+          efpoly[3] * pow(pos_z,3.)+
+          efpoly[4] * pow(pos_z,4.)+
+	  efpoly[5] * pow(pos_z,5.); // note sixth term: this one is quintic
+      }
+      else field = atof(argv[5]);
+      
+      if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
+      
+      vD = SetDriftVelocity(T_Kelvin,field);
       driftTime = ( liquidBorder - pos_z*10. ) / vD;
       
       NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
       NEST::QuantaResult quanta = n.GetQuanta(yields);
       vector<double> scint = GetS1(quanta.photons,n,pos_z);
-      printf("%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,driftTime,pos_z,quanta.photons,quanta.electrons);
+      printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
       scint = GetS2(quanta.electrons,n,driftTime);
       printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);

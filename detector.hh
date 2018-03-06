@@ -17,7 +17,7 @@ double s1poly[5] = {1.1,-0.002,0.,0.,0.}; // unitless, 1.000 at detector center
 
 //Drift electric field as function of Z in cm
 //The coefficients for a quintic poly, in rising order
-double efpoly[6] = {1.,0.,0.,0.,0.,0.}; // in V/cm
+double efpoly[6] = {352.49,5.4027,0.01991,0.,0.,0.}; // in V/cm
 
  // Ionization and Secondary Scintillation (S2) parameters
 

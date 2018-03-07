@@ -137,7 +137,7 @@ int main ( int argc, char** argv ) {
       driftTime = ( liquidBorder - pos_z*10. ) / vD;
       
       NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
-      NEST::QuantaResult quanta = n.GetQuanta(yields);
+      NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
       vector<double> scint = GetS1(quanta.photons,n,pos_z);
       printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons);
       printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);

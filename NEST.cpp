@@ -81,7 +81,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy, do
 
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield);
-  result.quanta = GetQuanta(result.yields);
+  result.quanta=GetQuanta(result.yields,density);
   result.photon_times = GetPhotonTimes(/*stuff*/);
   return result;
 
@@ -132,19 +132,34 @@ photonstream NESTcalc::GetPhotonTimes(/*inputs*/){
   
 }
 
-QuantaResult NESTcalc::GetQuanta ( YieldResult yields ) {
+QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   
   QuantaResult result;
+  int Nq_actual, Ne, Nph, Ni, Nex;
   
-  double NexONi = yields.ExcitonRatio;
+  double NexONi = yields.ExcitonRatio; double alf = 1./(1.+NexONi);
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
   
-  int Nph= int(floor(yields.PhotonYield+0.5));
-  int Ne = int(floor(yields.ElectronYield+0.5));
-  int Nq_actual = Nph + Ne;
+  if ( yields.Lindhard == 1. ) {
+    
+    double Fano = 0.12707-0.029623*density- //Fano factor is  << 1
+      0.0057042*pow(density,2.)+ //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
+      0.0015957*pow(density,3.); //to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
+    Nq_actual = int(floor(rand_gauss(Nq_mean,sqrt(Fano*Nq_mean))+0.5));
+    if ( Nq_actual < 0 ) Nq_actual = 0;
+    
+    Ni = BinomFluct(Nq_actual,alf);
+    Nex= Nq_actual - Ni;
+    
+  }
   
-  int Ni = int(floor(Nq_actual/(1.+NexONi)+0.5));
-  int Nex = Nq_actual - Ni;
+  else {
+    
+    Ni = poisson_draw(Nq_mean*alf);
+    Nex= poisson_draw(Nq_mean*NexONi*alf);
+    Nq_actual = Nex + Ni;
+    
+  }
   
   if ( Nex < 0 ) Nex = 0;
   if ( Ni < 0 ) Ni = 0;
@@ -159,10 +174,13 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields ) {
   if ( recombProb < 0. ) recombProb = 0.;
   if ( recombProb > 1. ) recombProb = 1.;
   
-  if ( Nph < 0 ) Nph = 0;
-  if ( Ne < 0 ) Ne = 0;
-  if ( Ne > Ni ) Ne = Ni;
+  Nph = Nex + BinomFluct(Ni,recombProb);
   if ( Nph < Nex ) Nph = Nex;
+  if ( Nph > Nq_actual ) Nph = Nq_actual;
+  
+  Ne = Nq_actual - Nph;
+  if ( Ne < 0 ) Ne = 0;
+  if ( Ne > Ni) Ne =Ni;
   
   if ( (Nph+Ne) != (Nex+Ni) )
     cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";

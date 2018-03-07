@@ -74,7 +74,7 @@ namespace NEST {
         double PhotonTime(INTERACTION_TYPE species,bool exciton);
         photonstream GetPhotonTimes(/*inputs*/);
         YieldResult GetYields( INTERACTION_TYPE species, double energy, double density, double dfield );
-        QuantaResult GetQuanta(YieldResult yields);
+      QuantaResult GetQuanta(YieldResult yields, double density);
         void SetRandomSeed(unsigned long int);
 
     };

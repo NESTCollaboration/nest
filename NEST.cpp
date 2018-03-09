@@ -174,13 +174,18 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb < 0. ) recombProb = 0.;
   if ( recombProb > 1. ) recombProb = 1.;
   
-  Nph = Nex + BinomFluct(Ni,recombProb);
-  if ( Nph < Nex ) Nph = Nex;
-  if ( Nph > Nq_actual ) Nph = Nq_actual;
+  double cc = 0.06, bb = 0.425;
+  double aa = cc/pow(1.-bb,2.);
+  double omega = -aa*pow(recombProb-bb,2.)+cc;
   
-  Ne = Nq_actual - Nph;
+  double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
+  Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
   if ( Ne > Ni) Ne =Ni;
+  
+  Nph = Nq_actual - Ne;
+  if ( Nph > Nq_actual ) Nph = Nq_actual;
+  if ( Nph < Nex ) Nph = Nex;
   
   if ( (Nph+Ne) != (Nex+Ni) )
     cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
@@ -299,10 +304,10 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   
 }
 
-void NESTcalc::SetRandomSeed(unsigned long int s){
+void NESTcalc::SetRandomSeed ( unsigned long int s ) {
   rng.seed(s);
 }
 
-NESTcalc::NESTcalc() {
+NESTcalc::NESTcalc ( ) {
   rng.seed(0);
 }

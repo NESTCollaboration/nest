@@ -174,7 +174,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb < 0. ) recombProb = 0.;
   if ( recombProb > 1. ) recombProb = 1.;
   
-  double cc = 0.06, bb = 0.425;
+  double cc = 0.0585, bb = 0.50;
   double aa = cc/pow(1.-bb,2.);
   double omega = -aa*pow(recombProb-bb,2.)+cc;
   

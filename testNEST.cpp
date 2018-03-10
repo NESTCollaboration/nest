@@ -166,7 +166,7 @@ vector<double> GetS1 ( int Nph, NESTcalc& nc, double dz ) {
     s1poly[4] * pow(dz_center/10.,4.); //factor 10 for mm to cm conversion
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
-  int nHits=nc.BinomFluct(Nph,g1*posDep), Nphe = 0;
+  int nHits=nc.BinomFluct(Nph,g1*posDep), Nphe = 0; if ( nHits >= numPMTs ) { sPEeff = 1.0; sPEthr = 0.0; }
   
   // Initialize the pulse area and spike count variables
   double pulseArea = 0., spike = 0., prob;
@@ -268,8 +268,14 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc, double dt ) {
   
   ionization[0] = Nee; ionization[1] = Nph;
   ionization[2] = nHits; ionization[3] = Nphe;
-  ionization[4] = pulseArea; ionization[5] = pulseAreaC;
-  ionization[6] = Nphd; ionization[7] = NphdC;
+  if ( s2_thr >= 0 ) {
+    ionization[4] = pulseArea; ionization[5] = pulseAreaC;
+    ionization[6] = Nphd; ionization[7] = NphdC;
+  }
+  else {
+    ionization[4] = S2b; ionization[5] = S2bc;
+    ionization[6] = S2b / (1.+P_dphe); ionization[7] = S2bc / (1.+P_dphe);
+  }
   
   return ionization;
   

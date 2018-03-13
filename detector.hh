@@ -12,10 +12,10 @@ int coinLevel= 2; //how many PMTs have to fire for an S1 to count
 int numPMTs = 89; //For coincidence calculation
 
 //S1 PDE quartic polynomial for function of z
-//s1polA + s1polB*z[cm] + s1polC*z^2+... (QE included, for binomial distribution)
+//s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binomial distribution)
 double s1poly[5] = {1.,0.,0.,0.,0.}; // unitless, 1.000 at detector center
 
-//Drift electric field as function of Z in cm
+//Drift electric field as function of Z in mm
 //The coefficients for a quintic poly, in rising order
 double efpoly[6] = {730.,0.,0.,0.,0.,0.}; // in V/cm
 
@@ -39,4 +39,4 @@ double dtCntr = 40.; //center of detector for S1 corrections, in usec.
 double dt_min = 20.; //minimum. Top of detector fiducial volume
 double dt_max = 60.; //maximum. Bottom of detector fiducial volume
 double liquidBorder = 150.; // mm not cm, literal liquid/gas border not gate (dt=0)
-double gasGap_cm = 0.25; //EL gap in cm, affecting both field and linear S2 term
+double gasGap_mm = 2.5; //EL gap in mm, affecting both field and linear S2 term

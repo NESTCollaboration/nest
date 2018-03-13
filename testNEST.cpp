@@ -246,7 +246,7 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc, double dt ) {
   double alpha = 0.137, beta = 177., gamma = 45.7;
   double epsilon = 1.85 / 1.00126;
   
-  double E_liq = E_gas / epsilon; //V per cm
+  double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
   if ( ExtEff > 1. ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
@@ -254,7 +254,7 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc, double dt ) {
   
   double elYield = Nee*
     (alpha*E_gas*1e3-beta*p_bar-gamma)*
-    gasGap_cm; // arXiv:1207.2292
+    gasGap_mm*0.1; // arXiv:1207.2292
   int Nph = int(floor(nc.rand_gauss(elYield,sqrt(s2Fano*elYield))+0.5));
   int nHits = nc.BinomFluct(Nph,g1_gas);
   int Nphe = nHits + nc.BinomFluct(nHits,P_dphe);

@@ -37,10 +37,10 @@ int main ( int argc, char** argv ) {
   
   if (argc < 7)
   {
-    cout << "This program takes 6 (or 7) inputs, with Z position in cm from bottom of detector." << endl << endl;
-    cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] z-position[cm] {optional:seed}" << endl;
+    cout << "This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector." << endl << endl;
+    cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
     cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl << endl;
-    cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] z-position[cm] {optional:seed}" << endl;
+    cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
     return 0;
   }
   unsigned long int numEvts = atoi(argv[1]);
@@ -72,9 +72,9 @@ int main ( int argc, char** argv ) {
   double rho = SetDensity(T_Kelvin);
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [cm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
 
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
     
@@ -117,7 +117,7 @@ int main ( int argc, char** argv ) {
 
     Z_NEW:
       if ( atof(argv[6]) == -1. ) // -1 means default, random location mode
-	pos_z = ( 0. + ( liquidBorder - 0. ) * n.rand_uniform() ) * 0.1; // initial guess
+	pos_z = 0. + ( liquidBorder - 0. ) * n.rand_uniform(); // initial guess
       else pos_z = atof(argv[6]);
       
       if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
@@ -132,7 +132,7 @@ int main ( int argc, char** argv ) {
       if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
       
       vD = SetDriftVelocity(T_Kelvin,field);
-      driftTime = ( liquidBorder - pos_z*10. ) / vD; // (mm - mm)/(mm/us) = us
+      driftTime = ( liquidBorder - pos_z ) / vD; // (mm - mm) / (mm / us) = us
       if ( (driftTime > dt_max || driftTime < dt_min) && atof(argv[6]) == -1. )
 	goto Z_NEW;
       
@@ -160,10 +160,10 @@ vector<double> GetS1 ( int Nph, NESTcalc& nc, double dz ) {
     s1poly[4] * pow(dz,4.);
   double dz_center = liquidBorder - vD * dtCntr; //go from t to z
   posDep /= s1poly[0]+
-    s1poly[1] * pow(dz_center/10.,1.)+
-    s1poly[2] * pow(dz_center/10.,2.)+
-    s1poly[3] * pow(dz_center/10.,3.)+
-    s1poly[4] * pow(dz_center/10.,4.); //factor 10 for mm to cm conversion
+    s1poly[1] * pow(dz_center,1.)+
+    s1poly[2] * pow(dz_center,2.)+
+    s1poly[3] * pow(dz_center,3.)+
+    s1poly[4] * pow(dz_center,4.); // Z is always in mm now never cm
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
   int nHits=nc.BinomFluct(Nph,g1*posDep), Nphe = 0; if ( nHits >= numPMTs ) { sPEeff = 1.0; sPEthr = 0.0; }
@@ -246,14 +246,14 @@ vector<double> GetS2 ( int Ne, NESTcalc& nc, double dt ) {
   double alpha = 0.137, beta = 177., gamma = 45.7;
   double epsilon = 1.85 / 1.00126;
   
-  double E_liq = E_gas / epsilon; //kV per cm
+  double E_liq = E_gas / epsilon; //V per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
   if ( ExtEff > 1. ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = nc.BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
   
   double elYield = Nee*
-    (alpha*E_gas*1000.-beta*p_bar-gamma)*
+    (alpha*E_gas*1e3-beta*p_bar-gamma)*
     gasGap_cm; // arXiv:1207.2292
   int Nph = int(floor(nc.rand_gauss(elYield,sqrt(s2Fano*elYield))+0.5));
   int nHits = nc.BinomFluct(Nph,g1_gas);

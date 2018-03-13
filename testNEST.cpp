@@ -114,12 +114,10 @@ int main ( int argc, char** argv ) {
 	if (keV > eMax) keV = eMax;
 	if (keV < eMin) keV = eMin;
       }
-      
-      if ( atof(argv[6]) == -1. ) { // -1 means default, random location mode
-	double dz_max = liquidBorder - vD * dt_min; // mm - (mm/us)*us = mm
-	double dz_min = liquidBorder - vD * dt_max; // ditto
-	pos_z = ( dz_min + ( dz_max - dz_min ) * n.rand_uniform() ) * 0.1; //cm
-      }
+
+    Z_NEW:
+      if ( atof(argv[6]) == -1. ) // -1 means default, random location mode
+	pos_z = ( 0. + ( liquidBorder - 0. ) * n.rand_uniform() ) * 0.1; // initial guess
       else pos_z = atof(argv[6]);
       
       if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
@@ -134,7 +132,9 @@ int main ( int argc, char** argv ) {
       if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
       
       vD = SetDriftVelocity(T_Kelvin,field);
-      driftTime = ( liquidBorder - pos_z*10. ) / vD;
+      driftTime = ( liquidBorder - pos_z*10. ) / vD; // (mm - mm)/(mm/us) = us
+      if ( (driftTime > dt_max || driftTime < dt_min) && atof(argv[6]) == -1. )
+	goto Z_NEW;
       
       NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
       NEST::QuantaResult quanta = n.GetQuanta(yields,rho);

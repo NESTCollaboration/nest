@@ -1,9 +1,9 @@
 
  // Primary Scintillation (S1) parameters
 
-double g1 = 0.0760; //phd per S1 photon in liquid at dtCntr (not phe)
+double g1 = 0.0760; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
 double sPEres = 0.58; //single phe resolution (Gaussian assumed)
-double sPEthr = 0.35; //POD threshold in phe
+double sPEthr = 0.35; //POD threshold in phe, usually used IN PLACE of sPEeff
 double sPEeff = 1.00; //actual efficiency, can be used in lieu of POD threshold
 double noise[2] = {0.0,0.0}; //baseline noise mean and width in PE (Gaussian)
 double P_dphe = 0.2; //chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
@@ -38,5 +38,5 @@ double p_bar = 2.14; //gas pressure in units of bars, it controls S2 size
 double dtCntr = 40.; //center of detector for S1 corrections, in usec.
 double dt_min = 20.; //minimum. Top of detector fiducial volume
 double dt_max = 60.; //maximum. Bottom of detector fiducial volume
-double liquidBorder = 150.; // mm
+double liquidBorder = 150.; // mm not cm, literal liquid/gas border not gate (dt=0)
 double gasGap_cm = 0.25; //EL gap in cm, affecting both field and linear S2 term

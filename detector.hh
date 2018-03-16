@@ -21,10 +21,10 @@ double efpoly[6] = {730.,0.,0.,0.,0.,0.}; // in V/cm
 
  // Ionization and Secondary Scintillation (S2) parameters
 
-double g1_gas = 0.0546; //phd per S2 photon in gas, used to get SE size
+double g1_gas = 0.061; //phd per S2 photon in gas, used to get SE size
 double s2Fano = 3.61; //Fano-like fudge factor for SE width
-double s2_thr = -300.; //the S2 threshold in phd. Effects NR most
-double S2botTotRatio = 0.45; //S2 bottom-to-total ratio, not really used anymore
+double s2_thr = 300.; //the S2 threshold in phd. Effects NR most
+double S2botTotRatio = 0.395; //S2 bottom-to-total ratio, not really used anymore
 double E_gas = 12.; //field in kV/cm between liquid/gas border and anode
 double eLife_us = 2200.; //the drift electron mean lifetime in micro-seconds
 

@@ -174,10 +174,11 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb < 0. ) recombProb = 0.;
   if ( recombProb > 1. ) recombProb = 1.;
   
-  double cc = 0.0585, bb = 0.50;
+  double cc = 0.070, bb = 0.530;
   double aa = cc/pow(1.-bb,2.);
-  double omega = -aa*pow(recombProb-bb,2.)+cc;
+  double omega = -aa*pow(recombProb-bb,2.)+cc; if(omega<0.)omega=0.;
   
+  if ( yields.Lindhard < 1. ) omega = 0.03;
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
   Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
@@ -187,8 +188,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( Nph > Nq_actual ) Nph = Nq_actual;
   if ( Nph < Nex ) Nph = Nex;
   
-  if ( (Nph+Ne) != (Nex+Ni) )
-    cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
+  if ( (Nph+Ne) != (Nex+Ni) ) cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
   
   result.photons =Nph;
   result.electrons=Ne;

@@ -54,6 +54,8 @@ namespace NEST {
     
     class NESTcalc {
     private:
+      long double Factorial ( double x );
+      double nCr ( double n, double r );
 
 
     protected:
@@ -75,6 +77,8 @@ namespace NEST {
         photonstream GetPhotonTimes(/*inputs*/);
         YieldResult GetYields( INTERACTION_TYPE species, double energy, double density, double dfield );
       QuantaResult GetQuanta(YieldResult yields, double density);
+      std::vector<double> GetS1 ( int Nph,double dz, double driftSpeed );
+      std::vector<double> GetS2 ( int Ne, double dt );
         void SetRandomSeed(unsigned long int);
 
     };

@@ -1,8 +1,6 @@
 
 #include "NEST.hh"
 #include <detector.hh>
-#include <iostream>
-#include <assert.h>
 
 using namespace NEST;
 using namespace std;
@@ -460,3 +458,18 @@ double NESTcalc::nCr ( double n, double r ) {
     ( Factorial(r) * Factorial(n-r) );
   
 }
+
+DetectorParameters NESTcalc::GetDetector ( ) {
+  
+  DetectorParameters detParam;
+  
+  detParam.temperature = T_Kelvin;
+  detParam.GXeInterface = liquidBorder;
+  memcpy(efpoly, detParam.efFit, sizeof(efpoly));
+  detParam.dtExtrema[0] = dt_min;
+  detParam.dtExtrema[1] = dt_max;
+  
+  return detParam;
+
+}
+    

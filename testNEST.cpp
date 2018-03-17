@@ -11,11 +11,7 @@
  * Created on August 1, 2017, 1:03 PM
  */
 
-#include <NEST.hh>
 #include <TestSpectra.hh>
-#include <float.h>
-#include <detector.hh>
-#include <iostream>
 
 using namespace std;
 using namespace NEST;
@@ -24,13 +20,13 @@ using namespace NEST;
  * 
  */
 
-double SetDriftVelocity ( double T, double F ); double vD;
+double SetDriftVelocity ( double T, double F );
 double SetDensity ( double T );
 
 int main ( int argc, char** argv ) {
   
   NEST::NESTcalc n;
-  double pos_z, driftTime, field;
+  double pos_z, driftTime, field, vD;
   
   if (argc < 7)
   {
@@ -65,8 +61,8 @@ int main ( int argc, char** argv ) {
   else type_num = beta;
 
   double eMin = atof(argv[3]);
-  double eMax = atof(argv[4]);
-  double rho = SetDensity(T_Kelvin);
+  double eMax = atof(argv[4]); DetectorParameters detParam = n.GetDetector();
+  double rho = SetDensity(detParam.temperature);
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
     fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
@@ -114,23 +110,23 @@ int main ( int argc, char** argv ) {
 
     Z_NEW:
       if ( atof(argv[6]) == -1. ) // -1 means default, random location mode
-	pos_z = 0. + ( liquidBorder - 0. ) * n.rand_uniform(); // initial guess
+	pos_z = 0. + ( detParam.GXeInterface - 0. ) * n.rand_uniform(); // initial guess
       else pos_z = atof(argv[6]);
       
       if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
-        field = efpoly[0] + efpoly[1] * pos_z +
-          efpoly[2] * pow(pos_z,2.)+
-          efpoly[3] * pow(pos_z,3.)+
-          efpoly[4] * pow(pos_z,4.)+
-	  efpoly[5] * pow(pos_z,5.); // note sixth term: this one is quintic
+        field = detParam.efFit[0] + detParam.efFit[1] * pos_z +
+          detParam.efFit[2] * pow(pos_z,2.)+
+          detParam.efFit[3] * pow(pos_z,3.)+
+          detParam.efFit[4] * pow(pos_z,4.)+
+	  detParam.efFit[5] * pow(pos_z,5.); // note sixth term: this one is quintic
       }
       else field = atof(argv[5]);
       
       if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
       
-      vD = SetDriftVelocity(T_Kelvin,field);
-      driftTime = ( liquidBorder - pos_z ) / vD; // (mm - mm) / (mm / us) = us
-      if ( (driftTime > dt_max || driftTime < dt_min) && atof(argv[6]) == -1. )
+      vD = SetDriftVelocity(detParam.temperature,field);
+      driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
+      if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && atof(argv[6]) == -1. )
 	goto Z_NEW;
       
       NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);

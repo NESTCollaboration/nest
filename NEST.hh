@@ -4,8 +4,9 @@
 #include <math.h>
 #include <vector>
 #include <random>
-
-
+#include <iostream>
+#include <assert.h>
+#include <float.h>
 
 #define NEST_AVO 6.022e23
 
@@ -49,8 +50,13 @@ namespace NEST {
         photonstream photon_times;
         
     };
-
-    
+  
+  struct DetectorParameters {
+    double temperature;
+    double GXeInterface;
+    double efFit[6];
+    double dtExtrema[2];
+  };
     
     class NESTcalc {
     private:
@@ -77,6 +83,7 @@ namespace NEST {
         photonstream GetPhotonTimes(/*inputs*/);
         YieldResult GetYields( INTERACTION_TYPE species, double energy, double density, double dfield );
       QuantaResult GetQuanta(YieldResult yields, double density);
+      DetectorParameters GetDetector ( );
       std::vector<double> GetS1 ( int Nph,double dz, double driftSpeed );
       std::vector<double> GetS2 ( int Ne, double dt );
         void SetRandomSeed(unsigned long int);

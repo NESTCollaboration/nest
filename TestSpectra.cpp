@@ -13,9 +13,6 @@
 
 #include "TestSpectra.hh"
 
-#include <float.h>
-#include <iostream>
-
 using namespace NEST;
 using namespace std;
 

@@ -19,7 +19,7 @@ double NESTcalc::rand_gauss(double mean, double sigma) {
 }
 
 int NESTcalc::poisson_draw(double mean)
-
+  
 {
   std::poisson_distribution<int> distribution(mean);
   return distribution(rng);
@@ -77,16 +77,17 @@ int NESTcalc::BinomFluct(int N0, double prob) {
 }
 
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield){
-
+  
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield);
   result.quanta=GetQuanta(result.yields,density);
   result.photon_times = GetPhotonTimes(/*stuff*/);
   return result;
-
+  
 }
 
 double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton){
+  
   //old code put here by Jason
   //times in ns
   double return_time=0;
@@ -120,6 +121,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton){
   }
   
   return return_time;
+  
 }
 
 photonstream NESTcalc::GetPhotonTimes(/*inputs*/){
@@ -187,7 +189,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( Nph > Nq_actual ) Nph = Nq_actual;
   if ( Nph < Nex ) Nph = Nex;
   
-  if ( (Nph+Ne) != (Nex+Ni) ) cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
+  if ( (Nph+Ne) != (Nex+Ni) )
+    cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
   
   result.photons =Nph;
   result.electrons=Ne;
@@ -304,11 +307,15 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
 }
 
 void NESTcalc::SetRandomSeed ( unsigned long int s ) {
+  
   rng.seed(s);
+  
 }
 
 NESTcalc::NESTcalc ( ) {
+  
   rng.seed(0);
+  
 }
 
 vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
@@ -444,8 +451,6 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dt ) {
   
 }
 
-
-
 long double NESTcalc::Factorial ( double x ) {
   
   return tgammal ( x + 1. );
@@ -470,6 +475,5 @@ DetectorParameters NESTcalc::GetDetector ( ) {
   detParam.dtExtrema[1] = dt_max;
   
   return detParam;
-
+  
 }
-    

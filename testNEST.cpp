@@ -29,29 +29,29 @@ int main ( int argc, char** argv ) {
   double pos_z, driftTime, field, vD;
   
   if (argc < 7)
-  {
-    cout << "This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector." << endl << endl;
-    cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
-    cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl << endl;
-    cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
-    return 0;
-  }
+    {
+      cout << "This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector." << endl << endl;
+      cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
+      cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl << endl;
+      cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
+      return 0;
+    }
   unsigned long int numEvts = atoi(argv[1]);
-
+  
   string type = argv[2];
   INTERACTION_TYPE type_num;
   WIMP_spectrum_prep wimp_spectrum_prep; //used only in WIMP case
   if (type == "NR") type_num = NR;
   else if (type == "WIMP")
-  {
-    type_num = WIMP;
-    wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]));
-    numEvts = n.poisson_draw(wimp_spectrum_prep.integral * atof(argv[1]) * atof(argv[4]) / 1e-36);
-  } else if (type == "B8")
-  {
-    type_num = B8;
-    numEvts = n.poisson_draw(0.0026 * atof(argv[1]));
-  } else if (type == "DD") type_num = DD;
+    {
+      type_num = WIMP;
+      wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]));
+      numEvts = n.poisson_draw(wimp_spectrum_prep.integral * atof(argv[1]) * atof(argv[4]) / 1e-36);
+    } else if (type == "B8")
+    {
+      type_num = B8;
+      numEvts = n.poisson_draw(0.0026 * atof(argv[1]));
+    } else if (type == "DD") type_num = DD;
   else if (type == "AmBe")type_num = AmBe;
   else if (type == "Cf") type_num = Cf;
   else if (type == "ion") type_num = ion;
@@ -59,7 +59,7 @@ int main ( int argc, char** argv ) {
   else if (type == "Kr83m")type_num=Kr83m;
   else if (type == "CH3T")type_num = CH3T;
   else type_num = beta;
-
+  
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]); DetectorParameters detParam = n.GetDetector();
   double rho = SetDensity(detParam.temperature);
@@ -68,78 +68,78 @@ int main ( int argc, char** argv ) {
     fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
   else
     fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
-
+  
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
-    
-    double keV = -999;
-    for (unsigned long int j = 0; j < numEvts; j++) {
-      if (eMin == eMax) {
-	keV = eMin;
-      } else {
-	switch (type_num) {
-	case CH3T:
-	  keV = CH3T_spectrum(eMin, eMax, n);
-	  break;
-	case B8: //normalize this to ~3500 / 10-ton / year, for E-threshold of 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
-	  keV = B8_spectrum(eMin, eMax, n);
-	  break;
-	case AmBe: //for ZEPLIN-III FSR from HA (Pal '98)
-	  keV = AmBe_spectrum(eMin, eMax, n);
-	  break;
-	case Cf:
-	  keV = Cf_spectrum(eMin, eMax, n);
-	  break;
-	case DD:
-	  keV = DD_spectrum(eMin, eMax, n);
-	  break;
-	case WIMP:
-          {          
+  
+  double keV = -999;
+  for (unsigned long int j = 0; j < numEvts; j++) {
+    if (eMin == eMax) {
+      keV = eMin;
+    } else {
+      switch (type_num) {
+      case CH3T:
+	keV = CH3T_spectrum(eMin, eMax, n);
+	break;
+      case B8: //normalize this to ~3500 / 10-ton / year, for E-threshold of 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
+	keV = B8_spectrum(eMin, eMax, n);
+	break;
+      case AmBe: //for ZEPLIN-III FSR from HA (Pal '98)
+	keV = AmBe_spectrum(eMin, eMax, n);
+	break;
+      case Cf:
+	keV = Cf_spectrum(eMin, eMax, n);
+	break;
+      case DD:
+	keV = DD_spectrum(eMin, eMax, n);
+	break;
+      case WIMP:
+	{
           keV = WIMP_spectrum(wimp_spectrum_prep, atof(argv[3]),n);
-          }
-          break;
-	default:
-	  keV = eMin + (eMax - eMin) * n.rand_uniform();
-	  break;
 	}
+	break;
+      default:
+	keV = eMin + (eMax - eMin) * n.rand_uniform();
+	break;
       }
-      
-      if ( type_num != WIMP ) {
-	if (keV > eMax) keV = eMax;
-	if (keV < eMin) keV = eMin;
-      }
-
-    Z_NEW:
-      if ( atof(argv[6]) == -1. ) // -1 means default, random location mode
-	pos_z = 0. + ( detParam.GXeInterface - 0. ) * n.rand_uniform(); // initial guess
-      else pos_z = atof(argv[6]);
-      
-      if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
-        field = detParam.efFit[0] + detParam.efFit[1] * pos_z +
-          detParam.efFit[2] * pow(pos_z,2.)+
-          detParam.efFit[3] * pow(pos_z,3.)+
-          detParam.efFit[4] * pow(pos_z,4.)+
-	  detParam.efFit[5] * pow(pos_z,5.); // note sixth term: this one is quintic
-      }
-      else field = atof(argv[5]);
-      
-      if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
-      
-      vD = SetDriftVelocity(detParam.temperature,field);
-      driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
-      if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && atof(argv[6]) == -1. )
-	goto Z_NEW;
-      
-      NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
-      NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
-      vector<double> scint = n.GetS1(quanta.photons,pos_z,vD);
-      printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons);
-      printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
-      scint = n.GetS2(quanta.electrons,driftTime);
-      printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
     }
     
-    return 1;
+    if ( type_num != WIMP ) {
+      if (keV > eMax) keV = eMax;
+      if (keV < eMin) keV = eMin;
+    }
     
+  Z_NEW:
+    if ( atof(argv[6]) == -1. ) // -1 means default, random location mode
+      pos_z = 0. + ( detParam.GXeInterface - 0. ) * n.rand_uniform(); // initial guess
+    else pos_z = atof(argv[6]);
+    
+    if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
+      field = detParam.efFit[0] + detParam.efFit[1] * pos_z +
+	detParam.efFit[2] * pow(pos_z,2.)+
+	detParam.efFit[3] * pow(pos_z,3.)+
+	detParam.efFit[4] * pow(pos_z,4.)+
+	detParam.efFit[5] * pow(pos_z,5.); // note sixth term: this one is quintic
+    }
+    else field = atof(argv[5]);
+    
+    if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
+    
+    vD = SetDriftVelocity(detParam.temperature,field);
+    driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
+    if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && atof(argv[6]) == -1. )
+      goto Z_NEW;
+    
+    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
+    NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
+    vector<double> scint = n.GetS1(quanta.photons,pos_z,vD);
+    printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons);
+    printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
+    scint = n.GetS2(quanta.electrons,driftTime);
+    printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
+  }
+  
+  return 1;
+  
 }
 
 double SetDriftVelocity ( double Kelvin, double eField ) {
@@ -204,8 +204,8 @@ double SetDensity ( double Kelvin ) { // currently only for fixed pressure (satu
   
   return 
     2.9970938084691329E+02 * exp ( -8.2598864714323525E-02 * Kelvin ) - 1.8801286589442915E+06 * exp ( - pow ( ( Kelvin - 4.0820251276172212E+02 ) / 2.7863170223154846E+01, 2. ) )
-                                                                      - 5.4964506351743057E+03 * exp ( - pow ( ( Kelvin - 6.3688597345042672E+02 ) / 1.1225818853661815E+02, 2. ) )
-                                                                      + 8.3450538370682614E+02 * exp ( - pow ( ( Kelvin + 4.8840568924597342E+01 ) / 7.3804147172071107E+03, 2. ) )
+    - 5.4964506351743057E+03 * exp ( - pow ( ( Kelvin - 6.3688597345042672E+02 ) / 1.1225818853661815E+02, 2. ) )
+    + 8.3450538370682614E+02 * exp ( - pow ( ( Kelvin + 4.8840568924597342E+01 ) / 7.3804147172071107E+03, 2. ) )
     - 8.3086310405942265E+02; // in grams per cubic centimeter based on zunzun fit to NIST data; will add gas later
   
 }

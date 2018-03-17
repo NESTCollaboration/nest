@@ -23,6 +23,7 @@ double NEST::CH3T_spectrum ( double xMin, double xMax, NESTcalc& n ) {
   double m_e = 510.9989461; //e- rest mass-energy [keV]
   double aa = 0.0072973525664; //fine structure constant
   double ZZ = 2.;
+  
   if(xMax>18.5898)xMax=18.5898; //tritium beta decay endpoint [keV]
   if(xMin<0.)xMin=0.;
   double yMax = 1.1e7; //top of the beta decay E histogram
@@ -105,7 +106,7 @@ double NEST::Cf_spectrum ( double xMin, double xMax, NESTcalc& n ) {
       -1.000e-6 * pow(xyTry[0],3.);
     xyTry = n.VonNeumann(xMin,xMax,yMin,yMax,xyTry[0],xyTry[1],FuncValue);
   }
-
+  
   return xyTry[0];
   
 }
@@ -253,11 +254,11 @@ WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass ) {
   
   WIMP_spectrum_prep spectrum;
   double EnergySpec[101]={0};
-
+  
   for (int i = 0; i < 101; i++ ){
     EnergySpec[i] = WIMP_dRate( double(i), mass );
   }
-
+  
   for (int i = 0; i < 100; i++ )
     {
       spectrum.base[i] = EnergySpec[i] * pow(EnergySpec[i] / EnergySpec[i + 1], i);
@@ -270,6 +271,7 @@ WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass ) {
 	  break;
 	}
     }
+  
   return spectrum;
   
 }
@@ -292,6 +294,7 @@ double NEST::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum, double mass, NESTca
 	}
       xyTry = n.VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
     }
+  
   return xyTry[0];
   
 }

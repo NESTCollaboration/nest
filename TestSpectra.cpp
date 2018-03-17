@@ -12,76 +12,89 @@
  */
 
 #include "TestSpectra.hh"
-#include <iostream>
+
 #include <float.h>
+#include <iostream>
+
 using namespace NEST;
 using namespace std;
 
-double NEST::CH3T_spectrum(double xMin,double xMax, NESTcalc& n){
-    double m_e = 510.9989461; //e- rest mass-energy [keV]
-    double aa = 0.0072973525664; //fine structure constant
-    double ZZ = 2.;
-    if(xMax>18.5898)xMax=18.5898; //tritium beta decay endpoint [keV]
-    if(xMin<0.)xMin=0.;
-    double yMax = 1.1e7; //top of the beta decay E histogram
-    vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			    yMax * n.rand_uniform(),1.};
-    while ( xyTry[2] > 0. ) {
-      double B = sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e) / (xyTry[0] + m_e);
-      double x = (2.*M_PI*ZZ*aa)*(xyTry[0] + m_e)/sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e);
-      double FuncValue = (sqrt(2.*xyTry[0]*m_e) *
-              (xyTry[0] + m_e) *
-              (18.5898-xyTry[0]) * (18.5898-xyTry[0]) *
-              x*(1./(1.-exp(-x)))*(1.002037-0.001427*(B)));
-      xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
-    }
-    return xyTry[0];
-}
+double power = 3.7488;
 
-double NEST::B8_spectrum(double xMin, double xMax, NESTcalc& n){
-    if(xMax>4.)xMax=4.;
-    if(xMin<0.)xMin=0.;
-    double yMax = pow(10.,-2.198);
-    vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			    yMax * n.rand_uniform(), 1.};
-    while ( xyTry[2] > 0. ) {
-      double FuncValue = 2.198 + 1.2184*xyTry[0] - 0.32849*pow(xyTry[0],2.) + 0.12441*pow(xyTry[0],3.);
-      FuncValue = pow(10.,-FuncValue);
-      xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
-    }
-    return xyTry[0];
-}
-
-double NEST::AmBe_spectrum(double xMin, double xMax, NESTcalc& n){
-    if(xMax>200.)xMax=200.;
-      if(xMin<0.00)xMin=0.00;
-      double yMax = pow(10.,3.7488);
-      vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			      yMax * n.rand_uniform(),1.};
-      while ( xyTry[2] > 0. ) {
-	double FuncValue =
-	   3.74880*pow(log10(xyTry[0]),0.)
-          -0.77942*pow(log10(xyTry[0]),1.)
-          +1.30300*pow(log10(xyTry[0]),2.)
-	  -2.75280*pow(log10(xyTry[0]),3.)
-	  +1.57310*pow(log10(xyTry[0]),4.)
-	  -0.30072*pow(log10(xyTry[0]),5.);
-	FuncValue = pow(10.,FuncValue);
-	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
-      }
-      return xyTry[0];
-}
-
-double NEST::Cf_spectrum(double xMin, double xMax, NESTcalc& n){
-  if(xMax>200.)xMax=200;
-  if(xMin<0.0 )xMin=0.0;
-  double yMax = 2.*pow(10.,3.7488);
+double NEST::CH3T_spectrum ( double xMin, double xMax, NESTcalc& n ) {
   
+  double m_e = 510.9989461; //e- rest mass-energy [keV]
+  double aa = 0.0072973525664; //fine structure constant
+  double ZZ = 2.;
+  if(xMax>18.5898)xMax=18.5898; //tritium beta decay endpoint [keV]
+  if(xMin<0.)xMin=0.;
+  double yMax = 1.1e7; //top of the beta decay E histogram
+  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
+			  yMax * n.rand_uniform(),1.};
+  while ( xyTry[2] > 0. ) {
+    double B = sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e) / (xyTry[0] + m_e);
+    double x = (2.*M_PI*ZZ*aa)*(xyTry[0] + m_e)/sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e);
+    double FuncValue = (sqrt(2.*xyTry[0]*m_e) *
+			(xyTry[0] + m_e) *
+			(18.5898-xyTry[0]) * (18.5898-xyTry[0]) *
+			x*(1./(1.-exp(-x)))*(1.002037-0.001427*(B)));
+    xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+  }
+  return xyTry[0];
+  
+}
+
+double NEST::B8_spectrum ( double xMin, double xMax, NESTcalc& n ) {
+  
+  if(xMax>4.)xMax=4.;
+  if(xMin<0.)xMin=0.;
+  double yMax = pow(10.,-2.198);
+  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
+			  yMax * n.rand_uniform(), 1.};
+  while ( xyTry[2] > 0. ) {
+    double FuncValue = 2.198 + 1.2184*xyTry[0] - 0.32849*pow(xyTry[0],2.) + 0.12441*pow(xyTry[0],3.);
+    FuncValue = pow(10.,-FuncValue);
+    xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+  }
+  return xyTry[0];
+  
+}
+
+double NEST::AmBe_spectrum ( double xMin, double xMax, NESTcalc& n ) {
+  
+  if(xMax>200.)
+    xMax=200.;
+  if ( xMin < DBL_MIN ) xMin = DBL_MIN;
+  double yMax = pow(10.,power), yMin = 0.0;
   vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
 			  yMax * n.rand_uniform(),1.};
   while ( xyTry[2] > 0. ) {
     double FuncValue =
-       3.74880*pow(log10(xyTry[0]),0.)
+       power * pow(log10(xyTry[0]),0.)
+      -0.77942*pow(log10(xyTry[0]),1.)
+      +1.30300*pow(log10(xyTry[0]),2.)
+      -2.75280*pow(log10(xyTry[0]),3.)
+      +1.57310*pow(log10(xyTry[0]),4.)
+      -0.30072*pow(log10(xyTry[0]),5.);
+    FuncValue = pow(10.,FuncValue);
+    xyTry = n.VonNeumann(xMin,xMax,yMin,yMax,xyTry[0],xyTry[1],FuncValue);
+  }
+  
+  return xyTry[0];
+  
+}
+
+double NEST::Cf_spectrum ( double xMin, double xMax, NESTcalc& n ) {
+  
+  if(xMax>200.)
+    xMax=200.;
+  if ( xMin < DBL_MIN ) xMin = DBL_MIN;
+  double yMax = 2.*pow(10.,power), yMin = 0.0;
+  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
+			  yMax * n.rand_uniform(),1.};
+  while ( xyTry[2] > 0. ) {
+    double FuncValue =
+       power * pow(log10(xyTry[0]),0.)
       -0.77942*pow(log10(xyTry[0]),1.)
       +1.30300*pow(log10(xyTry[0]),2.)
       -2.75280*pow(log10(xyTry[0]),3.)
@@ -93,42 +106,46 @@ double NEST::Cf_spectrum(double xMin, double xMax, NESTcalc& n){
       - .033214 * pow(xyTry[0],1.)
       +.00032857* pow(xyTry[0],2.)
       -1.000e-6 * pow(xyTry[0],3.);
+    xyTry = n.VonNeumann(xMin,xMax,yMin,yMax,xyTry[0],xyTry[1],FuncValue);
+  }
+
+  return xyTry[0];
+  
+}
+
+double NEST::DD_spectrum(double xMin,double xMax,NESTcalc& n){  //JV LUX, most closely like JENDL-4. See arXiv:1608.05381. Lower than G4/LUXSim
+  
+  if(xMax>75.)xMax=75.;
+  if(xMin<0.000)xMin=0.000;
+  double yMax = 1.1694e+6;
+  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
+			  yMax * n.rand_uniform(),1.};
+  while ( xyTry[2] > 0. ) {
+    double FuncValue =
+      1.1694e+6*pow(xyTry[0],0.)
+      -1.4733e+5*pow(xyTry[0],1.)
+      + 8507.0 * pow(xyTry[0],2.)
+      - 273.59 * pow(xyTry[0],3.)
+      + 4.3216 * pow(xyTry[0],4.)
+      +0.0097428*pow(xyTry[0],5.)
+      -0.0017966*pow(xyTry[0],6.)
+      +3.4069e-5*pow(xyTry[0],7.)
+      -2.918e-7 *pow(xyTry[0],8.)
+      +9.973e-10*pow(xyTry[0],9.);
+    FuncValue /= 1.+0.85*(
+			  -.016698/pow(xyTry[0]-75.,1.)+
+			  8.04540/pow(xyTry[0]-75.,2.)+
+			  105.000/pow(xyTry[0]-75.,3.)+
+			  582.400/pow(xyTry[0]-75.,4.)+
+			  1218.50/pow(xyTry[0]-75.,5.)+
+			  1250.90/pow(xyTry[0]-75.,6.)+
+			  659.680/pow(xyTry[0]-75.,7.)+
+			  161.110/pow(xyTry[0]-75.,8.)+
+			  11.7710/pow(xyTry[0]-75.,9.));
     xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
   }
   return xyTry[0];
-}
-
-double NEST::DD_spectrum(double xMin, double xMax, NESTcalc& n){  //JV LUX, most closely like JENDL-4. See arXiv:1608.05381. Lower than G4/LUXSim
-    if(xMax>75.)xMax=75.;
-      if(xMin<0.000)xMin=0.000;
-      double yMax = 1.1694e+6;
-      vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-       yMax * n.rand_uniform(),1.};
-      while ( xyTry[2] > 0. ) {
-        double FuncValue =
-	   1.1694e+6*pow(xyTry[0],0.)
-	  -1.4733e+5*pow(xyTry[0],1.)
-	  + 8507.0 * pow(xyTry[0],2.)
-	  - 273.59 * pow(xyTry[0],3.)
-	  + 4.3216 * pow(xyTry[0],4.)
-	  +0.0097428*pow(xyTry[0],5.)
-	  -0.0017966*pow(xyTry[0],6.)
-	  +3.4069e-5*pow(xyTry[0],7.)
-	  -2.918e-7 *pow(xyTry[0],8.)
-	  +9.973e-10*pow(xyTry[0],9.);
-	FuncValue /= 1.+0.85*(
-	  -.016698/pow(xyTry[0]-75.,1.)+
-	  8.04540/pow(xyTry[0]-75.,2.)+
-	  105.000/pow(xyTry[0]-75.,3.)+
-	  582.400/pow(xyTry[0]-75.,4.)+
-	  1218.50/pow(xyTry[0]-75.,5.)+
-	  1250.90/pow(xyTry[0]-75.,6.)+
-	  659.680/pow(xyTry[0]-75.,7.)+
-	  161.110/pow(xyTry[0]-75.,8.)+
-	  11.7710/pow(xyTry[0]-75.,9.));
-	xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
-      }
-      return xyTry[0];
+  
 }
 
 //------++++++------++++++------++++++------++++++------++++++------++++++------
@@ -137,6 +154,7 @@ double NEST::DD_spectrum(double xMin, double xMax, NESTcalc& n){  //JV LUX, most
 
 //This spectrum comes from Phys. Rev. D 82 (2010) 023530 (McCabe)
 double NEST::WIMP_dRate ( double ER, double mWimp ) {
+  
   // We are going to hard code in the astrophysical halo for now.  This may be 
   // something that we make an argument later, but this is good enough to start.
   // Some constants:
@@ -234,44 +252,49 @@ double NEST::WIMP_dRate ( double ER, double mWimp ) {
   
 }
 
-WIMP_spectrum_prep NEST::WIMP_prep_spectrum(double mass){
+WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass ) {
+  
   WIMP_spectrum_prep spectrum;
   double EnergySpec[101]={0};
+
   for (int i = 0; i < 101; i++ ){
     EnergySpec[i] = WIMP_dRate( double(i), mass );
   }
+
   for (int i = 0; i < 100; i++ )
-  {
-    spectrum.base[i] = EnergySpec[i] * pow(EnergySpec[i] / EnergySpec[i + 1], i);
-    spectrum.exponent[i] = log(EnergySpec[i] / EnergySpec[i + 1]);
-    if ( spectrum.base[i] > 0. && spectrum.base[i] < DBL_MAX && spectrum.exponent[i] > 0. && spectrum.exponent[i] < DBL_MAX )
-      spectrum.integral += spectrum.base[i]*(1. / spectrum.exponent[i] - exp(-spectrum.exponent[i]) / spectrum.exponent[i]) * exp(-spectrum.exponent[i] * i);
-    else
     {
-      spectrum.xMax = double(i - 1);
-      break;
+      spectrum.base[i] = EnergySpec[i] * pow(EnergySpec[i] / EnergySpec[i + 1], i);
+      spectrum.exponent[i] = log(EnergySpec[i] / EnergySpec[i + 1]);
+      if ( spectrum.base[i] > 0. && spectrum.base[i] < DBL_MAX && spectrum.exponent[i] > 0. && spectrum.exponent[i] < DBL_MAX )
+	spectrum.integral += spectrum.base[i]*(1. / spectrum.exponent[i] - exp(-spectrum.exponent[i]) / spectrum.exponent[i]) * exp(-spectrum.exponent[i] * i);
+      else
+	{
+	  spectrum.xMax = double(i - 1);
+	  break;
+	}
     }
-  }
   return spectrum;
   
 }
 
 double NEST::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum, double mass, NESTcalc& n){
+  
   double xMin = 0., FuncValue=0;
   double yMax = WIMP_dRate ( xMin, mass );
   vector<double> xyTry ={ xMin + (wimp_spectrum.xMax - xMin) * n.rand_uniform(),
-    yMax * n.rand_uniform(), 1. };
+			  yMax * n.rand_uniform(), 1. };
   while ( xyTry[2] > 0. )
-  {
-    for ( double x = 0; x < wimp_spectrum.xMax; x++ )
     {
-      if ( xyTry[0] > x && xyTry[0] < (x + 1.) )
-      {
-        FuncValue = wimp_spectrum.base[int(x)] * exp(-wimp_spectrum.exponent[int(x)] * xyTry[0]);
-        break;
-      }
+      for ( double x = 0; x < wimp_spectrum.xMax; x++ )
+	{
+	  if ( xyTry[0] > x && xyTry[0] < (x + 1.) )
+	    {
+	      FuncValue = wimp_spectrum.base[int(x)] * exp(-wimp_spectrum.exponent[int(x)] * xyTry[0]);
+	      break;
+	    }
+	}
+      xyTry = n.VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
     }
-    xyTry = n.VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
-  }
   return xyTry[0];
+  
 }

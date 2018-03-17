@@ -26,7 +26,6 @@ using namespace NEST;
 
 double SetDriftVelocity ( double T, double F ); double vD;
 double SetDensity ( double T );
-double nCr ( double n, double r );
 
 int main ( int argc, char** argv ) {
   

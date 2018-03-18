@@ -1,6 +1,7 @@
 
 #include "NEST.hh"
 #include <detector.hh>
+#include <cstring>
 
 using namespace NEST;
 using namespace std;
@@ -76,10 +77,10 @@ int NESTcalc::BinomFluct(int N0, double prob) {
   
 }
 
-NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield){
+NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z){
   
   NESTresult result;
-  result.yields = GetYields(species,energy,density,dfield);
+  result.yields = GetYields(species,energy,density,dfield,A,Z);
   result.quanta=GetQuanta(result.yields,density);
   result.photon_times = GetPhotonTimes(/*stuff*/);
   return result;
@@ -199,9 +200,9 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   
 }
 
-YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield ) {
+YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, double density,
+				  double dfield, double massNum, double atomNum ) {
   
-  double massNum = 4.; //TODO: make this flexible
   const double m3 = 2., m4 = 2., m6 = 0.;
   double Ne = -999; double Nph = -999; double NexONi = -999; double m8 = 2., L = 1.;
   const double deltaT_ns_halflife = 154.4;
@@ -288,8 +289,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   }
   
-  assert(Ne!=-999 && Nph!=-999
-	 && NexONi!=-999);
+  //assert(Ne!=-999 && Nph!=-999
+  // && NexONi!=-999);
   if ( Nph> energy / 7e-3 ) Nph= energy / 7e-3; //yields can never exceed 1 / [ W ~ 7 eV ]
   if ( Ne > energy / 7e-3 ) Ne = energy / 7e-3;
   if ( Nph < 0. ) Nph = 0.; if ( Ne < 0. ) Ne = 0.;

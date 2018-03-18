@@ -75,10 +75,10 @@ namespace NEST {
 				   double xTest,double yTest,double fValue);
     double rand_gauss( double mean, double sigma );
     int BinomFluct(int, double);
-    NESTresult FullCalculation(INTERACTION_TYPE species, double energy, double density, double dfield);
+    NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z);
     double PhotonTime(INTERACTION_TYPE species,bool exciton);
     photonstream GetPhotonTimes(/*inputs*/);
-    YieldResult GetYields( INTERACTION_TYPE species, double energy, double density, double dfield );
+    YieldResult GetYields(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z);
     QuantaResult GetQuanta(YieldResult yields, double density);
     DetectorParameters GetDetector ( );
     std::vector<double> GetS1 ( int Nph,double dz, double driftSpeed );

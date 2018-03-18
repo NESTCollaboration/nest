@@ -25,7 +25,7 @@ double SetDensity ( double T );
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n;
+  NEST::NESTcalc n; int atomNum = 0, massNum = 0;
   double pos_z, driftTime, field, vD;
   
   if (argc < 7)
@@ -54,7 +54,11 @@ int main ( int argc, char** argv ) {
     } else if (type == "DD") type_num = DD;
   else if (type == "AmBe")type_num = AmBe;
   else if (type == "Cf") type_num = Cf;
-  else if (type == "ion") type_num = ion;
+  else if (type == "ion") {
+    type_num = ion;
+    cout << "Atomic Number: "; cin >> atomNum;
+    cout << "Mass Number: "; cin >> massNum;
+  }
   else if (type == "gamma")type_num = gammaRay;
   else if (type == "Kr83m")type_num=Kr83m;
   else if (type == "CH3T")type_num = CH3T;
@@ -129,10 +133,11 @@ int main ( int argc, char** argv ) {
     if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && atof(argv[6]) == -1. )
       goto Z_NEW;
     
-    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field);
+    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,massNum,atomNum);
     NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
     vector<double> scint = n.GetS1(quanta.photons,pos_z,vD);
     printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons);
+    //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield);
     printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
     scint = n.GetS2(quanta.electrons,driftTime);
     printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);

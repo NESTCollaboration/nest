@@ -11,7 +11,7 @@
  * Created on August 1, 2017, 1:03 PM
  */
 
-#include <TestSpectra.hh>
+#include "TestSpectra.hh"
 
 using namespace std;
 using namespace NEST;

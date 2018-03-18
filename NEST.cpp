@@ -1,7 +1,8 @@
 
-#include "NEST.hh"
-#include <detector.hh>
 #include <cstring>
+
+#include "NEST.hh"
+#include "detector.hh"
 
 using namespace NEST;
 using namespace std;

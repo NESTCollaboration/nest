@@ -228,14 +228,35 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   case ion:
     {
-      L = 0.96446 / (1. + pow(massNum * massNum / 19227., 0.99199));
-      if (massNum == 4) L = 0.56136 * pow(energy, 0.056972);
-      ThomasImel = 0.0067 / pow(1. + pow(dfield / 95.768, 8.5673), 0.060318) * pow(density / 2.857, 0.3);
+      double A1 = massNum, A2 = 131.293, Z1 = atomNum, Z2 = 54.;
+      double Z_mean = pow(pow(Z1,(2./3.))+pow(Z2,(2./3.)),1.5);
+      double E1c = pow(A1,3.)*pow(A1+A2,-2.)*pow(Z_mean,(4./3.))*pow(Z1,(-1./3.))*500.;
+      double E2c = pow(A1+A2,2.)*pow(A1,-1.)*Z2*125.;
+      double gamma = 4. * A1 * A2 / pow ( A1 + A2, 2. );
+      double Ec_eV = gamma * E2c;
+      double Constant = (2./3.)*(1./sqrt(E1c)+0.5*sqrt(gamma/Ec_eV));
+      L = Constant * sqrt ( energy * 1e3 );
+      double L_max = 0.96446 / ( 1.+pow ( massNum * massNum / 19227., 0.99199 ) );
+      if ( atomNum == 2. && massNum == 4. ) L = 0.56136 * pow ( energy, 0.056972 );
+      if ( L > L_max ) L = L_max;
+      double densDep = pow(density/0.2679,-2.3245);
+      double massDep = 0.02966094*exp(0.17687876*(massNum/4.-1.))+1.-0.02966094;
+      double fieldDep= pow ( 1.+pow ( dfield/95., 8.7 ), 0.0592 );
+      if ( density < 1. ) fieldDep = sqrt ( dfield );
+      ThomasImel = 0.00625 * massDep / ( 1. + densDep ) / fieldDep;
+      Wq_eV = 28.259+25.667*log10(density)
+	-33.611*pow(log10(density),2.)
+	-123.73*pow(log10(density),3.)
+	-136.47*pow(log10(density),4.)
+	-74.194*pow(log10(density),5.)
+	-20.276*pow(log10(density),6.)
+	-2.2352*pow(log10(density),7.);
+      alpha = 0.64 / pow ( 1. + pow ( density / 10., 2. ), 449.61 );
+      NexONi = alpha + 0.00178 * pow ( atomNum, 1.587 );
       Nq = 1e3 * L * energy / Wq_eV;
-      Ni = Nq / (1. + alpha);
+      Ni = Nq / ( 1. + NexONi );
       recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
-      Nph= Nq * alpha / (1. + alpha) + recombProb*Ni;
-      Ne = Nq - Nph;
+      Nph = Nq * NexONi / ( 1. + NexONi ) + recombProb * Ni; Ne = Nq - Nph;
     } break;
   case gammaRay:
     {
@@ -289,8 +310,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   }
   
-  //assert(Ne!=-999 && Nph!=-999
-  // && NexONi!=-999);
+  assert(Ne!=-999 && Nph!=-999
+	 && NexONi!=-999);
   if ( Nph> energy / 7e-3 ) Nph= energy / 7e-3; //yields can never exceed 1 / [ W ~ 7 eV ]
   if ( Ne > energy / 7e-3 ) Ne = energy / 7e-3;
   if ( Nph < 0. ) Nph = 0.; if ( Ne < 0. ) Ne = 0.;

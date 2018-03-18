@@ -25,8 +25,8 @@ double SetDensity ( double T );
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n; int atomNum = 0, massNum = 0;
-  double pos_z, driftTime, field, vD;
+  NEST::NESTcalc n;
+  double pos_z, driftTime, field, vD, atomNum = 0, massNum = 0;
   
   if (argc < 7)
     {
@@ -41,32 +41,39 @@ int main ( int argc, char** argv ) {
   string type = argv[2];
   INTERACTION_TYPE type_num;
   WIMP_spectrum_prep wimp_spectrum_prep; //used only in WIMP case
-  if (type == "NR") type_num = NR;
+  if ( type == "NR" || type == "neutron" ) type_num = NR;
   else if (type == "WIMP")
     {
       type_num = WIMP;
       wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]));
       numEvts = n.poisson_draw(wimp_spectrum_prep.integral * atof(argv[1]) * atof(argv[4]) / 1e-36);
-    } else if (type == "B8")
+    } else if ( type == "B8" || type == "Boron8" || type == "8Boron" || type == "8B" || type == "Boron-8" )
     {
       type_num = B8;
       numEvts = n.poisson_draw(0.0026 * atof(argv[1]));
-    } else if (type == "DD") type_num = DD;
-  else if (type == "AmBe")type_num = AmBe;
-  else if (type == "Cf") type_num = Cf;
-  else if (type == "ion") {
+    } else if ( type == "DD" || type == "D-D" ) type_num = DD;
+  else if ( type == "AmBe" ) type_num = AmBe;
+  else if ( type == "Cf" || type == "Cf252" || type == "252Cf" || type == "Cf-252" ) type_num = Cf;
+  else if ( type == "ion" || type == "nucleus" || type == "alpha" ) {
     type_num = ion;
-    cout << "Atomic Number: "; cin >> atomNum;
-    cout << "Mass Number: "; cin >> massNum;
+    if ( type == "alpha" ) {
+      atomNum = 2; massNum = 4;
+    }
+    else {
+      cout << "Atomic Number: "; cin >> atomNum;
+      cout << "Mass Number: "; cin >> massNum;
+    }
   }
-  else if (type == "gamma")type_num = gammaRay;
-  else if (type == "Kr83m")type_num=Kr83m;
-  else if (type == "CH3T")type_num = CH3T;
-  else type_num = beta;
+  else if ( type == "gamma" || type == "gammaRay" ) type_num = gammaRay;
+  else if ( type == "Kr83m" || type == "83mKr" || type == "Kr83" ) type_num = Kr83m;
+  else if ( type == "CH3T" || type == "tritium" ) type_num = CH3T;
+  else type_num = beta; //in case someone types "ER": includes Compton, xray
   
   double eMin = atof(argv[3]);
-  double eMax = atof(argv[4]); DetectorParameters detParam = n.GetDetector();
-  double rho = SetDensity(detParam.temperature);
+  double eMax = atof(argv[4]);
+  DetectorParameters detParam = n.GetDetector();
+  double rho = SetDensity(detParam.temperature); //cout.precision(12);
+  cout << "Density = " << rho << " grams per cubic centimeter or mL" << endl;
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
     fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
@@ -77,6 +84,7 @@ int main ( int argc, char** argv ) {
   
   double keV = -999;
   for (unsigned long int j = 0; j < numEvts; j++) {
+    
     if (eMin == eMax) {
       keV = eMin;
     } else {
@@ -133,14 +141,16 @@ int main ( int argc, char** argv ) {
     if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && atof(argv[6]) == -1. )
       goto Z_NEW;
     
-    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,massNum,atomNum);
+    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,double(massNum),double(atomNum));
     NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
     vector<double> scint = n.GetS1(quanta.photons,pos_z,vD);
-    printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons);
-    //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield);
+    
+    printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
+    //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
     printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
     scint = n.GetS2(quanta.electrons,driftTime);
     printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
+
   }
   
   return 1;

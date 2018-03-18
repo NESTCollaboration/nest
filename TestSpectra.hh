@@ -14,7 +14,7 @@
 #ifndef TESTSPECTRA_HH
 #define TESTSPECTRA_HH
 
-#include <NEST.hh>
+#include "NEST.hh"
 
 namespace NEST {
   

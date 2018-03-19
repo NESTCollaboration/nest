@@ -469,7 +469,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dt ) {
     ionization[6] = S2b / (1.+P_dphe); ionization[7] = S2bc / (1.+P_dphe);
   }
   
-  if ( Nphd < abs(s2_thr) ) ionization[0] *= -1.;
+  if ( pulseArea < abs(s2_thr) ) ionization[0] *= -1.;
   return ionization;
   
 }

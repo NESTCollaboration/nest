@@ -12,6 +12,7 @@
  */
 
 #include "TestSpectra.hh"
+#include "analysis.hh"
 
 using namespace std;
 using namespace NEST;
@@ -22,10 +23,12 @@ using namespace NEST;
 
 double SetDriftVelocity ( double T, double F );
 double SetDensity ( double T );
+vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s );
+double band[200][6];
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n;
+  NEST::NESTcalc n; vector<double> signal1,signal2;
   double pos_z, driftTime, field, vD, atomNum = 0, massNum = 0;
   
   if (argc < 7)
@@ -148,10 +151,28 @@ int main ( int argc, char** argv ) {
     printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
     //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
     printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
+    if ( scint[0] > 0. && scint[1] > 0. && scint[2] > 0. && scint[3] > 0. && scint[4] > 0. && scint[5] > 0. && scint[6] > 0. && scint[7] > 0. ) {
+      if ( usePE == 0 ) signal1.push_back(scint[3]);
+      else if ( usePE == 1 ) signal1.push_back(scint[5]);
+      else signal1.push_back(scint[7]);
+    }
+    else
+      signal1.push_back(0.);
     scint = n.GetS2(quanta.electrons,driftTime);
     printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
-
+    if ( scint[0] > 0. && scint[1] > 0. && scint[2] > 0. && scint[3] > 0. && scint[4] > 0. && scint[5] > 0. && scint[6] > 0. && scint[7] > 0. ) {
+      if ( usePE == 0 ) signal2.push_back(scint[5]);
+      else signal2.push_back(scint[7]); //no spike option for S2
+    }
+    else
+      signal2.push_back(0.);
+    
   }
+  
+  GetBand ( signal1, signal2 );
+  fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\n");
+  for ( int j = 0; j < numBins; j++ )
+    fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3]);
   
   return 1;
   
@@ -222,5 +243,48 @@ double SetDensity ( double Kelvin ) { // currently only for fixed pressure (satu
     - 5.4964506351743057E+03 * exp ( - pow ( ( Kelvin - 6.3688597345042672E+02 ) / 1.1225818853661815E+02, 2. ) )
     + 8.3450538370682614E+02 * exp ( - pow ( ( Kelvin + 4.8840568924597342E+01 ) / 7.3804147172071107E+03, 2. ) )
     - 8.3086310405942265E+02; // in grams per cubic centimeter based on zunzun fit to NIST data; will add gas later
+  
+}
+
+vector<vector<double>> GetBand ( vector<double> S1s,
+				 vector<double> S2s ) {
+  
+  vector<vector<double>> signals;
+  signals.resize(200,vector<double>(1,-999.));
+  double binWidth = ( maxS1 - minS1 ) / double(numBins);
+  int i = 0, j = 0; double s1c; int numPts;
+  
+  for ( i = 0; i < S1s.size(); i++ ) {
+    for ( j = 0; j < numBins; j++ ) {
+      s1c = minS1 + binWidth/2. + double(j) * binWidth;
+      if ( i == 0 ) band[j][0] = s1c;
+      if ( S1s[i] > (s1c-binWidth/2.) && S1s[i] < (s1c+binWidth/2.) ) {
+	if ( S1s[i] && S2s[i] ) {
+	  if ( useS2 )
+	    signals[j].push_back(log10(S2s[i]));
+	  else
+	    signals[j].push_back(log10(S2s[i]/S1s[i]));
+	  band[j][2] += signals[j].back();
+	  band[j][1] += S1s[i];
+	}
+	break; }
+    }
+  }
+  
+  for ( j = 0; j < numBins; j++ ) {
+    if ( band[j][0] <= 0. ) band[j][0] = minS1 + binWidth/2. + double(j) * binWidth;
+    signals[j].erase(signals[j].begin());
+    numPts = signals[j].size();
+    band[j][1] /= double(numPts);
+    band[j][2] /= double(numPts);
+    for ( i = 0; i < numPts; i++ ) {
+      if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.);
+    }
+    band[j][3] /= double(numPts-1);
+    band[j][3] = sqrt(band[j][3]);
+    band[j][4] = band[j][3]/sqrt(double(numPts));
+  }
+  
+  return signals;
   
 }

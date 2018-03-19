@@ -493,8 +493,8 @@ DetectorParameters NESTcalc::GetDetector ( ) {
   
   detParam.temperature = T_Kelvin;
   detParam.GXeInterface = liquidBorder;
-  memcpy(efpoly, detParam.efFit, sizeof(efpoly));
-  detParam.dtExtrema[0] = dt_min;
+  copy(begin(efpoly), end(efpoly), begin(detParam.efFit));
+	detParam.dtExtrema[0] = dt_min;
   detParam.dtExtrema[1] = dt_max;
   
   return detParam;

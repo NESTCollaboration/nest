@@ -146,11 +146,8 @@ int main ( int argc, char** argv ) {
     
     NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,double(massNum),double(atomNum));
     NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
-    vector<double> scint = n.GetS1(quanta.photons,pos_z,vD);
     
-    printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
-    //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
-    printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
+    vector<double> scint = n.GetS1(quanta.photons,pos_z,vD);
     if ( scint[0] > 0. && scint[1] > 0. && scint[2] > 0. && scint[3] > 0. && scint[4] > 0. && scint[5] > 0. && scint[6] > 0. && scint[7] > 0. ) {
       if ( usePE == 0 ) signal1.push_back(scint[3]);
       else if ( usePE == 1 ) signal1.push_back(scint[5]);
@@ -158,14 +155,29 @@ int main ( int argc, char** argv ) {
     }
     else
       signal1.push_back(0.);
-    scint = n.GetS2(quanta.electrons,driftTime);
-    printf("%i\t%.6f\t%.6f\n", (int)scint[0], scint[4], scint[7]);
-    if ( scint[0] > 0. && scint[1] > 0. && scint[2] > 0. && scint[3] > 0. && scint[4] > 0. && scint[5] > 0. && scint[6] > 0. && scint[7] > 0. ) {
-      if ( usePE == 0 ) signal2.push_back(scint[5]);
-      else signal2.push_back(scint[7]); //no spike option for S2
+    
+    vector<double> scint2= n.GetS2(quanta.electrons,driftTime);
+    if ( scint2[0] > 0. && scint2[1] > 0. && scint2[2] > 0. && scint2[3] > 0. && scint2[4] > 0. && scint2[5] > 0. && scint2[6] > 0. && scint2[7] > 0. ) {
+      if ( usePE == 0 ) signal2.push_back(scint2[5]);
+      else signal2.push_back(scint2[7]); //no spike option for S2
     }
     else
       signal2.push_back(0.);
+    
+    if ( !MCtruthE ) {
+      double Nph, g1 = scint[8], Ne , g2 = scint2[8];
+      if ( usePE == 0 ) Nph= scint[3] / (g1*(scint[3]/scint[5]));
+      else if ( usePE == 1 ) Nph = scint[5] / g1;
+      else Nph = scint[7] / g1;
+      if ( usePE == 0 ) Ne = scint2[5] / (g2*(scint2[5]/scint2[7]));
+      else Ne = scint2[7] / g2;
+      keV = ( Nph + Ne ) * 13.7e-3 / yields.Lindhard;
+    }
+    
+    printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
+    //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
+    printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
+    printf("%i\t%.6f\t%.6f\n", (int)scint2[0], scint2[4], scint2[7]);
     
   }
   
@@ -270,7 +282,6 @@ vector<vector<double>> GetBand ( vector<double> S1s,
 	break; }
     }
   }
-  
   for ( j = 0; j < numBins; j++ ) {
     if ( band[j][0] <= 0. ) band[j][0] = minS1 + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
@@ -284,7 +295,6 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     band[j][3] = sqrt(band[j][3]);
     band[j][4] = band[j][3]/sqrt(double(numPts));
   }
-  
   return signals;
   
 }

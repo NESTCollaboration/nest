@@ -1,6 +1,4 @@
 
-#include <cstring>
-
 #include "NEST.hh"
 #include "detector.hh"
 
@@ -140,7 +138,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   QuantaResult result;
   int Nq_actual, Ne, Nph, Ni, Nex;
   
-  double NexONi = yields.ExcitonRatio; double alf = 1./(1.+NexONi);
+  double NexONi = yields.ExcitonRatio;
+  double alf = 1./(1.+NexONi);
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
   
   if ( yields.Lindhard == 1. ) {
@@ -179,9 +178,11 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   
   double cc = 0.070, bb = 0.530;
   double aa = cc/pow(1.-bb,2.);
-  double omega = -aa*pow(recombProb-bb,2.)+cc; if(omega<0.)omega=0.;
+  double omega = -aa*pow(recombProb-bb,2.)+cc;
+  if ( omega < 0. ) omega = 0.;
   
-  if ( yields.Lindhard < 1. ) omega = 0.03;
+  if ( yields.Lindhard < 1. )
+    omega = 0.03;
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
   Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
@@ -343,7 +344,7 @@ NESTcalc::NESTcalc ( ) {
 
 vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
   
-  vector<double> scintillation(8);  // return vector
+  vector<double> scintillation(9);  // return vector
   
   // Add some variability in g1 drawn from a polynomial spline fit
   double posDep = s1poly[0] + s1poly[1] * dz +
@@ -428,13 +429,14 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
     scintillation[7] *= -1.;
   }
   
+  scintillation[8] =g1;
   return scintillation;
   
 }
 
 vector<double> NESTcalc::GetS2 ( int Ne, double dt ) {
   
-  vector<double> ionization(8);
+  vector<double> ionization(9);
   double alpha = 0.137, beta = 177., gamma = 45.7;
   double epsilon = 1.85 / 1.00126;
   
@@ -444,7 +446,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dt ) {
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
   
-  double elYield = Nee*
+  double elYield = double(Nee)*
     (alpha*E_gas*1e3-beta*p_bar-gamma)*
     gasGap_mm*0.1; // arXiv:1207.2292
   int Nph = int(floor(rand_gauss(elYield,sqrt(s2Fano*elYield))+0.5));
@@ -470,6 +472,12 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dt ) {
   }
   
   if ( pulseArea < abs(s2_thr) ) ionization[0] *= -1.;
+
+  double g2 = ExtEff * elYield / double(Nee) * g1_gas;
+  if ( s2_thr < 0 )
+    g2 *= S2botTotRatio;
+  ionization[8]=g2;
+  
   return ionization;
   
 }
@@ -494,7 +502,7 @@ DetectorParameters NESTcalc::GetDetector ( ) {
   detParam.temperature = T_Kelvin;
   detParam.GXeInterface = liquidBorder;
   copy(begin(efpoly), end(efpoly), begin(detParam.efFit));
-	detParam.dtExtrema[0] = dt_min;
+  detParam.dtExtrema[0] = dt_min;
   detParam.dtExtrema[1] = dt_max;
   
   return detParam;

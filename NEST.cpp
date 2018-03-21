@@ -176,13 +176,12 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb < 0. ) recombProb = 0.;
   if ( recombProb > 1. ) recombProb = 1.;
   
-  double cc = 0.070, bb = 0.530;
+  double ef = yields.ElectricField;
+  double cc = 0.044247+4.5623e-5*ef-1.4171e-8*pow(ef,2.), bb = 0.530;
   double aa = cc/pow(1.-bb,2.);
-  double omega = -aa*pow(recombProb-bb,2.)+cc;
-  if ( omega < 0. ) omega = 0.;
+  double omega = -aa*pow(recombProb-bb,2.)+cc; if(omega<0.)omega=0.;
   
-  if ( yields.Lindhard < 1. )
-    omega = 0.03;
+  if ( yields.Lindhard < 1. ) omega = 0.03;
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
   Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
@@ -299,7 +298,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double QyLvllowE = 1e3/Wq_eV+6.5*(1.-1./(1.+pow(dfield/47.408,1.9851)));
       double QyLvlmedE =32.988-32.988/(1.+pow(dfield/(0.026715*exp(density/0.33926)),0.6705));
       double DokeBirks = 1652.264+(1.415935e10-1652.264)/(1.+pow(dfield/0.02673144,1.564691));
-      Nq = energy * 1e3 / ( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
+      Nq = energy * 1e3 / Wq_eV;//( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
       double LET_power = -2.;
       if ( density < 1. ) LET_power = 2.;
       double QyLvlhighE =28.;
@@ -326,6 +325,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   result.ElectronYield=Ne;
   result.ExcitonRatio =NexONi;
   result.Lindhard = L;
+  result.ElectricField = dfield;
   return result; //everything needed to calculate fluctuations
   
 }

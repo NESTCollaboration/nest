@@ -35,6 +35,7 @@ namespace NEST {
     double ElectronYield;
     double ExcitonRatio;
     double Lindhard;
+    double ElectricField;
   };
   
   struct QuantaResult{

@@ -138,13 +138,13 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   QuantaResult result;
   int Nq_actual, Ne, Nph, Ni, Nex;
   
-  double NexONi = yields.ExcitonRatio;
+  double NexONi = yields.ExcitonRatio, Fano = 5.;
   double alf = 1./(1.+NexONi);
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
   
   if ( yields.Lindhard == 1. ) {
     
-    double Fano = 0.12707-0.029623*density- //Fano factor is  << 1
+    Fano = 0.12707-0.029623*density- //Fano factor is  << 1
       0.0057042*pow(density,2.)+ //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
       0.0015957*pow(density,3.); //to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
     Nq_actual = int(floor(rand_gauss(Nq_mean,sqrt(Fano*Nq_mean))+0.5));
@@ -157,8 +157,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   
   else {
     
-    Ni = poisson_draw(Nq_mean*alf);
-    Nex= poisson_draw(Nq_mean*NexONi*alf);
+    Ni = int(floor(rand_gauss(Nq_mean*alf,sqrt(Fano*Nq_mean*alf))+0.5)); if(Ni<0)Ni=0;
+    Nex= int(floor(rand_gauss(Nq_mean*NexONi*alf,sqrt(Fano*Nq_mean*NexONi*alf))+0.5)); if(Nex<0)Nex=0;
     Nq_actual = Nex + Ni;
     
   }
@@ -177,11 +177,11 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb > 1. ) recombProb = 1.;
   
   double ef = yields.ElectricField;
-  double cc = 0.044247+4.5623e-5*ef-1.4171e-8*pow(ef,2.), bb = 0.530;
+  double cc = 0.3+(2.419110e-2-0.3)/(1.+pow(ef/1.431556e4,0.5)), bb = 0.54;
   double aa = cc/pow(1.-bb,2.);
   double omega = -aa*pow(recombProb-bb,2.)+cc; if(omega<0.)omega=0.;
   
-  if ( yields.Lindhard < 1. ) omega = 0.03;
+  if ( yields.Lindhard < 1. ) omega = 0.;
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
   Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
@@ -229,7 +229,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   case ion:
     {
-      double A1 = massNum, A2 = 131.293, Z1 = atomNum, Z2 = 54.;
+      double A1 = massNum, A2 = MOLAR_MASS, Z1 = atomNum, Z2 = ATOM_NUM;
       double Z_mean = pow(pow(Z1,(2./3.))+pow(Z2,(2./3.)),1.5);
       double E1c = pow(A1,3.)*pow(A1+A2,-2.)*pow(Z_mean,(4./3.))*pow(Z1,(-1./3.))*500.;
       double E2c = pow(A1+A2,2.)*pow(A1,-1.)*Z2*125.;

@@ -172,7 +172,7 @@ double NEST::WIMP_dRate ( double ER, double mWimp ) {
   
   // Define the detector Z and A and the mass of the target nucleus
   double Z = 54.;
-  double A = 131.293;
+  double A = MOLAR_MASS;
   double M_T = A * GeVperAMU;
   
   // Calculate the number of target nuclei per kg

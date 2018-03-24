@@ -65,7 +65,7 @@ int main ( int argc, char** argv ) {
     else {
       cout << "Atomic Number: "; cin >> atomNum;
       cout << "Mass Number: "; cin >> massNum;
-    }
+    } if ( atomNum == ATOM_NUM ) type_num = NR;
   }
   else if ( type == "gamma" || type == "gammaRay" ) type_num = gammaRay;
   else if ( type == "Kr83m" || type == "83mKr" || type == "Kr83" ) type_num = Kr83m;
@@ -165,13 +165,13 @@ int main ( int argc, char** argv ) {
       signal2.push_back(0.);
     
     if ( !MCtruthE ) {
-      double Nph, g1 = scint[8], Ne , g2 = scint2[8];
+      double Nph, g1 = scint[8], Ne, g2 = scint2[8];
       if ( usePE == 0 ) Nph= scint[3] / (g1*(scint[3]/scint[5]));
       else if ( usePE == 1 ) Nph = scint[5] / g1;
       else Nph = scint[7] / g1;
       if ( usePE == 0 ) Ne = scint2[5] / (g2*(scint2[5]/scint2[7]));
       else Ne = scint2[7] / g2;
-      keV = ( Nph + Ne ) * 13.7e-3 / yields.Lindhard;
+      keV = ( Nph + Ne ) * W_DEFAULT * 1e-3 / yields.Lindhard;
     }
     
     printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in

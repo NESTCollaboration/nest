@@ -8,7 +8,10 @@
 #include <assert.h>
 #include <float.h>
 
-#define NEST_AVO 6.022e23
+#define W_DEFAULT 13.7
+#define NEST_AVO 6.0221409e+23
+#define ATOM_NUM 54.
+#define MOLAR_MASS 131.293
 
 namespace NEST {
   
@@ -21,7 +24,6 @@ namespace NEST {
     AmBe = 4,
     Cf = 5,
     ion = 6, //includes alphas, Pb-206
-    
     //electron recoil
     gammaRay = 7,
     beta = 8,

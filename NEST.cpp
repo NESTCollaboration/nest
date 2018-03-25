@@ -139,7 +139,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   QuantaResult result;
   int Nq_actual, Ne, Nph, Ni, Nex;
   
-  double NexONi = yields.ExcitonRatio, Fano = 5.;
+  double NexONi = yields.ExcitonRatio, Fano = 1.;
   double alf = 1./(1.+NexONi);
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
   
@@ -182,7 +182,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   double aa = cc/pow(1.-bb,2.);
   double omega = -aa*pow(recombProb-bb,2.)+cc; if(omega<0.)omega=0.;
   
-  if ( yields.Lindhard < 1. ) omega = 0.;
+  if ( yields.Lindhard < 1. ) omega = 0.05*exp(-pow(elecFrac-0.5,2.)/0.07);
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
   Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
@@ -370,7 +370,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area
-      double phe1 = rand_gauss(1.,sPEres) + rand_gauss(noise[0],noise[1]); Nphe++;
+      double phe1 = rand_gauss(1.,sPEres) + rand_gauss(noise[0],noise[1]); Nphe++; if(phe1>DBL_MAX)phe1=1.;if(phe1<-DBL_MAX)phe1=0.;
       prob = rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
       if ( prob > sPEeff ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
@@ -378,7 +378,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
       double phe2 = 0.;
       if ( rand_uniform() < P_dphe ) {
 	// generate area and increment the photo-electron counter
-	phe2 = rand_gauss(1.,sPEres) + rand_gauss(noise[0],noise[1]); Nphe++;
+	phe2 = rand_gauss(1.,sPEres) + rand_gauss(noise[0],noise[1]); Nphe++; if(phe2>DBL_MAX)phe2=1.;if(phe2<-DBL_MAX)phe2=0.;
 	// zero the area if phe wouldn't have been observed
 	if ( rand_uniform() > sPEeff && prob > sPEeff ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
 	// The dphe occurs simultaneously to the first one from the same source photon. If the first one is seen, so should be the second one

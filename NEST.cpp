@@ -1,5 +1,6 @@
 
 #include "NEST.hh"
+//#include "/Volumes/USB20FD/z_git/NEST/LUX_Run03.hh"
 #include "detector.hh"
 
 using namespace NEST;
@@ -402,19 +403,18 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
   scintillation[4] = Nphd; scintillation[5] = NphdC;
   scintillation[6] = spike; scintillation[7] = spikeC;
   
-  if ( spike > 10 )
-    prob = 1.;
+  if ( spike < coinLevel ) prob = 0.;
+  else if ( coinLevel <= 1 || spike > 10 ) prob = 1.;
+  else if ( coinLevel == 2 ) prob = 1.-pow((double)numPMTs, 1.-spike);
   else {
-    if ( spike >= coinLevel ) { double numer, denom;
-      for ( int i = spike; i > 0; i-- ) {
-	denom += nCr ( numPMTs, i );
+    if ( spike >= coinLevel ) { double numer = 0., denom = 0.;
+      for ( int i = spike; i > 0; i-- ) { denom += nCr ( numPMTs, i );
 	if ( i >= coinLevel ) numer += nCr ( numPMTs, i );
       }
       prob = numer / denom;
     }
     else
-      prob = 0.;
-  }
+      prob = 0.; }
   
   if ( rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }

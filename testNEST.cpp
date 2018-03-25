@@ -166,13 +166,20 @@ int main ( int argc, char** argv ) {
       signal2.push_back(0.);
     
     if ( !MCtruthE ) {
-      double Nph, g1 = scint[8], Ne, g2 = scint2[8];
-      if ( usePE == 0 ) Nph= scint[3] / (g1*(scint[3]/scint[5]));
-      else if ( usePE == 1 ) Nph = scint[5] / g1;
-      else Nph = scint[7] / g1;
-      if ( usePE == 0 ) Ne = scint2[5] / (g2*(scint2[5]/scint2[7]));
-      else Ne = scint2[7] / g2;
-      keV = ( Nph + Ne ) * W_DEFAULT * 1e-3 / yields.Lindhard;
+      double Nph, g1 = fabs(scint[8]), Ne, g2 = fabs(scint2[8]);
+      if ( usePE == 0 ) Nph= fabs(scint[3]) / (g1*fabs(scint[3]/scint[5]));
+      else if ( usePE == 1 ) Nph = fabs(scint[5]) / g1;
+      else Nph = fabs(scint[7]) / g1;
+      if ( usePE == 0 ) Ne = fabs(scint2[5]) / (g2*fabs(scint2[5]/scint2[7]));
+      else Ne = fabs(scint2[7]) / g2;
+      if ( signal1.back() == 0. )
+	Nph= 0.;
+      if ( signal2.back() == 0. )
+	Ne = 0.;
+      if ( yields.Lindhard > DBL_MIN )
+	keV = ( Nph + Ne ) * W_DEFAULT * 1e-3 / yields.Lindhard;
+      else
+	keV = 0.;
     }
     if ( signal1.back() == 0. || signal2.back() == 0. )
       signalE.push_back(0.);

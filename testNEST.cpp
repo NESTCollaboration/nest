@@ -23,12 +23,13 @@ using namespace NEST;
 
 double SetDriftVelocity ( double T, double F );
 double SetDensity ( double T );
-vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s );
-double band[200][6];
+vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s, bool resol );
+void GetEnergyRes ( vector<double> Es );
+double band[200][6], energies[3];
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n; vector<double> signal1,signal2;
+  NEST::NESTcalc n; vector<double> signal1,signal2,signalE;
   double pos_z, driftTime, field, vD, atomNum = 0, massNum = 0;
   
   if (argc < 7)
@@ -173,6 +174,10 @@ int main ( int argc, char** argv ) {
       else Ne = scint2[7] / g2;
       keV = ( Nph + Ne ) * W_DEFAULT * 1e-3 / yields.Lindhard;
     }
+    if ( signal1.back() == 0. || signal2.back() == 0. )
+      signalE.push_back(0.);
+    else
+      signalE.push_back(keV);
     
     printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
     //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
@@ -181,10 +186,20 @@ int main ( int argc, char** argv ) {
     
   }
   
-  GetBand ( signal1, signal2 );
-  fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\n");
-  for ( int j = 0; j < numBins; j++ )
-    fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3]);
+  if ( eMin != eMax ) {
+    GetBand ( signal1, signal2, false );
+    fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\n");
+    for ( int j = 0; j < numBins; j++ )
+      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3]);
+  }
+  else {
+    GetBand ( signal1, signal2, true );
+    GetEnergyRes ( signalE );
+    fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\tEff[%%>thr]\n");
+    for ( int j = 0; j < numBins; j++ )
+      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1]/band[j][0]*100.,
+	      band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
+  }
   
   return 1;
   
@@ -259,42 +274,86 @@ double SetDensity ( double Kelvin ) { // currently only for fixed pressure (satu
 }
 
 vector<vector<double>> GetBand ( vector<double> S1s,
-				 vector<double> S2s ) {
+				 vector<double> S2s, bool resol ) {
   
   vector<vector<double>> signals;
   signals.resize(200,vector<double>(1,-999.));
   double binWidth = ( maxS1 - minS1 ) / double(numBins);
   int i = 0, j = 0; double s1c; int numPts;
   
+  if ( resol ) {
+    numBins = 1;
+    binWidth = DBL_MAX;
+  }
+  
   for ( i = 0; i < S1s.size(); i++ ) {
     for ( j = 0; j < numBins; j++ ) {
       s1c = minS1 + binWidth/2. + double(j) * binWidth;
-      if ( i == 0 ) band[j][0] = s1c;
+      if ( i == 0 && !resol ) band[j][0] = s1c;
       if ( S1s[i] > (s1c-binWidth/2.) && S1s[i] < (s1c+binWidth/2.) ) {
 	if ( S1s[i] && S2s[i] ) {
-	  if ( useS2 )
-	    signals[j].push_back(log10(S2s[i]));
-	  else
-	    signals[j].push_back(log10(S2s[i]/S1s[i]));
+	  if ( resol ) {
+	    signals[j].push_back(S2s[i]);
+	  }
+	  else {
+	    if ( useS2 )
+	      signals[j].push_back(log10(S2s[i]));
+	    else
+	      signals[j].push_back(log10(S2s[i]/S1s[i]));
+	  }
 	  band[j][2] += signals[j].back();
-	  band[j][1] += S1s[i];
+	  if ( resol )
+	    band[j][0] += S1s[i];
+	  else
+	    band[j][1] += S1s[i];
 	}
 	break; }
     }
   }
   for ( j = 0; j < numBins; j++ ) {
-    if ( band[j][0] <= 0. ) band[j][0] = minS1 + binWidth/2. + double(j) * binWidth;
+    if ( band[j][0] <= 0. && !resol ) band[j][0] = minS1 + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
     numPts = signals[j].size();
+    if (resol)
+      band[j][0] /= double(numPts);
     band[j][1] /= double(numPts);
     band[j][2] /= double(numPts);
     for ( i = 0; i < numPts; i++ ) {
       if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.);
+      if ( resol && S1s[i] ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
     }
     band[j][3] /= double(numPts-1);
     band[j][3] = sqrt(band[j][3]);
+    if ( resol ) {
+      band[j][1] /= double(numPts)-1.;
+      band[j][1] = sqrt(band[j][1]);
+    }
     band[j][4] = band[j][3]/sqrt(double(numPts));
   }
   return signals;
+  
+}
+
+void GetEnergyRes ( vector<double> Es ) {
+  
+  int i, numPts = Es.size();
+  double numerator = 0.;
+  
+  for ( i = 0; i < numPts; i++ ) {
+    if ( Es[i] > 0. )
+      { energies[0] += Es[i]; numerator++; }
+  }
+  
+  energies[0] /= numerator;
+  
+  for ( i = 0; i < numPts; i++ ) {
+    if ( Es[i] > 0. ) energies[1] += pow(energies[0]-Es[i],2.);
+  }
+  
+  energies[1] /= numerator - 1.;
+  energies[1] = sqrt(energies[1]);
+  
+  energies[2] = numerator / double ( numPts );
+  return;
   
 }

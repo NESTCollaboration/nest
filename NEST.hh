@@ -16,6 +16,7 @@
 namespace NEST {
   
   typedef enum {
+    
     //nuclear recoil
     NR = 0,
     WIMP = 1,
@@ -56,20 +57,24 @@ namespace NEST {
   struct DetectorParameters {
     double temperature;
     double GXeInterface;
-    double efFit[6];
+    double efFit;
+    double rad;
     double dtExtrema[2];
   };
   
   class NESTcalc {
     
   private:
+
     long double Factorial ( double x );
     double nCr ( double n, double r );
     
   protected:
+
     std::ranlux24 rng;
     
   public:
+
     NESTcalc();
     double rand_uniform();
     int poisson_draw(double mean);
@@ -83,11 +88,13 @@ namespace NEST {
     photonstream GetPhotonTimes(/*inputs*/);
     YieldResult GetYields(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z);
     QuantaResult GetQuanta(YieldResult yields, double density);
-    DetectorParameters GetDetector ( );
-    std::vector<double> GetS1 ( int Nph,double dz, double driftSpeed );
-    std::vector<double> GetS2 ( int Ne, double dt );
+    DetectorParameters GetDetector ( double x, double y, double z );
+    std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed );
+    std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt );
     void SetRandomSeed(unsigned long int);
     
   };
+
 }
+
 #endif

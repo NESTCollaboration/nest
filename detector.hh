@@ -11,13 +11,21 @@ double P_dphe = 0.2; //chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
 int coinLevel= 2; //how many PMTs have to fire for an S1 to count
 int numPMTs = 89; //For coincidence calculation
 
-//S1 PDE quartic polynomial for function of z
-//s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binomial distribution)
-double s1poly[5] = {1.,0.,0.,0.,0.}; // unitless, 1.000 at detector center
+//S1 PDE custom fit for function of z
+//s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
+double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+
+  return 1.; // unitless, 1.000 at detector center
+
+}
 
 //Drift electric field as function of Z in mm
-//The coefficients for a quintic poly, in rising order
-double efpoly[6] = {730.,0.,0.,0.,0.,0.}; // in V/cm
+//For example, use a high-order poly spline
+double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
+
+  return 730.;
+
+}
 
  // Ionization and Secondary Scintillation (S2) parameters
 
@@ -27,6 +35,14 @@ double s2_thr = 300.; //the S2 threshold in phe or PE, *not* phd. Affects NR mos
 double S2botTotRatio = 0.4; //S2 bottom-to-total ratio, not really used anymore
 double E_gas = 12.; //field in kV/cm between liquid/gas border and anode
 double eLife_us = 2200.; //the drift electron mean lifetime in micro-seconds
+
+//S2 PDE custom fit for function of r
+//s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
+double FitS2 ( double xPos_mm, double yPos_mm ) {
+
+  return 1.; // unitless, 1.000 at detector center
+
+}
 
  // Thermodynamic Properties
 
@@ -38,5 +54,6 @@ double p_bar = 2.14; //gas pressure in units of bars, it controls S2 size
 double dtCntr = 40.; //center of detector for S1 corrections, in usec.
 double dt_min = 20.; //minimum. Top of detector fiducial volume
 double dt_max = 60.; //maximum. Bottom of detector fiducial volume
+double radius = 50.;
 double liquidBorder = 150.; // mm not cm, literal liquid/gas border not gate (dt=0)
 double gasGap_mm = 2.5; //EL gap in mm, affecting both field and linear S2 term

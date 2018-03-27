@@ -29,15 +29,15 @@ double band[200][6], energies[3];
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n; vector<double> signal1,signal2,signalE;
-  double pos_z, driftTime, field, vD, atomNum = 0, massNum = 0;
+  NEST::NESTcalc n; vector<double> signal1,signal2,signalE; string position, delimiter, token;
+  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD, atomNum=0, massNum=0; size_t loc;
   
   if (argc < 7)
     {
       cout << "This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector." << endl << endl;
-      cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
+      cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
       cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl << endl;
-      cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] z-position[mm] {optional:seed}" << endl;
+      cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
       return 0;
     }
   unsigned long int numEvts = atoi(argv[1]);
@@ -75,14 +75,14 @@ int main ( int argc, char** argv ) {
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
-  DetectorParameters detParam = n.GetDetector();
+  DetectorParameters detParam = n.GetDetector(0.,0.,0.);
   double rho = SetDensity(detParam.temperature); //cout.precision(12);
   cout << "Density = " << rho << " grams per cubic centimeter or mL" << endl;
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tvert pos [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
   
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
   
@@ -125,16 +125,34 @@ int main ( int argc, char** argv ) {
     }
     
   Z_NEW:
-    if ( atof(argv[6]) == -1. ) // -1 means default, random location mode
+    if ( atof(argv[6]) == -1. ) { // -1 means default, random location mode
       pos_z = 0. + ( detParam.GXeInterface - 0. ) * n.rand_uniform(); // initial guess
-    else pos_z = atof(argv[6]);
+      r = detParam.rad * sqrt ( n.rand_uniform() );
+      phi = 2.*M_PI*n.rand_uniform();
+      pos_x = r * cos(phi); pos_y = r * sin(phi);
+    }
+    else {
+      position = argv[6];
+      delimiter = ",";
+      loc = 0; int i = 0;
+      while ( (loc = position.find(delimiter)) != string::npos ) {
+	token = position.substr(0,loc);
+	if ( i == 0 ) pos_x = stof(token);
+	else pos_y = stof(token);
+	position.erase(0,loc+delimiter.length());
+	i++;
+      }
+      pos_z = stof(position);
+      if ( stof(position) == -1. )
+	pos_z = 0. + ( detParam.GXeInterface - 0. ) * n.rand_uniform();
+      if ( stof(token) == -999. ) {
+	r = detParam.rad * sqrt ( n.rand_uniform() );
+	phi = 2.*M_PI*n.rand_uniform();
+	pos_x = r * cos(phi); pos_y = r * sin(phi); }
+    }
     
     if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
-      field = detParam.efFit[0] + detParam.efFit[1] * pos_z +
-	detParam.efFit[2] * pow(pos_z,2.)+
-	detParam.efFit[3] * pow(pos_z,3.)+
-	detParam.efFit[4] * pow(pos_z,4.)+
-	detParam.efFit[5] * pow(pos_z,5.); // note sixth term: this one is quintic
+      detParam = n.GetDetector ( pos_x, pos_y, pos_z ); field = detParam.efFit;
     }
     else field = atof(argv[5]);
     
@@ -142,13 +160,13 @@ int main ( int argc, char** argv ) {
     
     vD = SetDriftVelocity(detParam.temperature,field);
     driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
-    if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && atof(argv[6]) == -1. )
+    if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && (atof(argv[6]) == -1. || stof(position) == -1.) )
       goto Z_NEW;
     
     NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,double(massNum),double(atomNum));
     NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
     
-    vector<double> scint = n.GetS1(quanta.photons,pos_z,vD);
+    vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,vD);
     if ( scint[0] > 0. && scint[1] > 0. && scint[2] > 0. && scint[3] > 0. && scint[4] > 0. && scint[5] > 0. && scint[6] > 0. && scint[7] > 0. ) {
       if ( usePE == 0 ) signal1.push_back(scint[3]);
       else if ( usePE == 1 ) signal1.push_back(scint[5]);
@@ -157,7 +175,7 @@ int main ( int argc, char** argv ) {
     else
       signal1.push_back(0.);
     
-    vector<double> scint2= n.GetS2(quanta.electrons,driftTime);
+    vector<double> scint2= n.GetS2(quanta.electrons,pos_x,pos_y,driftTime);
     if ( scint2[0] > 0. && scint2[1] > 0. && scint2[2] > 0. && scint2[3] > 0. && scint2[4] > 0. && scint2[5] > 0. && scint2[6] > 0. && scint2[7] > 0. ) {
       if ( usePE == 0 ) signal2.push_back(scint2[5]);
       else signal2.push_back(scint2[7]); //no spike option for S2
@@ -167,10 +185,12 @@ int main ( int argc, char** argv ) {
     
     if ( !MCtruthE ) {
       double Nph, g1 = fabs(scint[8]), Ne, g2 = fabs(scint2[8]);
-      if ( usePE == 0 ) Nph= fabs(scint[3]) / (g1*fabs(scint[3]/scint[5]));
+      if ( usePE == 0 )
+	Nph= fabs(scint[3]) / (g1*fabs(scint[3]/scint[5]));
       else if ( usePE == 1 ) Nph = fabs(scint[5]) / g1;
       else Nph = fabs(scint[7]) / g1;
-      if ( usePE == 0 ) Ne = fabs(scint2[5]) / (g2*fabs(scint2[5]/scint2[7]));
+      if ( usePE == 0 )
+	Ne = fabs(scint2[5]) / (g2*fabs(scint2[5]/scint2[7]));
       else Ne = fabs(scint2[7]) / g2;
       if ( signal1.back() == 0. )
 	Nph= 0.;
@@ -186,8 +206,8 @@ int main ( int argc, char** argv ) {
     else
       signalE.push_back(keV);
     
-    printf("%.6f\t%.6f\t%.6f\t%.6f\t%d\t%d\t",keV,field,driftTime,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
-    //printf("%.6f\t%.6f\t%.6f\t%.6f\t%lf\t%lf\t",keV,field,driftTime,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
+    printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
+    //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
     printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]);
     printf("%i\t%.6f\t%.6f\n", (int)scint2[0], scint2[4], scint2[7]);
     
@@ -317,6 +337,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
 	break; }
     }
   }
+  
   for ( j = 0; j < numBins; j++ ) {
     if ( band[j][0] <= 0. && !resol ) band[j][0] = minS1 + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
@@ -337,6 +358,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     }
     band[j][4] = band[j][3]/sqrt(double(numPts));
   }
+  
   return signals;
   
 }
@@ -354,7 +376,8 @@ void GetEnergyRes ( vector<double> Es ) {
   energies[0] /= numerator;
   
   for ( i = 0; i < numPts; i++ ) {
-    if ( Es[i] > 0. ) energies[1] += pow(energies[0]-Es[i],2.);
+    if ( Es[i] > 0. )
+      energies[1] += pow(energies[0]-Es[i],2.);
   }
   
   energies[1] /= numerator - 1.;

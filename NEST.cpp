@@ -182,7 +182,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   double aa = cc/pow(1.-bb,2.);
   double omega = -aa*pow(recombProb-bb,2.)+cc; if(omega<0.)omega=0.;
   
-  if ( yields.Lindhard < 1. ) omega = 0.05*exp(-pow(elecFrac-0.5,2.)/0.07);
+  if ( yields.Lindhard < 1. ) omega = 0.04*exp(-pow(elecFrac-0.5,2.)/0.17);
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
   Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
@@ -343,21 +343,15 @@ NESTcalc::NESTcalc ( ) {
   
 }
 
-vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
+vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
+				 double dz, double driftVelocity ) {
   
   vector<double> scintillation(9);  // return vector
   
   // Add some variability in g1 drawn from a polynomial spline fit
-  double posDep = s1poly[0] + s1poly[1] * dz +
-    s1poly[2] * pow(dz,2.)+
-    s1poly[3] * pow(dz,3.)+
-    s1poly[4] * pow(dz,4.);
+  double posDep = FitS1 ( dx, dy, dz );
   double dz_center = liquidBorder - driftVelocity * dtCntr; //go from t to z
-  posDep /= s1poly[0]+
-    s1poly[1] * pow(dz_center,1.)+
-    s1poly[2] * pow(dz_center,2.)+
-    s1poly[3] * pow(dz_center,3.)+
-    s1poly[4] * pow(dz_center,4.); // Z is always in mm now never cm
+  posDep /= FitS1 ( 0., 0., dz_center ); // XYZ always in mm now never cm
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
   int nHits=BinomFluct(Nph,g1*posDep), Nphe = 0;
@@ -434,11 +428,15 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dz, double driftVelocity ) {
   
 }
 
-vector<double> NESTcalc::GetS2 ( int Ne, double dt ) {
+vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
   
   vector<double> ionization(9);
   double alpha = 0.137, beta = 177., gamma = 45.7;
   double epsilon = 1.85 / 1.00126;
+  
+  // Add some variability in g1_gas drawn from a polynomial spline fit
+  double posDep = FitS2 ( dx, dy ); // XY is always in mm now, never cm
+  posDep /= FitS2 ( 0., 0. );
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
@@ -495,16 +493,18 @@ double NESTcalc::nCr ( double n, double r ) {
   
 }
 
-DetectorParameters NESTcalc::GetDetector ( ) {
+DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
+					   double zPos_mm ) {
   
   DetectorParameters detParam;
   
   detParam.temperature = T_Kelvin;
   detParam.GXeInterface = liquidBorder;
-  copy(begin(efpoly), end(efpoly), begin(detParam.efFit));
+  detParam.efFit = FitEF ( xPos_mm, yPos_mm, zPos_mm );
+  detParam.rad = radius;
   detParam.dtExtrema[0] = dt_min;
   detParam.dtExtrema[1] = dt_max;
   
-  return detParam;
+  return detParam; //everything needed for testNEST to work
   
 }

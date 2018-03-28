@@ -23,14 +23,16 @@ using namespace NEST;
 
 double SetDriftVelocity ( double T, double F );
 double SetDensity ( double T );
+
+double band[200][6], energies[3];
 vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s, bool resol );
 void GetEnergyRes ( vector<double> Es );
-double band[200][6], energies[3];
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n; vector<double> signal1,signal2,signalE; string position, delimiter, token;
-  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD, atomNum=0, massNum=0; size_t loc;
+  NEST::NESTcalc n; vector<double> signal1,signal2,signalE;
+  string position, delimiter, token; size_t loc;
+  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD, atomNum=0, massNum=0;
   
   if (argc < 7)
     {
@@ -75,9 +77,11 @@ int main ( int argc, char** argv ) {
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
-  DetectorParameters detParam = n.GetDetector(0.,0.,0.);
+  DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.);
   double rho = SetDensity(detParam.temperature); //cout.precision(12);
-  cout << "Density = " << rho << " grams per cubic centimeter or mL" << endl;
+  cout << "Density = " << rho << " g/mL" << "\t";
+  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface / 2. );
+  cout << "central vDrift = " << SetDriftVelocity(detParam.temperature,detParam.efFit) << " mm/us\n\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
     fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
@@ -168,20 +172,27 @@ int main ( int argc, char** argv ) {
     
     vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,vD);
     if ( scint[0] > 0. && scint[1] > 0. && scint[2] > 0. && scint[3] > 0. && scint[4] > 0. && scint[5] > 0. && scint[6] > 0. && scint[7] > 0. ) {
-      if ( usePE == 0 ) signal1.push_back(scint[3]);
-      else if ( usePE == 1 ) signal1.push_back(scint[5]);
-      else signal1.push_back(scint[7]);
+      if ( usePE == 0 && scint[3] > minS1 && scint[3] < maxS1 )
+	signal1.push_back(scint[3]);
+      else if ( usePE == 1 && scint[5] > minS1 && scint[5] < maxS1 )
+	signal1.push_back(scint[5]);
+      else if ( usePE >= 2 && scint[7] > minS1 && scint[7] < maxS1 )
+	signal1.push_back(scint[7]);
+      else
+	signal1.push_back(0.);
     }
-    else
-      signal1.push_back(0.);
+    else signal1.push_back(0.);
     
     vector<double> scint2= n.GetS2(quanta.electrons,pos_x,pos_y,driftTime);
     if ( scint2[0] > 0. && scint2[1] > 0. && scint2[2] > 0. && scint2[3] > 0. && scint2[4] > 0. && scint2[5] > 0. && scint2[6] > 0. && scint2[7] > 0. ) {
-      if ( usePE == 0 ) signal2.push_back(scint2[5]);
-      else signal2.push_back(scint2[7]); //no spike option for S2
+      if ( usePE == 0 && scint2[5] > minS2 && scint2[5] < maxS2 )
+	signal2.push_back(scint2[5]);
+      else if ( usePE >= 1 && scint2[7] > minS2 && scint2[7] < maxS2 )
+	signal2.push_back(scint2[7]); //no spike option for S2
+      else
+	signal2.push_back(0.);
     }
-    else
-      signal2.push_back(0.);
+    else signal2.push_back(0.);
     
     if ( !MCtruthE ) {
       double Nph, g1 = fabs(scint[8]), Ne, g2 = fabs(scint2[8]);

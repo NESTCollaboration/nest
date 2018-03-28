@@ -470,11 +470,17 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
   }
   
   if ( pulseArea < abs(s2_thr) ) ionization[0] *= -1.;
-
-  double g2 = ExtEff * elYield / double(Nee) * g1_gas;
+  
+  double SE = elYield / double(Nee) * g1_gas;
+  double g2 = ExtEff * SE;
   if ( s2_thr < 0 )
     g2 *= S2botTotRatio;
   ionization[8]=g2;
+  
+  if ( !dx && !dy && !dt && Ne == 1 ) {
+    cout << endl << "g1 = " << g1 << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
+    cout << ExtEff*100. << "%, while SE_mean = " << SE << ")\t";
+  }
   
   return ionization;
   
@@ -497,6 +503,7 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
 					   double zPos_mm ) {
   
   DetectorParameters detParam;
+  vector<double> secondary(9);
   
   detParam.temperature = T_Kelvin;
   detParam.GXeInterface = liquidBorder;
@@ -504,6 +511,12 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
   detParam.rad = radius;
   detParam.dtExtrema[0] = dt_min;
   detParam.dtExtrema[1] = dt_max;
+  
+  if ( xPos_mm == -999. &&
+       yPos_mm == -999. &&
+       zPos_mm == -999. ) {
+    secondary = GetS2 ( 1, 0., 0., 0. );
+  }
   
   return detParam; //everything needed for testNEST to work
   

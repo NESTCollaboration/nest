@@ -234,9 +234,15 @@ int main ( int argc, char** argv ) {
     GetBand ( signal1, signal2, true );
     GetEnergyRes ( signalE );
     fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\tEff[%%>thr]\n");
-    for ( int j = 0; j < numBins; j++ )
+    for ( int j = 0; j < numBins; j++ ) {
       fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1]/band[j][0]*100.,
 	      band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
+      if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
+	   isnan(band[j][0]) || isnan(band[j][1]) || isnan(band[j][2]) || isnan(band[j][3]) )
+	cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
+      else if ( energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0 )
+	cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
+      else ; }
   }
   
   return 1;

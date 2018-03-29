@@ -180,7 +180,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   double ef = yields.ElectricField;
   double cc = 0.3+(2.419110e-2-0.3)/(1.+pow(ef/1.431556e4,0.5)), bb = 0.54;
   double aa = cc/pow(1.-bb,2.);
-  double omega = -aa*pow(recombProb-bb,2.)+cc; if(omega<0.)omega=0.;
+  double omega = -aa*pow(recombProb-bb,2.)+cc;
+  if ( omega < 0.0 ) omega = 0.0;
   
   if ( yields.Lindhard < 1. ) omega = 0.04*exp(-pow(elecFrac-0.5,2.)/0.17);
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
@@ -347,7 +348,8 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
 				 double dz, double driftVelocity ) {
   
   vector<double> scintillation(9);  // return vector
-  
+  vector<double> newSpike(2); // for re-doing spike counting more precisely
+
   // Add some variability in g1 drawn from a polynomial spline fit
   double posDep = FitS1 ( dx, dy, dz );
   double dz_center = liquidBorder - driftVelocity * dtCntr; //go from t to z
@@ -424,6 +426,11 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   }
   
   scintillation[8] =g1;
+  
+  newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, scintillation );
+  scintillation[6] = newSpike[0];
+  scintillation[7] = newSpike[1];
+  
   return scintillation;
   
 }
@@ -444,10 +451,10 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
   
-  double elYield = double(Nee)*
-    (alpha*E_gas*1e3-beta*p_bar-gamma)*
+  double elYield = (alpha*E_gas*1e3-beta*p_bar-gamma)*
     gasGap_mm*0.1; // arXiv:1207.2292
-  int Nph = int(floor(rand_gauss(elYield,sqrt(s2Fano*elYield))+0.5));
+  int Nph = int(floor(rand_gauss(elYield*double(Nee),
+				 sqrt(s2Fano*elYield*double(Nee)))+0.5));
   int nHits = BinomFluct(Nph,g1_gas);
   int Nphe = nHits + BinomFluct(nHits,P_dphe);
   double pulseArea=rand_gauss(Nphe,sPEres*sqrt(Nphe));
@@ -471,7 +478,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
   
   if ( pulseArea < abs(s2_thr) ) ionization[0] *= -1.;
   
-  double SE = elYield / double(Nee) * g1_gas;
+  double SE = elYield* g1_gas;
   double g2 = ExtEff * SE;
   if ( s2_thr < 0 )
     g2 *= S2botTotRatio;
@@ -523,19 +530,30 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
 }
 
 void NESTcalc::DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam ) {
- 	// Grab previous drift time range in detector parameters
-	double prev_dt_min = detParam.dtExtrema[0];
-	double prev_dt_max = detParam.dtExtrema[1];
-
-	// Reset drift time minimum and maximum
+  
+  // Grab previous drift time range in detector parameters
+  double prev_dt_min = detParam.dtExtrema[0];
+  double prev_dt_max = detParam.dtExtrema[1];
+  
+  // Reset drift time minimum and maximum
   detParam.dtExtrema[0] = drift_low;
   detParam.dtExtrema[1] = drift_high;
-	
-	// Ensure that we are not setting the new drift range outside the bounds of the previously set values.
-	// This is the safest way to implement,so that we aren't working outside the bounds of the detector settings file.	
-	if (detParam.dtExtrema[0] < prev_dt_min || detParam.dtExtrema[1] > prev_dt_max || detParam.dtExtrema[0] > detParam.dtExtrema[1]) {
-		cerr << "*** New drift time range completely outside of original fiducial! ***" << endl;
-		exit(1);
-	}
+  
+  // Ensure that we are not setting the new drift range outside the bounds of the previously set values.
+  // This is the safest way to implement,so that we aren't working outside the bounds of the detector settings file.	
+  if (detParam.dtExtrema[0] < prev_dt_min || detParam.dtExtrema[1] > prev_dt_max || detParam.dtExtrema[0] > detParam.dtExtrema[1]) {
+    cerr << "*** New drift time range completely outside of original fiducial! ***" << endl;
+    exit(1);
+  }
+  
 }
 
+vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
+				    double driftSpeed, vector<double> oldScint ) {
+  vector<double> newSpike(2);
+  
+  newSpike[0] = oldScint[6];
+  newSpike[1] = oldScint[7];
+
+  return newSpike; // regular and position-corrected spike counts returned
+}

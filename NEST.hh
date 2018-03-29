@@ -89,6 +89,7 @@ namespace NEST {
     YieldResult GetYields(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z);
     QuantaResult GetQuanta(YieldResult yields, double density);
     DetectorParameters GetDetector ( double x, double y, double z );
+    void DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam );
     std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed );
     std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt );
     void SetRandomSeed(unsigned long int);

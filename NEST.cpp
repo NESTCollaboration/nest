@@ -521,3 +521,21 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
   return detParam; //everything needed for testNEST to work
   
 }
+
+void NESTcalc::DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam ) {
+ 	// Grab previous drift time range in detector parameters
+	double prev_dt_min = detParam.dtExtrema[0];
+	double prev_dt_max = detParam.dtExtrema[1];
+
+	// Reset drift time minimum and maximum
+  detParam.dtExtrema[0] = drift_low;
+  detParam.dtExtrema[1] = drift_high;
+	
+	// Ensure that we are not setting the new drift range outside the bounds of the previously set values.
+	// This is the safest way to implement,so that we aren't working outside the bounds of the detector settings file.	
+	if (detParam.dtExtrema[0] < prev_dt_min || detParam.dtExtrema[1] > prev_dt_max || detParam.dtExtrema[0] > detParam.dtExtrema[1]) {
+		cerr << "*** New drift time range completely outside of original fiducial! ***" << endl;
+		exit(1);
+	}
+}
+

@@ -415,12 +415,12 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   if ( rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
   else { // some of these are set to -1 to flag them as having been below threshold
-    //scintillation[0] *= -1.;
-    //scintillation[1] *= -1.;
+    scintillation[0] *= -1.;
+    scintillation[1] *= -1.;
     scintillation[2] *= -1.;
     scintillation[3] *= -1.;
-    //scintillation[4] *= -1.;
-    //scintillation[5] *= -1.;
+    scintillation[4] *= -1.;
+    scintillation[5] *= -1.;
     scintillation[6] *= -1.;
     scintillation[7] *= -1.;
   }
@@ -476,7 +476,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
     ionization[6] = S2b / (1.+P_dphe); ionization[7] = S2bc / (1.+P_dphe);
   }
   
-  if ( pulseArea < abs(s2_thr) ) ionization[0] *= -1.;
+  if(pulseArea<fabs(s2_thr)) for(int i=0;i<8;i++) ionization[i]*=-1.;
   
   double SE = elYield* g1_gas;
   double g2 = ExtEff * SE;
@@ -540,7 +540,7 @@ void NESTcalc::DriftRangeOverride ( double drift_low, double drift_high, Detecto
   detParam.dtExtrema[1] = drift_high;
   
   // Ensure that we are not setting the new drift range outside the bounds of the previously set values.
-  // This is the safest way to implement,so that we aren't working outside the bounds of the detector settings file.	
+  // This is the safest way to implement, so that we aren't working outside the bounds of the detector settings file.
   if (detParam.dtExtrema[0] < prev_dt_min || detParam.dtExtrema[1] > prev_dt_max || detParam.dtExtrema[0] > detParam.dtExtrema[1]) {
     cerr << "*** New drift time range completely outside of original fiducial! ***" << endl;
     exit(1);

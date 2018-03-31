@@ -81,7 +81,8 @@ int main ( int argc, char** argv ) {
   double rho = SetDensity(detParam.temperature); //cout.precision(12);
   cout << "Density = " << rho << " g/mL" << "\t";
   detParam = n.GetDetector ( 0., 0., detParam.GXeInterface / 2. );
-  cout << "central vDrift = " << SetDriftVelocity(detParam.temperature,detParam.efFit) << " mm/us\n\n";
+  cout << "central vDrift = " << SetDriftVelocity(detParam.temperature,detParam.efFit) << " mm/us\n";
+  cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
     fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-X\tS2_rawArea\tS2_Zcorr [phd]\n");
@@ -171,27 +172,19 @@ int main ( int argc, char** argv ) {
     NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
     
     vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,vD);
-    if ( scint[0] > 0. && scint[1] > 0. && scint[2] > 0. && scint[3] > 0. && scint[4] > 0. && scint[5] > 0. && scint[6] > 0. && scint[7] > 0. ) {
-      if ( usePE == 0 && scint[3] > minS1 && scint[3] < maxS1 )
-	signal1.push_back(scint[3]);
-      else if ( usePE == 1 && scint[5] > minS1 && scint[5] < maxS1 )
-	signal1.push_back(scint[5]);
-      else if ( usePE >= 2 && scint[7] > minS1 && scint[7] < maxS1 )
-	signal1.push_back(scint[7]);
-      else
-	signal1.push_back(0.);
-    }
+    if ( usePE == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
+      signal1.push_back(scint[3]);
+    else if ( usePE == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
+      signal1.push_back(scint[5]);
+    else if ( usePE >= 2 && fabs(scint[7]) > minS1 && scint[7] < maxS1 )
+      signal1.push_back(scint[7]);
     else signal1.push_back(0.);
     
     vector<double> scint2= n.GetS2(quanta.electrons,pos_x,pos_y,driftTime);
-    if ( scint2[0] > 0. && scint2[1] > 0. && scint2[2] > 0. && scint2[3] > 0. && scint2[4] > 0. && scint2[5] > 0. && scint2[6] > 0. && scint2[7] > 0. ) {
-      if ( usePE == 0 && scint2[5] > minS2 && scint2[5] < maxS2 )
-	signal2.push_back(scint2[5]);
-      else if ( usePE >= 1 && scint2[7] > minS2 && scint2[7] < maxS2 )
-	signal2.push_back(scint2[7]); //no spike option for S2
-      else
-	signal2.push_back(0.);
-    }
+    if ( usePE == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
+      signal2.push_back(scint2[5]);
+    else if ( usePE >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )
+      signal2.push_back(scint2[7]); //no spike option for S2
     else signal2.push_back(0.);
     
     if ( !MCtruthE ) {
@@ -203,16 +196,16 @@ int main ( int argc, char** argv ) {
       if ( usePE == 0 )
 	Ne = fabs(scint2[5]) / (g2*fabs(scint2[5]/scint2[7]));
       else Ne = fabs(scint2[7]) / g2;
-      if ( signal1.back() == 0. )
+      if ( signal1.back() <= 0. )
 	Nph= 0.;
-      if ( signal2.back() == 0. )
+      if ( signal2.back() <= 0. )
 	Ne = 0.;
-      if ( yields.Lindhard > DBL_MIN )
+      if ( yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0. )
 	keV = ( Nph + Ne ) * W_DEFAULT * 1e-3 / yields.Lindhard;
       else
 	keV = 0.;
     }
-    if ( signal1.back() == 0. || signal2.back() == 0. )
+    if ( signal1.back() <= 0. || signal2.back() <= 0. )
       signalE.push_back(0.);
     else
       signalE.push_back(keV);
@@ -226,9 +219,9 @@ int main ( int argc, char** argv ) {
   
   if ( eMin != eMax ) {
     GetBand ( signal1, signal2, false );
-    fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\n");
+    fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
     for ( int j = 0; j < numBins; j++ )
-      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3]);
+      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3],band[j][5]*100.);
   }
   else {
     GetBand ( signal1, signal2, true );
@@ -323,7 +316,8 @@ vector<vector<double>> GetBand ( vector<double> S1s,
   vector<vector<double>> signals;
   signals.resize(200,vector<double>(1,-999.));
   double binWidth = ( maxS1 - minS1 ) / double(numBins);
-  int i = 0, j = 0; double s1c; int numPts;
+  int i = 0, j = 0; double s1c, numPts;
+  unsigned long reject[200] = {0};
   
   if ( resol ) {
     numBins = 1;
@@ -334,8 +328,8 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     for ( j = 0; j < numBins; j++ ) {
       s1c = minS1 + binWidth/2. + double(j) * binWidth;
       if ( i == 0 && !resol ) band[j][0] = s1c;
-      if ( S1s[i] > (s1c-binWidth/2.) && S1s[i] < (s1c+binWidth/2.) ) {
-	if ( S1s[i] && S2s[i] ) {
+      if ( fabs(S1s[i]) > (s1c-binWidth/2.) && fabs(S1s[i]) < (s1c+binWidth/2.) ) {
+	if ( S1s[i] > 0. && S2s[i] > 0. ) {
 	  if ( resol ) {
 	    signals[j].push_back(S2s[i]);
 	  }
@@ -351,6 +345,8 @@ vector<vector<double>> GetBand ( vector<double> S1s,
 	  else
 	    band[j][1] += S1s[i];
 	}
+	else
+	  reject[j]++;
 	break; }
     }
   }
@@ -358,22 +354,23 @@ vector<vector<double>> GetBand ( vector<double> S1s,
   for ( j = 0; j < numBins; j++ ) {
     if ( band[j][0] <= 0. && !resol ) band[j][0] = minS1 + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
-    numPts = signals[j].size();
+    numPts = (double)signals[j].size();
     if (resol)
-      band[j][0] /= double(numPts);
-    band[j][1] /= double(numPts);
-    band[j][2] /= double(numPts);
-    for ( i = 0; i < numPts; i++ ) {
+      band[j][0] /= numPts;
+    band[j][1] /= numPts;
+    band[j][2] /= numPts;
+    for ( i = 0; i < (int)numPts; i++ ) {
       if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.);
-      if ( resol && S1s[i] ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
+      if ( resol && S1s[i] > 0.00 ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
     }
-    band[j][3] /= double(numPts-1);
+    band[j][3] /= numPts - 1.;
     band[j][3] = sqrt(band[j][3]);
     if ( resol ) {
-      band[j][1] /= double(numPts)-1.;
+      band[j][1] /= numPts - 1.;
       band[j][1] = sqrt(band[j][1]);
     }
-    band[j][4] = band[j][3]/sqrt(double(numPts));
+    band[j][4] = band[j][3] / sqrt ( numPts );
+    band[j][5] = numPts/(numPts+double(reject[j]));
   }
   
   return signals;

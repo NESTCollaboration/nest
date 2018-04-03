@@ -218,7 +218,10 @@ int main ( int argc, char** argv ) {
   }
   
   if ( eMin != eMax ) {
-    GetBand ( signal1, signal2, false );
+    if ( useS2 == 2 )
+      GetBand ( signal2, signal1, false );
+    else
+      GetBand ( signal1, signal2, false );
     fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
     for ( int j = 0; j < numBins; j++ )
       fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3],band[j][5]*100.);
@@ -315,7 +318,15 @@ vector<vector<double>> GetBand ( vector<double> S1s,
   
   vector<vector<double>> signals;
   signals.resize(200,vector<double>(1,-999.));
-  double binWidth = ( maxS1 - minS1 ) / double(numBins);
+  double binWidth, border;
+  if ( useS2 == 2 ) {
+    binWidth = ( maxS2 - minS2 ) / double(numBins);
+    border = minS2;
+  }
+  else {
+    binWidth = ( maxS1 - minS1 ) / double(numBins);
+    border = minS1;
+  }
   int i = 0, j = 0; double s1c, numPts;
   unsigned long reject[200] = {0};
   
@@ -326,18 +337,20 @@ vector<vector<double>> GetBand ( vector<double> S1s,
   
   for ( i = 0; i < S1s.size(); i++ ) {
     for ( j = 0; j < numBins; j++ ) {
-      s1c = minS1 + binWidth/2. + double(j) * binWidth;
+      s1c = border + binWidth/2. + double(j) * binWidth;
       if ( i == 0 && !resol ) band[j][0] = s1c;
       if ( fabs(S1s[i]) > (s1c-binWidth/2.) && fabs(S1s[i]) < (s1c+binWidth/2.) ) {
-	if ( S1s[i] > 0. && S2s[i] > 0. ) {
+	if ( S1s[i] >= 0. && S2s[i] >= 0. ) {
 	  if ( resol ) {
 	    signals[j].push_back(S2s[i]);
 	  }
 	  else {
-	    if ( useS2 )
-	      signals[j].push_back(log10(S2s[i]));
+	    if ( useS2 == 0 )
+	      { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S2s[i]/S1s[i])); else signals[j].push_back(0.); }
+	    else if ( useS2 == 1 )
+	      { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S2s[i])); else signals[j].push_back(0.); }
 	    else
-	      signals[j].push_back(log10(S2s[i]/S1s[i]));
+	      { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S1s[i]/S2s[i])); else signals[j].push_back(0.); }
 	  }
 	  band[j][2] += signals[j].back();
 	  if ( resol )
@@ -352,7 +365,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
   }
   
   for ( j = 0; j < numBins; j++ ) {
-    if ( band[j][0] <= 0. && !resol ) band[j][0] = minS1 + binWidth/2. + double(j) * binWidth;
+    if ( band[j][0] <= 0. && !resol ) band[j][0] = border + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
     if (resol)
@@ -361,7 +374,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     band[j][2] /= numPts;
     for ( i = 0; i < (int)numPts; i++ ) {
       if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.);
-      if ( resol && S1s[i] > 0.00 ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
+      if ( resol && S1s[i] >= 0.0 ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
     }
     band[j][3] /= numPts - 1.;
     band[j][3] = sqrt(band[j][3]);

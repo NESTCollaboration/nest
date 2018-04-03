@@ -399,30 +399,39 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   scintillation[4] = Nphd; scintillation[5] = NphdC;
   scintillation[6] = spike; scintillation[7] = spikeC;
   
-  if ( spike < coinLevel ) prob = 0.;
-  else if ( coinLevel <= 1 || spike > 10 ) prob = 1.;
-  else if ( coinLevel == 2 ) prob = 1.-pow((double)numPMTs, 1.-spike);
+  if ( spike < coinLevel ) //no chance of meeting coincidence requirement
+    prob = 0.;
   else {
-    if ( spike >= coinLevel ) { double numer = 0., denom = 0.;
-      for ( int i = spike; i > 0; i-- ) { denom += nCr ( numPMTs, i );
-	if ( i >= coinLevel ) numer += nCr ( numPMTs, i );
+    if ( spike > 10. ) prob = 1.;
+    else {
+      if ( coinLevel == 0 ) prob = 1.;
+      else if ( coinLevel == 1 ) {
+        if ( spike >= 1. ) prob = 1.;
+        else prob = 0.;
       }
-      prob = numer / denom;
-    }
-    else
-      prob = 0.; }
+      else if ( coinLevel == 2 ) prob = 1.-pow((double)numPMTs,1.-spike);
+      else {
+        double numer = 0., denom = 0.;
+        for ( int i = spike; i > 0; i-- ) {
+          denom += nCr ( numPMTs, i );
+          if ( i >= coinLevel ) numer += nCr ( numPMTs, i );
+	}
+        prob = numer / denom;
+      } //end of case of coinLevel of 3 or higher
+    } // end of case of spike is equal to 9 or lower
+  } //the end of case of spike >= coinLevel
   
   if ( rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
   else { // some of these are set to -1 to flag them as having been below threshold
-    scintillation[0] *= -1.;
-    scintillation[1] *= -1.;
-    scintillation[2] *= -1.;
-    scintillation[3] *= -1.;
-    scintillation[4] *= -1.;
-    scintillation[5] *= -1.;
-    scintillation[6] *= -1.;
-    scintillation[7] *= -1.;
+    scintillation[0] *= -1.; if ( scintillation[0] == 0. ) scintillation[0] = -DBL_MIN;
+    scintillation[1] *= -1.; if ( scintillation[1] == 0. ) scintillation[1] = -DBL_MIN;
+    scintillation[2] *= -1.; if ( scintillation[2] == 0. ) scintillation[2] = -DBL_MIN;
+    scintillation[3] *= -1.; if ( scintillation[3] == 0. ) scintillation[3] = -DBL_MIN;
+    scintillation[4] *= -1.; if ( scintillation[4] == 0. ) scintillation[4] = -DBL_MIN;
+    scintillation[5] *= -1.; if ( scintillation[5] == 0. ) scintillation[5] = -DBL_MIN;
+    scintillation[6] *= -1.; if ( scintillation[6] == 0. ) scintillation[6] = -DBL_MIN;
+    scintillation[7] *= -1.; if ( scintillation[7] == 0. ) scintillation[7] = -DBL_MIN;
   }
   
   scintillation[8] =g1;
@@ -476,7 +485,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
     ionization[6] = S2b / (1.+P_dphe); ionization[7] = S2bc / (1.+P_dphe);
   }
   
-  if(pulseArea<fabs(s2_thr)) for(int i=0;i<8;i++) ionization[i]*=-1.;
+  if(pulseArea<fabs(s2_thr)) for(int i=0;i<8;i++) { ionization[i]*=-1.; if(ionization[i]==0.)ionization[i]=-DBL_MIN; }
   
   double SE = elYield* g1_gas;
   double g2 = ExtEff * SE;
@@ -550,10 +559,12 @@ void NESTcalc::DriftRangeOverride ( double drift_low, double drift_high, Detecto
 
 vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
 				    double driftSpeed, vector<double> oldScint ) {
+  
   vector<double> newSpike(2);
   
   newSpike[0] = oldScint[6];
   newSpike[1] = oldScint[7];
 
   return newSpike; // regular and position-corrected spike counts returned
+  
 }

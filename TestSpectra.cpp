@@ -151,7 +151,7 @@ double NEST::DD_spectrum(double xMin,double xMax,NESTcalc& n){  //JV LUX, most c
 //------++++++------++++++------++++++------++++++------++++++------++++++------
 
 //This spectrum comes from Phys. Rev. D 82 (2010) 023530 (McCabe)
-double NEST::WIMP_dRate ( double ER, double mWimp ) {
+double NEST::WIMP_dRate ( double ER, double mWimp, NESTcalc &n ) {
   
   // We are going to hard code in the astrophysical halo for now.  This may be 
   // something that we make an argument later, but this is good enough to start.
@@ -172,7 +172,7 @@ double NEST::WIMP_dRate ( double ER, double mWimp ) {
   
   // Define the detector Z and A and the mass of the target nucleus
   double Z = 54.;
-  double A = MOLAR_MASS;
+  double A = (double)n.SelectRanXeAtom(n.rand_uniform()*100.);
   double M_T = A * GeVperAMU;
   
   // Calculate the number of target nuclei per kg
@@ -250,13 +250,13 @@ double NEST::WIMP_dRate ( double ER, double mWimp ) {
   
 }
 
-WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass ) {
+WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass, NESTcalc &n ) {
   
   WIMP_spectrum_prep spectrum;
   double EnergySpec[101]={0};
   
   for (int i = 0; i < 101; i++ ){
-    EnergySpec[i] = WIMP_dRate( double(i), mass );
+    EnergySpec[i] = WIMP_dRate( double(i), mass, n );
   }
   
   for (int i = 0; i < 100; i++ )
@@ -279,7 +279,7 @@ WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass ) {
 double NEST::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum, double mass, NESTcalc& n){
   
   double xMin = 0., FuncValue=0;
-  double yMax = WIMP_dRate ( xMin, mass );
+  double yMax = WIMP_dRate ( xMin, mass, n );
   vector<double> xyTry ={ xMin + (wimp_spectrum.xMax - xMin) * n.rand_uniform(),
 			  yMax * n.rand_uniform(), 1. };
   while ( xyTry[2] > 0. )

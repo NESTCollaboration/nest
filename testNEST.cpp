@@ -51,7 +51,7 @@ int main ( int argc, char** argv ) {
   else if (type == "WIMP")
     {
       type_num = WIMP;
-      wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]));
+      wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]),n);
       numEvts = n.poisson_draw(wimp_spectrum_prep.integral * atof(argv[1]) * atof(argv[4]) / 1e-36);
     } else if ( type == "B8" || type == "Boron8" || type == "8Boron" || type == "8B" || type == "Boron-8" )
     {
@@ -115,7 +115,7 @@ int main ( int argc, char** argv ) {
 	break;
       case WIMP:
 	{
-          keV = WIMP_spectrum(wimp_spectrum_prep, atof(argv[3]),n);
+          keV = WIMP_spectrum(wimp_spectrum_prep, atof(argv[3]), n);
 	}
 	break;
       default:

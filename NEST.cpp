@@ -220,7 +220,11 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   case AmBe:
   case Cf:
     {
-      Nq = 12.6*pow(energy,1.05);
+      int massNumber;
+      if ( massNum != 0. ) massNumber = int(massNum);
+      else massNumber = SelectRanXeAtom ( rand_uniform() * 100.0 );
+      double LindpreFact = 12.6*sqrt((double)massNumber/MOLAR_MASS);
+      Nq = LindpreFact * pow ( energy, 1.05 );
       ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
       Qy = 1. / (ThomasImel*sqrt(energy+9.75));
       Ly = Nq / energy - Qy;
@@ -231,7 +235,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   case ion:
     {
-      double A1 = massNum, A2 = MOLAR_MASS, Z1 = atomNum, Z2 = ATOM_NUM;
+      double A1 = massNum, A2 = SelectRanXeAtom(rand_uniform()*100.);
+      double Z1 = atomNum, Z2 = ATOM_NUM;
       double Z_mean = pow(pow(Z1,(2./3.))+pow(Z2,(2./3.)),1.5);
       double E1c = pow(A1,3.)*pow(A1+A2,-2.)*pow(Z_mean,(4./3.))*pow(Z1,(-1./3.))*500.;
       double E2c = pow(A1+A2,2.)*pow(A1,-1.)*Z2*125.;
@@ -567,4 +572,29 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
 
   return newSpike; // regular and position-corrected spike counts returned
   
+}
+
+int NESTcalc::SelectRanXeAtom ( double isotope ) {
+  
+  int A;
+  if ( isotope > 0.000 && isotope <= 0.090 )
+    A = 124;
+  else if ( isotope > 0.090 && isotope <= 0.180 )
+    A = 126;
+  else if ( isotope > 0.180 && isotope <= 2.100 )
+    A = 128;
+  else if ( isotope > 2.100 && isotope <= 28.54 )
+    A = 129;
+  else if ( isotope > 28.54 && isotope <= 32.62 )
+    A = 130;
+  else if ( isotope > 32.62 && isotope <= 53.80 )
+    A = 131;
+  else if ( isotope > 53.80 && isotope <= 80.69 )
+    A = 132;
+  else if ( isotope > 80.69 && isotope <= 91.13 )
+    A = 134;
+  else
+    A = 136;
+  return A;
+
 }

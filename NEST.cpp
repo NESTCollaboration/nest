@@ -426,6 +426,10 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
     } // end of case of spike is equal to 9 or lower
   } //the end of case of spike >= coinLevel
   
+  newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, scintillation );
+  scintillation[6] = newSpike[0];
+  scintillation[7] = newSpike[1];
+  
   if ( rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
   else { // some of these are set to -1 to flag them as having been below threshold
@@ -440,10 +444,6 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   }
   
   scintillation[8] =g1;
-  
-  newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, scintillation );
-  scintillation[6] = newSpike[0];
-  scintillation[7] = newSpike[1];
   
   return scintillation;
   
@@ -567,9 +567,15 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
   
   vector<double> newSpike(2);
   
-  newSpike[0] = oldScint[6];
-  newSpike[1] = oldScint[7];
-
+  if ( oldScint[7] > 70. ) {
+    newSpike[0] = oldScint[6]; newSpike[1] = oldScint[7];
+    return newSpike;
+  }
+  newSpike[0] = fabs(oldScint[6]);
+  newSpike[0] = rand_gauss(newSpike[0],(sPEres/4.)*sqrt(newSpike[0]));
+  if ( newSpike[0] < 0.0 ) newSpike[0] = 0.0;
+  newSpike[1] = newSpike[0] / FitS1 ( dx, dy, dz ) * FitS1 ( 0., 0., liquidBorder - driftSpeed * dtCntr );
+  
   return newSpike; // regular and position-corrected spike counts returned
   
 }

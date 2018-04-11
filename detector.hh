@@ -54,6 +54,6 @@ double p_bar = 2.14; //gas pressure in units of bars, it controls S2 size
 double dtCntr = 40.; //center of detector for S1 corrections, in usec.
 double dt_min = 20.; //minimum. Top of detector fiducial volume
 double dt_max = 60.; //maximum. Bottom of detector fiducial volume
-double radius = 50.;
-double liquidBorder = 150.; // mm not cm, literal liquid/gas border not gate (dt=0)
+double radius = 50.; //millimeters
+double liquidBorder = 150.; //mm not cm, literal liquid/gas border not gate (dt=0)
 double gasGap_mm = 2.5; //EL gap in mm, affecting both field and linear S2 term

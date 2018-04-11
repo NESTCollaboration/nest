@@ -44,8 +44,8 @@ double NEST::CH3T_spectrum ( double xMin, double xMax, NESTcalc& n ) {
 
 double NEST::B8_spectrum ( double xMin, double xMax, NESTcalc& n ) {
   
-  if(xMax>4.)xMax=4.;
-  if(xMin<0.)xMin=0.;
+  if(xMax!=4.)xMax=4.;
+  if(xMin!=0.)xMin=0.;
   double yMax = pow(10.,-2.198);
   vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
 			  yMax * n.rand_uniform(), 1.};

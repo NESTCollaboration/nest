@@ -73,15 +73,20 @@ int main ( int argc, char** argv ) {
   else if ( type == "gamma" || type == "gammaRay" ) type_num = gammaRay;
   else if ( type == "Kr83m" || type == "83mKr" || type == "Kr83" ) type_num = Kr83m;
   else if ( type == "CH3T" || type == "tritium" ) type_num = CH3T;
-  else type_num = beta; //in case someone types "ER": includes Compton, xray
+  else if ( type == "beta" || type == "ER" ) type_num = beta; //includes Compton, x-ray
+  else { cerr << "UNRECOGNIZED PARTICLE OPTION!!" << endl; return 0; }
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
   DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.);
   double rho = SetDensity(detParam.temperature); //cout.precision(12);
   cout << "Density = " << rho << " g/mL" << "\t";
-  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface / 2. );
-  cout << "central vDrift = " << SetDriftVelocity(detParam.temperature,detParam.efFit) << " mm/us\n";
+  if ( atof(argv[5]) == -1. ) {
+    detParam = n.GetDetector ( 0., 0., detParam.GXeInterface / 2. );
+    field = detParam.efFit;
+  }
+  else field = atof(argv[5]);
+  cout << "central vDrift = " << SetDriftVelocity(detParam.temperature,field) << " mm/us\n";
   cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
@@ -234,7 +239,7 @@ int main ( int argc, char** argv ) {
       fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1]/band[j][0]*100.,
 	      band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
       if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
-	   ::isnan(band[j][0]) || ::isnan(band[j][1]) || ::isnan(band[j][2]) || ::isnan(band[j][3]) )
+	   std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) )
 	cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
       else if ( energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0 )
 	cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;

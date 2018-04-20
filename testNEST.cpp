@@ -74,7 +74,22 @@ int main ( int argc, char** argv ) {
   else if ( type == "Kr83m" || type == "83mKr" || type == "Kr83" ) type_num = Kr83m;
   else if ( type == "CH3T" || type == "tritium" ) type_num = CH3T;
   else if ( type == "beta" || type == "ER" ) type_num = beta; //includes Compton, x-ray
-  else { cerr << "UNRECOGNIZED PARTICLE OPTION!!" << endl; return 0; }
+  else {
+    cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
+    cerr << "NR or neutron," << endl;
+    cerr << "WIMP," << endl;
+    cerr << "B8 or Boron8 or 8Boron or 8B or Boron-8," << endl;
+    cerr << "DD or D-D," << endl;
+    cerr << "AmBe," << endl;
+    cerr << "Cf or Cf252 or 252Cf or Cf-252," << endl;
+    cerr << "ion or nucleus," << endl;
+    cerr << "alpha," << endl;
+    cerr << "gamma or gammaRay," << endl;
+    cerr << "Kr83m or 83mKr or Kr83," << endl;
+    cerr << "CH3T or tritium, and" << endl;
+    cerr << "beta or ER (default electron recoil model)" << endl;
+    return 0;
+  }
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);

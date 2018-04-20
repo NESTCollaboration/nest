@@ -218,7 +218,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   case B8:
   case DD:
   case AmBe:
-  case Cf:
+  case Cf: //this doesn't mean all NR is Cf, this is like a giant if statement. Same intrinsic yields, but different energy spectra (TestSpectra)
     {
       int massNumber;
       if ( massNum != 0. ) massNumber = int(massNum);
@@ -399,10 +399,10 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   double NphdC= pulseAreaC/ (1.+P_dphe);
   double spikeC = spike / posDep;
   
-  scintillation[0] = nHits; scintillation[1] = Nphe;
-  scintillation[2] = pulseArea; scintillation[3] = pulseAreaC;
-  scintillation[4] = Nphd; scintillation[5] = NphdC;
-  scintillation[6] = spike; scintillation[7] = spikeC;
+  scintillation[0] = nHits; scintillation[1] = Nphe; //MC-true integer hits in same OR different PMTs, first without then with double phe's (Nphe > nHits)
+  scintillation[2] = pulseArea; scintillation[3] = pulseAreaC; //floating real# smeared DAQ pulse areas in phe, uncorrected and XYZ corrected respectively
+  scintillation[4] = Nphd; scintillation[5] = NphdC; //same as pulse areas except adjusted *downward* by constant for average 2-PE effect. (LUX phd units)
+  scintillation[6] = spike; scintillation[7] = spikeC; //uncorrected and pos-corrected spike counts, both floats, but made more accurate later in GetSpike
   
   if ( spike < coinLevel ) //no chance of meeting coincidence requirement
     prob = 0.;
@@ -479,13 +479,13 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
   double S2b = rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
   double S2bc= S2b / exp(-dt/eLife_us); // for detectors using S2 bottom-only in their analyses
   
-  ionization[0] = Nee; ionization[1] = Nph;
-  ionization[2] = nHits; ionization[3] = Nphe;
+  ionization[0] = Nee; ionization[1] = Nph; //integer number of electrons unabsorbed in liquid then getting extracted, followed by raw number of photons produced in the gas gap
+  ionization[2] = nHits; ionization[3] = Nphe; //identical definitions to GetS1 follow, see above, except no spike, as S2 too big generally. S2 has more steps than S1 (e's 1st)
   if ( s2_thr >= 0 ) {
     ionization[4] = pulseArea; ionization[5] = pulseAreaC;
     ionization[6] = Nphd; ionization[7] = NphdC;
   }
-  else {
+  else { // the negative threshold is a polymorphic hidden feature: allows for header switching from total S2 to S2 bottom; doesn't mean literally negative, nor below threshold
     ionization[4] = S2b; ionization[5] = S2bc;
     ionization[6] = S2b / (1.+P_dphe); ionization[7] = S2bc / (1.+P_dphe);
   }

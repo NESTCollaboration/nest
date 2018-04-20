@@ -113,14 +113,14 @@ double NEST::Cf_spectrum ( double xMin, double xMax, NESTcalc& n ) {
 
 double NEST::DD_spectrum(double xMin,double xMax,NESTcalc& n){  //JV LUX, most closely like JENDL-4. See arXiv:1608.05381. Lower than G4/LUXSim
   
-  if(xMax>75.)xMax=75.;
+  if(xMax>80.)xMax=80.;
   if(xMin<0.000)xMin=0.000;
   double yMax = 1.1694e+6;
   vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
 			  yMax * n.rand_uniform(),1.};
   while ( xyTry[2] > 0. ) {
-    double FuncValue =
-      1.1694e+6*pow(xyTry[0],0.)
+    double FuncValue = //1.*exp(-0.15*xyTry[0])+2e-3*exp(0.05*xyTry[0]); //LUXSim version (Carmen)
+       1.1694e+6*pow(xyTry[0],0.)
       -1.4733e+5*pow(xyTry[0],1.)
       + 8507.0 * pow(xyTry[0],2.)
       - 273.59 * pow(xyTry[0],3.)

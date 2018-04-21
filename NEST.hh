@@ -56,6 +56,7 @@ namespace NEST {
   
   struct DetectorParameters {
     double temperature;
+    double pressure;
     double GXeInterface;
     double efFit;
     double rad;
@@ -88,11 +89,11 @@ namespace NEST {
     photonstream GetPhotonTimes(/*inputs*/);
     YieldResult GetYields(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z);
     QuantaResult GetQuanta(YieldResult yields, double density);
-    DetectorParameters GetDetector ( double x, double y, double z );
+    DetectorParameters GetDetector ( double x, double y, double z, bool IsInGasPhase );
     void DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam );
     std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed );
     std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, std::vector<double> origScint );
-    std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt );
+    std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, bool IsInGasPhase );
     int SelectRanXeAtom (double isotope);
     void SetRandomSeed(unsigned long int);
     

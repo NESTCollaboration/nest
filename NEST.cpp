@@ -449,7 +449,8 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   
 }
 
-vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
+vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
+				 bool isGas ) {
   
   vector<double> ionization(9);
   double alpha = 0.137, beta = 177., gamma = 45.7;
@@ -461,7 +462,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt ) {
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
-  if ( ExtEff > 1. ) ExtEff = 1.;
+  if ( ExtEff > 1. || isGas ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
   
@@ -521,22 +522,23 @@ double NESTcalc::nCr ( double n, double r ) {
 }
 
 DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
-					   double zPos_mm ) {
+					   double zPos_mm, bool isGas ) {
   
   DetectorParameters detParam;
   vector<double> secondary(9);
   
   detParam.temperature = T_Kelvin;
+  detParam.pressure = p_bar;
   detParam.GXeInterface = liquidBorder;
   detParam.efFit = FitEF ( xPos_mm, yPos_mm, zPos_mm );
   detParam.rad = radius;
   detParam.dtExtrema[0] = dt_min;
   detParam.dtExtrema[1] = dt_max;
   
-  if ( xPos_mm == -999. &&
-       yPos_mm == -999. &&
-       zPos_mm == -999. ) {
-    secondary = GetS2 ( 1, 0., 0., 0. );
+  if ( xPos_mm == 0. &&
+       yPos_mm == 0. &&
+       zPos_mm == detParam.GXeInterface / 2. ) {
+    secondary = GetS2 ( 1, 0., 0., 0., isGas );
   }
   
   return detParam; //everything needed for testNEST to work

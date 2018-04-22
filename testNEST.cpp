@@ -99,8 +99,8 @@ int main ( int argc, char** argv ) {
   double eMax = atof(argv[4]);
   DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas);
   double rho = SetDensity ( detParam.temperature, detParam.pressure ); //cout.precision(12);
+  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas );
   if ( atof(argv[5]) == -1. ) {
-    detParam = n.GetDetector ( 0., 0., detParam.GXeInterface / 2., inGas );
     field = detParam.efFit;
   }
   else field = atof(argv[5]);
@@ -189,6 +189,9 @@ int main ( int argc, char** argv ) {
     
     vD = SetDriftVelocity(detParam.temperature,rho,field);
     driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
+    if ( detParam.dtExtrema[0] > ( detParam.GXeInterface - 0. ) / vD ) { cerr << "ERROR: dt_min is too restrictive (too large)" << endl;
+      return 0; }
+    if ( detParam.dtExtrema[1] > (detParam.GXeInterface-0.)/vD && !j ) { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && (atof(argv[6]) == -1. || stof(position) == -1.) )
       goto Z_NEW;
     
@@ -329,7 +332,7 @@ double SetDriftVelocity ( double Kelvin, double Density, double eField ) { //for
 double SetDensity ( double Kelvin, double bara ) { // currently only for fixed pressure (saturated vapor pressure); will add pressure dependence later
   
   if ( Kelvin < 161.40 ) { // solid Xenon
-    cerr << "WARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
+    cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
     return 3.41; // from Yoo at 157K
     // other sources say 3.100 (Wikipedia, 'maximum') and 3.64g/mL at an unknown temperature
   }
@@ -341,7 +344,7 @@ double SetDensity ( double Kelvin, double bara ) { // currently only for fixed p
     double density = bara * 1e5 / ( Kelvin * 8.314 ); //ideal gas law approximation, mol/m^3
     density *= MOLAR_MASS * 1e-6;
     inGas = true;
-    cerr << "WARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n"; return density; // in g/cm^3
+    cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n"; return density; // in g/cm^3
   }
   
   return 

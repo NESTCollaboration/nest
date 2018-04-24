@@ -220,17 +220,17 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   case AmBe:
   case Cf: //this doesn't mean all NR is Cf, this is like a giant if statement. Same intrinsic yields, but different energy spectra (TestSpectra)
     {
-      int massNumber;
+      int massNumber; double ScaleFactor[2] = { 1., 1. };
       if ( massNum != 0. ) massNumber = int(massNum);
       else massNumber = SelectRanXeAtom ( rand_uniform() * 100.0 );
-      double LindpreFact = 12.6*sqrt((double)massNumber/MOLAR_MASS);
-      Nq = LindpreFact * pow ( energy, 1.05 );
+      ScaleFactor[0] = sqrt(MOLAR_MASS/(double)massNumber); ScaleFactor[1] = ScaleFactor[0];
+      Nq = 12.6 * pow ( energy, 1.05 );
       ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
       Qy = 1. / (ThomasImel*sqrt(energy+9.75));
       Ly = Nq / energy - Qy;
-      Ne = Qy * energy;
-      Nph= Ly * energy;
-      NexONi = 1.00*erf(0.01*energy);
+      Ne = Qy * energy * ScaleFactor[1];
+      Nph= Ly * energy * ScaleFactor[0];
+      NexONi = 1.00*erf(0.01*energy); Nq = Nph + Ne;
       L = ( Nq / energy ) * Wq_eV * 1e-3;
     } break;
   case ion:

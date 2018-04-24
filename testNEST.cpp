@@ -21,9 +21,7 @@ using namespace NEST;
  * 
  */
 
-double SetDriftVelocity ( double T, double D, double F );
-double SetDriftVelocity_MagBoltz ( double D, double F );
-double SetDensity ( double T, double P ); bool inGas = false;
+bool inGas = false;
 
 double band[200][6], energies[3];
 vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s, bool resol );
@@ -51,10 +49,12 @@ int main ( int argc, char** argv ) {
   if ( type == "NR" || type == "neutron" ) type_num = NR;
   else if (type == "WIMP")
     {
+      if (atof(argv[3])<0.44) { cerr << "WIMP mass too low, you're crazy!" << endl; return 0; }
       type_num = WIMP;
       wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]),n);
-      numEvts = n.poisson_draw(wimp_spectrum_prep.integral * atof(argv[1]) * atof(argv[4]) / 1e-36);
-    } else if ( type == "B8" || type == "Boron8" || type == "8Boron" || type == "8B" || type == "Boron-8" )
+      numEvts = n.poisson_draw(wimp_spectrum_prep.integral * 1.0 * atof(argv[1]) * atof(argv[4]) / 1e-36);
+    }
+  else if ( type == "B8" || type == "Boron8" || type == "8Boron" || type == "8B" || type == "Boron-8" )
     {
       type_num = B8;
       numEvts = n.poisson_draw(0.0026 * atof(argv[1]));
@@ -98,14 +98,15 @@ int main ( int argc, char** argv ) {
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
   DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas);
-  double rho = SetDensity ( detParam.temperature, detParam.pressure ); //cout.precision(12);
+  double rho = n.SetDensity ( detParam.temperature, detParam.pressure ); //cout.precision(12);
+  if ( rho < 1. ) inGas = true;
   detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas );
   if ( atof(argv[5]) == -1. ) {
     field = detParam.efFit;
   }
   else field = atof(argv[5]);
   cout << "Density = " << rho << " g/mL" << "\t";
-  cout << "central vDrift = " << SetDriftVelocity(detParam.temperature,rho,field) << " mm/us\n";
+  cout << "central vDrift = " << n.SetDriftVelocity(detParam.temperature,rho,field) << " mm/us\n";
   cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
@@ -187,7 +188,7 @@ int main ( int argc, char** argv ) {
     
     if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
     
-    vD = SetDriftVelocity(detParam.temperature,rho,field);
+    vD = n.SetDriftVelocity(detParam.temperature,rho,field);
     driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
     if ( detParam.dtExtrema[0] > ( detParam.GXeInterface - 0. ) / vD ) { cerr << "ERROR: dt_min is too restrictive (too large)" << endl;
       return 0; }
@@ -272,89 +273,6 @@ int main ( int argc, char** argv ) {
   
 }
 
-double SetDriftVelocity ( double Kelvin, double Density, double eField ) { //for liquid and solid only
-  
-  if ( inGas ) return SetDriftVelocity_MagBoltz ( Density, eField );
-  
-  double speed = 0.0; // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
-  int i, j; double vi, vf, slope, Ti, Tf, offset;
-  
-  double polyExp[11][7] = { { -3.1046, 27.037, -2.1668, 193.27, -4.8024, 646.04, 9.2471 }, //100K
-			    { -2.7394, 22.760, -1.7775, 222.72, -5.0836, 724.98, 8.7189 }, //120
-			    { -2.3646, 164.91, -1.6984, 21.473, -4.4752, 1202.2, 7.9744 }, //140
-			    { -1.8097, 235.65, -1.7621, 36.855, -3.5925, 1356.2, 6.7865 }, //155
-			    { -1.5000, 37.021, -1.1430, 6.4590, -4.0337, 855.43, 5.4238 }, //157, merging Miller with Yoo
-			    { -1.4939, 47.879, 0.12608, 8.9095, -1.3480, 1310.9, 2.7598 }, //163, merging Miller with Yoo
-			    { -1.5389, 26.602, -.44589, 196.08, -1.1516, 1810.8, 2.8912 }, //165
-			    { -1.5000, 28.510, -.21948, 183.49, -1.4320, 1652.9, 2.884 }, //167
-			    { -1.1781, 49.072, -1.3008, 3438.4, -.14817, 312.12, 2.8049 }, //184
-			    {  1.2466, 85.975, -.88005, 918.57, -3.0085, 27.568, 2.3823 }, //200
-			    { 334.60 , 37.556, 0.92211, 345.27, -338.00, 37.346, 1.9834 } }; //230
-  
-  double Temperatures[11] = { 100., 120., 140., 155., 157., 163., 165., 167., 184., 200., 230. };
-  
-  if ( Kelvin >= Temperatures[0] && Kelvin < Temperatures[1] ) i = 0;
-  else if ( Kelvin >= Temperatures[1] && Kelvin < Temperatures[2] ) i = 1;
-  else if ( Kelvin >= Temperatures[2] && Kelvin < Temperatures[3] ) i = 2;
-  else if ( Kelvin >= Temperatures[3] && Kelvin < Temperatures[4] ) i = 3;
-  else if ( Kelvin >= Temperatures[4] && Kelvin < Temperatures[5] ) i = 4;
-  else if ( Kelvin >= Temperatures[5] && Kelvin < Temperatures[6] ) i = 5;
-  else if ( Kelvin >= Temperatures[6] && Kelvin < Temperatures[7] ) i = 6;
-  else if ( Kelvin >= Temperatures[7] && Kelvin < Temperatures[8] ) i = 7;
-  else if ( Kelvin >= Temperatures[8] && Kelvin < Temperatures[9] ) i = 8;
-  else if ( Kelvin >= Temperatures[9] && Kelvin <= Temperatures[10] ) i = 9;
-  else {
-    cout << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
-  }
-  
-  j = i + 1;
-  Ti = Temperatures[i];
-  Tf = Temperatures[j];
-  // functional form from http://zunzun.com
-  vi = polyExp[i][0]*exp(-eField/polyExp[i][1])+polyExp[i][2]*exp(-eField/polyExp[i][3])+polyExp[i][4]*exp(-eField/polyExp[i][5])+polyExp[i][6];
-  vf = polyExp[j][0]*exp(-eField/polyExp[j][1])+polyExp[j][2]*exp(-eField/polyExp[j][3])+polyExp[j][4]*exp(-eField/polyExp[j][5])+polyExp[j][6];
-  if ( Kelvin == Ti ) return vi;
-  if ( Kelvin == Tf ) return vf;
-  if ( vf < vi ) {
-    offset = (sqrt((Tf*(vf-vi)-Ti*(vf-vi)-4.)*(vf-vi))+sqrt(Tf-Ti)*(vf+vi))/(2.*sqrt(Tf-Ti));
-    slope = -(sqrt(Tf-Ti)*sqrt((Tf*(vf-vi)-Ti*(vf-vi)-4.)*(vf-vi))-(Tf+Ti)*(vf-vi))/(2.*(vf-vi));
-    speed = 1. / ( Kelvin - slope ) + offset;
-  }
-  else {
-    slope = ( vf - vi ) / ( Tf - Ti );
-    speed = slope * ( Kelvin - Ti ) + vi;
-  }
-  
-  return speed;
-  
-}
-
-double SetDensity ( double Kelvin, double bara ) { // currently only for fixed pressure (saturated vapor pressure); will add pressure dependence later
-  
-  if ( Kelvin < 161.40 ) { // solid Xenon
-    cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
-    return 3.41; // from Yoo at 157K
-    // other sources say 3.100 (Wikipedia, 'maximum') and 3.64g/mL at an unknown temperature
-  }
-  
-  double VaporP_bar; //we will calculate using NIST
-  if ( Kelvin < 289.7 ) VaporP_bar = pow(10.,4.0519-667.16/Kelvin);
-  else VaporP_bar = DBL_MAX;
-  if ( bara < VaporP_bar ) {
-    double density = bara * 1e5 / ( Kelvin * 8.314 ); //ideal gas law approximation, mol/m^3
-    density *= MOLAR_MASS * 1e-6;
-    inGas = true;
-    cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n"; return density; // in g/cm^3
-  }
-  
-  return 
-    2.9970938084691329E+02 * exp ( -8.2598864714323525E-02 * Kelvin ) - 1.8801286589442915E+06 * exp ( - pow ( ( Kelvin - 4.0820251276172212E+02 ) / 2.7863170223154846E+01, 2. ) )
-    - 5.4964506351743057E+03 * exp ( - pow ( ( Kelvin - 6.3688597345042672E+02 ) / 1.1225818853661815E+02, 2. ) )
-    + 8.3450538370682614E+02 * exp ( - pow ( ( Kelvin + 4.8840568924597342E+01 ) / 7.3804147172071107E+03, 2. ) )
-    - 8.3086310405942265E+02; // in grams per cubic centimeter based on zunzun fit to NIST data; will add gas later
-  
-}
-
 vector<vector<double>> GetBand ( vector<double> S1s,
 				 vector<double> S2s, bool resol ) {
   
@@ -425,7 +343,8 @@ vector<vector<double>> GetBand ( vector<double> S1s,
       band[j][1] = sqrt(band[j][1]);
     }
     band[j][4] = band[j][3] / sqrt ( numPts );
-    band[j][5] = numPts/(numPts+double(reject[j]));
+    band[j][5] = numPts/
+      (numPts+double(reject[j]));
   }
   
   return signals;
@@ -455,30 +374,4 @@ void GetEnergyRes ( vector<double> Es ) {
   energies[2] = numerator / double ( numPts );
   return;
   
-}
-
-double SetDriftVelocity_MagBoltz ( double density, double efieldinput ) //Nichole Barry UCD 2011
-{
-  density *= NEST_AVO / MOLAR_MASS;
-  //Gas equation one coefficients (E/N of 1.2E-19 to 3.5E-19)
-  double gas1a = 395.50266631436,
-    gas1b = -357384143.004642, gas1c = 0.518110447340587;
-  //Gas equation two coefficients (E/N of 3.5E-19 to 3.8E-17)
-  double gas2a = -592981.611357632, gas2b = -90261.9643716643,
-    gas2c = -4911.83213989609, gas2d = -115.157545835228,
-    gas2f = -0.990440443390298, gas2g = 1008.30998933704, gas2h = 223.711221224885;
-  double edrift = 0., gasdep = efieldinput / density, gas1fix = 0., gas2fix = 0.;
-  
-  if ( gasdep < 1.2e-19 && gasdep >= 0. ) edrift = 4e22 * gasdep;
-  if ( gasdep < 3.5e-19 && gasdep >= 1.2e-19 ) {
-    gas1fix = gas1b * pow ( gasdep, gas1c ); edrift = gas1a * pow ( gasdep, gas1fix );
-  }
-  if ( gasdep < 3.8e-17 && gasdep >= 3.5e-19 ) {
-    gas2fix = log ( gas2g * gasdep );
-    edrift = ( gas2a + gas2b * gas2fix + gas2c * pow ( gas2fix, 2. ) + gas2d * pow ( gas2fix, 3. )
-	       + gas2f * pow ( gas2fix, 4. ) ) * ( gas2h * exp ( gasdep ) );
-  }
-  if ( gasdep >= 3.8e-17 ) edrift = 6e21 * gasdep - 32279.;
-  
-  return edrift * 1e-5; // from cm/s into mm per microsecond
 }

@@ -95,7 +95,10 @@ namespace NEST {
     std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, std::vector<double> origScint );
     std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, bool IsInGasPhase );
     int SelectRanXeAtom (double isotope);
+    double SetDriftVelocity ( double T, double D, double F );
+    double SetDriftVelocity_MagBoltz ( double D, double F );
     void SetRandomSeed(unsigned long int);
+    double SetDensity ( double T, double P );
     
   };
 

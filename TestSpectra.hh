@@ -19,10 +19,11 @@
 namespace NEST {
   
   struct WIMP_spectrum_prep {
-    double base[100] = {1};
-    double exponent[100] = {0};
-    double integral = 0;
-    double xMax = 0;
+    double base[100] = {1.};
+    double exponent[100] = {0.};
+    double integral = 0.;
+    double xMax = 0.;
+    double divisor = 1.;
   };
   
   double CH3T_spectrum(double emin, double emax, NESTcalc& n);

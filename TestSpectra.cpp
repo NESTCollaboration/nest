@@ -253,42 +253,59 @@ double NEST::WIMP_dRate ( double ER, double mWimp, NESTcalc &n ) {
 WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass, NESTcalc &n ) {
   
   WIMP_spectrum_prep spectrum;
-  double EnergySpec[101]={0};
+  double EnergySpec[10001]={0}, divisor, x1, x2;
+  int numberPoints;
   
-  for (int i = 0; i < 101; i++ ){
-    EnergySpec[i] = WIMP_dRate( double(i), mass, n );
+  if ( mass < 2.0 ) { // GeV/c^2
+    divisor = 100;
+    numberPoints=10000;
+  }
+  else if ( mass < 10. ) {
+    divisor = 10.;
+    numberPoints = 1000;
+  }
+  else {
+    divisor = 1.0;
+    numberPoints = 100;
   }
   
-  for (int i = 0; i < 100; i++ )
+  for ( int i = 0; i < (numberPoints+1); i++ ) {
+    EnergySpec[i] = WIMP_dRate( double(i)/divisor, mass, n );
+  }
+  
+  for ( int i = 0; i < numberPoints; i++ )
     {
-      spectrum.base[i] = EnergySpec[i] * pow(EnergySpec[i] / EnergySpec[i + 1], i);
-      spectrum.exponent[i] = log(EnergySpec[i] / EnergySpec[i + 1]);
+      x1 = double(i)/divisor; x2 = double(i+1)/divisor;
+      spectrum.base[i] = EnergySpec[i+1] * pow(EnergySpec[i+1] / EnergySpec[i], x2/(x1-x2));
+      spectrum.exponent[i] = log(EnergySpec[i+1] / EnergySpec[i]) / ( x1 - x2 );
       if ( spectrum.base[i] > 0. && spectrum.base[i] < DBL_MAX && spectrum.exponent[i] > 0. && spectrum.exponent[i] < DBL_MAX )
-	spectrum.integral += spectrum.base[i]*(1. / spectrum.exponent[i] - exp(-spectrum.exponent[i]) / spectrum.exponent[i]) * exp(-spectrum.exponent[i] * i);
+	spectrum.integral+=spectrum.base[i]/spectrum.exponent[i]*(exp(-spectrum.exponent[i]*x1)-exp(-spectrum.exponent[i]*x2));
       else
 	{
-	  spectrum.xMax = double(i - 1);
+	  spectrum.xMax = double(i - 1) / divisor;
 	  break;
 	}
     }
   
-  return spectrum;
+  spectrum.divisor = divisor; return spectrum;
   
 }
 
 double NEST::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum, double mass, NESTcalc& n){
   
-  double xMin = 0., FuncValue=0;
+  double xMin = 0., FuncValue = 0.00, x = 0.;
   double yMax = WIMP_dRate ( xMin, mass, n );
   vector<double> xyTry ={ xMin + (wimp_spectrum.xMax - xMin) * n.rand_uniform(),
 			  yMax * n.rand_uniform(), 1. };
   while ( xyTry[2] > 0. )
     {
-      for ( double x = 0; x < wimp_spectrum.xMax; x++ )
+      while ( xyTry[1] > (-WIMP_dRate(0.,mass,n)/wimp_spectrum.xMax*xyTry[0]+WIMP_dRate(0.,mass,n)) ) { //triangle cut more efficient than rectangle
+	xyTry[0] = (wimp_spectrum.xMax-xMin)*n.rand_uniform(); xyTry[1] = yMax*n.rand_uniform(); }
+      for ( x = 0; x < wimp_spectrum.xMax; x+=(1./wimp_spectrum.divisor) )
 	{
-	  if ( xyTry[0] > x && xyTry[0] < (x + 1.) )
+	  if ( xyTry[0] > x && xyTry[0] < (x + 1./wimp_spectrum.divisor) )
 	    {
-	      FuncValue = wimp_spectrum.base[int(x)] * exp(-wimp_spectrum.exponent[int(x)] * xyTry[0]);
+	      FuncValue = wimp_spectrum.base[int(x*wimp_spectrum.divisor)] * exp(-wimp_spectrum.exponent[int(x*wimp_spectrum.divisor)] * xyTry[0]);
 	      break;
 	    }
 	}

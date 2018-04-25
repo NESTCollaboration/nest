@@ -1,5 +1,7 @@
 
+//General parameters of importance changing global behavior
 bool MCtruthE = true; //false means reconstructed energy
+bool useTiming = false; //photon arrival times + pulse shapes
 
 //0 means PE, 1 means phd (PE/~1.2), 2 means spike count
 int usePE = 0;
@@ -15,3 +17,7 @@ int numBins = 33;
 //you can treat as trigger vs. analysis thresholds
 double minS2 = 0.0;
 double maxS2 = 1e9;
+
+//some numbers for fine-tuning the speed vs. the accuracy
+double z_step = 10.; //mm, for integrating non-uniform field
+double E_step = 2.0; //keV, for integrating WIMP spectrum

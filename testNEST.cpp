@@ -49,7 +49,7 @@ int main ( int argc, char** argv ) {
     {
       if (atof(argv[3])<0.44) { cerr << "WIMP mass too low, you're crazy!" << endl; return 0; }
       type_num = WIMP;
-      wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]),n);
+      wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]),n,E_step);
       numEvts = n.poisson_draw(wimp_spectrum_prep.integral * 1.0 * atof(argv[1]) * atof(argv[4]) / 1e-36);
     }
   else if ( type == "B8" || type == "Boron8" || type == "8Boron" || type == "8B" || type == "Boron-8" )
@@ -108,9 +108,9 @@ int main ( int argc, char** argv ) {
   cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Ext\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Extr\tS2_rawArea\tS2_Zcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Ext\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Extr\tS2_rawArea\tS2_Zcorr [phd]\n");
   
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
   
@@ -184,12 +184,21 @@ int main ( int argc, char** argv ) {
     }
     else field = atof(argv[5]);
     
-    if ( field <= 0. ) cout << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
+    if ( field <= 0. ) cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
     
-    vD = n.SetDriftVelocity(detParam.temperature,rho,field);
+    if ( atof(argv[5]) == -1. ) {
+      driftTime = 0.0;
+      for ( double zz = pos_z; zz < detParam.GXeInterface; zz += z_step ) {
+	detParam = n.GetDetector ( pos_x, pos_y, zz, inGas );
+	driftTime += z_step / n.SetDriftVelocity(detParam.temperature,rho,detParam.efFit);
+      }
+      vD = ( detParam.GXeInterface - pos_z ) / driftTime;
+    }
+    else
+      vD = n.SetDriftVelocity(detParam.temperature,rho,field);
     driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
-    if ( detParam.dtExtrema[0] > ( detParam.GXeInterface - 0. ) / vD ) { cerr << "ERROR: dt_min is too restrictive (too large)" << endl;
-      return 0; }
+    if ( atof(argv[5]) != -1. && detParam.dtExtrema[0] > ( detParam.GXeInterface - 0. ) / vD )
+      { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
     if ( detParam.dtExtrema[1] > (detParam.GXeInterface-0.)/vD && !j ) { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && (atof(argv[6]) == -1. || stof(position) == -1.) )
       goto Z_NEW;

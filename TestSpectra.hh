@@ -32,7 +32,7 @@ namespace NEST {
   double Cf_spectrum(double emin, double emax, NESTcalc& n);
   double DD_spectrum(double emin, double emax, NESTcalc& n);
   double WIMP_dRate(double ER, double mWimp, NESTcalc &n);
-  WIMP_spectrum_prep WIMP_prep_spectrum(double mass, NESTcalc &n);
+  WIMP_spectrum_prep WIMP_prep_spectrum(double mass, NESTcalc &n, double eStep);
   double WIMP_spectrum(WIMP_spectrum_prep wprep, double mass, NESTcalc& n);
   
 }

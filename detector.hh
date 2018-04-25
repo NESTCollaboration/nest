@@ -56,4 +56,5 @@ double dt_min = 20.; //minimum. Top of detector fiducial volume
 double dt_max = 60.; //maximum. Bottom of detector fiducial volume
 double radius = 50.; //millimeters
 double liquidBorder = 150.; //mm not cm, literal liquid/gas border not gate (dt=0)
+//in a gas detector this is whatever you consider the top (like gate or anode)
 double gasGap_mm = 2.5; //EL gap in mm, affecting both field and linear S2 term

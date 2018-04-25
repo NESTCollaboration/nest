@@ -194,7 +194,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( Nph < Nex ) Nph = Nex;
   
   if ( (Nph+Ne) != (Nex+Ni) )
-    cout << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
+    cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
   
   result.photons =Nph;
   result.electrons=Ne;
@@ -664,7 +664,7 @@ double NESTcalc::SetDriftVelocity ( double Kelvin, double Density, double eField
   else if ( Kelvin >= Temperatures[8] && Kelvin < Temperatures[9] ) i = 8;
   else if ( Kelvin >= Temperatures[9] && Kelvin <= Temperatures[10] ) i = 9;
   else {
-    cout << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
+    cerr << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
   }
   
   j = i + 1;
@@ -685,6 +685,7 @@ double NESTcalc::SetDriftVelocity ( double Kelvin, double Density, double eField
     speed = slope * ( Kelvin - Ti ) + vi;
   }
   
+  if ( speed <= 0. ) { cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n"; }
   return speed;
   
 }

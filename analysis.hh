@@ -19,5 +19,5 @@ double minS2 = 0.0;
 double maxS2 = 1e9;
 
 //some numbers for fine-tuning the speed vs. the accuracy
-double z_step = 10.; //mm, for integrating non-uniform field
+double z_step = 0.1; //mm, for integrating non-uniform field
 double E_step = 2.0; //keV, for integrating WIMP spectrum

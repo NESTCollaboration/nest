@@ -27,9 +27,9 @@ void GetEnergyRes ( vector<double> Es );
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n; vector<double> signal1,signal2,signalE;
+  NEST::NESTcalc n; vector<double> signal1,signal2,signalE, vTable; int index;
   string position, delimiter, token; size_t loc;
-  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD, atomNum=0, massNum=0;
+  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD, vD_middle, atomNum=0, massNum=0;
   
   if (argc < 7)
     {
@@ -65,8 +65,8 @@ int main ( int argc, char** argv ) {
       atomNum = 2; massNum = 4;
     }
     else {
-      cout << "Atomic Number: "; cin >> atomNum;
-      cout << "Mass Number: "; cin >> massNum;
+      cerr << "Atomic Number: "; cin >> atomNum;
+      cerr << "Mass Number: "; cin >> massNum;
     } if ( atomNum == ATOM_NUM ) type_num = NR;
   }
   else if ( type == "gamma" || type == "gammaRay" ||
@@ -100,11 +100,12 @@ int main ( int argc, char** argv ) {
   if ( rho < 1. ) inGas = true;
   detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas );
   if ( atof(argv[5]) == -1. ) {
-    field = detParam.efFit;
+    vTable = n.SetDriftVelocity_NonUniform(rho,inGas,z_step);
+    vD_middle = vTable[int(floor(.5*detParam.GXeInterface/z_step))];
   }
-  else field = atof(argv[5]);
+  else vD_middle = n.SetDriftVelocity(detParam.temperature,rho,atof(argv[5]));
   cout << "Density = " << rho << " g/mL" << "\t";
-  cout << "central vDrift = " << n.SetDriftVelocity(detParam.temperature,rho,field) << " mm/us\n";
+  cout << "central vDrift = " << vD_middle << " mm/us\n";
   cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
@@ -187,26 +188,27 @@ int main ( int argc, char** argv ) {
     if ( field <= 0. ) cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
     
     if ( atof(argv[5]) == -1. ) {
-      driftTime = 0.0;
-      for ( double zz = pos_z; zz < detParam.GXeInterface; zz += z_step ) {
-	detParam = n.GetDetector ( pos_x, pos_y, zz, inGas );
-	driftTime += z_step / n.SetDriftVelocity(detParam.temperature,rho,detParam.efFit);
-      }
-      vD = ( detParam.GXeInterface - pos_z ) / driftTime;
+      //for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
+      //cerr << double(jj)*z_step << "\t" << vTable[jj] << endl;
+      index = int(floor(pos_z/z_step));
+      vD = vTable[index];
     }
     else
       vD = n.SetDriftVelocity(detParam.temperature,rho,field);
     driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
     if ( atof(argv[5]) != -1. && detParam.dtExtrema[0] > ( detParam.GXeInterface - 0. ) / vD )
       { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
-    if ( detParam.dtExtrema[1] > (detParam.GXeInterface-0.)/vD && !j ) { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && (atof(argv[6]) == -1. || stof(position) == -1.) )
       goto Z_NEW;
+    if ( detParam.dtExtrema[1] > (detParam.GXeInterface-0.)/vD && !j )
+      { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     
-    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,double(massNum),double(atomNum));
+    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,
+					   double(massNum),double(atomNum));
     NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
     
-    vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,vD);
+    vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,
+				   vD,vD_middle,type_num);
     if ( usePE == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
     else if ( usePE == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
@@ -215,7 +217,7 @@ int main ( int argc, char** argv ) {
       signal1.push_back(scint[7]);
     else signal1.push_back(0.);
     
-    vector<double> scint2= n.GetS2(quanta.electrons,pos_x,pos_y,driftTime,inGas);
+    vector<double> scint2= n.GetS2(quanta.electrons,pos_x,pos_y,driftTime,vD,inGas);
     if ( usePE == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
     else if ( usePE >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )

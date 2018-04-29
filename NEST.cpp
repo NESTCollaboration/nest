@@ -350,14 +350,15 @@ NESTcalc::NESTcalc ( ) {
 }
 
 vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
-				 double dz, double driftVelocity ) {
+  double dz, double driftVelocity, double dV_mid, INTERACTION_TYPE type_num ) {
   
   vector<double> scintillation(9);  // return vector
   vector<double> newSpike(2); // for re-doing spike counting more precisely
-
+  
   // Add some variability in g1 drawn from a polynomial spline fit
   double posDep = FitS1 ( dx, dy, dz );
-  double dz_center = liquidBorder - driftVelocity * dtCntr; //go from t to z
+  double dt = ( liquidBorder - dz ) / driftVelocity;
+  double dz_center = liquidBorder - dV_mid * dtCntr; //go from t to z
   posDep /= FitS1 ( 0., 0., dz_center ); // XYZ always in mm now never cm
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
@@ -367,7 +368,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   double pulseArea = 0., spike = 0., prob;
   
   // If single photo-electron efficiency is under 1 and the threshold is above 0 (some phe will be below threshold)
-  if ( sPEthr > 0. && nHits < numPMTs ) {
+  if ( sPEthr > 0. && nHits < numPMTs ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area
@@ -404,7 +405,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   scintillation[4] = Nphd; scintillation[5] = NphdC; //same as pulse areas except adjusted *downward* by constant for average 2-PE effect. (LUX phd units)
   scintillation[6] = spike; scintillation[7] = spikeC; //uncorrected and pos-corrected spike counts, both floats, but made more accurate later in GetSpike
   
-  if ( spike < coinLevel ) //no chance of meeting coincidence requirement
+  if ( spike < coinLevel ) //no chance of meeting coincidence requirement. Here, spike is still "perfect" (integer)
     prob = 0.;
   else {
     if ( spike > 10. ) prob = 1.;
@@ -426,9 +427,9 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
     } // end of case of spike is equal to 9 or lower
   } //the end of case of spike >= coinLevel
   
-  newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, scintillation );
-  scintillation[6] = newSpike[0];
-  scintillation[7] = newSpike[1];
+  newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, dV_mid, scintillation ); // over-write spike with smeared version, ~real data
+  scintillation[6] = newSpike[0]; // uncorr
+  scintillation[7] = newSpike[1]; // 3-D corr spike RQ
   
   if ( rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
@@ -450,15 +451,17 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
 }
 
 vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
-				 bool isGas ) {
+				 double driftVelocity, bool isGas ) {
   
   vector<double> ionization(9);
   double alpha = 0.137, beta = 177., gamma = 45.7;
   double epsilon = 1.85 / 1.00126;
+  if ( isGas ) epsilon = 1.;
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = FitS2 ( dx, dy ); // XY is always in mm now, never cm
   posDep /= FitS2 ( 0., 0. );
+  double dz = liquidBorder - dt * driftVelocity;
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
@@ -538,7 +541,7 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
   if ( xPos_mm == 0. &&
        yPos_mm == 0. &&
        zPos_mm == detParam.GXeInterface / 2. ) {
-    secondary = GetS2 ( 1, 0., 0., 0., isGas );
+    secondary = GetS2 ( 1, 0., 0., 0., 1., isGas );
   }
   
   return detParam; //everything needed for testNEST to work
@@ -565,7 +568,7 @@ void NESTcalc::DriftRangeOverride ( double drift_low, double drift_high, Detecto
 }
 
 vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
-				    double driftSpeed, vector<double> oldScint ) {
+  double driftSpeed, double dS_mid, vector<double> oldScint ) {
   
   vector<double> newSpike(2);
   
@@ -576,7 +579,7 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
   newSpike[0] = fabs(oldScint[6]);
   newSpike[0] = rand_gauss(newSpike[0],(sPEres/4.)*sqrt(newSpike[0]));
   if ( newSpike[0] < 0.0 ) newSpike[0] = 0.0;
-  newSpike[1] = newSpike[0] / FitS1 ( dx, dy, dz ) * FitS1 ( 0., 0., liquidBorder - driftSpeed * dtCntr );
+  newSpike[1] = newSpike[0] / FitS1 ( dx, dy, dz ) * FitS1 ( 0., 0., liquidBorder - dS_mid * dtCntr );
   
   return newSpike; // regular and position-corrected spike counts returned
   
@@ -714,4 +717,35 @@ double NESTcalc::SetDriftVelocity_MagBoltz ( double density, double efieldinput 
   if ( gasdep >= 3.8e-17 ) edrift = 6e21 * gasdep - 32279.;
   
   return edrift * 1e-5; // from cm/s into mm per microsecond
+}
+
+vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool isGas,
+  double z_step ) {
+  
+  vector<double> speedTable;
+  DetectorParameters detParam;
+  double driftTime, zz;
+  
+  for ( double pos_z = 0.0; pos_z < liquidBorder; pos_z += z_step ) {
+    
+    driftTime = 0.0;
+    for ( zz = pos_z; zz < liquidBorder; zz += z_step ) {
+      
+      detParam = GetDetector ( 0., 0., zz, isGas );
+      if ( pos_z > gate ) {
+	if ( !isGas )
+	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);
+	else
+	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas*1e3);
+      }
+      else
+	driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,detParam.efFit);
+      
+    }
+    
+    speedTable.push_back ( ( zz - pos_z ) / driftTime ); //uses highest zz
+    
+  }
+  
+  return speedTable;
 }

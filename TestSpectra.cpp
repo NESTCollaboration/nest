@@ -231,7 +231,7 @@ double NEST::WIMP_dRate ( double ER, double mWimp, NESTcalc &n ) {
     zeta = 0.;
     break;
   default:
-    cout << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
+    cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
   }
   
   double a = 0.52;
@@ -257,7 +257,7 @@ WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass, NESTcalc &n, double e
   int numberPoints;
   
   if ( mass < 2.0 ) { // GeV/c^2
-    divisor = 100 / eStep;
+    divisor = 100 / eStep; if ( (eStep*0.01) > 0.01 ) cerr << "WARNING, <= 0.01 keV step size recommended" << endl;
     numberPoints=int(10000./eStep);
   }
   else if ( mass < 10. ) {

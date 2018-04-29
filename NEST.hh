@@ -91,12 +91,13 @@ namespace NEST {
     QuantaResult GetQuanta(YieldResult yields, double density);
     DetectorParameters GetDetector ( double x, double y, double z, bool IsInGasPhase );
     void DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam );
-    std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed );
-    std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, std::vector<double> origScint );
-    std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, bool IsInGasPhase );
+    std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species );
+    std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
+    std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, double driftSpeed, bool IsInGasPhase );
     int SelectRanXeAtom (double isotope);
     double SetDriftVelocity ( double T, double D, double F );
     double SetDriftVelocity_MagBoltz ( double D, double F );
+    std::vector<double> SetDriftVelocity_NonUniform ( double rho, bool IsInGasPhase, double zStep );
     void SetRandomSeed(unsigned long int);
     double SetDensity ( double T, double P );
     

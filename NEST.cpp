@@ -451,12 +451,12 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
 }
 
 vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
-				 double driftVelocity, bool isGas ) {
+				 double driftVelocity, bool IsInGasPhase ) {
   
   vector<double> ionization(9);
   double alpha = 0.137, beta = 177., gamma = 45.7;
   double epsilon = 1.85 / 1.00126;
-  if ( isGas ) epsilon = 1.;
+  if ( IsInGasPhase ) epsilon = 1.;
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = FitS2 ( dx, dy ); // XY is always in mm now, never cm
@@ -465,7 +465,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
   
   double E_liq = E_gas / epsilon; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
-  if ( ExtEff > 1. || isGas ) ExtEff = 1.;
+  if ( ExtEff > 1. || IsInGasPhase ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
   
@@ -525,7 +525,7 @@ double NESTcalc::nCr ( double n, double r ) {
 }
 
 DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
-					   double zPos_mm, bool isGas ) {
+					   double zPos_mm, bool IsInGasPhase ) {
   
   DetectorParameters detParam;
   vector<double> secondary(9);
@@ -541,7 +541,7 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
   if ( xPos_mm == 0. &&
        yPos_mm == 0. &&
        zPos_mm == detParam.GXeInterface / 2. ) {
-    secondary = GetS2 ( 1, 0., 0., 0., 1., isGas );
+    secondary = GetS2 ( 1, 0., 0., 0., 1., IsInGasPhase );
   }
   
   return detParam; //everything needed for testNEST to work
@@ -719,7 +719,7 @@ double NESTcalc::SetDriftVelocity_MagBoltz ( double density, double efieldinput 
   return edrift * 1e-5; // from cm/s into mm per microsecond
 }
 
-vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool isGas,
+vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasPhase,
   double z_step ) {
   
   vector<double> speedTable;
@@ -731,9 +731,9 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool isGas,
     driftTime = 0.0;
     for ( zz = pos_z; zz < liquidBorder; zz += z_step ) {
       
-      detParam = GetDetector ( 0., 0., zz, isGas );
+      detParam = GetDetector ( 0., 0., zz, IsInGasPhase );
       if ( pos_z > gate ) {
-	if ( !isGas )
+	if ( !IsInGasPhase )
 	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);
 	else
 	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas*1e3);

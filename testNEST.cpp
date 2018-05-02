@@ -95,10 +95,10 @@ int main ( int argc, char** argv ) {
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
-  DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas);
+  DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas,true,-999.);
   double rho = n.SetDensity ( detParam.temperature, detParam.pressure ); //cout.precision(12);
   if ( rho < 1. ) inGas = true;
-  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas );
+  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas, true, -1. );
   if ( atof(argv[5]) == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho,inGas,z_step);
     vD_middle = vTable[int(floor(.5*detParam.GXeInterface/z_step))];
@@ -181,11 +181,12 @@ int main ( int argc, char** argv ) {
     }
     
     if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
-      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas ); field = detParam.efFit;
+      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas, true, 0. ); field = detParam.efFit;
     }
     else field = atof(argv[5]);
     
-    if ( field <= 0. ) cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
+    if ( field <= 0. )
+      cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
     
     if ( atof(argv[5]) == -1. ) {
       //for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
@@ -246,6 +247,12 @@ int main ( int argc, char** argv ) {
       signalE.push_back(0.);
     else
       signalE.push_back(keV);
+    
+    if ( !MCtruthPos && fabs(scint2[6]) > DBL_MIN ) {
+      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas, false, fabs(scint2[6]) );
+      pos_x = detParam.xySmeared[0];
+      pos_y = detParam.xySmeared[1];
+    }
     
     if ( 1 ) { //fabs(scint[7]) > DBL_MIN && fabs(scint2[7]) > DBL_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in

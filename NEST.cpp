@@ -326,7 +326,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   if ( NexONi < 0. ) NexONi = 0.;
   if ( L < 0. ) L = 0.;
   if ( L > 1. ) L = 1.; //Lindhard Factor
-  if ( energy*1e3 < Wq_eV ) { Nph = 0.; Ne = 0.; }
+  if ( energy < 0.001*Wq_eV/L ) { Nph = 0.; Ne = 0.; }
   
   YieldResult result;
   result.PhotonYield = Nph;
@@ -528,11 +528,12 @@ double NESTcalc::nCr ( double n, double r ) {
   
 }
 
-DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
-					   double zPos_mm, bool IsInGasPhase ) {
+DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm, double zPos_mm,
+					   bool IsInGasPhase, bool TruePos, double S2UncorrPulseArea ) {
   
   DetectorParameters detParam;
-  vector<double> secondary(9);
+  vector<double> secondary(9), xySmeared(2);
+  NESTcalc m;
   
   detParam.temperature = T_Kelvin;
   detParam.pressure = p_bar;
@@ -541,6 +542,11 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
   detParam.rad = radius;
   detParam.dtExtrema[0] = dt_min;
   detParam.dtExtrema[1] = dt_max;
+  if ( !TruePos ) {
+    xySmeared = xyResolution ( xPos_mm, yPos_mm, S2UncorrPulseArea*(1.-S2botTotRatio), m, rng() );
+    detParam.xySmeared[0] = xySmeared[0];
+    detParam.xySmeared[1] = xySmeared[1];
+  }
   
   if ( xPos_mm == 0. &&
        yPos_mm == 0. &&
@@ -735,7 +741,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasP
     driftTime = 0.0;
     for ( zz = pos_z; zz < TopDrift; zz += z_step ) {
       
-      detParam = GetDetector ( 0., 0., zz, IsInGasPhase );
+      detParam = GetDetector ( 0., 0., zz, IsInGasPhase, true, -1. );
       if ( pos_z > gate ) {
 	if ( !IsInGasPhase )
 	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);

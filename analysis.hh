@@ -1,6 +1,8 @@
 
 //General parameters of importance changing global behavior
 bool MCtruthE = true; //false means reconstructed energy
+bool MCtruthPos=true; //false means reconstructed position
+
 bool useTiming = false; //photon arrival times + pulse shapes
 
 //0 means PE, 1 means phd (PE/~1.2), 2 means spike count

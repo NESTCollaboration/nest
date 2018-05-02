@@ -57,9 +57,33 @@ double dt_max = 60.; //maximum. Bottom of detector fiducial volume
 double radius = 50.; //millimeters
 
  double TopDrift = 150.; //mm not cm or us (but, this *is* where dt=0)
-//In 2-phase, liquid/gas border. In all-gas detector it is GATE, not the anode!
+//a z-axis value of 0 means the bottom of the detector (cathode OR bottom PMTs)
+//In 2-phase, TopDrift=liquid/gas border. In gas detector it's GATE, not anode!
 double anode = 152.5; //the level of the anode grid-wire plane in mm
 //In a gas TPC, this is not TopDrift (top of drift region), but a few mm above it
  double gate = 147.5; //mm. This is where the E-field changes (higher)
-
  // in gas detectors, the gate is still the gate, but it's where S2 starts
+
+ // 2-D (X & Y) Position Reconstruction
+
+std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top, 
+				   NEST::NESTcalc &m, long seed ) {
+  
+  std::vector<double> xySmeared(2);
+  m.SetRandomSeed(seed);
+  
+  double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
+  double kappa=70.8364+exp(.015*radius); // arXiv:1710.02752
+  double sigmaR = kappa / sqrt ( A_top ); // ibid.
+  
+  double phi = m.rand_uniform() * 2. * M_PI;
+  sigmaR = m.rand_gauss(0.0,sigmaR);
+  double sigmaX = ( radius + sigmaR ) * cos ( phi );
+  double sigmaY = ( radius + sigmaR ) * sin ( phi );
+  
+  xySmeared[0] = xPos_mm + sigmaX;
+  xySmeared[1] = yPos_mm + sigmaY;
+
+  return xySmeared; //new X and Y position in mm with empirical smearing. LUX Run03 example
+
+}

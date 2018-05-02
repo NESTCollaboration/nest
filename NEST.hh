@@ -84,10 +84,10 @@ namespace NEST {
 				   double xTest,double yTest,double fValue);
     double rand_gauss( double mean, double sigma );
     int BinomFluct(int, double);
-    NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z);
+    NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam);
     double PhotonTime(INTERACTION_TYPE species,bool exciton);
     photonstream GetPhotonTimes(/*inputs*/);
-    YieldResult GetYields(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z);
+    YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
     QuantaResult GetQuanta(YieldResult yields, double density);
     DetectorParameters GetDetector ( double x, double y, double z, bool IsInGasPhase );
     void DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam );

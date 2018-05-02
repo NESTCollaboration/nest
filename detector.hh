@@ -55,7 +55,11 @@ double dtCntr = 40.; //center of detector for S1 corrections, in usec.
 double dt_min = 20.; //minimum. Top of detector fiducial volume
 double dt_max = 60.; //maximum. Bottom of detector fiducial volume
 double radius = 50.; //millimeters
-double liquidBorder = 150.; //mm not cm, literal liquid/gas border not gate (dt=0)
-//in a gas detector this is whatever you consider the top (such as anode)
-double gasGap_mm = 2.5; //EL gap in mm, affecting both field and linear S2 term
-double gate = liquidBorder - gasGap_mm;
+
+ double TopDrift = 150.; //mm not cm or us (but, this *is* where dt=0)
+//In 2-phase, liquid/gas border. In all-gas detector it is GATE, not the anode!
+double anode = 152.5; //the level of the anode grid-wire plane in mm
+//In a gas TPC, this is not TopDrift (top of drift region), but a few mm above it
+ double gate = 147.5; //mm. This is where the E-field changes (higher)
+
+ // in gas detectors, the gate is still the gate, but it's where S2 starts

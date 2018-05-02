@@ -77,10 +77,11 @@ int NESTcalc::BinomFluct(int N0, double prob) {
   
 }
 
-NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z){
+NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,
+		  double A,double Z,vector<double> NuisParam){
   
   NESTresult result;
-  result.yields = GetYields(species,energy,density,dfield,A,Z);
+  result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
   result.photon_times = GetPhotonTimes(/*stuff*/);
   return result;
@@ -149,7 +150,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
       0.0057042*pow(density,2.)+ //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
       0.0015957*pow(density,3.); //to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
     Nq_actual = int(floor(rand_gauss(Nq_mean,sqrt(Fano*Nq_mean))+0.5));
-    if ( Nq_actual < 0 ) Nq_actual = 0;
+    if ( Nq_actual < 0 || Nq_mean == 0. ) Nq_actual = 0;
     
     Ni = BinomFluct(Nq_actual,alf);
     Nex= Nq_actual - Ni;
@@ -204,7 +205,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
 }
 
 YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, double density,
-				  double dfield, double massNum, double atomNum ) {
+				  double dfield, double massNum, double atomNum, vector<double> NuisParam ) {
   
   const double m3 = 2., m4 = 2., m6 = 0.;
   double Ne = -999; double Nph = -999; double NexONi = -999; double m8 = 2., L = 1.;
@@ -228,8 +229,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
       Qy = 1. / (ThomasImel*sqrt(energy+9.75));
       Ly = Nq / energy - Qy;
-      Ne = Qy * energy * ScaleFactor[1];
-      Nph= Ly * energy * ScaleFactor[0];
+      Ne = Qy * energy * ScaleFactor[1] * NuisParam[1];
+      Nph= Ly * energy * ScaleFactor[0] * NuisParam[0];
       NexONi = 1.00*erf(0.01*energy); Nq = Nph + Ne;
       L = ( Nq / energy ) * Wq_eV * 1e-3;
     } break;
@@ -318,14 +319,14 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   }
   
-  assert(Ne!=-999 && Nph!=-999
-	 && NexONi!=-999);
+  assert(Ne!=-999 && Nph!=-999 && NexONi!=-999);
   if ( Nph> energy / 7e-3 ) Nph= energy / 7e-3; //yields can never exceed 1 / [ W ~ 7 eV ]
   if ( Ne > energy / 7e-3 ) Ne = energy / 7e-3;
   if ( Nph < 0. ) Nph = 0.; if ( Ne < 0. ) Ne = 0.;
   if ( NexONi < 0. ) NexONi = 0.;
   if ( L < 0. ) L = 0.;
   if ( L > 1. ) L = 1.; //Lindhard Factor
+  if ( energy*1e3 < Wq_eV ) { Nph = 0.; Ne = 0.; }
   
   YieldResult result;
   result.PhotonYield = Nph;
@@ -357,8 +358,8 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   
   // Add some variability in g1 drawn from a polynomial spline fit
   double posDep = FitS1 ( dx, dy, dz );
-  double dt = ( liquidBorder - dz ) / driftVelocity;
-  double dz_center = liquidBorder - dV_mid * dtCntr; //go from t to z
+  double dt = ( TopDrift - dz ) / driftVelocity;
+  double dz_center = TopDrift - dV_mid * dtCntr; //go from t to z
   posDep /= FitS1 ( 0., 0., dz_center ); // XYZ always in mm now never cm
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
@@ -455,22 +456,25 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
   
   vector<double> ionization(9);
   double alpha = 0.137, beta = 177., gamma = 45.7;
-  double epsilon = 1.85 / 1.00126;
-  if ( IsInGasPhase ) epsilon = 1.;
+  double epsilonRatio = 1.85 / 1.00126;
+  if ( IsInGasPhase ) epsilonRatio = 1.;
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = FitS2 ( dx, dy ); // XY is always in mm now, never cm
   posDep /= FitS2 ( 0., 0. );
-  double dz = liquidBorder - dt * driftVelocity;
+  double dz = TopDrift - dt * driftVelocity;
   
-  double E_liq = E_gas / epsilon; //kV per cm
+  double E_liq = E_gas / epsilonRatio; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
   if ( ExtEff > 1. || IsInGasPhase ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
   
-  double elYield = (alpha*E_gas*1e3-beta*p_bar-gamma)*
-    gasGap_mm*0.1; // arXiv:1207.2292
+  double elYield = (alpha*E_gas*1e3-beta*p_bar-gamma)* // arXiv:1207.2292
+    ( anode - TopDrift ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
+  if ( (anode - TopDrift) <= 0. ) {
+    cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
+  }
   int Nph = int(floor(rand_gauss(elYield*double(Nee),
 				 sqrt(s2Fano*elYield*double(Nee)))+0.5));
   int nHits = BinomFluct(Nph,g1_gas);
@@ -532,7 +536,7 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm,
   
   detParam.temperature = T_Kelvin;
   detParam.pressure = p_bar;
-  detParam.GXeInterface = liquidBorder;
+  detParam.GXeInterface = TopDrift;
   detParam.efFit = FitEF ( xPos_mm, yPos_mm, zPos_mm );
   detParam.rad = radius;
   detParam.dtExtrema[0] = dt_min;
@@ -579,7 +583,7 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
   newSpike[0] = fabs(oldScint[6]);
   newSpike[0] = rand_gauss(newSpike[0],(sPEres/4.)*sqrt(newSpike[0]));
   if ( newSpike[0] < 0.0 ) newSpike[0] = 0.0;
-  newSpike[1] = newSpike[0] / FitS1 ( dx, dy, dz ) * FitS1 ( 0., 0., liquidBorder - dS_mid * dtCntr );
+  newSpike[1] = newSpike[0] / FitS1 ( dx, dy, dz ) * FitS1 ( 0., 0., TopDrift - dS_mid * dtCntr );
   
   return newSpike; // regular and position-corrected spike counts returned
   
@@ -726,16 +730,16 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasP
   DetectorParameters detParam;
   double driftTime, zz;
   
-  for ( double pos_z = 0.0; pos_z < liquidBorder; pos_z += z_step ) {
+  for ( double pos_z = 0.0; pos_z < TopDrift; pos_z += z_step ) {
     
     driftTime = 0.0;
-    for ( zz = pos_z; zz < liquidBorder; zz += z_step ) {
+    for ( zz = pos_z; zz < TopDrift; zz += z_step ) {
       
       detParam = GetDetector ( 0., 0., zz, IsInGasPhase );
       if ( pos_z > gate ) {
 	if ( !IsInGasPhase )
 	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);
-	else
+	else // if gate == TopDrift properly set, shouldn't happen
 	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas*1e3);
       }
       else

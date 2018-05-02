@@ -27,7 +27,7 @@ void GetEnergyRes ( vector<double> Es );
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n; vector<double> signal1,signal2,signalE, vTable; int index;
+  NEST::NESTcalc n; vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
   string position, delimiter, token; size_t loc;
   double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD, vD_middle, atomNum=0, massNum=0;
   
@@ -204,7 +204,7 @@ int main ( int argc, char** argv ) {
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     
     NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,
-					   double(massNum),double(atomNum));
+					   double(massNum),double(atomNum),NuisParam);
     NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
     
     vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,

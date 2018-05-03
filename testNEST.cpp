@@ -37,6 +37,8 @@ int main ( int argc, char** argv ) {
       cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
       cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl << endl;
       cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
+      cout << "for cosmic-ray muons or other similar particles with elongated track lengths..." << endl << endl;
+      cout << "numEvts {MIP} LET[MeV*cm^2/gram] step_size[cm] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
       return 0;
     }
   unsigned long int numEvts = atoi(argv[1]);
@@ -74,7 +76,9 @@ int main ( int argc, char** argv ) {
     type_num = gammaRay; //includes photo-absorption and electron capture
   else if ( type == "Kr83m" || type == "83mKr" || type == "Kr83" ) type_num = Kr83m;
   else if ( type == "CH3T" || type == "tritium" ) type_num = CH3T;
-  else if ( type == "beta" || type == "ER" || type == "Compton" || type == "compton" ) type_num = beta; //default electron recoil model
+  else if ( type == "beta" || type == "ER" || type == "Compton" || type == "compton" || type == "electron" || type == "e-" ||
+	    type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" )
+    type_num = beta; //default electron recoil model
   else {
     cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
     cerr << "NR or neutron," << endl;
@@ -89,16 +93,17 @@ int main ( int argc, char** argv ) {
     cerr << "x-ray or xray or xRay or X-ray or Xray or XRay," << endl;
     cerr << "Kr83m or 83mKr or Kr83," << endl;
     cerr << "CH3T or tritium, and" << endl;
-    cerr << "beta or ER or Compton or compton" << endl;
+    cerr << "beta or ER or Compton or compton or electron or e-" << endl;
+    cerr << "muon or MIP or LIP or mu or mu-" << endl;
     return 0;
   }
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
-  DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas,true,-999.);
+  DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas);
   double rho = n.SetDensity ( detParam.temperature, detParam.pressure ); //cout.precision(12);
   if ( rho < 1. ) inGas = true;
-  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas, true, -1. );
+  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas );
   if ( atof(argv[5]) == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho,inGas,z_step);
     vD_middle = vTable[int(floor(.5*detParam.GXeInterface/z_step))];
@@ -181,7 +186,7 @@ int main ( int argc, char** argv ) {
     }
     
     if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
-      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas, true, 0. ); field = detParam.efFit;
+      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas ); field = detParam.efFit;
     }
     else field = atof(argv[5]);
     
@@ -204,9 +209,30 @@ int main ( int argc, char** argv ) {
     if ( detParam.dtExtrema[1] > (detParam.GXeInterface-0.)/vD && !j )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     
-    NEST::YieldResult yields = n.GetYields(type_num,keV,rho,field,
-					   double(massNum),double(atomNum),NuisParam);
-    NEST::QuantaResult quanta = n.GetQuanta(yields,rho);
+    NEST::YieldResult yields; NEST::QuantaResult quanta;
+    double zStep = eMax;
+    if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
+      double dEOdx = eMin, eStep = dEOdx * rho * zStep * 1e3, refEnergy = 1e6; keV = 0.;
+      int Nph = 0, Ne = 0;
+      for ( double zz = detParam.GXeInterface; zz > 0; zz -= zStep*10. ) {
+	detParam = n.GetDetector ( pos_x, pos_y, zz, inGas );
+	yields = n.GetYields ( beta, refEnergy, rho, detParam.efFit, double(massNum), double(atomNum), NuisParam );
+	quanta = n.GetQuanta ( yields, rho );
+	Nph+= quanta.photons * (eStep/refEnergy);
+	Ne += quanta.electrons*(eStep/refEnergy);
+	keV+= eStep;
+      }
+      quanta.photons = Nph; quanta.electrons = Ne;
+      pos_z = detParam.GXeInterface / 2.;
+      driftTime = ( detParam.GXeInterface - pos_z ) / vD_middle;
+      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas );
+      field = detParam.efFit;
+    }
+    else {
+      yields = n.GetYields(type_num,keV,rho,field,
+			   double(massNum),double(atomNum),NuisParam);
+      quanta = n.GetQuanta(yields,rho);
+    }
     
     vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,
 				   vD,vD_middle,type_num);
@@ -249,9 +275,9 @@ int main ( int argc, char** argv ) {
       signalE.push_back(keV);
     
     if ( !MCtruthPos && fabs(scint2[6]) > DBL_MIN ) {
-      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas, false, fabs(scint2[6]) );
-      pos_x = detParam.xySmeared[0];
-      pos_y = detParam.xySmeared[1];
+      vector<double> xySmeared(2); xySmeared = n.xyResolution ( pos_x, pos_y, fabs(scint2[6]) );
+      pos_x = xySmeared[0];
+      pos_y = xySmeared[1];
     }
     
     if ( 1 ) { //fabs(scint[7]) > DBL_MIN && fabs(scint2[7]) > DBL_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement

@@ -66,24 +66,5 @@ double anode = 152.5; //the level of the anode grid-wire plane in mm
 
  // 2-D (X & Y) Position Reconstruction
 
-std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top, 
-				   NEST::NESTcalc &m, long seed ) {
-  
-  std::vector<double> xySmeared(2);
-  m.SetRandomSeed(seed);
-  
-  double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
-  double kappa=70.8364+exp(.015*radius); // arXiv:1710.02752
-  double sigmaR = kappa / sqrt ( A_top ); // ibid.
-  
-  double phi = m.rand_uniform() * 2. * M_PI;
-  sigmaR = m.rand_gauss(0.0,sigmaR);
-  double sigmaX = ( radius + sigmaR ) * cos ( phi );
-  double sigmaY = ( radius + sigmaR ) * sin ( phi );
-  
-  xySmeared[0] = xPos_mm + sigmaX;
-  xySmeared[1] = yPos_mm + sigmaY;
-
-  return xySmeared; //new X and Y position in mm with empirical smearing. LUX Run03 example
-
-}
+double PosResExp = 0.015; // exp increase in pos recon res at hi r, 1/mm
+double PosResBase = 70.8364; // baseline unc in mm, see NEST.cpp for usage

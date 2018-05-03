@@ -468,15 +468,15 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
   if ( ExtEff > 1. || IsInGasPhase ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
-  int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us));
+  int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us)); //MAKE this 1 for SINGLE e- DEBUGGING
   
   double elYield = (alpha*E_gas*1e3-beta*p_bar-gamma)* // arXiv:1207.2292
     ( anode - TopDrift ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
   if ( (anode - TopDrift) <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-  int Nph = int(floor(rand_gauss(elYield*double(Nee),
-				 sqrt(s2Fano*elYield*double(Nee)))+0.5));
+  long Nph = long(floor(rand_gauss(elYield*double(Nee),
+				   sqrt(s2Fano*elYield*double(Nee)))+0.5));
   int nHits = BinomFluct(Nph,g1_gas);
   int Nphe = nHits + BinomFluct(nHits,P_dphe);
   double pulseArea=rand_gauss(Nphe,sPEres*sqrt(Nphe));
@@ -529,11 +529,10 @@ double NESTcalc::nCr ( double n, double r ) {
 }
 
 DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm, double zPos_mm,
-					   bool IsInGasPhase, bool TruePos, double S2UncorrPulseArea ) {
+					   bool IsInGasPhase ) {
   
   DetectorParameters detParam;
-  vector<double> secondary(9), xySmeared(2);
-  NESTcalc m;
+  vector<double> secondary(9);
   
   detParam.temperature = T_Kelvin;
   detParam.pressure = p_bar;
@@ -542,11 +541,6 @@ DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm, doubl
   detParam.rad = radius;
   detParam.dtExtrema[0] = dt_min;
   detParam.dtExtrema[1] = dt_max;
-  if ( !TruePos ) {
-    xySmeared = xyResolution ( xPos_mm, yPos_mm, S2UncorrPulseArea*(1.-S2botTotRatio), m, rng() );
-    detParam.xySmeared[0] = xySmeared[0];
-    detParam.xySmeared[1] = xySmeared[1];
-  }
   
   if ( xPos_mm == 0. &&
        yPos_mm == 0. &&
@@ -741,7 +735,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasP
     driftTime = 0.0;
     for ( zz = pos_z; zz < TopDrift; zz += z_step ) {
       
-      detParam = GetDetector ( 0., 0., zz, IsInGasPhase, true, -1. );
+      detParam = GetDetector ( 0., 0., zz, IsInGasPhase );
       if ( pos_z > gate ) {
 	if ( !IsInGasPhase )
 	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);
@@ -758,4 +752,25 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasP
   }
   
   return speedTable;
+}
+
+vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A_top ) {
+  
+  vector<double> xySmeared(2);
+  A_top *= (1.-S2botTotRatio);
+  
+  double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
+  double kappa = PosResBase + exp ( PosResExp * radius ); // arXiv:1710.02752
+  double sigmaR = kappa / sqrt ( A_top ); // ibid.
+  
+  double phi = 2. * M_PI * rand_uniform();
+  sigmaR = rand_gauss ( 0.0, sigmaR );
+  double sigmaX = sigmaR * cos ( phi );
+  double sigmaY = sigmaR * sin ( phi );
+  
+  xySmeared[0] = xPos_mm + sigmaX;
+  xySmeared[1] = yPos_mm + sigmaY;
+  
+  return xySmeared; //new X and Y position in mm with empirical smearing. LUX Run03 example
+
 }

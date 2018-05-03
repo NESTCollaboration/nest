@@ -61,7 +61,6 @@ namespace NEST {
     double efFit;
     double rad;
     double dtExtrema[2];
-    double xySmeared[2];
   };
   
   class NESTcalc {
@@ -90,7 +89,7 @@ namespace NEST {
     photonstream GetPhotonTimes(/*inputs*/);
     YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
     QuantaResult GetQuanta(YieldResult yields, double density);
-    DetectorParameters GetDetector ( double x, double y, double z, bool IsInGasPhase, bool TruePos, double S2UncorrPulseArea );
+    DetectorParameters GetDetector ( double x, double y, double z, bool IsInGasPhase );
     void DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam );
     std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species );
     std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
@@ -101,6 +100,7 @@ namespace NEST {
     std::vector<double> SetDriftVelocity_NonUniform ( double rho, bool IsInGasPhase, double zStep );
     void SetRandomSeed(unsigned long int);
     double SetDensity ( double T, double P );
+    std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top );
     
   };
 

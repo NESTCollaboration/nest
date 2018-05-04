@@ -49,10 +49,12 @@ using namespace NEST;
 NESTProc<G4VUserTrackInformation> proc;
 
 template<class T>
-NESTProc<T>::NESTProc(const G4String& processName, G4ProcessType type)
-      : G4VRestDiscreteProcess(processName, type), electron_cut_index(G4ProductionCuts::GetIndex(G4Electron::Definition()))
+NESTProc<T>::NESTProc(const G4String& processName, G4ProcessType type, double efield)
+      : G4VRestDiscreteProcess(processName, type), efield(efield)
 {
-        
+    
+        fNESTcalc = std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc());
+    
         SetProcessSubType(fScintillation);
 	
         fTrackSecondariesFirst = false;
@@ -66,7 +68,7 @@ NESTProc<T>::~NESTProc(){} //destructor needed to avoid linker error
 
 
 
-G4Track* MakePhoton(NEST::Vertex vertex, bool exciton) {
+G4Track* MakePhoton(NEST::Hit hit, bool exciton) {
     // Determine polarization of new photon
     G4ParticleMomentum photonMomentum(G4RandomDirection());
     G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
@@ -88,33 +90,11 @@ G4Track* MakePhoton(NEST::Vertex vertex, bool exciton) {
     //these singlet and triplet times may not be the ones you're
     //used to, but are the world average: Kubota 79, Hitachi 83 (2
     //data sets), Teymourian 11, Morikawa 89, and Akimov '02
-    G4double aSecondaryTime = vertex.gett();
+    G4double aSecondaryTime = hit.t;
     double SingTripRatioX, SingTripRatioR;
-    if(vertex.getSpecies()==-1){
-        //disregard tauR from original model--it's very small for any electric field.
-        SingTripRatioX = G4RandGauss::shoot(0.17,0.05);
-        SingTripRatioR = G4RandGauss::shoot(0.8, 0.2);
-    }
-    else if(vertex.getSpecies()==4){
-        SingTripRatioR = G4RandGauss::shoot(2.3,0.51);
-        SingTripRatioX = SingTripRatioR;
-    }
-    else{//NR
-        SingTripRatioR = G4RandGauss::shoot(7.8,1.5);
-        SingTripRatioX = SingTripRatioR;
-    }
-    if(exciton){
-        if (G4UniformRand() < SingTripRatioR / (1 + SingTripRatioR))
-            aSecondaryTime -= tau1 * log(G4UniformRand());
-        else aSecondaryTime -= tau3 * log(G4UniformRand());
-    } else {
-        if (G4UniformRand() < SingTripRatioX / (1 + SingTripRatioX))
-            aSecondaryTime -= tau1 * log(G4UniformRand());
-        else aSecondaryTime -= tau3 * log(G4UniformRand());
-    }
-    if ( aSecondaryTime < 0 ) aSecondaryTime = 0;
     
-    G4ThreeVector pos(vertex.getPos()[0],vertex.getPos()[1],vertex.getPos()[2]);
+    
+    G4ThreeVector pos(0,0,0);
     return new G4Track(aQuantum,aSecondaryTime,pos);
     
 }
@@ -128,12 +108,20 @@ NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
     aParticleChange.Initialize(aTrack);
     //ready to pop out OP and TE?
     if(NESTStackingAction::theStackingAction->isUrgentEmpty()
-            && !unmerged_steps.empty()
             && aStep.GetSecondary()->empty()){
     
-        const double Efield = 300;      
-        std::vector<NEST::Vertex> merged_steps = NEST::cluster(unmerged_steps);
-        for (auto vertex : merged_steps){       
+    for(auto lineage : lineages){
+      double etot = std::accumulate(lineage.hits.begin(),lineage.hits.end(),0., [](double a, Hit b){return a+b.E;});
+      NESTresult result = fNESTcalc->FullCalculation(lineage.type,etot,lineage.density,efield,lineage.A,lineage.Z,std::vector<double>{1,1});
+      for (auto hit: lineage.hits){
+        int nPhotons = hit.E * result.quanta.photons / etot;
+        for (int i=0; i<nPhotons; i++){
+          
+        }
+      }
+    }          
+    
+//        for (auto vertex : merged_steps){       
 //            auto result = fNESTcalc->FullCalculation(vertex.getSpecies(),vertex.getEnergy(),vertex.getDensity(),Efield);
 //            
 //            for(auto time : result.photon_times){
@@ -145,19 +133,19 @@ NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
 //
 //            }
 
-        }
-        unmerged_steps.clear();
+//        }
+        lineages.clear();
     }
    return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep); 
     
 }
 
 template<class T>
-void NESTProc<T>::FillSecondaryInfo(const std::vector<const G4Track*>* secondaries, NESTTrackInformation* parentInfo) const
+void NESTProc<T>::FillSecondaryInfo(const std::vector<G4Track*>* secondaries, NESTTrackInformation* parentInfo) const
 {
   if (secondaries)
   {
-    for (const G4Track* sec : *secondaries){
+    for (G4Track* sec : *secondaries){
         NESTTrackInformation* infoNew = new NESTTrackInformation(*parentInfo);
         sec->SetUserInformation(infoNew);    
     }
@@ -198,74 +186,95 @@ INTERACTION_TYPE NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track*
 
 template<class T>
 G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
-// this is the most important function, where all light & charge yields happen!
 {
+  // If a user is doing other UserTrackInfo stuff, grab it and prserve it so we don't lose the information
   G4VUserTrackInformation* oldInfo=aTrack.GetUserInformation();
   T* oldInfo_T = static_cast<T*>(oldInfo);
-  INTERACTION_TYPE step_type=NoneType;
-  const std::vector<const G4Track*>* secondaries = (aStep.GetSecondaryInCurrentStep());
   NESTTrackInformation* oldInfo_N = dynamic_cast<NESTTrackInformation* >(oldInfo_T);
+  
+  //Type of this step.
+  INTERACTION_TYPE step_type=NoneType;
+  
+  //hacky way to grab secondaries created in this step without them becoming const. Don't abuse this by altering the secondaries besides setting UserTrackInfo!
+  const std::vector<const G4Track*>* secondaries_c = (aStep.GetSecondaryInCurrentStep());
+  std::vector< G4Track*>* secondaries;
+  const G4TrackVector* fSecondary = aStep.GetSecondary();
+  G4int nSecondary = fSecondary->size();
+  for (G4int i=nSecondary - secondaries_c->size(); i < nSecondary; i++)
+  {
+    secondaries->push_back((*fSecondary)[i]);
+  }
+  
+  //If the current track is already in a lineage, its secondaries inherit that lineage.
   if(oldInfo_N && oldInfo_N->parentType!=NoneType ){
     FillSecondaryInfo(secondaries,oldInfo_N);
   }
+  //otherwise, we may need to start a new lineage
   else{
     if(secondaries){
-      for (const G4Track* sec : *secondaries){
+      for ( G4Track* sec : *secondaries){
+        //Each secondary has a type (including the possible NoneType)
         INTERACTION_TYPE sec_type= GetChildType(&aTrack, sec);
+        //The first secondary will change the step_type. Subsequent secondaries better have the same type as the first. If they don't, something is weird
         assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
+        //if this is the first secondary to have a non-None type, we've started a new lineage
         if(step_type==NoneType && sec_type !=NoneType){
-          hits.push_back(Hit(sec_type));
+          lineages.push_back(Lineage(sec_type));
         }
         step_type=sec_type;
-        int hit_id = (sec_type==NoneType ? -1: hits.size()-1);
+        //If the secondary has a non-None type, it also gets a lineage ID.
+        int lineage_id = (sec_type==NoneType ? -1: lineages.size()-1);
+        //If there's old (non-NEST) user info to pass on, do that. In either case, make a new NESTTrackInfo for this secondary.
         if(oldInfo_T){
-          sec->SetUserInformation(new NESTTrackInformation(sec_type,hit_id,*oldInfo_T));
+          sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id,*oldInfo_T));
         }
         else{
-          sec->SetUserInformation(new NESTTrackInformation(sec_type,hit_id));
+          sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id));
         }
       }
     
     }
+    //What if the parent is a primary? Give it a lineage just as if it were one of its own secondaries
     if(aTrack.GetParentID()==0){
       INTERACTION_TYPE sec_type= GetChildType(0, &aTrack);
       assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
+      if(step_type==NoneType && sec_type !=NoneType){
+          lineages.push_back(Lineage(sec_type));
+        }
+        step_type=sec_type;
+      int hit_id = (sec_type==NoneType ? -1: lineages.size()-1);
+      G4Track& aTrack_nonc = const_cast<G4Track&>( aTrack);
       if(oldInfo_T){
-          aTrack.SetUserInformation(new NESTTrackInformation(sec_type,oldInfo_T));
+          aTrack_nonc.SetUserInformation(new NESTTrackInformation(sec_type,hit_id,*oldInfo_T));
         }
         else{
-          aTrack.SetUserInformation(new NESTTrackInformation(sec_type));
+          aTrack_nonc.SetUserInformation(new NESTTrackInformation(sec_type,hit_id));
         }
-      FillSecondaryInfo(secondaries,aTrack.GetUserInformation());
     }
     if(step_type!=NoneType){
 
     }
   }
   
+//  If the current track is part of a lineage...
+  G4VUserTrackInformation* trackInfo=aTrack.GetUserInformation();
+  T* trackInfo_T = static_cast<T*>(trackInfo);
+  NESTTrackInformation* trackInfo_N = dynamic_cast<NESTTrackInformation* >(trackInfo_T);
+  if(!trackInfo_N || trackInfo_N->parentType==NoneType) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+  Lineage* myLineage = &lineages.at(trackInfo_N->hit_id);
+  //...if the step deposited energy...
   if (aStep.GetTotalEnergyDeposit() <= 0) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
 
-  //validity checks
-
+  //... in a noble element...
   const G4Material* preMaterial = aStep.GetPreStepPoint()->GetMaterial();
   const G4Material* postMaterial = aStep.GetPostStepPoint()->GetMaterial();
-  G4MaterialPropertiesTable* preMatTable = NULL;
-  G4MaterialPropertiesTable* postMatTable = NULL;
-  if (preMaterial) {
-      preMatTable = preMaterial->GetMaterialPropertiesTable();
-  }
-  if (postMaterial) {
-      postMatTable = postMaterial->GetMaterialPropertiesTable();
-  }
     G4Element *ElementA = NULL, *ElementB = NULL;
     if (preMaterial) {
-        const G4ElementVector* theElementVector1 =
-                preMaterial->GetElementVector();
+        const G4ElementVector* theElementVector1 = preMaterial->GetElementVector();
         ElementA = (*theElementVector1)[0];
     }
     if (postMaterial) {
-        const G4ElementVector* theElementVector2 =
-                postMaterial->GetElementVector();
+        const G4ElementVector* theElementVector2 = postMaterial->GetElementVector();
         ElementB = (*theElementVector2)[0];
     }
     G4int z1, z2;
@@ -277,18 +286,17 @@ G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step
     if (z1 == 2 || z1 == 10 || z1 == 18 || z1 == 36 || z1 == 54) {
         NobleNow = true;
 
-    } //end of atomic number check
+    } 
     if (z2 == 2 || z2 == 10 || z2 == 18 || z2 == 36 || z2 == 54) {
         NobleLater = true;
-
-    } //end of atomic number check
+    } 
 
     if ( !NobleNow ) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
 
 
 
-    // retrieval of the particle's position, time, attributes at both the 
-    // beginning and the end of the current step along its track
+    // ...retrieve the particle's position, time, attributes at both the 
+    // beginning and the end of the current step along its track...
     G4StepPoint* pPreStepPoint = aStep.GetPreStepPoint();
     G4StepPoint* pPostStepPoint = aStep.GetPostStepPoint();
     G4ThreeVector x1 = pPostStepPoint->GetPosition();
@@ -297,34 +305,14 @@ G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step
     G4double t0 = pPreStepPoint->GetLocalTime();
     G4double t1 = pPostStepPoint->GetLocalTime();
 
-
-    G4double Density = preMaterial->GetDensity() / (g / cm3);
-    if (fNESTcalc == NULL) {//initialize fNESTcacl
-        // retrieve scintillation-related material properties
-        
-        G4double nDensity = Density*AVO; //molar mass factor applied below
-
-
-
-        double molarmass = 0;
-        const G4ElementVector* elvector = preMaterial->GetElementVector();
-        const G4double* fvector = preMaterial->GetFractionVector();
-        for (size_t i=0; i<preMaterial->GetNumberOfElements(); i++){
-            volatile double Ai = (*elvector)[i]->GetA();
-            molarmass += Ai*(fvector[i])/g;
-        }
-        //TODO: pass molar mass to NEST, or does it need it?
-        fNESTcalc = std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc());
-    }
-
-
-    //TODO:: calculate species from track
-    INTERACTION_TYPE step_species = beta;
-    
+    G4double Density = preMaterial->GetDensity() / (g / cm3); 
+    if(myLineage->density==-1) myLineage->density=Density;
     double step_E = aStep.GetTotalEnergyDeposit()/keV;
-    std::array<double, 3> pos{x0[0], x0[1], x0[2]};
-    NEST::Vertex newvertex(step_E, step_species, pos, aStep.GetPostStepPoint()->GetGlobalTime() / ns,Density);
-    unmerged_steps.push_back(newvertex);
+    
+    
+    //add this hit to the appropriate lineage
+    Hit stepHit(step_E,t0, x0);
+    myLineage->hits.push_back(stepHit);
 
     //the end (exiting)
     return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);

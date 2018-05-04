@@ -210,7 +210,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
 YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, double density,
 				  double dfield, double massNum, double atomNum, vector<double> NuisParam ) {
   
-  const double m3 = 2., m4 = 2., m6 = 0.;
+  
   double Ne = -999; double Nph = -999; double NexONi = -999; double m8 = 2., L = 1.;
   const double deltaT_ns_halflife = 154.4;
   
@@ -257,13 +257,14 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double fieldDep= pow ( 1.+pow ( dfield/95., 8.7 ), 0.0592 );
       if ( density < 1. ) fieldDep = sqrt ( dfield );
       ThomasImel = 0.00625 * massDep / ( 1. + densDep ) / fieldDep;
-      Wq_eV = 28.259+25.667*log10(density)
-	-33.611*pow(log10(density),2.)
-	-123.73*pow(log10(density),3.)
-	-136.47*pow(log10(density),4.)
-	-74.194*pow(log10(density),5.)
-	-20.276*pow(log10(density),6.)
-	-2.2352*pow(log10(density),7.);
+      const double logden = log10(density);
+      Wq_eV = 28.259+25.667*logden
+	-33.611*pow(logden,2.)
+	-123.73*pow(logden,3.)
+	-136.47*pow(logden,4.)
+	-74.194*pow(logden,5.)
+	-20.276*pow(logden,6.)
+	-2.2352*pow(logden,7.);
       alpha = 0.64 / pow ( 1. + pow ( density / 10., 2. ), 449.61 );
       NexONi = alpha + 0.00178 * pow ( atomNum, 1.587 );
       Nq = 1e3 * L * energy / Wq_eV;
@@ -273,6 +274,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   case gammaRay:
     {
+      const double m3 = 2., m4 = 2., m6 = 0.;
       double m1 = 33.951 + (3.3284 - 33.951) / (1. + pow(dfield / 165.34, .72665));
       double m2 = 1000 / Wq_eV;
       double m5 = 23.156 + (10.737 - 23.156) / (1. + pow(dfield / 34.195, .87459));

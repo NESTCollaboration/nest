@@ -27,75 +27,39 @@
 namespace NEST
 {
 
-  struct Hit
+   struct Hit
   {
   public:
-    Hit(INTERACTION_TYPE type): type(type){};
+    Hit(double E, double t, G4ThreeVector xyz): E(E),t(t), xyz(xyz){};
+    double E;
+    double t;
+    G4ThreeVector xyz;
+  };
+  
+  struct Lineage
+  {
+  public:
+    Lineage(INTERACTION_TYPE type): type(type){};
     INTERACTION_TYPE type=NoneType;
-    double energy=0; //keV
+    std::vector<Hit> hits;
+    double density=-1;
+    int A=-1;
+    int Z=-1;
   } ;
 
-  struct Vertex
-  {
-  public:
+ 
 
-    Vertex(double E, INTERACTION_TYPE species_in, std::array<double, 3>pos_in, double t_in, double density_in) : energy(E), species(species_in), time(t_in), pos(pos_in), size(0), density(density_in)
-    {
-      ;
-    }
-
-    Vertex(const Vertex& orig) : energy(orig.energy), species(orig.species), time(orig.time), pos(orig.pos), size(orig.size)
-    {
-      ;
-    }
-
-    static const Vertex merge(Vertex va, Vertex vb);
-
-    std::array<double, 3> getPos() const
-    {
-      return pos;
-    }
-
-    INTERACTION_TYPE getSpecies() const
-    {
-      return species;
-    }
-
-    double gett() const
-    {
-      return time;
-    }
-
-    double getEnergy() const
-    {
-      return energy;
-    }
-
-    double getDensity() const
-    {
-      return density;
-    }
-  private:
-    double energy; // keV
-    INTERACTION_TYPE species;      // -1 for electron/positron/gamma, A for (neutral) nucleus
-    double time;   // ns
-    std::array<double, 3> pos; // mm
-    double size;   // mm
-    double density; // g/cc
-
-  } ;
-  std::vector<Vertex> cluster(std::vector<Vertex>);
 
   template<class T> class NESTProc : public G4VRestDiscreteProcess
   {
     static_assert(std::is_base_of<G4VUserTrackInformation, T>::value, "T must derive from G4VUserTrackInformation");
     static_assert(std::is_copy_constructible<T>::value, "T must be copy-constructable");
-  private:
-    const G4int electron_cut_index;
+
+    
   public: // constructor and destructor
 
     NESTProc(const G4String& processName = "S1",
-             G4ProcessType type = fElectromagnetic);
+             G4ProcessType type = fElectromagnetic, double efield=0);
     ~NESTProc();
 
     class NESTTrackInformation : public T
@@ -164,17 +128,16 @@ namespace NEST
     G4double GetScintillationYieldFactor() const;
     // Returns the quantum (photon/electron) yield factor. See above.
 
-    void FillSecondaryInfo(const std::vector<const G4Track*>* secondaries, NESTTrackInformation* parentInfo) const;
+    void FillSecondaryInfo(const std::vector<G4Track*>* secondaries, NESTTrackInformation* parentInfo) const;
     INTERACTION_TYPE GetChildType(const G4Track* aTrack, const G4Track* sec) const;
-
+    double efield=0;
 
   protected:
     G4bool fTrackSecondariesFirst; // see above
     //bools for tracking some special particle cases
 
     std::unique_ptr<NEST::NESTcalc> fNESTcalc = NULL;
-    std::vector<NEST::Vertex> unmerged_steps;
-    std::vector<NEST::Hit> hits;
+    std::vector<NEST::Lineage> lineages;
 
 
     G4double YieldFactor; // turns scint. on/off

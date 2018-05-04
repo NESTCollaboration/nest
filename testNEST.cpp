@@ -29,7 +29,7 @@ int main ( int argc, char** argv ) {
   
   NEST::NESTcalc n; vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
   string position, delimiter, token; size_t loc;
-  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD, vD_middle, atomNum=0, massNum=0;
+  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
   
   if (argc < 7)
     {
@@ -119,6 +119,13 @@ int main ( int argc, char** argv ) {
     fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Extr\tS2_rawArea\tS2_Zcorr [phd]\n");
   
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
+  
+  if ( type_num != WIMP && type_num != B8 ) {
+    NEST::YieldResult yieldsMax = n.GetYields(type_num,eMax,rho,detParam.efFit,
+					      double(massNum),double(atomNum),NuisParam);
+    if ( (0.1*yieldsMax.PhotonYield) > (2.*maxS1) )
+      cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
+  }
   
   double keV = -999;
   for (unsigned long int j = 0; j < numEvts; j++) {
@@ -214,7 +221,7 @@ int main ( int argc, char** argv ) {
     if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
       double dEOdx = eMin, eStep = dEOdx * rho * zStep * 1e3, refEnergy = 1e6; keV = 0.;
       int Nph = 0, Ne = 0;
-      for ( double zz = detParam.GXeInterface; zz > 0; zz -= zStep*10. ) {
+      for ( double zz = detParam.GXeInterface; zz > 0; zz -= zStep*10. ) { //only VERTICAL-going muons work right now
 	detParam = n.GetDetector ( pos_x, pos_y, zz, inGas );
 	yields = n.GetYields ( beta, refEnergy, rho, detParam.efFit, double(massNum), double(atomNum), NuisParam );
 	quanta = n.GetQuanta ( yields, rho );
@@ -223,7 +230,7 @@ int main ( int argc, char** argv ) {
 	keV+= eStep;
       }
       quanta.photons = Nph; quanta.electrons = Ne;
-      pos_z = detParam.GXeInterface / 2.;
+      pos_z = detParam.GXeInterface / 2.; //approximate everything as middle of detector since muon goes through whole detector
       driftTime = ( detParam.GXeInterface - pos_z ) / vD_middle;
       detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas );
       field = detParam.efFit;
@@ -264,8 +271,10 @@ int main ( int argc, char** argv ) {
 	Nph= 0.;
       if ( signal2.back() <= 0. )
 	Ne = 0.;
-      if ( yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0. )
+      if ( yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0. ) {
 	keV = ( Nph + Ne ) * W_DEFAULT * 1e-3 / yields.Lindhard;
+	keVee+=( Nph + Ne ) * W_DEFAULT * 1e-3;
+      }
       else
 	keV = 0.;
     }
@@ -295,16 +304,26 @@ int main ( int argc, char** argv ) {
     else
       GetBand ( signal1, signal2, false );
     fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
-    for ( int j = 0; j < numBins; j++ )
+    for ( int j = 0; j < numBins; j++ ) {
       fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3],band[j][5]*100.);
+      if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 || band[j][4] <= 0.0 || band[j][5] <= 0.0 ||
+           std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) || std::isnan(band[j][4]) || std::isnan(band[j][5]) )
+	{ if ( eMax != -999. ) cerr << "WARNING: Insufficient number of high-energy events to populate highest bins is likely.\n"; eMax = -999.; }
+    }
   }
   else {
     GetBand ( signal1, signal2, true );
     GetEnergyRes ( signalE );
-    fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\tEff[%%>thr]\n");
+    if ( type_num == NR ) {
+      fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc [keVnr]\tEc Res[%%]\tEff[%%>thr]\tEc [keVee]\n");
+      keVee /= signalE.size();
+    }
+    else
+      fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\tEff[%%>thr]\n"); //the C here refers to the combined (S1+S2) energy scale
     for ( int j = 0; j < numBins; j++ ) {
-      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[j][0],band[j][1]/band[j][0]*100.,
+      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t",band[j][0],band[j][1]/band[j][0]*100.,
 	      band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
+      if ( type_num == NR ) fprintf(stderr,"%lf\n",keVee/energies[2]); else fprintf(stderr,"\n");
       if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
 	   std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) )
 	cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";

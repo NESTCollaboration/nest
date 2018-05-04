@@ -46,8 +46,10 @@
 
 using namespace NEST;
 
-NESTProc::NESTProc(const G4String& processName,
-		           G4ProcessType type)
+NESTProc<G4VUserTrackInformation> proc;
+
+template<class T>
+NESTProc<T>::NESTProc(const G4String& processName, G4ProcessType type)
       : G4VRestDiscreteProcess(processName, type), electron_cut_index(G4ProductionCuts::GetIndex(G4Electron::Definition()))
 {
         
@@ -59,8 +61,8 @@ NESTProc::NESTProc(const G4String& processName,
 	  G4cout << GetProcessName() << " is created " << G4endl;
         }
 }
-
-NESTProc::~NESTProc(){} //destructor needed to avoid linker error
+template<class T>
+NESTProc<T>::~NESTProc(){} //destructor needed to avoid linker error
 
 
 
@@ -119,9 +121,9 @@ G4Track* MakePhoton(NEST::Vertex vertex, bool exciton) {
 
 
 
-
+template<class T>
 G4VParticleChange*
-NESTProc::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
+NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
 {
     aParticleChange.Initialize(aTrack);
     //ready to pop out OP and TE?
@@ -132,16 +134,16 @@ NESTProc::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
         const double Efield = 300;      
         std::vector<NEST::Vertex> merged_steps = NEST::cluster(unmerged_steps);
         for (auto vertex : merged_steps){       
-            auto result = fNESTcalc->FullCalculation(vertex.getSpecies(),vertex.getEnergy(),vertex.getDensity(),Efield);
-            
-            for(auto time : result.photon_times){
-                G4Track* onePhoton = MakePhoton(vertex,time);
-                aParticleChange.AddSecondary(onePhoton);
-            }
-            for(int ie =0; ie<result.quanta.electrons; ++ie){
-                G4ThreeVector pos(vertex.getPos()[0],vertex.getPos()[1],vertex.getPos()[2]);
-//                Analysis::GetInstance()->AddThermalElectron(pos);
-            }
+//            auto result = fNESTcalc->FullCalculation(vertex.getSpecies(),vertex.getEnergy(),vertex.getDensity(),Efield);
+//            
+//            for(auto time : result.photon_times){
+//                G4Track* onePhoton = MakePhoton(vertex,time);
+//                aParticleChange.AddSecondary(onePhoton);
+//            }
+//            for(int ie =0; ie<result.quanta.electrons; ++ie){
+//                G4ThreeVector pos(vertex.getPos()[0],vertex.getPos()[1],vertex.getPos()[2]);
+//
+//            }
 
         }
         unmerged_steps.clear();
@@ -150,36 +152,111 @@ NESTProc::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
     
 }
 
-G4VParticleChange*
-NESTProc::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
+template<class T>
+void NESTProc<T>::FillSecondaryInfo(const std::vector<const G4Track*>* secondaries, NESTTrackInformation* parentInfo) const
+{
+  if (secondaries)
+  {
+    for (const G4Track* sec : *secondaries){
+        NESTTrackInformation* infoNew = new NESTTrackInformation(*parentInfo);
+        sec->SetUserInformation(infoNew);    
+    }
+  }
+}
+
+template<class T>
+INTERACTION_TYPE NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track* sec) const
+{
+  //logic to determine what processes are kicked off by this track and also set the info
+
+  const G4String sec_creator = sec->GetCreatorProcess()->GetProcessName();
+  if (aTrack && aTrack->GetDefinition() == G4Neutron::Definition())
+  {
+    return NR;
+  } else if (aTrack && aTrack->GetDefinition() == G4Gamma::Definition())
+  {
+
+    if (sec_creator.contains("compt"))
+    {
+      return beta;
+    } else if (sec_creator.contains("phot"))
+    {
+      return gammaRay;
+    }
+  } else if (sec->GetDefinition() == G4Electron::Definition() && (sec_creator.contains("decay")|| !aTrack))
+  {
+    return beta;
+  } else if (sec->GetDefinition()->GetAtomicMass()>1 && (sec_creator.contains("decay") || !aTrack)){
+    return ion;
+  }
+  
+  return NoneType;
+}
+  
+  
+
+
+template<class T>
+G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
 // this is the most important function, where all light & charge yields happen!
 {
-    aParticleChange.Initialize(aTrack);
-    if (aStep.GetTotalEnergyDeposit() <= 0) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
-
-
-
-    const G4DynamicParticle* aParticle = aTrack.GetDynamicParticle();
-    G4ParticleDefinition *pDef = aParticle->GetDefinition();
-    G4String particleName = pDef->GetParticleName();
-    const G4Material* preMaterial = aStep.GetPreStepPoint()->GetMaterial();
-    const G4Material* postMaterial = aStep.GetPostStepPoint()->GetMaterial();
-    G4MaterialPropertiesTable* preMatTable = NULL;
-    G4MaterialPropertiesTable* postMatTable = NULL;
-    if (preMaterial) {
-        preMatTable = preMaterial->GetMaterialPropertiesTable();
+  G4VUserTrackInformation* oldInfo=aTrack.GetUserInformation();
+  T* oldInfo_T = static_cast<T*>(oldInfo);
+  INTERACTION_TYPE step_type=NoneType;
+  const std::vector<const G4Track*>* secondaries = (aStep.GetSecondaryInCurrentStep());
+  NESTTrackInformation* oldInfo_N = dynamic_cast<NESTTrackInformation* >(oldInfo_T);
+  if(oldInfo_N && oldInfo_N->parentType!=NoneType ){
+    FillSecondaryInfo(secondaries,oldInfo_N);
+  }
+  else{
+    if(secondaries){
+      for (const G4Track* sec : *secondaries){
+        INTERACTION_TYPE sec_type= GetChildType(&aTrack, sec);
+        assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
+        if(step_type==NoneType && sec_type !=NoneType){
+          hits.push_back(Hit(sec_type));
+        }
+        step_type=sec_type;
+        int hit_id = (sec_type==NoneType ? -1: hits.size()-1);
+        if(oldInfo_T){
+          sec->SetUserInformation(new NESTTrackInformation(sec_type,hit_id,*oldInfo_T));
+        }
+        else{
+          sec->SetUserInformation(new NESTTrackInformation(sec_type,hit_id));
+        }
+      }
+    
     }
-    if (postMaterial) {
-        postMatTable = postMaterial->GetMaterialPropertiesTable();
+    if(aTrack.GetParentID()==0){
+      INTERACTION_TYPE sec_type= GetChildType(0, &aTrack);
+      assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
+      if(oldInfo_T){
+          aTrack.SetUserInformation(new NESTTrackInformation(sec_type,oldInfo_T));
+        }
+        else{
+          aTrack.SetUserInformation(new NESTTrackInformation(sec_type));
+        }
+      FillSecondaryInfo(secondaries,aTrack.GetUserInformation());
     }
+    if(step_type!=NoneType){
 
+    }
+  }
+  
+  if (aStep.GetTotalEnergyDeposit() <= 0) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
 
+  //validity checks
 
-    // code for determining whether the present/next material is noble
-    // element, or, in other words, for checking if either is a valid NEST
-    // scintillating material, and save Z for later L calculation, or
-    // return if no valid scintillators are found on this step, which is
-    // protection against G4Exception or seg. fault/violation
+  const G4Material* preMaterial = aStep.GetPreStepPoint()->GetMaterial();
+  const G4Material* postMaterial = aStep.GetPostStepPoint()->GetMaterial();
+  G4MaterialPropertiesTable* preMatTable = NULL;
+  G4MaterialPropertiesTable* postMatTable = NULL;
+  if (preMaterial) {
+      preMatTable = preMaterial->GetMaterialPropertiesTable();
+  }
+  if (postMaterial) {
+      postMatTable = postMaterial->GetMaterialPropertiesTable();
+  }
     G4Element *ElementA = NULL, *ElementB = NULL;
     if (preMaterial) {
         const G4ElementVector* theElementVector1 =
@@ -206,33 +283,7 @@ NESTProc::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
 
     } //end of atomic number check
 
-    // Set step and production cut limits
-
-
-    G4double max_step = .5 * um;
-    G4LogicalVolume* scintvol = NULL;
-    if (NobleNow) {
-        scintvol = aStep.GetPreStepPoint()->GetPhysicalVolume()->GetLogicalVolume();
-        if (!scintvol->GetUserLimits() || scintvol->GetUserLimits()->GetMaxAllowedStep(aTrack) != max_step) {
-            G4UserLimits* stepLimit = new G4UserLimits(max_step);
-            scintvol->SetUserLimits(stepLimit);
-
-        }
-        assert(scintvol->GetMaterialCutsCouple()->GetProductionCuts()->GetProductionCut(electron_cut_index) <= 500 * nm);
-    }
-    if (NobleLater) {
-        scintvol = aStep.GetPostStepPoint()->GetPhysicalVolume()->GetLogicalVolume();
-        if (!scintvol->GetUserLimits() || scintvol->GetUserLimits()->GetMaxAllowedStep(aTrack) != max_step) {
-            G4UserLimits* stepLimit = new G4UserLimits(max_step);
-            scintvol->SetUserLimits(stepLimit);
-
-        }
-        assert(scintvol->GetMaterialCutsCouple()->GetProductionCuts()->GetProductionCut(electron_cut_index) <= 500 * nm);
-    }
-
-
-          if ( !NobleLater )  
-    return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+    if ( !NobleNow ) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
 
 
 
@@ -281,7 +332,8 @@ NESTProc::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
 
 // GetMeanFreePath
 // ---------------
-G4double NESTProc::GetMeanFreePath(const G4Track&,
+template<class T>
+G4double NESTProc<T>::GetMeanFreePath(const G4Track&,
                                           G4double ,
                                           G4ForceCondition* condition)
 {
@@ -297,7 +349,8 @@ G4double NESTProc::GetMeanFreePath(const G4Track&,
 
 // GetMeanLifeTime
 // ---------------
-G4double NESTProc::GetMeanLifeTime(const G4Track&,
+template<class T>
+G4double NESTProc<T>::GetMeanLifeTime(const G4Track&,
                                           G4ForceCondition* condition)
 {
         *condition = Forced;

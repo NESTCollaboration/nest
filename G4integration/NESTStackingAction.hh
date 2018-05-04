@@ -21,6 +21,7 @@ public:
   static G4StackManager* savedManager;
   static NESTStackingAction* theStackingAction;
   
+  
   bool isUrgentEmpty();
   
   virtual G4ClassificationOfNewTrack ClassifyNewTrack(const G4Track*);

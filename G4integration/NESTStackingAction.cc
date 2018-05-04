@@ -1,4 +1,5 @@
 #include "NESTStackingAction.hh"
+#include "G4OpticalPhoton.hh"
 
 NESTStackingAction::NESTStackingAction(){}
 NESTStackingAction::~NESTStackingAction(){}

@@ -83,13 +83,14 @@ namespace NEST {
     std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
 				   double xTest,double yTest,double fValue);
     double rand_gauss( double mean, double sigma );
-    int BinomFluct(int, double);
+    long BinomFluct(long, double);
     NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam);
     double PhotonTime(INTERACTION_TYPE species,bool exciton);
     photonstream GetPhotonTimes(/*inputs*/);
     YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
     QuantaResult GetQuanta(YieldResult yields, double density);
     DetectorParameters GetDetector ( double x, double y, double z, bool IsInGasPhase );
+    void SetDetector ( std::string paramName, double paramValue, double evtTime );
     void DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam );
     std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species );
     std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );

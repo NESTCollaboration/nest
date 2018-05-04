@@ -5,6 +5,7 @@
 
 using namespace NEST;
 using namespace std;
+using namespace DetectorEffects;
 
 double NESTcalc::rand_uniform() {
   
@@ -53,7 +54,7 @@ vector<double> NESTcalc::VonNeumann(double xMin, double xMax, double yMin,double
   
 }
 
-int NESTcalc::BinomFluct(int N0, double prob) {
+long NESTcalc::BinomFluct(long N0, double prob) {
   
   double mean = N0*prob;
   double sigma = sqrt(N0 * prob * (1. - prob));
@@ -179,14 +180,16 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb > 1. ) recombProb = 1.;
   
   double ef = yields.ElectricField;
-  double cc = 0.3+(2.419110e-2-0.3)/(1.+pow(ef/1.431556e4,0.5)), bb = 0.54;
+  double cc = 0.3+(2.419110e-2-0.3)/(1.+pow(ef/1.431556e4,0.5));
+  double bb = 0.54;
   double aa = cc/pow(1.-bb,2.);
   double omega = -aa*pow(recombProb-bb,2.)+cc;
   if ( omega < 0.0 ) omega = 0.0;
   
-  if ( yields.Lindhard < 1. ) omega = 0.04*exp(-pow(elecFrac-0.5,2.)/0.17);
+  if ( yields.Lindhard < 1. )
+    omega = 0.04*exp(-pow(elecFrac-0.5,2.)/0.17);
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
-  Ne = int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
+  Ne=int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
   if ( Ne > Ni) Ne =Ni;
   
@@ -224,7 +227,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       int massNumber; double ScaleFactor[2] = { 1., 1. };
       if ( massNum != 0. ) massNumber = int(massNum);
       else massNumber = SelectRanXeAtom ( rand_uniform() * 100.0 );
-      ScaleFactor[0] = sqrt(MOLAR_MASS/(double)massNumber); ScaleFactor[1] = ScaleFactor[0];
+      ScaleFactor[0] = sqrt(MOLAR_MASS/(double)massNumber);
+      ScaleFactor[1] = ScaleFactor[0];
       Nq = 12.6 * pow ( energy, 1.05 );
       ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
       Qy = 1. / (ThomasImel*sqrt(energy+9.75));
@@ -477,8 +481,8 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
   }
   long Nph = long(floor(rand_gauss(elYield*double(Nee),
 				   sqrt(s2Fano*elYield*double(Nee)))+0.5));
-  int nHits = BinomFluct(Nph,g1_gas);
-  int Nphe = nHits + BinomFluct(nHits,P_dphe);
+  long nHits = BinomFluct(Nph,g1_gas);
+  long Nphe = nHits + BinomFluct(nHits,P_dphe);
   double pulseArea=rand_gauss(Nphe,sPEres*sqrt(Nphe));
   double pulseAreaC= pulseArea/exp(-dt/eLife_us);
   double Nphd = pulseArea / (1.+P_dphe);
@@ -772,5 +776,40 @@ vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A
   xySmeared[1] = yPos_mm + sigmaY;
   
   return xySmeared; //new X and Y position in mm with empirical smearing. LUX Run03 example
+
+}
+
+void NESTcalc::SetDetector ( string paramName, double paramValue, double evtTime ) {
+  
+  if ( paramName == "g1" ) g1 = paramValue; //add time dependence as desired using evtTime, instead of fixed value
+  else if ( paramName == "sPEres" ) sPEres = paramValue;
+  else if ( paramName == "sPEthr" ) sPEthr = paramValue;
+  else if ( paramName == "sPEeff" ) sPEeff = paramValue;
+  else if ( paramName == "noise[0]" ) noise[0] = paramValue;
+  else if ( paramName == "noise[1]" ) noise[1] = paramValue;
+  else if ( paramName == "P_dphe" ) P_dphe = paramValue;
+  else if ( paramName == "coinLevel" ) coinLevel = (int)paramValue;
+  else if ( paramName == "numPMTs" ) numPMTs = (int)paramValue;
+  else if ( paramName == "g1_gas" ) g1_gas = paramValue;
+  else if ( paramName == "s2Fano" ) s2Fano = paramValue;
+  else if ( paramName == "s2_thr" ) s2_thr = paramValue;
+  else if ( paramName == "S2botTotRatio" ) S2botTotRatio = paramValue;
+  else if ( paramName == "E_gas" ) E_gas = paramValue;
+  else if ( paramName == "eLife_us" ) eLife_us = paramValue;
+  else if ( paramName == "T_Kelvin" ) T_Kelvin = paramValue;
+  else if ( paramName == "p_bar" ) p_bar = paramValue;
+  else if ( paramName == "dtCntr" ) dtCntr = paramValue;
+  else if ( paramName == "dt_min" ) dt_min = paramValue;
+  else if ( paramName == "dt_max" ) dt_max = paramValue;
+  else if ( paramName == "radius" ) radius = paramValue;
+  else if ( paramName == "TopDrift" ) TopDrift = paramValue;
+  else if ( paramName == "anode" ) anode = paramValue;
+  else if ( paramName == "gate" ) gate = paramValue;
+  else if ( paramName == "PosResExp" ) PosResExp = paramValue;
+  else if ( paramName == "PosResBase" ) PosResBase = paramValue;
+  else {
+    cerr << "CAUTION: Invalid std::string parameter name. Using default detector effect parameters";
+    cerr << "Check the detector.hh header file for valid variable names.\n";
+  }
 
 }

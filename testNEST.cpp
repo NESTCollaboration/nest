@@ -100,6 +100,9 @@ int main ( int argc, char** argv ) {
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
+
+  //n.SetDetector("g1",0.12,0.00); //how to overwrite detector parameter defaults, 1 by 1
+
   DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas);
   double rho = n.SetDensity ( detParam.temperature, detParam.pressure ); //cout.precision(12);
   if ( rho < 1. ) inGas = true;
@@ -123,7 +126,7 @@ int main ( int argc, char** argv ) {
   if ( type_num != WIMP && type_num != B8 ) {
     NEST::YieldResult yieldsMax = n.GetYields(type_num,eMax,rho,detParam.efFit,
 					      double(massNum),double(atomNum),NuisParam);
-    if ( (0.1*yieldsMax.PhotonYield) > (2.*maxS1) )
+    if ( (0.1*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
       cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   }
   
@@ -292,8 +295,14 @@ int main ( int argc, char** argv ) {
     if ( 1 ) { //fabs(scint[7]) > DBL_MIN && fabs(scint2[7]) > DBL_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
-      printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]); //see GetS1 inside of NEST.cpp for full explanation of all 8 scint return vector elements. Sample 3 most common
-      printf("%i\t%.6f\t%.6f\n", (int)scint2[0], scint2[4], scint2[7]); //see GetS2 inside of NEST.cpp for full explanation of all 8 scint2 vector elements. Change as you desire
+      if ( keV > 1000. ) { //switch to exponential notation to make output more readable, if energy is too high (>1 MeV)
+	printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
+	printf("%li\t%e\t%e\n", (long)scint2[0], scint2[4], scint2[7]);
+      }
+      else {
+	printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]); //see GetS1 inside of NEST.cpp for full explanation of all 8 scint return vector elements. Sample 3 most common
+	printf("%i\t%.6f\t%.6f\n", (int)scint2[0], scint2[4], scint2[7]); //see GetS2 inside of NEST.cpp for full explanation of all 8 scint2 vector elements. Change as you desire
+      }
     }
     
   }
@@ -316,7 +325,7 @@ int main ( int argc, char** argv ) {
     GetEnergyRes ( signalE );
     if ( type_num == NR ) {
       fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc [keVnr]\tEc Res[%%]\tEff[%%>thr]\tEc [keVee]\n");
-      keVee /= signalE.size();
+      keVee /= numEvts;
     }
     else
       fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\tEff[%%>thr]\n"); //the C here refers to the combined (S1+S2) energy scale
@@ -329,7 +338,8 @@ int main ( int argc, char** argv ) {
 	cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
       else if ( energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0 )
 	cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
-      else ; }
+      else ;
+    }
   }
   
   return 1;

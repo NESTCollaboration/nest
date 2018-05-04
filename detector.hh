@@ -1,4 +1,10 @@
 
+//NOTE: Don't be overwhelmed trying to find values for everything in experiment.
+//The most important numbers are g1 and FitEF (Electric Field). All else 2nd-order
+//But g1_gas, E_gas, p_bar, [anode-TopDrift] will set S2 size and thus band means
+
+namespace DetectorEffects {
+
  // Primary Scintillation (S1) parameters
 
 double g1 = 0.0760; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
@@ -32,7 +38,7 @@ double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
 double g1_gas = 0.06; //phd per S2 photon in gas, used to get SE size
 double s2Fano = 3.61; //Fano-like fudge factor for SE width
 double s2_thr = 300.; //the S2 threshold in phe or PE, *not* phd. Affects NR most
-double S2botTotRatio = 0.4; //S2 bottom-to-total ratio, not really used anymore
+double S2botTotRatio = 0.4; //bottom-to-total, typically only used for position recon (1-this)
 double E_gas = 12.; //field in kV/cm between liquid/gas border and anode
 double eLife_us = 2200.; //the drift electron mean lifetime in micro-seconds
 
@@ -48,12 +54,14 @@ double FitS2 ( double xPos_mm, double yPos_mm ) {
 
 double T_Kelvin = 177.; //for liquid drift speed calculation
 double p_bar = 2.14; //gas pressure in units of bars, it controls S2 size
+//if you are getting warnings about being in gas, lower T and/or raise p
 
  // Data Analysis Parameters and Geometry
 
 double dtCntr = 40.; //center of detector for S1 corrections, in usec.
 double dt_min = 20.; //minimum. Top of detector fiducial volume
 double dt_max = 60.; //maximum. Bottom of detector fiducial volume
+
 double radius = 50.; //millimeters
 
  double TopDrift = 150.; //mm not cm or us (but, this *is* where dt=0)
@@ -68,3 +76,5 @@ double anode = 152.5; //the level of the anode grid-wire plane in mm
 
 double PosResExp = 0.015; // exp increase in pos recon res at hi r, 1/mm
 double PosResBase = 70.8364; // baseline unc in mm, see NEST.cpp for usage
+
+}

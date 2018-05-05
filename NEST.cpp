@@ -127,11 +127,15 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton){
   
 }
 
-photonstream NESTcalc::GetPhotonTimes(/*inputs*/){
+photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species, NESTresult result){
   
-  //TODO by MATTHEW
+  
   photonstream return_photons;
-  return_photons.push_back(PhotonTime(beta,true));//example line, modify
+  for (int ip = 0; ip < result.quanta.photons; ++ip) {
+    bool isExciton = false;///TODO by MATTHEW
+    return_photons.push_back(PhotonTime(species,isExciton));
+  }
+  
   return return_photons;
   
 }

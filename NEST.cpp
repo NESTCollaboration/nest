@@ -84,7 +84,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,doub
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
-  result.photon_times = GetPhotonTimes(/*stuff*/);
+  result.photon_times = GetPhotonTimes(species,result.quanta);
   return result;
   
 }
@@ -127,11 +127,11 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton){
   
 }
 
-photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species, NESTresult result){
+photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species, QuantaResult result){
   
   
   photonstream return_photons;
-  for (int ip = 0; ip < result.quanta.photons; ++ip) {
+  for (int ip = 0; ip < result.photons; ++ip) {
     bool isExciton = false;///TODO by MATTHEW
     return_photons.push_back(PhotonTime(species,isExciton));
   }

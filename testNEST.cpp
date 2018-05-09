@@ -14,7 +14,7 @@
 #include "TestSpectra.hh"
 #include "analysis.hh"
 
-#include "Detectors/DetectorDefinitionExample.hh"
+#include "Detectors/DetectorExample_XENON10.hh"
 
 using namespace std;
 using namespace NEST;

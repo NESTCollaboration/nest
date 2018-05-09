@@ -734,26 +734,26 @@ double NESTcalc::SetDriftVelocity_MagBoltz ( double density, double efieldinput 
 }
 
 vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasPhase,
-  double z_step ) {
+  double zStep ) {
   
   vector<double> speedTable;
   DetectorParameters detParam;
   double driftTime, zz;
   
-  for ( double pos_z = 0.0; pos_z < TopDrift; pos_z += z_step ) {
+  for ( double pos_z = 0.0; pos_z < TopDrift; pos_z += zStep ) {
     
     driftTime = 0.0;
-    for ( zz = pos_z; zz < TopDrift; zz += z_step ) {
+    for ( zz = pos_z; zz < TopDrift; zz += zStep ) {
       
       detParam = GetDetector ( 0., 0., zz, IsInGasPhase );
       if ( pos_z > gate ) {
 	if ( !IsInGasPhase )
-	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);
+	  driftTime += zStep/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);
 	else // if gate == TopDrift properly set, shouldn't happen
-	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas*1e3);
+	  driftTime += zStep/SetDriftVelocity(T_Kelvin,rho,E_gas*1e3);
       }
       else
-	driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,detParam.efFit);
+	driftTime += zStep/SetDriftVelocity(T_Kelvin,rho,detParam.efFit);
       
     }
     

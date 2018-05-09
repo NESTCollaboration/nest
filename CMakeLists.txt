@@ -34,10 +34,12 @@ else()
 endif()
 
 include_directories("${PROJECT_SOURCE_DIR}")  
+include_directories("${PROJECT_SOURCE_DIR}/Detectors")  
 
+file(GLOB headers ${PROJECT_SOURCE_DIR}/VDetector.hh ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
 
-add_library(NEST SHARED NEST.cpp NEST.hh)
-set_target_properties(NEST PROPERTIES PUBLIC_HEADER "NEST.hh")
+add_library(NEST SHARED NEST.cpp NEST.hh VDetector.cpp ${headers})
+set_target_properties(NEST PROPERTIES PUBLIC_HEADER "NEST.hh;${headers}")
 
 if(G4)
     find_package(Geant4 REQUIRED)

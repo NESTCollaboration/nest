@@ -1,11 +1,8 @@
 
 #include "NEST.hh"
-//#include "/Volumes/USB20FD/z_git/NEST/LUX_Run03.hh"
-#include "detector.hh"
 
 using namespace NEST;
 using namespace std;
-using namespace DetectorEffects;
 
 double NESTcalc::rand_uniform() {
   
@@ -355,9 +352,12 @@ void NESTcalc::SetRandomSeed ( unsigned long int s ) {
 }
 
 NESTcalc::NESTcalc ( ) {
-  
   rng.seed(0);
-  
+}
+
+NESTcalc::NESTcalc (VDetector* detector) {
+	NESTcalc();
+	fdetector = detector;
 }
 
 vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
@@ -367,48 +367,50 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   vector<double> newSpike(2); // for re-doing spike counting more precisely
   
   // Add some variability in g1 drawn from a polynomial spline fit
-  double posDep = FitS1 ( dx, dy, dz );
-  double dt = ( TopDrift - dz ) / driftVelocity;
-  double dz_center = TopDrift - dV_mid * dtCntr; //go from t to z
-  posDep /= FitS1 ( 0., 0., dz_center ); // XYZ always in mm now never cm
+  double posDep = fdetector->FitS1( dx, dy, dz );
+  double dt = ( fdetector->get_TopDrift() - dz ) / driftVelocity;
+  double dz_center = fdetector->get_TopDrift() - dV_mid * fdetector->get_dtCntr(); //go from t to z
+  posDep /= fdetector->FitS1( 0., 0., dz_center ); // XYZ always in mm now never cm
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
-  int nHits=BinomFluct(Nph,g1*posDep), Nphe = 0;
+  int nHits=BinomFluct(Nph,fdetector->get_g1()*posDep), Nphe = 0;
   
   // Initialize the pulse area and spike count variables
   double pulseArea = 0., spike = 0., prob;
   
   // If single photo-electron efficiency is under 1 and the threshold is above 0 (some phe will be below threshold)
-  if ( sPEthr > 0. && nHits < numPMTs ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
+  if ( fdetector->get_sPEthr() > 0. && nHits < fdetector->get_numPMTs() ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area
-      double phe1 = rand_gauss(1.,sPEres) + rand_gauss(noise[0],noise[1]); Nphe++; if(phe1>DBL_MAX)phe1=1.;if(phe1<-DBL_MAX)phe1=0.;
+      double phe1 = rand_gauss(1., fdetector->get_sPEres()) + rand_gauss(fdetector->get_noise()[0], fdetector->get_noise()[1]); 
+			Nphe++; if(phe1>DBL_MAX)phe1=1.;if(phe1<-DBL_MAX)phe1=0.;
       prob = rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
-      if ( prob > sPEeff ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
+      if ( prob > fdetector->get_sPEeff() ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
       // Generate a double photo electron if random draw allows it
       double phe2 = 0.;
-      if ( rand_uniform() < P_dphe ) {
+      if ( rand_uniform() < fdetector->get_P_dphe() ) {
 	// generate area and increment the photo-electron counter
-	phe2 = rand_gauss(1.,sPEres) + rand_gauss(noise[0],noise[1]); Nphe++; if(phe2>DBL_MAX)phe2=1.;if(phe2<-DBL_MAX)phe2=0.;
+	phe2 = rand_gauss(1., fdetector->get_sPEres()) + rand_gauss(fdetector->get_noise()[0], fdetector->get_noise()[1]); 
+	Nphe++; if(phe2>DBL_MAX)phe2=1.;if(phe2<-DBL_MAX)phe2=0.;
 	// zero the area if phe wouldn't have been observed
-	if ( rand_uniform() > sPEeff && prob > sPEeff ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
+	if ( rand_uniform() > fdetector->get_sPEeff() && prob > fdetector->get_sPEeff() ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
 	// The dphe occurs simultaneously to the first one from the same source photon. If the first one is seen, so should be the second one
       }
       // Save the phe area and increment the spike count (very perfect spike count) if area is above threshold
-      if ( (phe1+phe2) > sPEthr ) { spike++; pulseArea += phe1 + phe2; }
+      if ( (phe1+phe2) > fdetector->get_sPEthr() ) { spike++; pulseArea += phe1 + phe2; }
     }
   }
   else { // apply just an empirical efficiency by itself, without direct area threshold
-    Nphe = nHits + BinomFluct(nHits,P_dphe); double eff=sPEeff; if(nHits>=numPMTs) eff=1.;
-    pulseArea = rand_gauss(BinomFluct(Nphe,1.-(1.-eff)/(1.+P_dphe)),sPEres*sqrt(Nphe));
+    Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe()); double eff=fdetector->get_sPEeff(); if(nHits>=fdetector->get_numPMTs()) eff=1.;
+    pulseArea = rand_gauss(BinomFluct(Nphe,1.-(1.-eff)/(1.+fdetector->get_P_dphe())),fdetector->get_sPEres()*sqrt(Nphe));
     spike = (double)nHits;
   }
   if ( pulseArea < 0. ) pulseArea = 0.;
   double pulseAreaC= pulseArea / posDep;
-  double Nphd = pulseArea / (1.+P_dphe);
-  double NphdC= pulseAreaC/ (1.+P_dphe);
+  double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
+  double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
   double spikeC = spike / posDep;
   
   scintillation[0] = nHits; scintillation[1] = Nphe; //MC-true integer hits in same OR different PMTs, first without then with double phe's (Nphe > nHits)
@@ -416,22 +418,22 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   scintillation[4] = Nphd; scintillation[5] = NphdC; //same as pulse areas except adjusted *downward* by constant for average 2-PE effect. (LUX phd units)
   scintillation[6] = spike; scintillation[7] = spikeC; //uncorrected and pos-corrected spike counts, both floats, but made more accurate later in GetSpike
   
-  if ( spike < coinLevel ) //no chance of meeting coincidence requirement. Here, spike is still "perfect" (integer)
+  if ( spike < fdetector->get_coinLevel() ) //no chance of meeting coincidence requirement. Here, spike is still "perfect" (integer)
     prob = 0.;
   else {
     if ( spike > 10. ) prob = 1.;
     else {
-      if ( coinLevel == 0 ) prob = 1.;
-      else if ( coinLevel == 1 ) {
+      if ( fdetector->get_coinLevel() == 0 ) prob = 1.;
+      else if ( fdetector->get_coinLevel() == 1 ) {
         if ( spike >= 1. ) prob = 1.;
         else prob = 0.;
       }
-      else if ( coinLevel == 2 ) prob = 1.-pow((double)numPMTs,1.-spike);
+      else if ( fdetector->get_coinLevel() == 2 ) prob = 1.-pow((double)fdetector->get_numPMTs(),1.-spike);
       else {
         double numer = 0., denom = 0.;
         for ( int i = spike; i > 0; i-- ) {
-          denom += nCr ( numPMTs, i );
-          if ( i >= coinLevel ) numer += nCr ( numPMTs, i );
+          denom += nCr ( fdetector->get_numPMTs(), i );
+          if ( i >= fdetector->get_coinLevel() ) numer += nCr ( fdetector->get_numPMTs(), i );
 	}
         prob = numer / denom;
       } //end of case of coinLevel of 3 or higher
@@ -455,69 +457,68 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
     scintillation[7] *= -1.; if ( scintillation[7] == 0. ) scintillation[7] = -DBL_MIN;
   }
   
-  scintillation[8] =g1;
+  scintillation[8] =fdetector->get_g1();
   
   return scintillation;
   
 }
 
-vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt,
-				 double driftVelocity, bool IsInGasPhase ) {
+vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity ) {
   
   vector<double> ionization(9);
   double alpha = 0.137, beta = 177., gamma = 45.7;
   double epsilonRatio = 1.85 / 1.00126;
-  if ( IsInGasPhase ) epsilonRatio = 1.;
+  if ( fdetector->get_inGas() ) epsilonRatio = 1.;
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
-  double posDep = FitS2 ( dx, dy ); // XY is always in mm now, never cm
-  posDep /= FitS2 ( 0., 0. );
-  double dz = TopDrift - dt * driftVelocity;
+  double posDep = fdetector->FitS2( dx, dy ); // XY is always in mm now, never cm
+  posDep /= fdetector->FitS2( 0., 0. );
+  double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
-  double E_liq = E_gas / epsilonRatio; //kV per cm
+  double E_liq = fdetector->get_E_gas() / epsilonRatio; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
-  if ( ExtEff > 1. || IsInGasPhase ) ExtEff = 1.;
+  if ( ExtEff > 1. || fdetector->get_inGas() ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
-  int Nee = BinomFluct(Ne,ExtEff*exp(-dt/eLife_us)); //MAKE this 1 for SINGLE e- DEBUGGING
+  int Nee = BinomFluct(Ne,ExtEff*exp(-dt/fdetector->get_eLife_us())); //MAKE this 1 for SINGLE e- DEBUGGING
   
-  double elYield = (alpha*E_gas*1e3-beta*p_bar-gamma)* // arXiv:1207.2292
-    ( anode - TopDrift ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
-  if ( (anode - TopDrift) <= 0. ) {
+  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)* // arXiv:1207.2292
+    ( fdetector->get_anode() - fdetector->get_TopDrift() ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
+  if ( (fdetector->get_anode() - fdetector->get_TopDrift()) <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
   long Nph = long(floor(rand_gauss(elYield*double(Nee),
-				   sqrt(s2Fano*elYield*double(Nee)))+0.5));
-  long nHits = BinomFluct(Nph,g1_gas);
-  long Nphe = nHits + BinomFluct(nHits,P_dphe);
-  double pulseArea=rand_gauss(Nphe,sPEres*sqrt(Nphe));
-  double pulseAreaC= pulseArea/exp(-dt/eLife_us);
-  double Nphd = pulseArea / (1.+P_dphe);
-  double NphdC= pulseAreaC/ (1.+P_dphe);
+				   sqrt(fdetector->get_s2Fano()*elYield*double(Nee)))+0.5));
+  long nHits = BinomFluct(Nph,fdetector->get_g1_gas());
+  long Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe());
+  double pulseArea=rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
+  double pulseAreaC= pulseArea/exp(-dt/fdetector->get_eLife_us());
+  double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
+  double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
   
-  double S2b = rand_gauss(S2botTotRatio*pulseArea,sqrt(S2botTotRatio*pulseArea*(1.-S2botTotRatio)));
-  double S2bc= S2b / exp(-dt/eLife_us); // for detectors using S2 bottom-only in their analyses
+  double S2b = rand_gauss(fdetector->get_S2botTotRatio()*pulseArea,sqrt(fdetector->get_S2botTotRatio()*pulseArea*(1.-fdetector->get_S2botTotRatio())));
+  double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()); // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; ionization[1] = Nph; //integer number of electrons unabsorbed in liquid then getting extracted, followed by raw number of photons produced in the gas gap
   ionization[2] = nHits; ionization[3] = Nphe; //identical definitions to GetS1 follow, see above, except no spike, as S2 too big generally. S2 has more steps than S1 (e's 1st)
-  if ( s2_thr >= 0 ) {
+  if ( fdetector->get_s2_thr() >= 0 ) {
     ionization[4] = pulseArea; ionization[5] = pulseAreaC;
     ionization[6] = Nphd; ionization[7] = NphdC;
   }
   else { // the negative threshold is a polymorphic hidden feature: allows for header switching from total S2 to S2 bottom; doesn't mean literally negative, nor below threshold
     ionization[4] = S2b; ionization[5] = S2bc;
-    ionization[6] = S2b / (1.+P_dphe); ionization[7] = S2bc / (1.+P_dphe);
+    ionization[6] = S2b / (1.+fdetector->get_P_dphe()); ionization[7] = S2bc / (1.+fdetector->get_P_dphe());
   }
   
-  if(pulseArea<fabs(s2_thr)) for(int i=0;i<8;i++) { ionization[i]*=-1.; if(ionization[i]==0.)ionization[i]=-DBL_MIN; }
+  if(pulseArea<fabs(fdetector->get_s2_thr())) for(int i=0;i<8;i++) { ionization[i]*=-1.; if(ionization[i]==0.)ionization[i]=-DBL_MIN; }
   
-  double SE = elYield* g1_gas;
+  double SE = elYield* fdetector->get_g1_gas();
   double g2 = ExtEff * SE;
-  if ( s2_thr < 0 )
-    g2 *= S2botTotRatio;
+  if ( fdetector->get_s2_thr() < 0 )
+    g2 *= fdetector->get_S2botTotRatio();
   ionization[8]=g2;
   
   if ( !dx && !dy && !dt && Ne == 1 ) {
-    cout << endl << "g1 = " << g1 << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
+    cout << endl << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
     cout << ExtEff*100. << "%, while SE_mean = " << SE << ")\t";
   }
   
@@ -538,49 +539,6 @@ double NESTcalc::nCr ( double n, double r ) {
   
 }
 
-DetectorParameters NESTcalc::GetDetector ( double xPos_mm, double yPos_mm, double zPos_mm,
-					   bool IsInGasPhase ) {
-  
-  DetectorParameters detParam;
-  vector<double> secondary(9);
-  
-  detParam.temperature = T_Kelvin;
-  detParam.pressure = p_bar;
-  detParam.GXeInterface = TopDrift;
-  detParam.efFit = FitEF ( xPos_mm, yPos_mm, zPos_mm );
-  detParam.rad = radius;
-  detParam.dtExtrema[0] = dt_min;
-  detParam.dtExtrema[1] = dt_max;
-  
-  if ( xPos_mm == 0. &&
-       yPos_mm == 0. &&
-       zPos_mm == detParam.GXeInterface / 2. ) {
-    secondary = GetS2 ( 1, 0., 0., 0., 1., IsInGasPhase );
-  }
-  
-  return detParam; //everything needed for testNEST to work
-  
-}
-
-void NESTcalc::DriftRangeOverride ( double drift_low, double drift_high, DetectorParameters &detParam ) {
-  
-  // Grab previous drift time range in detector parameters
-  double prev_dt_min = detParam.dtExtrema[0];
-  double prev_dt_max = detParam.dtExtrema[1];
-  
-  // Reset drift time minimum and maximum
-  detParam.dtExtrema[0] = drift_low;
-  detParam.dtExtrema[1] = drift_high;
-  
-  // Ensure that we are not setting the new drift range outside the bounds of the previously set values.
-  // This is the safest way to implement, so that we aren't working outside the bounds of the detector settings file.
-  if (detParam.dtExtrema[0] < prev_dt_min || detParam.dtExtrema[1] > prev_dt_max || detParam.dtExtrema[0] > detParam.dtExtrema[1]) {
-    cerr << "*** New drift time range completely outside of original fiducial! ***" << endl;
-    exit(1);
-  }
-  
-}
-
 vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
   double driftSpeed, double dS_mid, vector<double> oldScint ) {
   
@@ -591,9 +549,9 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
     return newSpike;
   }
   newSpike[0] = fabs(oldScint[6]);
-  newSpike[0] = rand_gauss(newSpike[0],(sPEres/4.)*sqrt(newSpike[0]));
+  newSpike[0] = rand_gauss(newSpike[0],(fdetector->get_sPEres()/4.)*sqrt(newSpike[0]));
   if ( newSpike[0] < 0.0 ) newSpike[0] = 0.0;
-  newSpike[1] = newSpike[0] / FitS1 ( dx, dy, dz ) * FitS1 ( 0., 0., TopDrift - dS_mid * dtCntr );
+  newSpike[1] = newSpike[0] / fdetector->FitS1( dx, dy, dz ) * fdetector->FitS1( 0., 0., fdetector->get_TopDrift() - dS_mid * fdetector->get_dtCntr() );
   
   return newSpike; // regular and position-corrected spike counts returned
   
@@ -733,27 +691,24 @@ double NESTcalc::SetDriftVelocity_MagBoltz ( double density, double efieldinput 
   return edrift * 1e-5; // from cm/s into mm per microsecond
 }
 
-vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasPhase,
-  double z_step ) {
+vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, double zStep ) {
   
   vector<double> speedTable;
-  DetectorParameters detParam;
   double driftTime, zz;
   
-  for ( double pos_z = 0.0; pos_z < TopDrift; pos_z += z_step ) {
+  for ( double pos_z = 0.0; pos_z < fdetector->get_TopDrift(); pos_z += zStep ) {
     
     driftTime = 0.0;
-    for ( zz = pos_z; zz < TopDrift; zz += z_step ) {
+    for ( zz = pos_z; zz < fdetector->get_TopDrift(); zz += zStep ) {
       
-      detParam = GetDetector ( 0., 0., zz, IsInGasPhase );
-      if ( pos_z > gate ) {
-	if ( !IsInGasPhase )
-	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas/(1.85/1.00126)*1e3);
+      if ( pos_z > fdetector->get_gate() ) {
+	if ( !fdetector->get_inGas() )
+	  driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas()/(1.85/1.00126)*1e3);
 	else // if gate == TopDrift properly set, shouldn't happen
-	  driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,E_gas*1e3);
+	  driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas()*1e3);
       }
       else
-	driftTime += z_step/SetDriftVelocity(T_Kelvin,rho,detParam.efFit);
+	driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->FitEF(0., 0., zz));
       
     }
     
@@ -767,10 +722,10 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, bool IsInGasP
 vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A_top ) {
   
   vector<double> xySmeared(2);
-  A_top *= (1.-S2botTotRatio);
+  A_top *= (1.-fdetector->get_S2botTotRatio());
   
-  double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
-  double kappa = PosResBase + exp ( PosResExp * radius ); // arXiv:1710.02752
+  double rad = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
+  double kappa = fdetector->get_PosResBase() + exp ( fdetector->get_PosResExp() * rad ); // arXiv:1710.02752
   double sigmaR = kappa / sqrt ( A_top ); // ibid.
   
   double phi = 2. * M_PI * rand_uniform();
@@ -785,37 +740,3 @@ vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A
 
 }
 
-void NESTcalc::SetDetector ( string paramName, double paramValue, double evtTime ) {
-  
-  if ( paramName == "g1" ) g1 = paramValue; //add time dependence as desired using evtTime, instead of fixed value
-  else if ( paramName == "sPEres" ) sPEres = paramValue;
-  else if ( paramName == "sPEthr" ) sPEthr = paramValue;
-  else if ( paramName == "sPEeff" ) sPEeff = paramValue;
-  else if ( paramName == "noise[0]" ) noise[0] = paramValue;
-  else if ( paramName == "noise[1]" ) noise[1] = paramValue;
-  else if ( paramName == "P_dphe" ) P_dphe = paramValue;
-  else if ( paramName == "coinLevel" ) coinLevel = (int)paramValue;
-  else if ( paramName == "numPMTs" ) numPMTs = (int)paramValue;
-  else if ( paramName == "g1_gas" ) g1_gas = paramValue;
-  else if ( paramName == "s2Fano" ) s2Fano = paramValue;
-  else if ( paramName == "s2_thr" ) s2_thr = paramValue;
-  else if ( paramName == "S2botTotRatio" ) S2botTotRatio = paramValue;
-  else if ( paramName == "E_gas" ) E_gas = paramValue;
-  else if ( paramName == "eLife_us" ) eLife_us = paramValue;
-  else if ( paramName == "T_Kelvin" ) T_Kelvin = paramValue;
-  else if ( paramName == "p_bar" ) p_bar = paramValue;
-  else if ( paramName == "dtCntr" ) dtCntr = paramValue;
-  else if ( paramName == "dt_min" ) dt_min = paramValue;
-  else if ( paramName == "dt_max" ) dt_max = paramValue;
-  else if ( paramName == "radius" ) radius = paramValue;
-  else if ( paramName == "TopDrift" ) TopDrift = paramValue;
-  else if ( paramName == "anode" ) anode = paramValue;
-  else if ( paramName == "gate" ) gate = paramValue;
-  else if ( paramName == "PosResExp" ) PosResExp = paramValue;
-  else if ( paramName == "PosResBase" ) PosResBase = paramValue;
-  else {
-    cerr << "CAUTION: Invalid std::string parameter name. Using default detector effect parameters";
-    cerr << "Check the detector.hh header file for valid variable names.\n";
-  }
-
-}

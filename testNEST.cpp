@@ -14,6 +14,8 @@
 #include "TestSpectra.hh"
 #include "analysis.hh"
 
+#include "Detectors/DetectorDefinitionExample.hh"
+
 using namespace std;
 using namespace NEST;
 
@@ -21,24 +23,28 @@ using namespace NEST;
  * 
  */
 
-double band[200][6], energies[3]; bool inGas = false;
+double band[200][6], energies[3];
 vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s, bool resol );
 void GetEnergyRes ( vector<double> Es );
 
 int main ( int argc, char** argv ) {
   
-  NEST::NESTcalc n; vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
+  //VDetector* detector = new VDetector();
+  VDetector* detector = new DetectorDefinitionExample();
+	NEST::NESTcalc n(detector); 
+	
+	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
   string position, delimiter, token; size_t loc;
   double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
   
   if (argc < 7)
     {
-      cout << "This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector." << endl << endl;
-      cout << "numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
-      cout << "for 8B or WIMPs, numEvts is kg-days of exposure" << endl << endl;
-      cout << "exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
-      cout << "for cosmic-ray muons or other similar particles with elongated track lengths..." << endl << endl;
-      cout << "numEvts {MIP} LET[MeV*cm^2/gram] step_size[cm] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl;
+      cout << "This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector:" << endl;
+      cout << "\t./testNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
+      cout << "For 8B or WIMPs, numEvts is kg-days of exposure:" << endl;
+      cout << "\t./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
+      cout << "For cosmic-ray muons or other similar particles with elongated track lengths:" << endl;
+      cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] step_size[cm] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
       return 0;
     }
   unsigned long int numEvts = atoi(argv[1]);
@@ -101,17 +107,17 @@ int main ( int argc, char** argv ) {
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
 
-  //n.SetDetector("g1",0.12,0.00); //how to overwrite detector parameter defaults, 1 by 1
-
-  DetectorParameters detParam = n.GetDetector(-999.,-999.,-999.,inGas);
-  double rho = n.SetDensity ( detParam.temperature, detParam.pressure ); //cout.precision(12);
-  if ( rho < 1. ) inGas = true;
-  detParam = n.GetDetector ( 0., 0., detParam.GXeInterface/2., inGas );
-  if ( atof(argv[5]) == -1. ) {
-    vTable = n.SetDriftVelocity_NonUniform(rho,inGas,z_step);
-    vD_middle = vTable[int(floor(.5*detParam.GXeInterface/z_step))];
+  double rho = n.SetDensity ( detector->get_T_Kelvin(), detector->get_p_bar() ); //cout.precision(12);
+  if ( rho < 1. ) detector->set_inGas(true);
+  
+	// Print g1 and g2 values, requiring S2 calculation for 1 SE and x,y,d = 0,0,0
+  vector<double> secondary = n.GetS2 ( 1, 0., 0., 0., 1. );
+  
+	if ( atof(argv[5]) == -1. ) {
+    vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
+    vD_middle = vTable[int(floor(.5*detector->get_TopDrift()/z_step))];
   }
-  else vD_middle = n.SetDriftVelocity(detParam.temperature,rho,atof(argv[5]));
+  else vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, atof(argv[5]));
   cout << "Density = " << rho << " g/mL" << "\t";
   cout << "central vDrift = " << vD_middle << " mm/us\n";
   cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!\n";
@@ -124,8 +130,8 @@ int main ( int argc, char** argv ) {
   if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
   
   if ( type_num != WIMP && type_num != B8 ) {
-    NEST::YieldResult yieldsMax = n.GetYields(type_num,eMax,rho,detParam.efFit,
-					      double(massNum),double(atomNum),NuisParam);
+    NEST::YieldResult yieldsMax = n.GetYields(type_num, eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+					      double(massNum), double(atomNum), NuisParam);
     if ( (0.1*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
       cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   }
@@ -170,8 +176,8 @@ int main ( int argc, char** argv ) {
     
   Z_NEW:
     if ( atof(argv[6]) == -1. ) { // -1 means default, random location mode
-      pos_z = 0. + ( detParam.GXeInterface - 0. ) * n.rand_uniform(); // initial guess
-      r = detParam.rad * sqrt ( n.rand_uniform() );
+      pos_z = 0. + ( detector->get_TopDrift() - 0. ) * n.rand_uniform(); // initial guess
+      r = detector->get_radius() * sqrt ( n.rand_uniform() );
       phi = 2.*M_PI*n.rand_uniform();
       pos_x = r * cos(phi); pos_y = r * sin(phi);
     }
@@ -188,15 +194,15 @@ int main ( int argc, char** argv ) {
       }
       pos_z = stof(position);
       if ( stof(position) == -1. )
-	pos_z = 0. + ( detParam.GXeInterface - 0. ) * n.rand_uniform();
+	pos_z = 0. + ( detector->get_TopDrift() - 0. ) * n.rand_uniform();
       if ( stof(token) == -999. ) {
-	r = detParam.rad * sqrt ( n.rand_uniform() );
+	r = detector->get_radius() * sqrt ( n.rand_uniform() );
 	phi = 2.*M_PI*n.rand_uniform();
 	pos_x = r * cos(phi); pos_y = r * sin(phi); }
     }
     
     if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
-      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas ); field = detParam.efFit;
+			field = detector->FitEF(pos_x, pos_y, pos_z);
     }
     else field = atof(argv[5]);
     
@@ -210,13 +216,13 @@ int main ( int argc, char** argv ) {
       vD = vTable[index];
     }
     else
-      vD = n.SetDriftVelocity(detParam.temperature,rho,field);
-    driftTime = ( detParam.GXeInterface - pos_z ) / vD; // (mm - mm) / (mm / us) = us
-    if ( atof(argv[5]) != -1. && detParam.dtExtrema[0] > ( detParam.GXeInterface - 0. ) / vD )
+      vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,field);
+    driftTime = ( detector->get_TopDrift() - pos_z ) / vD; // (mm - mm) / (mm / us) = us
+    if ( atof(argv[5]) != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD )
       { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
-    if ( (driftTime > detParam.dtExtrema[1] || driftTime < detParam.dtExtrema[0]) && (atof(argv[6]) == -1. || stof(position) == -1.) )
+    if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (atof(argv[6]) == -1. || stof(position) == -1.) )
       goto Z_NEW;
-    if ( detParam.dtExtrema[1] > (detParam.GXeInterface-0.)/vD && !j )
+    if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     
     NEST::YieldResult yields; NEST::QuantaResult quanta;
@@ -224,20 +230,19 @@ int main ( int argc, char** argv ) {
     if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
       double dEOdx = eMin, eStep = dEOdx * rho * zStep * 1e3, refEnergy = 1e6; keV = 0.;
       int Nph = 0, Ne = 0;
-      for ( double zz = detParam.GXeInterface; zz > 0; zz -= zStep*10. ) { //only VERTICAL-going muons work right now
-	detParam = n.GetDetector ( pos_x, pos_y, zz, inGas );
-	yields = n.GetYields ( beta, refEnergy, rho, detParam.efFit, double(massNum), double(atomNum), NuisParam );
+      for ( double zz = detector->get_TopDrift(); zz > 0; zz -= zStep*10. ) { //only VERTICAL-going muons work right now
+	yields = n.GetYields ( beta, refEnergy, rho, detector->FitEF(pos_x, pos_y, zz), double(massNum), double(atomNum), NuisParam );
 	quanta = n.GetQuanta ( yields, rho );
 	Nph+= quanta.photons * (eStep/refEnergy);
 	Ne += quanta.electrons*(eStep/refEnergy);
 	keV+= eStep;
-      }
+      cerr << "zz " << zz << ", zStep " << zStep << ", detector->get_TopDrift() " << detector->get_TopDrift() << ", detector->FitEF(pos_x, pos_y, zz) " << detector->FitEF(pos_x, pos_y, zz) << endl;
+			}
       quanta.photons = Nph; quanta.electrons = Ne;
-      pos_z = detParam.GXeInterface / 2.; //approximate everything as middle of detector since muon goes through whole detector
-      driftTime = ( detParam.GXeInterface - pos_z ) / vD_middle;
-      detParam = n.GetDetector ( pos_x, pos_y, pos_z, inGas );
-      field = detParam.efFit;
-    }
+      pos_z = detector->get_TopDrift() / 2.; //approximate everything as middle of detector since muon goes through whole detector
+      driftTime = ( detector->get_TopDrift() - pos_z ) / vD_middle;
+    	field = detector->FitEF(pos_x, pos_y, pos_z);
+		}
     else {
       yields = n.GetYields(type_num,keV,rho,field,
 			   double(massNum),double(atomNum),NuisParam);
@@ -254,7 +259,7 @@ int main ( int argc, char** argv ) {
       signal1.push_back(scint[7]);
     else signal1.push_back(0.);
     
-    vector<double> scint2= n.GetS2(quanta.electrons,pos_x,pos_y,driftTime,vD,inGas);
+    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD);
     if ( usePE == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
     else if ( usePE >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )

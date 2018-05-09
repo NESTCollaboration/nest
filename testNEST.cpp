@@ -236,7 +236,6 @@ int main ( int argc, char** argv ) {
 	Nph+= quanta.photons * (eStep/refEnergy);
 	Ne += quanta.electrons*(eStep/refEnergy);
 	keV+= eStep;
-      cerr << "zz " << zz << ", zStep " << zStep << ", detector->get_TopDrift() " << detector->get_TopDrift() << ", detector->FitEF(pos_x, pos_y, zz) " << detector->FitEF(pos_x, pos_y, zz) << endl;
 			}
       quanta.photons = Nph; quanta.electrons = Ne;
       pos_z = detector->get_TopDrift() / 2.; //approximate everything as middle of detector since muon goes through whole detector

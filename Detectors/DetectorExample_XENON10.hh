@@ -1,5 +1,5 @@
 //
-// DetectorDefinitionExample.hh
+// DetectorExample_XENON10.hh
 //
 // Adapted from Quentin Riffard by Jacob Cutter, May 8, 2018
 //
@@ -21,8 +21,8 @@ class DetectorDefinitionExample: public VDetector {
 public:
 
 	DetectorDefinitionExample() {
-		cout << "*** Detector definition message ***" << endl;
-		cout << "You are currently using a simple detector template. Please build your own VDetector." << endl << endl;
+		cerr << "*** Detector definition message ***" << endl;
+		cerr << "You are currently using the default XENON10 template detector." << endl << endl;
 
 		// Call the initialisation of all the parameters
 		Initialization();
@@ -83,7 +83,7 @@ public:
 	}
 
 	// Vary parameters as necessary based on the timestamp of the event, or any other
-	// custom dependencies. Any protected parameters from VDetector can be modified here..
+	// custom dependencies. Any protected parameters from VDetector can be modified here.
 	virtual void SetTime(double timestamp) {
 		Modify_g1(timestamp);
 	}

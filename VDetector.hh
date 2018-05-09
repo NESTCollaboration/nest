@@ -4,8 +4,8 @@
 // Adapted from Quentin Riffard by Jacob Cutter, May 8, 2018
 
 // *********************************************************************
-// THIS DEFAULT VIRTUAL DETECTOR SHOULD NEVER BE MODIFIED.
-// PLEASE DEFINE YOUR OWN DETECTOR (see DetectorDefinitionExample.hh).
+// THIS DEFAULT VIRTUAL DETECTOR SHOULD ONLY BE MODIFIED BY DEVELOPERS.
+// PLEASE DEFINE YOUR OWN DETECTOR (see DetectorExample_XENON10.hh).
 // *********************************************************************
 
 #ifndef VDetector_hh

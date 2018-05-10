@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <float.h>
 
+#include "RandomGen.hh"
 #include "VDetector.hh"
 
 #define W_DEFAULT 13.7
@@ -66,20 +67,10 @@ namespace NEST {
 			long double Factorial ( double x );
 			double nCr ( double n, double r );
 			
-		protected:
-
-			std::ranlux24 rng;
-			
 		public:
 
 			NESTcalc();
 			NESTcalc(VDetector* detector);
-			double rand_uniform();
-			int poisson_draw(double mean);
-			double rand_exponential(double half_life);
-			std::vector<double> VonNeumann(double xMin, double xMax, double yMin,double yMax,
-						 double xTest,double yTest,double fValue);
-			double rand_gauss( double mean, double sigma );
 			long BinomFluct(long, double);
 			NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam);
 			double PhotonTime(INTERACTION_TYPE species,bool exciton);
@@ -89,11 +80,9 @@ namespace NEST {
 			std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species );
 			std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
 			std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, double driftSpeed );
-			int SelectRanXeAtom (double isotope);
 			double SetDriftVelocity ( double T, double D, double F );
 			double SetDriftVelocity_MagBoltz ( double D, double F );
 			std::vector<double> SetDriftVelocity_NonUniform ( double rho, double zStep );
-			void SetRandomSeed(unsigned long int);
 			double SetDensity ( double T, double P );
 			std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top );
 			

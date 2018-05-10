@@ -36,9 +36,9 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}")  
 include_directories("${PROJECT_SOURCE_DIR}/Detectors")  
 
-file(GLOB headers ${PROJECT_SOURCE_DIR}/VDetector.hh ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
+file(GLOB headers ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
 
-add_library(NEST SHARED NEST.cpp NEST.hh VDetector.cpp ${headers})
+add_library(NEST SHARED NEST.cpp NEST.hh RandomGen.cpp RandomGen.hh TestSpectra.cpp TestSpectra.hh VDetector.cpp ${headers})
 set_target_properties(NEST PROPERTIES PUBLIC_HEADER "NEST.hh;${headers}")
 
 if(G4)
@@ -54,7 +54,7 @@ install(TARGETS NEST
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
 
-add_executable(testNEST testNEST.cpp TestSpectra.cpp)
+add_executable(testNEST testNEST.cpp)
 target_link_libraries(testNEST NEST)
 
 export(PACKAGE NEST)

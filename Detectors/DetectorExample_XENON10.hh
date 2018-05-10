@@ -6,33 +6,34 @@
 // This header file serves as a template for creating one's own VDetector class.
 // This will be ultimately used to customize the NEST detector parameters to meet
 // individual/collaboration needs.
+//
 // Note that the detector parameters can also be varied throughout a run, etc.
 
-#ifndef DetectorDefinitionExample_hh
-#define DetectorDefinitionExample_hh 1
+#ifndef DetectorExample_XENON10_hh
+#define DetectorExample_XENON10_hh 1
 
-#include "../VDetector.hh"
+#include "VDetector.hh"
 
 using namespace std;
 
 
-class DetectorDefinitionExample: public VDetector {
+class DetectorExample_XENON10: public VDetector {
 
 public:
 
-	DetectorDefinitionExample() {
+	DetectorExample_XENON10() {
 		cerr << "*** Detector definition message ***" << endl;
 		cerr << "You are currently using the default XENON10 template detector." << endl << endl;
 
 		// Call the initialisation of all the parameters
 		Initialization();
 	};
-	virtual ~DetectorDefinitionExample() {};
+	virtual ~DetectorExample_XENON10() {};
 
 	// Do here the initialization of all the parameters that are not varying as a function of time
 	virtual void Initialization() {
+		
 		// Primary Scintillation (S1) parameters
-
 		g1 = 0.0760; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
 		sPEres = 0.58; //single phe resolution (Gaussian assumed)
 		sPEthr = 0.35; //POD threshold in phe, usually used IN PLACE of sPEeff
@@ -45,7 +46,6 @@ public:
 		numPMTs = 89; //For coincidence calculation
 
 		// Ionization and Secondary Scintillation (S2) parameters
-
 		g1_gas = 0.06; //phd per S2 photon in gas, used to get SE size
 		s2Fano = 3.61; //Fano-like fudge factor for SE width
 		s2_thr = 300.; //the S2 threshold in phe or PE, *not* phd. Affects NR most
@@ -54,14 +54,12 @@ public:
 		eLife_us = 2200.; //the drift electron mean lifetime in micro-seconds
 
 		// Thermodynamic Properties
-
 		inGas = false;
 		T_Kelvin = 177.; //for liquid drift speed calculation
 		p_bar = 2.14; //gas pressure in units of bars, it controls S2 size
 		//if you are getting warnings about being in gas, lower T and/or raise p
 
 		// Data Analysis Parameters and Geometry
-
 		dtCntr = 40.; //center of detector for S1 corrections, in usec.
 		dt_min = 20.; //minimum. Top of detector fiducial volume
 		dt_max = 60.; //maximum. Bottom of detector fiducial volume
@@ -77,11 +75,28 @@ public:
 		// in gas detectors, the gate is still the gate, but it's where S2 starts
 
 		// 2-D (X & Y) Position Reconstruction
-
 		PosResExp = 0.015; // exp increase in pos recon res at hi r, 1/mm
 		PosResBase = 70.8364; // baseline unc in mm, see NEST.cpp for usage
 	}
 
+	//S1 PDE custom fit for function of z
+	//s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
+	double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+		return 1.; // unitless, 1.000 at detector center
+	}
+		
+	//Drift electric field as function of Z in mm
+	//For example, use a high-order poly spline
+	double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
+		return 730.;
+	}
+
+	//S2 PDE custom fit for function of r
+	//s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
+	double FitS2 ( double xPos_mm, double yPos_mm ) {
+		return 1.; // unitless, 1.000 at detector center
+	}
+	
 	// Vary parameters as necessary based on the timestamp of the event, or any other
 	// custom dependencies. Any protected parameters from VDetector can be modified here.
 	virtual void SetTime(double timestamp) {

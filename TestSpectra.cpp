@@ -13,12 +13,12 @@
 
 #include "TestSpectra.hh"
 
-using namespace NEST;
 using namespace std;
+//using namespace NEST;
 
 double power = 3.7488;
 
-double NEST::CH3T_spectrum ( double xMin, double xMax, NESTcalc& n ) {
+double TestSpectra::CH3T_spectrum ( double xMin, double xMax ) {
   
   double m_e = 510.9989461; //e- rest mass-energy [keV]
   double aa = 0.0072973525664; //fine structure constant
@@ -27,8 +27,8 @@ double NEST::CH3T_spectrum ( double xMin, double xMax, NESTcalc& n ) {
   if(xMax>18.5898)xMax=18.5898; //tritium beta decay endpoint [keV]
   if(xMin<0.)xMin=0.;
   double yMax = 1.1e7; //top of the beta decay E histogram
-  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			  yMax * n.rand_uniform(),1.};
+  vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
+			  yMax * RandomGen::rndm()->rand_uniform(),1.};
   while ( xyTry[2] > 0. ) {
     double B = sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e) / (xyTry[0] + m_e);
     double x = (2.*M_PI*ZZ*aa)*(xyTry[0] + m_e)/sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e);
@@ -36,36 +36,36 @@ double NEST::CH3T_spectrum ( double xMin, double xMax, NESTcalc& n ) {
 			(xyTry[0] + m_e) *
 			(18.5898-xyTry[0]) * (18.5898-xyTry[0]) *
 			x*(1./(1.-exp(-x)))*(1.002037-0.001427*(B)));
-    xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+    xyTry = RandomGen::rndm()->VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
   }
   return xyTry[0];
   
 }
 
-double NEST::B8_spectrum ( double xMin, double xMax, NESTcalc& n ) {
+double TestSpectra::B8_spectrum ( double xMin, double xMax ) {
   
   if(xMax!=4.)xMax=4.;
   if(xMin!=0.)xMin=0.;
   double yMax = pow(10.,-2.198);
-  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			  yMax * n.rand_uniform(), 1.};
+  vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
+			  yMax * RandomGen::rndm()->rand_uniform(), 1.};
   while ( xyTry[2] > 0. ) {
     double FuncValue = 2.198 + 1.2184*xyTry[0] - 0.32849*pow(xyTry[0],2.) + 0.12441*pow(xyTry[0],3.);
     FuncValue = pow(10.,-FuncValue);
-    xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+    xyTry = RandomGen::rndm()->VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
   }
   return xyTry[0];
   
 }
 
-double NEST::AmBe_spectrum ( double xMin, double xMax, NESTcalc& n ) {
+double TestSpectra::AmBe_spectrum ( double xMin, double xMax ) {
   
   if(xMax>200.)
     xMax=200.;
   if ( xMin < DBL_MIN ) xMin = DBL_MIN;
   double yMax = pow(10.,power), yMin = 0.0;
-  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			  yMax * n.rand_uniform(),1.};
+  vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
+			  yMax * RandomGen::rndm()->rand_uniform(),1.};
   while ( xyTry[2] > 0. ) {
     double FuncValue =
        power * pow(log10(xyTry[0]),0.)
@@ -75,21 +75,21 @@ double NEST::AmBe_spectrum ( double xMin, double xMax, NESTcalc& n ) {
       +1.57310*pow(log10(xyTry[0]),4.)
       -0.30072*pow(log10(xyTry[0]),5.);
     FuncValue = pow(10.,FuncValue);
-    xyTry = n.VonNeumann(xMin,xMax,yMin,yMax,xyTry[0],xyTry[1],FuncValue);
+    xyTry = RandomGen::rndm()->VonNeumann(xMin,xMax,yMin,yMax,xyTry[0],xyTry[1],FuncValue);
   }
   
   return xyTry[0];
   
 }
 
-double NEST::Cf_spectrum ( double xMin, double xMax, NESTcalc& n ) {
+double TestSpectra::Cf_spectrum ( double xMin, double xMax ) {
   
   if(xMax>200.)
     xMax=200.;
   if ( xMin < DBL_MIN ) xMin = DBL_MIN;
   double yMax = 2.*pow(10.,power), yMin = 0.0;
-  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			  yMax * n.rand_uniform(),1.};
+  vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
+			  yMax * RandomGen::rndm()->rand_uniform(),1.};
   while ( xyTry[2] > 0. ) {
     double FuncValue =
        power * pow(log10(xyTry[0]),0.)
@@ -104,20 +104,20 @@ double NEST::Cf_spectrum ( double xMin, double xMax, NESTcalc& n ) {
       - .033214 * pow(xyTry[0],1.)
       +.00032857* pow(xyTry[0],2.)
       -1.000e-6 * pow(xyTry[0],3.);
-    xyTry = n.VonNeumann(xMin,xMax,yMin,yMax,xyTry[0],xyTry[1],FuncValue);
+    xyTry = RandomGen::rndm()->VonNeumann(xMin,xMax,yMin,yMax,xyTry[0],xyTry[1],FuncValue);
   }
   
   return xyTry[0];
   
 }
 
-double NEST::DD_spectrum(double xMin,double xMax,NESTcalc& n){  //JV LUX, most closely like JENDL-4. See arXiv:1608.05381. Lower than G4/LUXSim
+double TestSpectra::DD_spectrum( double xMin, double xMax ){  //JV LUX, most closely like JENDL-4. See arXiv:1608.05381. Lower than G4/LUXSim
   
   if(xMax>80.)xMax=80.;
   if(xMin<0.000)xMin=0.000;
   double yMax = 1.1694e+6;
-  vector<double> xyTry = {xMin+(xMax-xMin)*n.rand_uniform(),
-			  yMax * n.rand_uniform(),1.};
+  vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
+			  yMax * RandomGen::rndm()->rand_uniform(),1.};
   while ( xyTry[2] > 0. ) {
     double FuncValue = //1.*exp(-0.15*xyTry[0])+2e-3*exp(0.05*xyTry[0]); //LUXSim version (Carmen)
        1.1694e+6*pow(xyTry[0],0.)
@@ -140,7 +140,7 @@ double NEST::DD_spectrum(double xMin,double xMax,NESTcalc& n){  //JV LUX, most c
 			  659.680/pow(xyTry[0]-75.,7.)+
 			  161.110/pow(xyTry[0]-75.,8.)+
 			  11.7710/pow(xyTry[0]-75.,9.));
-    xyTry = n.VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+    xyTry = RandomGen::rndm()->VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
   }
   return xyTry[0];
   
@@ -151,7 +151,7 @@ double NEST::DD_spectrum(double xMin,double xMax,NESTcalc& n){  //JV LUX, most c
 //------++++++------++++++------++++++------++++++------++++++------++++++------
 
 //This spectrum comes from Phys. Rev. D 82 (2010) 023530 (McCabe)
-double NEST::WIMP_dRate ( double ER, double mWimp, NESTcalc &n ) {
+double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
   
   // We are going to hard code in the astrophysical halo for now.  This may be 
   // something that we make an argument later, but this is good enough to start.
@@ -172,7 +172,7 @@ double NEST::WIMP_dRate ( double ER, double mWimp, NESTcalc &n ) {
   
   // Define the detector Z and A and the mass of the target nucleus
   double Z = 54.;
-  double A = (double)n.SelectRanXeAtom(n.rand_uniform()*100.);
+  double A = (double)RandomGen::rndm()->SelectRanXeAtom();
   double M_T = A * GeVperAMU;
   
   // Calculate the number of target nuclei per kg
@@ -250,7 +250,7 @@ double NEST::WIMP_dRate ( double ER, double mWimp, NESTcalc &n ) {
   
 }
 
-WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass, NESTcalc &n, double eStep ) {
+TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum ( double mass, double eStep ) {
   
   WIMP_spectrum_prep spectrum;
   double EnergySpec[10001]={0}, divisor, x1, x2;
@@ -270,11 +270,11 @@ WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass, NESTcalc &n, double e
   }
   
   for ( int i = 0; i < (numberPoints+1); i++ ) {
-    EnergySpec[i] = WIMP_dRate( double(i)/divisor, mass, n );
+    EnergySpec[i] = WIMP_dRate( double(i)/divisor, mass );
   }
   
   for ( long i = 0; i < 1000000; i++ ) {
-    spectrum.integral += WIMP_dRate(double(i)/1e4,mass,n) / 1e4;
+    spectrum.integral += WIMP_dRate( double(i)/1e4, mass ) / 1e4;
   }
   
   for ( int i = 0; i < numberPoints; i++ )
@@ -295,16 +295,16 @@ WIMP_spectrum_prep NEST::WIMP_prep_spectrum ( double mass, NESTcalc &n, double e
   
 }
 
-double NEST::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum, double mass, NESTcalc& n){
+double TestSpectra::WIMP_spectrum( WIMP_spectrum_prep wimp_spectrum, double mass ){
   
   double xMin = 0., FuncValue = 0.00, x = 0.;
-  double yMax = WIMP_dRate ( xMin, mass, n );
-  vector<double> xyTry ={ xMin + (wimp_spectrum.xMax - xMin) * n.rand_uniform(),
-			  yMax * n.rand_uniform(), 1. };
+  double yMax = WIMP_dRate ( xMin, mass );
+  vector<double> xyTry ={ xMin + (wimp_spectrum.xMax - xMin) * RandomGen::rndm()->rand_uniform(),
+			  yMax * RandomGen::rndm()->rand_uniform(), 1. };
   while ( xyTry[2] > 0. )
     {
-      while ( xyTry[1] > (-WIMP_dRate(0.,mass,n)/wimp_spectrum.xMax*xyTry[0]+WIMP_dRate(0.,mass,n)) ) { //triangle cut more efficient than rectangle
-	xyTry[0] = (wimp_spectrum.xMax-xMin)*n.rand_uniform(); xyTry[1] = yMax*n.rand_uniform(); }
+      while ( xyTry[1] > (-WIMP_dRate(0.,mass)/wimp_spectrum.xMax*xyTry[0]+WIMP_dRate(0.,mass)) ) { //triangle cut more efficient than rectangle
+	xyTry[0] = (wimp_spectrum.xMax-xMin)*RandomGen::rndm()->rand_uniform(); xyTry[1] = yMax*RandomGen::rndm()->rand_uniform(); }
       for ( x = 0; x < wimp_spectrum.xMax; x+=(1./wimp_spectrum.divisor) )
 	{
 	  if ( xyTry[0] > x && xyTry[0] < (x + 1./wimp_spectrum.divisor) )
@@ -313,7 +313,7 @@ double NEST::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum, double mass, NESTca
 	      break;
 	    }
 	}
-      xyTry = n.VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
+      xyTry = RandomGen::rndm()->VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
     }
   
   return xyTry[0];

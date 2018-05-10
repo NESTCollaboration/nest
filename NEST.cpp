@@ -1,55 +1,9 @@
 
 #include "NEST.hh"
 
-using namespace NEST;
 using namespace std;
+using namespace NEST;
 
-double NESTcalc::rand_uniform() {
-  
-  return (double) (rng() - rng.min()) / (double) (rng.max() - rng.min());
-  
-}
-
-double NESTcalc::rand_gauss(double mean, double sigma) {
-  
-  double u = rand_uniform(), v = rand_uniform();
-  return mean + sigma * sqrt(-2. * log(u)) * cos(2. * M_PI * v);
-  
-}
-
-int NESTcalc::poisson_draw(double mean)
-  
-{
-  std::poisson_distribution<int> distribution(mean);
-  return distribution(rng);
-}
-
-double NESTcalc::rand_exponential(double half_life) {
-  
-  double r = rand_uniform();
-  return log(1 - r) * -1 * half_life / log(2.);
-  
-}
-
-vector<double> NESTcalc::VonNeumann(double xMin, double xMax, double yMin,double yMax,
-				    double xTest,double yTest,double fValue){
-  
-  vector<double> xyTry(3);
-  
-  xyTry[0]= xTest;
-  xyTry[1]= yTest;
-  
-  if ( xyTry[1] > fValue ) {
-    xyTry[0] = xMin+(xMax-xMin)*rand_uniform() ;
-    xyTry[1] = yMin+(yMax-yMin)*rand_uniform() ;
-    xyTry[2] = 1. ;
-  }
-  else
-    xyTry[2] = 0. ;
-  
-  return xyTry; //doing a vector means you can return 2 values at the same time
-  
-}
 
 long NESTcalc::BinomFluct(long N0, double prob) {
   
@@ -62,10 +16,10 @@ long NESTcalc::BinomFluct(long N0, double prob) {
   
   if (N0 < 10) {
     for (int i = 0; i < N0; i++) {
-      if (rand_uniform() < prob) N1++;
+      if (RandomGen::rndm()->rand_uniform() < prob) N1++;
     }
   } else {
-    N1 = int(floor(rand_gauss(mean, sigma) + 0.5));
+    N1 = int(floor(RandomGen::rndm()->rand_gauss(mean, sigma) + 0.5));
   }
   
   if (N1 > N0) N1 = N0;
@@ -91,33 +45,33 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton){
   //old code put here by Jason
   //times in ns
   double return_time=0;
-  double tau1 = rand_gauss(3.1,.7); //err from wgted avg.
-  double tau3 = rand_gauss(24.,1.); //ibid.
+  double tau1 = RandomGen::rndm()->rand_gauss(3.1,.7); //err from wgted avg.
+  double tau3 = RandomGen::rndm()->rand_gauss(24.,1.); //ibid.
   //these singlet and triplet times may not be the ones you're
   //used to, but are the world average: Kubota 79, Hitachi 83 (2
   //data sets), Teymourian 11, Morikawa 89, and Akimov '02
   double SingTripRatioX, SingTripRatioR;
   if(species==beta || species==Kr83m || species == gammaRay){ //these classes are questionable
     //disregard tauR from original model--it's very small for any electric field.
-    SingTripRatioX = rand_gauss(0.17,0.05);
-    SingTripRatioR = rand_gauss(0.8, 0.2);
+    SingTripRatioX = RandomGen::rndm()->rand_gauss(0.17,0.05);
+    SingTripRatioR = RandomGen::rndm()->rand_gauss(0.8, 0.2);
   }
   else if(species==ion){ //these classes are questionable
-    SingTripRatioR = rand_gauss(2.3,0.51);
+    SingTripRatioR = RandomGen::rndm()->rand_gauss(2.3,0.51);
     SingTripRatioX = SingTripRatioR;
   }
   else{//NR //these classes are questionable
-    SingTripRatioR = rand_gauss(7.8,1.5);
+    SingTripRatioR = RandomGen::rndm()->rand_gauss(7.8,1.5);
     SingTripRatioX = SingTripRatioR;
   }
   if(exciton){
-    if (rand_uniform() < SingTripRatioR / (1 + SingTripRatioR))
-      return_time = tau1 * -log(rand_uniform());
-    else return_time = tau3 * -log(rand_uniform());
+    if (RandomGen::rndm()->rand_uniform() < SingTripRatioR / (1 + SingTripRatioR))
+      return_time = tau1 * -log(RandomGen::rndm()->rand_uniform());
+    else return_time = tau3 * -log(RandomGen::rndm()->rand_uniform());
   } else {
-    if (rand_uniform() < SingTripRatioX / (1 + SingTripRatioX))
-      return_time = tau1 * -log(rand_uniform());
-    else return_time = tau3 * -log(rand_uniform());
+    if (RandomGen::rndm()->rand_uniform() < SingTripRatioX / (1 + SingTripRatioX))
+      return_time = tau1 * -log(RandomGen::rndm()->rand_uniform());
+    else return_time = tau3 * -log(RandomGen::rndm()->rand_uniform());
   }
   
   return return_time;
@@ -151,7 +105,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
     Fano = 0.12707-0.029623*density- //Fano factor is  << 1
       0.0057042*pow(density,2.)+ //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
       0.0015957*pow(density,3.); //to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
-    Nq_actual = int(floor(rand_gauss(Nq_mean,sqrt(Fano*Nq_mean))+0.5));
+    Nq_actual = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean,sqrt(Fano*Nq_mean))+0.5));
     if ( Nq_actual < 0 || Nq_mean == 0. ) Nq_actual = 0;
     
     Ni = BinomFluct(Nq_actual,alf);
@@ -161,8 +115,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   
   else {
     
-    Ni = int(floor(rand_gauss(Nq_mean*alf,sqrt(Fano*Nq_mean*alf))+0.5)); if(Ni<0)Ni=0;
-    Nex= int(floor(rand_gauss(Nq_mean*NexONi*alf,sqrt(Fano*Nq_mean*NexONi*alf))+0.5)); if(Nex<0)Nex=0;
+    Ni = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean*alf,sqrt(Fano*Nq_mean*alf))+0.5)); if(Ni<0)Ni=0;
+    Nex= int(floor(RandomGen::rndm()->rand_gauss(Nq_mean*NexONi*alf,sqrt(Fano*Nq_mean*NexONi*alf))+0.5)); if(Nex<0)Nex=0;
     Nq_actual = Nex + Ni;
     
   }
@@ -190,7 +144,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( yields.Lindhard < 1. )
     omega = 0.04*exp(-pow(elecFrac-0.5,2.)/0.17);
   double Variance = recombProb*(1.-recombProb)*Ni+omega*omega*Ni*Ni;
-  Ne=int(floor(rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
+  Ne=int(floor(RandomGen::rndm()->rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
   if ( Ne < 0 ) Ne = 0;
   if ( Ne > Ni) Ne =Ni;
   
@@ -227,7 +181,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     {
       int massNumber; double ScaleFactor[2] = { 1., 1. };
       if ( massNum != 0. ) massNumber = int(massNum);
-      else massNumber = SelectRanXeAtom ( rand_uniform() * 100.0 );
+      else massNumber = RandomGen::rndm()->SelectRanXeAtom();
       ScaleFactor[0] = sqrt(MOLAR_MASS/(double)massNumber);
       ScaleFactor[1] = ScaleFactor[0];
       Nq = 12.6 * pow ( energy, 1.05 );
@@ -241,7 +195,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     } break;
   case ion:
     {
-      double A1 = massNum, A2 = SelectRanXeAtom(rand_uniform()*100.);
+      double A1 = massNum, A2 = RandomGen::rndm()->SelectRanXeAtom();
       double Z1 = atomNum, Z2 = ATOM_NUM;
       double Z_mean = pow(pow(Z1,(2./3.))+pow(Z2,(2./3.)),1.5);
       double E1c = pow(A1,3.)*pow(A1+A2,-2.)*pow(Z_mean,(4./3.))*pow(Z1,(-1./3.))*500.;
@@ -292,7 +246,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   case Kr83m:
     {
       if ( energy == 9.4 ) {
-	double deltaT_ns = rand_exponential ( deltaT_ns_halflife );
+	double deltaT_ns = RandomGen::rndm()->rand_exponential ( deltaT_ns_halflife );
 	Nq = energy * ( 1e3 / Wq_eV + 6.5 );
 	double medTlevel = 47.8 + ( 69.201 - 47.8 ) / pow ( 1. + pow ( dfield / 250.13, 0.9 ), 1. );
 	double highTrise = 1.15 + ( 1. - 1.15 ) / ( 1. + pow ( deltaT_ns / 1200., 18. ) );
@@ -345,14 +299,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   
 }
 
-void NESTcalc::SetRandomSeed ( unsigned long int s ) {
-  
-  rng.seed(s);
-  
-}
-
 NESTcalc::NESTcalc ( ) {
-  rng.seed(0);
+
 }
 
 NESTcalc::NESTcalc (VDetector* detector) {
@@ -383,19 +331,19 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area
-      double phe1 = rand_gauss(1., fdetector->get_sPEres()) + rand_gauss(fdetector->get_noise()[0], fdetector->get_noise()[1]); 
+      double phe1 = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres()) + RandomGen::rndm()->rand_gauss(fdetector->get_noise()[0], fdetector->get_noise()[1]); 
 			Nphe++; if(phe1>DBL_MAX)phe1=1.;if(phe1<-DBL_MAX)phe1=0.;
-      prob = rand_uniform();
+      prob = RandomGen::rndm()->rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
       if ( prob > fdetector->get_sPEeff() ) { phe1 = 0.; } //add an else with Nphe++ if not doing mc truth
       // Generate a double photo electron if random draw allows it
       double phe2 = 0.;
-      if ( rand_uniform() < fdetector->get_P_dphe() ) {
+      if ( RandomGen::rndm()->rand_uniform() < fdetector->get_P_dphe() ) {
 	// generate area and increment the photo-electron counter
-	phe2 = rand_gauss(1., fdetector->get_sPEres()) + rand_gauss(fdetector->get_noise()[0], fdetector->get_noise()[1]); 
+	phe2 = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres()) + RandomGen::rndm()->rand_gauss(fdetector->get_noise()[0], fdetector->get_noise()[1]); 
 	Nphe++; if(phe2>DBL_MAX)phe2=1.;if(phe2<-DBL_MAX)phe2=0.;
 	// zero the area if phe wouldn't have been observed
-	if ( rand_uniform() > fdetector->get_sPEeff() && prob > fdetector->get_sPEeff() ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
+	if ( RandomGen::rndm()->rand_uniform() > fdetector->get_sPEeff() && prob > fdetector->get_sPEeff() ) { phe2 = 0.; } //add an else with Nphe++ if not doing mc truth
 	// The dphe occurs simultaneously to the first one from the same source photon. If the first one is seen, so should be the second one
       }
       // Save the phe area and increment the spike count (very perfect spike count) if area is above threshold
@@ -404,7 +352,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   }
   else { // apply just an empirical efficiency by itself, without direct area threshold
     Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe()); double eff=fdetector->get_sPEeff(); if(nHits>=fdetector->get_numPMTs()) eff=1.;
-    pulseArea = rand_gauss(BinomFluct(Nphe,1.-(1.-eff)/(1.+fdetector->get_P_dphe())),fdetector->get_sPEres()*sqrt(Nphe));
+    pulseArea = RandomGen::rndm()->rand_gauss(BinomFluct(Nphe,1.-(1.-eff)/(1.+fdetector->get_P_dphe())),fdetector->get_sPEres()*sqrt(Nphe));
     spike = (double)nHits;
   }
   if ( pulseArea < 0. ) pulseArea = 0.;
@@ -444,7 +392,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   scintillation[6] = newSpike[0]; // uncorr
   scintillation[7] = newSpike[1]; // 3-D corr spike RQ
   
-  if ( rand_uniform() < prob ) // coincidence has to happen in different PMTs
+  if ( RandomGen::rndm()->rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
   else { // some of these are set to -1 to flag them as having been below threshold
     scintillation[0] *= -1.; if ( scintillation[0] == 0. ) scintillation[0] = -DBL_MIN;
@@ -457,7 +405,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
     scintillation[7] *= -1.; if ( scintillation[7] == 0. ) scintillation[7] = -DBL_MIN;
   }
   
-  scintillation[8] =fdetector->get_g1();
+  scintillation[8] = fdetector->get_g1();
   
   return scintillation;
   
@@ -486,16 +434,16 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( (fdetector->get_anode() - fdetector->get_TopDrift()) <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-  long Nph = long(floor(rand_gauss(elYield*double(Nee),
+  long Nph = long(floor(RandomGen::rndm()->rand_gauss(elYield*double(Nee),
 				   sqrt(fdetector->get_s2Fano()*elYield*double(Nee)))+0.5));
   long nHits = BinomFluct(Nph,fdetector->get_g1_gas());
   long Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe());
-  double pulseArea=rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
+  double pulseArea=RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
   double pulseAreaC= pulseArea/exp(-dt/fdetector->get_eLife_us());
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
   
-  double S2b = rand_gauss(fdetector->get_S2botTotRatio()*pulseArea,sqrt(fdetector->get_S2botTotRatio()*pulseArea*(1.-fdetector->get_S2botTotRatio())));
+  double S2b = RandomGen::rndm()->rand_gauss(fdetector->get_S2botTotRatio()*pulseArea,sqrt(fdetector->get_S2botTotRatio()*pulseArea*(1.-fdetector->get_S2botTotRatio())));
   double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()); // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; ionization[1] = Nph; //integer number of electrons unabsorbed in liquid then getting extracted, followed by raw number of photons produced in the gas gap
@@ -549,37 +497,12 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
     return newSpike;
   }
   newSpike[0] = fabs(oldScint[6]);
-  newSpike[0] = rand_gauss(newSpike[0],(fdetector->get_sPEres()/4.)*sqrt(newSpike[0]));
+  newSpike[0] = RandomGen::rndm()->rand_gauss(newSpike[0],(fdetector->get_sPEres()/4.)*sqrt(newSpike[0]));
   if ( newSpike[0] < 0.0 ) newSpike[0] = 0.0;
   newSpike[1] = newSpike[0] / fdetector->FitS1( dx, dy, dz ) * fdetector->FitS1( 0., 0., fdetector->get_TopDrift() - dS_mid * fdetector->get_dtCntr() );
   
   return newSpike; // regular and position-corrected spike counts returned
   
-}
-
-int NESTcalc::SelectRanXeAtom ( double isotope ) {
-  
-  int A;
-  if ( isotope > 0.000 && isotope <= 0.090 )
-    A = 124;
-  else if ( isotope > 0.090 && isotope <= 0.180 )
-    A = 126;
-  else if ( isotope > 0.180 && isotope <= 2.100 )
-    A = 128;
-  else if ( isotope > 2.100 && isotope <= 28.54 )
-    A = 129;
-  else if ( isotope > 28.54 && isotope <= 32.62 )
-    A = 130;
-  else if ( isotope > 32.62 && isotope <= 53.80 )
-    A = 131;
-  else if ( isotope > 53.80 && isotope <= 80.69 )
-    A = 132;
-  else if ( isotope > 80.69 && isotope <= 91.13 )
-    A = 134;
-  else
-    A = 136;
-  return A;
-
 }
 
 double NESTcalc::SetDensity ( double Kelvin, double bara ) { // currently only for fixed pressure (saturated vapor pressure); will add pressure dependence later
@@ -728,8 +651,8 @@ vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A
   double kappa = fdetector->get_PosResBase() + exp ( fdetector->get_PosResExp() * rad ); // arXiv:1710.02752
   double sigmaR = kappa / sqrt ( A_top ); // ibid.
   
-  double phi = 2. * M_PI * rand_uniform();
-  sigmaR = rand_gauss ( 0.0, sigmaR );
+  double phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+  sigmaR = RandomGen::rndm()->rand_gauss ( 0.0, sigmaR );
   double sigmaX = sigmaR * cos ( phi );
   double sigmaY = sigmaR * sin ( phi );
   

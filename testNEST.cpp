@@ -11,6 +11,7 @@
  * Created on August 1, 2017, 1:03 PM
  */
 
+#include "NEST.hh"
 #include "TestSpectra.hh"
 #include "analysis.hh"
 
@@ -27,10 +28,11 @@ double band[200][6], energies[3];
 vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s, bool resol );
 void GetEnergyRes ( vector<double> Es );
 
+
 int main ( int argc, char** argv ) {
   
-  //VDetector* detector = new VDetector();
-  VDetector* detector = new DetectorDefinitionExample();
+  // Instantiate your own VDetector class here, then load into NEST class constructor
+	DetectorExample_XENON10* detector = new DetectorExample_XENON10();
 	NEST::NESTcalc n(detector); 
 	
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
@@ -51,19 +53,19 @@ int main ( int argc, char** argv ) {
   
   string type = argv[2];
   INTERACTION_TYPE type_num;
-  WIMP_spectrum_prep wimp_spectrum_prep; //used only in WIMP case
+	TestSpectra spec;
   if ( type == "NR" || type == "neutron" ) type_num = NR;
   else if (type == "WIMP")
     {
       if (atof(argv[3])<0.44) { cerr << "WIMP mass too low, you're crazy!" << endl; return 0; }
       type_num = WIMP;
-      wimp_spectrum_prep= WIMP_prep_spectrum(atof(argv[3]),n,E_step);
-      numEvts = n.poisson_draw(wimp_spectrum_prep.integral * 1.0 * atof(argv[1]) * atof(argv[4]) / 1e-36);
+      spec.wimp_spectrum_prep= spec.WIMP_prep_spectrum(atof(argv[3]), E_step);
+      numEvts = RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral * 1.0 * atof(argv[1]) * atof(argv[4]) / 1e-36);
     }
   else if ( type == "B8" || type == "Boron8" || type == "8Boron" || type == "8B" || type == "Boron-8" )
     {
       type_num = B8;
-      numEvts = n.poisson_draw(0.0026 * atof(argv[1]));
+      numEvts = RandomGen::rndm()->poisson_draw(0.0026 * atof(argv[1]));
     } else if ( type == "DD" || type == "D-D" ) type_num = DD;
   else if ( type == "AmBe" ) type_num = AmBe;
   else if ( type == "Cf" || type == "Cf252" || type == "252Cf" || type == "Cf-252" ) type_num = Cf;
@@ -127,7 +129,7 @@ int main ( int argc, char** argv ) {
   else
     fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Extr\tS2_rawArea\tS2_Zcorr [phd]\n");
   
-  if (argc >= 8) n.SetRandomSeed(atoi(argv[7]));
+  if (argc >= 8) RandomGen::rndm()->SetSeed(atoi(argv[7]));
   
   if ( type_num != WIMP && type_num != B8 ) {
     NEST::YieldResult yieldsMax = n.GetYields(type_num, eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
@@ -144,27 +146,27 @@ int main ( int argc, char** argv ) {
     } else {
       switch (type_num) {
       case CH3T:
-	keV = CH3T_spectrum(eMin, eMax, n);
+	keV = spec.CH3T_spectrum(eMin, eMax);
 	break;
       case B8: //normalize this to ~3500 / 10-ton / year, for E-threshold of 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
-	keV = B8_spectrum(eMin, eMax, n);
+	keV = spec.B8_spectrum(eMin, eMax);
 	break;
       case AmBe: //for ZEPLIN-III FSR from HA (Pal '98)
-	keV = AmBe_spectrum(eMin, eMax, n);
+	keV = spec.AmBe_spectrum(eMin, eMax);
 	break;
       case Cf:
-	keV = Cf_spectrum(eMin, eMax, n);
+	keV = spec.Cf_spectrum(eMin, eMax);
 	break;
       case DD:
-	keV = DD_spectrum(eMin, eMax, n);
+	keV = spec.DD_spectrum(eMin, eMax);
 	break;
       case WIMP:
 	{
-          keV = WIMP_spectrum(wimp_spectrum_prep, atof(argv[3]), n);
+          keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, atof(argv[3]));
 	}
 	break;
       default:
-	keV = eMin + (eMax - eMin) * n.rand_uniform();
+	keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
 	break;
       }
     }
@@ -176,9 +178,9 @@ int main ( int argc, char** argv ) {
     
   Z_NEW:
     if ( atof(argv[6]) == -1. ) { // -1 means default, random location mode
-      pos_z = 0. + ( detector->get_TopDrift() - 0. ) * n.rand_uniform(); // initial guess
-      r = detector->get_radius() * sqrt ( n.rand_uniform() );
-      phi = 2.*M_PI*n.rand_uniform();
+      pos_z = 0. + ( detector->get_TopDrift() - 0. ) * RandomGen::rndm()->rand_uniform(); // initial guess
+      r = detector->get_radius() * sqrt ( RandomGen::rndm()->rand_uniform() );
+      phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
       pos_x = r * cos(phi); pos_y = r * sin(phi);
     }
     else {
@@ -194,10 +196,10 @@ int main ( int argc, char** argv ) {
       }
       pos_z = stof(position);
       if ( stof(position) == -1. )
-	pos_z = 0. + ( detector->get_TopDrift() - 0. ) * n.rand_uniform();
+	pos_z = 0. + ( detector->get_TopDrift() - 0. ) * RandomGen::rndm()->rand_uniform();
       if ( stof(token) == -999. ) {
-	r = detector->get_radius() * sqrt ( n.rand_uniform() );
-	phi = 2.*M_PI*n.rand_uniform();
+	r = detector->get_radius() * sqrt ( RandomGen::rndm()->rand_uniform() );
+	phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
 	pos_x = r * cos(phi); pos_y = r * sin(phi); }
     }
     

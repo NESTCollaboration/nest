@@ -8,22 +8,68 @@ Installation Instructions:
 3. make; make install
 
 
-Settings Files:
+Creating Detectors:
 
-Two header files are needed in the main directory to be included in the NEST code:
-  1) detector.hh -- for specifying detector parameters
-  2) analysis.hh -- for specifying output style/analysis parameters
-		- MCtruthE: whether true energy or "reconstructed"/statistically measured energy is expressed
-		- MCtruthPos: whether true position or "reconstructed"/statistically fluctuated positions are expressed
-		- useTiming: photon arrival times + pulse shapes used
-		- usePE: whether pulse areas are given in pe, phd, or spike count.
-		- useS2: whether bands are expressed in log(S2/S1) or log(S2)
-		- min/maxS1, numBins: controls S1 analysis threshold cut and binning
-		- min/maxS2: S2 analysis threshold cut
-		- z_step: mm steps for integrating non-uniform field
-		- E_step: keV steps for integrating WIMP spectrum
+The "Detectors" folder contains a number of header files:
+	- VDetector.hh
+	- DetectorExample_XENON10.hh
 
-NOTE: Make sure to recompile after changing analysis or detector settings!
+"VDetector.hh" is a virtual detector class that serves as the base class for building noble element detectors.
+The implementation file, "VDetector.cpp" which lives in the main directory, contains some of the associated member functions.
+These VDetector files should not be edited (except by developers), as they serve as a default inherited class.
+
+"DetectorExample_XENON10.hh" is the default example detector file, which serves as a template for users to create their own detector. 
+To create a detector, one can do (within the Detectors/ folder):
+	
+	cp DetectorExample_XENON10.hh MyDetector.hh
+
+Then, one can edit the parameters/functions in MyDetector.hh as desired.
+One would start by replacing every instance of "DetectorExample_XENON10" with "MyDetector":
+
+	e.g. 
+	
+	// DetectorExample_XENON10.hh
+	--> // MyDetector.hh
+
+	#ifndef DetectorExample_XENON10_hh
+	--> #ifndef MyDetector_hh
+
+	etc.
+
+Once MyDetector.hh is edited, one should edit "testNEST.cpp" in the following way:
+
+	#include "Detectors/DetectorExample_XENON10.hh"
+	--> #include "Detectors/MyDetector.hh"
+
+	DetectorExample_XENON10* detector = new DetectorExample_XENON10();
+	--> MyDetector* detector = new MyDetector();
+
+Assuming of course that MyDetector.hh contains a class constructor for the class "MyDetector",
+this loads the header file and creates a MyDetector object for manipulation.
+
+Then, in testNEST.cpp (or in whatever implementation links the NEST class), one can access various member variables using the 
+"get_" functions contained in VDetector.cpp (since the MyDetector class inherits all VDetector members):
+
+	e.g. double g1 = detector->get_g1();
+	e.g. double temperature = detector->get_T_Kelvin();
+
+NOTE: Make sure to recompile after changing detector settings!
+
+
+Analysis Settings:
+
+analysis.hh -- for specifying output style/analysis parameters
+	- MCtruthE: whether true energy or "reconstructed"/statistically measured energy is expressed
+	- MCtruthPos: whether true position or "reconstructed"/statistically fluctuated positions are expressed
+	- useTiming: photon arrival times + pulse shapes used
+	- usePE: whether pulse areas are given in pe, phd, or spike count.
+	- useS2: whether bands are expressed in log(S2/S1) or log(S2)
+	- min/maxS1, numBins: controls S1 analysis threshold cut and binning
+	- min/maxS2: S2 analysis threshold cut
+	- z_step: mm steps for integrating non-uniform field
+	- E_step: keV steps for integrating WIMP spectrum
+
+NOTE: Make sure to recompile after changing analysis settings!
 
 How to calculate g2 from the detector parameters:
   ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645 = -0.03754*pow(E_gas/1.848,2.)+0.52660*(E_gas/1.848)-0.84645
@@ -39,7 +85,7 @@ This program takes 6 (or 7) inputs, with Z position in mm from bottom of detecto
 
 For 8B or WIMPs, numEvts is kg-days of exposure:
 	./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
- 
+
 For cosmic-ray muons or other similar particles with elongated track lengths:
 	./testNEST numEvts {MIP} LET[MeV*cm^2/gram] step_size[cm] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 

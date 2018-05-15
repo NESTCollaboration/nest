@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+set(CMAKE_MACOSX_RPATH 1)
 project(NEST)
 
 option(G4 "Build integration with Geant4" OFF)

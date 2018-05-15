@@ -327,7 +327,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   double pulseArea = 0., spike = 0., prob;
   
   // If single photo-electron efficiency is under 1 and the threshold is above 0 (some phe will be below threshold)
-  if ( fdetector->get_sPEthr() > 0. && nHits < fdetector->get_numPMTs() ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
+	if ( fdetector->get_sPEthr() > 0. && nHits < fdetector->get_numPMTs() ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area

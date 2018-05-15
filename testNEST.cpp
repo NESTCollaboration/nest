@@ -34,7 +34,7 @@ int main ( int argc, char** argv ) {
   // Instantiate your own VDetector class here, then load into NEST class constructor
 	DetectorExample_XENON10* detector = new DetectorExample_XENON10();
 	NEST::NESTcalc n(detector);
-	
+
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
   string position, delimiter, token; size_t loc;
   double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;

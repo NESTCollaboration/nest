@@ -21,6 +21,7 @@ class VDetector {
 		virtual void Initialization();
 		virtual void SetTime(double timestamp) { }
 
+		// "Get Functions"
 		// Primary Scintillation (S1) parameters
 		double get_g1(){return g1;}
 		double get_sPEres(){return sPEres;}
@@ -58,8 +59,45 @@ class VDetector {
 		double get_PosResExp(){return PosResExp;}
 		double get_PosResBase(){return PosResBase;}
 
-		// Functions for setting parameters which are NEST-tuned
-		void set_inGas(bool InGasPhase) { inGas = InGasPhase; }
+
+		// "Set Functions"
+		// Primary Scintillation (S1) parameters
+		void set_g1(double param){ g1 = param; }
+		void set_sPEres(double param){ sPEres = param; }
+		void set_sPEthr(double param){ sPEthr = param; }
+		void set_sPEeff(double param){ sPEeff = param; }
+		void set_noise(double p1, double p2){ noise[0] = p1; noise[1] = p2; }
+		void set_P_dphe(double param){ P_dphe = param; }
+
+		void set_coinLevel(int param){ coinLevel = param; }
+		void set_numPMTs(int param){ numPMTs = param; }
+
+		// Ionization and Secondary Scintillation (S2) parameters
+		void set_g1_gas(double param){ g1_gas = param; }
+		void set_s2Fano(double param){ s2Fano = param; }
+		void set_s2_thr(double param){ s2_thr = param; }
+		void set_S2botTotRatio(double param){ S2botTotRatio = param; }
+		void set_E_gas(double param){ E_gas = param; }
+		void set_eLife_us(double param){ eLife_us = param; }
+
+		// Thermodynamic Properties
+		void set_inGas(bool param) { inGas = param; }
+		void set_T_Kelvin(double param){ T_Kelvin = param; }
+		void set_p_bar(double param){ p_bar = param; }
+
+		// Data Analysis Parameters and Geometry
+		void set_dtCntr(double param){ dtCntr = param; }
+		void set_dt_min(double param){ dt_min = param; }
+		void set_dt_max(double param){ dt_max = param; }
+		void set_radius(double param){ radius = param; }
+		void set_TopDrift(double param){ TopDrift = param; }
+		void set_anode(double param){ anode = param; }
+		void set_gate(double param){ gate = param; }
+
+		// 2-D (X & Y) Position Reconstruction
+		void set_PosResExp(double param){ PosResExp = param; }
+		void set_PosResBase(double param){ PosResBase = param; }
+
 
 		//S1 PDE custom fit for function of z
 		//s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.

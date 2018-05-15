@@ -107,7 +107,8 @@ private:
 
 	// Parameter modification functions
 	void Modify_g1(double timestamp) {
-		g1 = 0.0760;
+		// if timestamp falls in certain range...
+		set_g1(0.0760);
 	}
 
 };

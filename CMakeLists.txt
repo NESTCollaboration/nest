@@ -41,18 +41,25 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
 add_library(NEST SHARED NEST.cpp NEST.hh RandomGen.cpp RandomGen.hh TestSpectra.cpp TestSpectra.hh VDetector.cpp ${headers})
 set_target_properties(NEST PROPERTIES PUBLIC_HEADER "NEST.hh;${headers}")
 
+install(TARGETS NEST
+  # IMPORTANT: Add the library to the "export-set"
+	EXPORT NESTTargets
+	LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+	PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
+
 if(G4)
     find_package(Geant4 REQUIRED)
     include_directories(${Geant4_INCLUDE_DIR})
     file(GLOB g4code ${PROJECT_SOURCE_DIR}/G4integration/*)
     add_library(NEST_G4 SHARED ${g4code})
+    install(TARGETS NEST_G4
+        # IMPORTANT: Add the foo library to the "export-set"
+        EXPORT NESTTargets_G4
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+        PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
+    install(EXPORT NESTTargets_G4 DESTINATION
+        "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 endif()
-
-install(TARGETS NEST
-  # IMPORTANT: Add the foo library to the "export-set"
-  EXPORT NESTTargets
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-  PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
 
 add_executable(testNEST testNEST.cpp)
 target_link_libraries(testNEST NEST)

@@ -632,7 +632,6 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, double zStep 
       }
       else
 	driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->FitEF(0., 0., zz));
-      
     }
     
     speedTable.push_back ( ( zz - pos_z ) / driftTime ); //uses highest zz

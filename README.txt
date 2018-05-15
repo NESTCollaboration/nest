@@ -93,4 +93,6 @@ NOTES:
 	- If you want to use the default drift field from detector settings, put -1 as the argument for field_drift.
 	- If you want to randomly distribute events in space, rather than specify a point source, put -1 as the argument for x,y,z.
 
-
+	- If you want to use the ROOT tools provided (and have ROOT installed already on your machine of course!) then to compile
+	g++ -g -Wno-deprecated-declarations -Ofast -o rootNEST `root-config --cflags --libs` rootNEST.cpp
+	Wno-... flag is optional, gets rid of annoying warning that's ROOT's fault not you. Ofast optional too, for speed. Might be -O3 on your machine.

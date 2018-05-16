@@ -34,7 +34,7 @@ int main ( int argc, char** argv ) {
   // Instantiate your own VDetector class here, then load into NEST class constructor
 	DetectorExample_XENON10* detector = new DetectorExample_XENON10();
 	
-	// Example of detector modifications (example changes nothing)
+	// Custom parameter modification functions
 	detector->SetTime(1.);
 
 	// Construct NEST class using detector object

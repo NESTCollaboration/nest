@@ -436,15 +436,15 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   }
   long Nph = long(floor(RandomGen::rndm()->rand_gauss(elYield*double(Nee),
 				   sqrt(fdetector->get_s2Fano()*elYield*double(Nee)))+0.5));
-  long nHits = BinomFluct(Nph,fdetector->get_g1_gas());
+  long nHits = BinomFluct(Nph,fdetector->get_g1_gas()*posDep);
   long Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe());
   double pulseArea=RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
-  double pulseAreaC= pulseArea/exp(-dt/fdetector->get_eLife_us());
+  double pulseAreaC= pulseArea/exp(-dt/fdetector->get_eLife_us()) / posDep;
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
   
   double S2b = RandomGen::rndm()->rand_gauss(fdetector->get_S2botTotRatio()*pulseArea,sqrt(fdetector->get_S2botTotRatio()*pulseArea*(1.-fdetector->get_S2botTotRatio())));
-  double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()); // for detectors using S2 bottom-only in their analyses
+  double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()) / posDep; // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; ionization[1] = Nph; //integer number of electrons unabsorbed in liquid then getting extracted, followed by raw number of photons produced in the gas gap
   ionization[2] = nHits; ionization[3] = Nphe; //identical definitions to GetS1 follow, see above, except no spike, as S2 too big generally. S2 has more steps than S1 (e's 1st)
@@ -493,7 +493,7 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
   vector<double> newSpike(2);
   
   if ( oldScint[7] > 70. ) {
-    newSpike[0] = oldScint[6]; newSpike[1] = oldScint[7];
+    newSpike[0] = oldScint[4]; newSpike[1] = oldScint[5];
     return newSpike;
   }
   newSpike[0] = fabs(oldScint[6]);
@@ -583,7 +583,10 @@ double NESTcalc::SetDriftVelocity ( double Kelvin, double Density, double eField
     speed = slope * ( Kelvin - Ti ) + vi;
   }
   
-  if ( speed <= 0. ) { cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n"; }
+  if ( speed <= 0. ) {
+    if ( eField < 1e2 ) cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n";
+    if ( eField > 1e4 ) cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO HIGH\n";
+  }
   return speed;
   
 }

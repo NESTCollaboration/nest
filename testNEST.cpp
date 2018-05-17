@@ -42,7 +42,8 @@ int main ( int argc, char** argv ) {
 
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
   string position, delimiter, token; size_t loc;
-  double pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
+  double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
+  NEST::YieldResult yieldsMax;
   
   if (argc < 7)
     {
@@ -136,14 +137,22 @@ int main ( int argc, char** argv ) {
   
   if (argc >= 8) RandomGen::rndm()->SetSeed(atoi(argv[7]));
   
-  if ( type_num != WIMP && type_num != B8 ) {
-    NEST::YieldResult yieldsMax = n.GetYields(type_num, eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
-					      double(massNum), double(atomNum), NuisParam);
-    if ( (0.1*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
-      cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
+  if ( type_num == WIMP ) {
+    yieldsMax = n.GetYields(      NR, 25.0, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+				  double(massNum), double(atomNum), NuisParam);
   }
+  else if ( type_num == B8 ) {
+    yieldsMax = n.GetYields(      NR, 4.00, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+				  double(massNum), double(atomNum), NuisParam);
+  }
+  else {
+    yieldsMax = n.GetYields(type_num, eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+			    double(massNum), double(atomNum), NuisParam);
+  }
+  if ( (detector->get_g1()*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
+    cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   
-  double keV = -999;
+  double keV = -999.;
   for (unsigned long int j = 0; j < numEvts; j++) {
     
     if (eMin == eMax) {
@@ -215,6 +224,8 @@ int main ( int argc, char** argv ) {
     
     if ( field <= 0. )
       cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
+    if ( field > 12.e3 )
+      cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are you sure about this?\n";
     
     if ( atof(argv[5]) == -1. ) {
       //for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
@@ -231,6 +242,15 @@ int main ( int argc, char** argv ) {
       goto Z_NEW;
     if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
+    
+    if ( pos_z <= 0. ) {
+      cerr << "ERROR: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
+      return 0;
+    }
+    if ( pos_z >= detector->get_TopDrift() ) {
+      cerr << "ERROR: unphysically big Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
+      return 0;
+    }
     
     NEST::YieldResult yields; NEST::QuantaResult quanta;
     double zStep = eMax;
@@ -271,15 +291,16 @@ int main ( int argc, char** argv ) {
     else if ( usePE >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )
       signal2.push_back(scint2[7]); //no spike option for S2
     else signal2.push_back(0.);
-    
+
+    g2 = fabs(scint2[8]);
     if ( !MCtruthE ) {
-      double Nph, g1 = fabs(scint[8]), Ne, g2 = fabs(scint2[8]);
+      double Nph, g1 = detector->get_g1(), Ne;
       if ( usePE == 0 )
-	Nph= fabs(scint[3]) / (g1*fabs(scint[3]/scint[5]));
+	Nph= fabs(scint[3]) / (g1*(1.+detector->get_P_dphe()));
       else if ( usePE == 1 ) Nph = fabs(scint[5]) / g1;
       else Nph = fabs(scint[7]) / g1;
       if ( usePE == 0 )
-	Ne = fabs(scint2[5]) / (g2*fabs(scint2[5]/scint2[7]));
+	Ne = fabs(scint2[5]) / (g2*(1.+detector->get_P_dphe()));
       else Ne = fabs(scint2[7]) / g2;
       if ( signal1.back() <= 0. )
 	Nph= 0.;
@@ -306,7 +327,9 @@ int main ( int argc, char** argv ) {
     if ( 1 ) { //fabs(scint[7]) > DBL_MIN && fabs(scint2[7]) > DBL_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
-      if ( keV > 1000. ) { //switch to exponential notation to make output more readable, if energy is too high (>1 MeV)
+      if ( keV > 1000. || signal1.back() > maxS1 || signal2.back() > maxS2 ||
+	   //switch to exponential notation to make output more readable, if energy is too high (>1 MeV)
+	   type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
 	printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
 	printf("%li\t%e\t%e\n", (long)scint2[0], scint2[4], scint2[7]);
       }
@@ -328,7 +351,13 @@ int main ( int argc, char** argv ) {
       fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3],band[j][5]*100.);
       if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 || band[j][4] <= 0.0 || band[j][5] <= 0.0 ||
            std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) || std::isnan(band[j][4]) || std::isnan(band[j][5]) )
-	{ if ( eMax != -999. ) cerr << "WARNING: Insufficient number of high-energy events to populate highest bins is likely.\n"; eMax = -999.; }
+	{ if ( eMax != -999. ) {
+	    if( ( (detector->get_g1()*yieldsMax.PhotonYield) < maxS1 || (g2*yieldsMax.ElectronYield) < maxS2 ) && j != 0)
+	      cerr << "WARNING: Insufficient number of high-energy events to populate highest bins is likely.\n";
+	    else
+	      cerr << "WARNING: Insufficient number of low-energy events to populate lowest bins is likely. Increase minS1 and/or minS2.\n";
+	  }
+	  eMax = -999.; }
     }
   }
   else {
@@ -361,7 +390,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
 				 vector<double> S2s, bool resol ) {
   
   vector<vector<double>> signals;
-  signals.resize(200,vector<double>(1,-999.));
+  signals.resize(numBins,vector<double>(1,-999.));
   double binWidth, border;
   if ( useS2 == 2 ) {
     binWidth = ( maxS2 - minS2 ) / double(numBins);

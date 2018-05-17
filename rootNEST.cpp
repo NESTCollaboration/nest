@@ -234,7 +234,7 @@ vector< vector<double> > GetBand ( vector<double> S1s,
   
   vector< vector<double> > signals;
   bool save = resol; resol = false;
-  signals.resize(NUMBINS_MAX,vector<double>(1,-999.));
+  signals.resize(numBins,vector<double>(1,-999.));
   double binWidth, border;
   if ( useS2 == 2 ) {
     binWidth = ( maxS2 - minS2 ) / double(numBins);

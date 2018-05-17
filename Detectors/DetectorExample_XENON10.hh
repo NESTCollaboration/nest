@@ -94,7 +94,7 @@ public:
 	//S2 PDE custom fit for function of r
 	//s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
 	virtual double FitS2 ( double xPos_mm, double yPos_mm ) {
-		return 1.; // unitless, 1.000 at detector center
+	        return 1.; // unitless, 1.000 at detector center
 	}
 	
 	// Vary parameters as necessary based on the timestamp of the event, or any other

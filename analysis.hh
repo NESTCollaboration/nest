@@ -6,7 +6,7 @@ bool MCtruthPos=true; //false means reconstructed position
 bool useTiming = false; //photon arrival times + pulse shapes
 
 //0 means PE, 1 means phd (PE/~1.2), 2 means spike count
-int usePE = 0;
+int usePD = 0;
 //band style: log(S2) with 1, while 0 means log(S2/S1)
 int useS2 = 0; // xtra feature: 2 means S2 x-axis energy scale
 

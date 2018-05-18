@@ -35,7 +35,7 @@ int main ( int argc, char** argv ) {
 	DetectorExample_XENON10* detector = new DetectorExample_XENON10();
 	
 	// Custom parameter modification functions
-	detector->SetTime(1.);
+	//detector->SetTime(1.);
 
 	// Construct NEST class using detector object
 	NEST::NESTcalc n(detector);
@@ -243,11 +243,12 @@ int main ( int argc, char** argv ) {
     if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     
+    // The following should never happen: this is simply a just-in-case code-block dealing with user error
     if ( pos_z <= 0. ) {
       cerr << "ERROR: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }
-    if ( pos_z >= detector->get_TopDrift() ) {
+    if ( pos_z >= detector->get_TopDrift() || driftTime <= 0.0 ) {
       cerr << "ERROR: unphysically big Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }
@@ -277,29 +278,29 @@ int main ( int argc, char** argv ) {
     
     vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,
 				   vD,vD_middle,type_num);
-    if ( usePE == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
+    if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
-    else if ( usePE == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
+    else if ( usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
       signal1.push_back(scint[5]);
-    else if ( usePE >= 2 && fabs(scint[7]) > minS1 && scint[7] < maxS1 )
+    else if ( usePD >= 2 && fabs(scint[7]) > minS1 && scint[7] < maxS1 )
       signal1.push_back(scint[7]);
-    else signal1.push_back(0.);
+    else signal1.push_back(-999.);
     
     vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD);
-    if ( usePE == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
+    if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
-    else if ( usePE >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )
+    else if ( usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )
       signal2.push_back(scint2[7]); //no spike option for S2
-    else signal2.push_back(0.);
+    else signal2.push_back(-999.);
 
     g2 = fabs(scint2[8]);
     if ( !MCtruthE ) {
       double Nph, g1 = detector->get_g1(), Ne;
-      if ( usePE == 0 )
+      if ( usePD == 0 )
 	Nph= fabs(scint[3]) / (g1*(1.+detector->get_P_dphe()));
-      else if ( usePE == 1 ) Nph = fabs(scint[5]) / g1;
+      else if ( usePD == 1 ) Nph = fabs(scint[5]) / g1;
       else Nph = fabs(scint[7]) / g1;
-      if ( usePE == 0 )
+      if ( usePD == 0 )
 	Ne = fabs(scint2[5]) / (g2*(1.+detector->get_P_dphe()));
       else Ne = fabs(scint2[7]) / g2;
       if ( signal1.back() <= 0. )
@@ -318,16 +319,16 @@ int main ( int argc, char** argv ) {
     else
       signalE.push_back(keV);
     
-    if ( !MCtruthPos && fabs(scint2[6]) > DBL_MIN ) {
+    if ( !MCtruthPos && fabs(scint2[6]) > PHE_MIN ) {
       vector<double> xySmeared(2); xySmeared = n.xyResolution ( pos_x, pos_y, fabs(scint2[6]) );
       pos_x = xySmeared[0];
       pos_y = xySmeared[1];
     }
     
-    if ( 1 ) { //fabs(scint[7]) > DBL_MIN && fabs(scint2[7]) > DBL_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
+    if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
-      if ( keV > 1000. || signal1.back() > maxS1 || signal2.back() > maxS2 ||
+      if ( keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||
 	   //switch to exponential notation to make output more readable, if energy is too high (>1 MeV)
 	   type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
 	printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
@@ -412,7 +413,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     for ( j = 0; j < numBins; j++ ) {
       s1c = border + binWidth/2. + double(j) * binWidth;
       if ( i == 0 && !resol ) band[j][0] = s1c;
-      if ( fabs(S1s[i]) > (s1c-binWidth/2.) && fabs(S1s[i]) < (s1c+binWidth/2.) ) {
+      if ( fabs(S1s[i]) > (s1c-binWidth/2.) && fabs(S1s[i]) <= (s1c+binWidth/2.) ) {
 	if ( S1s[i] >= 0. && S2s[i] >= 0. ) {
 	  if ( resol ) {
 	    signals[j].push_back(S2s[i]);

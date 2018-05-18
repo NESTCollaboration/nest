@@ -15,7 +15,7 @@
 #define NEST_AVO 6.0221409e+23
 #define ATOM_NUM 54.
 #define MOLAR_MASS 131.293
-
+#define PHE_MIN 1e-6
 
 namespace NEST {
   

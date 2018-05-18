@@ -395,14 +395,14 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   if ( RandomGen::rndm()->rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
   else { // some of these are set to -1 to flag them as having been below threshold
-    scintillation[0] *= -1.; if ( scintillation[0] == 0. ) scintillation[0] = -DBL_MIN;
-    scintillation[1] *= -1.; if ( scintillation[1] == 0. ) scintillation[1] = -DBL_MIN;
-    scintillation[2] *= -1.; if ( scintillation[2] == 0. ) scintillation[2] = -DBL_MIN;
-    scintillation[3] *= -1.; if ( scintillation[3] == 0. ) scintillation[3] = -DBL_MIN;
-    scintillation[4] *= -1.; if ( scintillation[4] == 0. ) scintillation[4] = -DBL_MIN;
-    scintillation[5] *= -1.; if ( scintillation[5] == 0. ) scintillation[5] = -DBL_MIN;
-    scintillation[6] *= -1.; if ( scintillation[6] == 0. ) scintillation[6] = -DBL_MIN;
-    scintillation[7] *= -1.; if ( scintillation[7] == 0. ) scintillation[7] = -DBL_MIN;
+    if ( scintillation[0] == 0. ) scintillation[0] = PHE_MIN; scintillation[0] *= -1.;
+    if ( scintillation[1] == 0. ) scintillation[1] = PHE_MIN; scintillation[1] *= -1.;
+    if ( scintillation[2] == 0. ) scintillation[2] = PHE_MIN; scintillation[2] *= -1.;
+    if ( scintillation[3] == 0. ) scintillation[3] = PHE_MIN; scintillation[3] *= -1.;
+    if ( scintillation[4] == 0. ) scintillation[4] = PHE_MIN; scintillation[4] *= -1.;
+    if ( scintillation[5] == 0. ) scintillation[5] = PHE_MIN; scintillation[5] *= -1.;
+    if ( scintillation[6] == 0. ) scintillation[6] = PHE_MIN; scintillation[6] *= -1.;
+    if ( scintillation[7] == 0. ) scintillation[7] = PHE_MIN; scintillation[7] *= -1.;
   }
   
   scintillation[8] = fdetector->get_g1();
@@ -457,7 +457,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     ionization[6] = S2b / (1.+fdetector->get_P_dphe()); ionization[7] = S2bc / (1.+fdetector->get_P_dphe());
   }
   
-  if(pulseArea<fabs(fdetector->get_s2_thr())) for(int i=0;i<8;i++) { ionization[i]*=-1.; if(ionization[i]==0.)ionization[i]=-DBL_MIN; }
+  if(pulseArea<fabs(fdetector->get_s2_thr())) for(int i=0;i<8;i++) { if(ionization[i]==0.)ionization[i]=PHE_MIN; ionization[i]*=-1.; }
   
   double SE = elYield* fdetector->get_g1_gas();
   double g2 = ExtEff * SE;

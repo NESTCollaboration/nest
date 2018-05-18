@@ -139,7 +139,7 @@ void GetFile ( char* fileName ) {
   
   FILE *ifp = fopen(fileName,"r");
   double a,b,c,d,e,f,g,h,i,j,k,l,m,n;
-  int ch, nLines;
+  int ch, nLines, o;
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne, S1cor_phe, S2cor_phe,
     S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr, S2raw_phe, S2cor_phd;
   
@@ -164,41 +164,41 @@ void GetFile ( char* fileName ) {
     Nph.push_back(g);
     Ne.push_back(h);
     S1raw_phe.push_back(i);
-    if ( usePE <= 0 &&
+    if ( usePD <= 0 &&
 	 fabs(j*1.2) > minS1 && (j*1.2) < maxS1 ) {
       S1cor_phe.push_back(j*1.2); // here and down below for S2: FIX THIS by getting P_dphe (USUALLY ~0.2) from detector class
       S1cor_phd.push_back(0);
       S1cor_spike.push_back(0);
     }
-    else if ( usePE == 1 && fabs(j) > minS1 && j < maxS1 ) {
+    else if ( usePD == 1 && fabs(j) > minS1 && j < maxS1 ) {
       S1cor_phe.push_back(0);
       S1cor_phd.push_back(j);
       S1cor_spike.push_back(0);
     }
-    else if ( usePE >= 2 && fabs(k) > minS1 && k < maxS1 ) {
+    else if ( usePD >= 2 && fabs(k) > minS1 && k < maxS1 ) {
       S1cor_phe.push_back(0);
       S1cor_phd.push_back(0);
       S1cor_spike.push_back(k);
     }
     else {
-      S1cor_phe.push_back(0);
-      S1cor_phd.push_back(0);
-      S1cor_spike.push_back(0);
+      S1cor_phe.push_back(-999.);
+      S1cor_phd.push_back(-999.);
+      S1cor_spike.push_back(-999.);
     }
     Ne_Extr.push_back(l);
     S2raw_phe.push_back(m);
-    if ( usePE <= 0 &&
+    if ( usePD <= 0 &&
 	 fabs(n*1.2) > minS2 && (n*1.2) < maxS2 ) {
       S2cor_phe.push_back(n*1.2);
       S2cor_phd.push_back(0);
     }
-    else if ( usePE >= 1 && fabs(n) > minS2 && n < maxS2 ) {
+    else if ( usePD >= 1 && fabs(n) > minS2 && n < maxS2 ) {
       S2cor_phe.push_back(0);
       S2cor_phd.push_back(n);
     }
     else {
-      S2cor_phe.push_back(0);
-      S2cor_phd.push_back(0);
+      S2cor_phe.push_back(-999.);
+      S2cor_phd.push_back(-999.);
     }
   }
   
@@ -206,21 +206,30 @@ void GetFile ( char* fileName ) {
   
   inputs.resize(numBins,vector<double>(1,-999.));
   outputs.resize(numBins,vector<double>(1,-999.));
-  if ( usePE <= 0 ) {
+  if ( usePD <= 0 ) {
     inputs = GetBand ( S1cor_phe, S2cor_phe, true );
+    for ( o = 0; o < numBins; o++ ) {
+    band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
+    }
     outputs = GetBand_Gaussian ( GetBand ( S1cor_phe, S2cor_phe, false ) );
   }
-  else if ( usePE == 1 ) {
+  else if ( usePD == 1 ) {
     inputs = GetBand ( S1cor_phd, S2cor_phd, true );
+    for ( o = 0; o < numBins; o++ ) {
+    band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
+    }
     outputs = GetBand_Gaussian ( GetBand ( S1cor_phd, S2cor_phd, false ) );
   }
   else {
     inputs = GetBand(S1cor_spike, S2cor_phd, true );
+    for ( o = 0; o < numBins; o++ ) {
+    band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
+    }
     outputs = GetBand_Gaussian ( GetBand(S1cor_spike, S2cor_phd, false ) );
   }
   //fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
   fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\tSig Error\tX^2/DOF\n");
-  for ( int o = 0; o < numBins; o++ ) {
+  for ( o = 0; o < numBins; o++ ) {
     //fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
     fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5],band[o][6]);
   }
@@ -254,20 +263,13 @@ vector< vector<double> > GetBand ( vector<double> S1s,
   
   for ( i = 0; i < S1s.size(); i++ ) {
     for ( j = 0; j < numBins; j++ ) {
-      if ( !i ) band[j][0] = 0.;
-      if ( !i ) band[j][1] = 0.;
-      if ( !i ) band[j][2] = 0.;
-      if ( !i ) band[j][3] = 0.;
-      if ( !i ) band[j][4] = 0.;
-      if ( !i ) band[j][5] = 0.;
-      if ( !i ) band[j][6] = 0.;
       s1c = border + binWidth/2. + double(j) * binWidth;
       if ( i == 0 && !resol ) band[j][0] = s1c;
       if ( (S1s[i] == 0. || S2s[i] == 0.) && j == 0 ) reject[j]++;
-      if ( fabs(S1s[i]) > (s1c-binWidth/2.) && fabs(S1s[i]) < (s1c+binWidth/2.) ) {
+      if ( fabs(S1s[i]) > (s1c-binWidth/2.) && fabs(S1s[i]) <= (s1c+binWidth/2.) ) {
         if ( S1s[i] >= 0. && S2s[i] >= 0. ) {
           if ( save ) {
-            signals[j].push_back(S1s[i]);
+	    signals[j].push_back(S1s[i]); continue;
           }
           else {
             if ( useS2 == 0 )
@@ -281,10 +283,10 @@ vector< vector<double> > GetBand ( vector<double> S1s,
           if ( resol )
             band[j][0] += S1s[i];
           else
-            band[j][1] += S1s[i];
-        }
-        else
-          reject[j]++;
+	    band[j][1] += S1s[i];
+	}
+	else
+	  reject[j]++;
         break; }
     }
   }

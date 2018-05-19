@@ -68,7 +68,7 @@ NESTProc<T>::~NESTProc(){} //destructor needed to avoid linker error
 
 
 
-G4Track* MakePhoton(NEST::Hit hit, bool exciton) {
+G4Track* MakePhoton(G4ThreeVector xyz, double t) {
     // Determine polarization of new photon
     G4ParticleMomentum photonMomentum(G4RandomDirection());
     G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
@@ -84,60 +84,49 @@ G4Track* MakePhoton(NEST::Hit hit, bool exciton) {
             photonPolarization.z());
     aQuantum->SetKineticEnergy(sampledEnergy);
     //calculate time
-    
-    double tau1 = G4RandGauss::shoot(3.1*ns,.7*ns); //err from wgted avg.
-    double tau3 = G4RandGauss::shoot(24.*ns,1.*ns); //ibid.
-    //these singlet and triplet times may not be the ones you're
-    //used to, but are the world average: Kubota 79, Hitachi 83 (2
-    //data sets), Teymourian 11, Morikawa 89, and Akimov '02
-    G4double aSecondaryTime = hit.t;
-    double SingTripRatioX, SingTripRatioR;
-    
-    
-    G4ThreeVector pos(0,0,0);
-    return new G4Track(aQuantum,aSecondaryTime,pos);
+
+    return new G4Track(aQuantum,t,xyz);
     
 }
-
-
 
 template<class T>
 G4VParticleChange*
 NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
 {
-    aParticleChange.Initialize(aTrack);
-    //ready to pop out OP and TE?
-    if(NESTStackingAction::theStackingAction->isUrgentEmpty()
-            && aStep.GetSecondary()->empty()){
-    
-    for(auto lineage : lineages){
-      double etot = std::accumulate(lineage.hits.begin(),lineage.hits.end(),0., [](double a, Hit b){return a+b.E;});
-      NESTresult result = fNESTcalc->FullCalculation(lineage.type,etot,lineage.density,efield,lineage.A,lineage.Z,std::vector<double>{1,1});
-      for (auto hit: lineage.hits){
-        int nPhotons = hit.E * result.quanta.photons / etot;
-        for (int i=0; i<nPhotons; i++){
-          
-        }
-      }
-    }          
-    
-//        for (auto vertex : merged_steps){       
-//            auto result = fNESTcalc->FullCalculation(vertex.getSpecies(),vertex.getEnergy(),vertex.getDensity(),Efield);
-//            
-//            for(auto time : result.photon_times){
-//                G4Track* onePhoton = MakePhoton(vertex,time);
-//                aParticleChange.AddSecondary(onePhoton);
-//            }
-//            for(int ie =0; ie<result.quanta.electrons; ++ie){
-//                G4ThreeVector pos(vertex.getPos()[0],vertex.getPos()[1],vertex.getPos()[2]);
-//
-//            }
+  aParticleChange.Initialize(aTrack);
+  //ready to pop out OP and TE?
+  if (NESTStackingAction::theStackingAction->isUrgentEmpty()
+      && aStep.GetSecondary()->empty())
+  {
 
-//        }
-        lineages.clear();
+    for (auto lineage : lineages)
+    {
+      double etot = std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0., [](double a, Hit b){return a + b.E;});
+      NESTresult result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z, std::vector<double>{1, 1});
+      auto photontimes = result.photon_times.begin();
+      double ecum=0;
+      double ecum_p=0;
+      const double e_p = etot / result.quanta.photons;
+      for (auto hit : lineage.hits)
+      {
+        ecum+= hit.E;
+        while (ecum_p < ecum)
+        {
+          G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
+          aParticleChange.AddSecondary(onePhoton);
+          ecum_p+=e_p;
+          photontimes++;
+        }
+
+      }
+      assert(ecum == etot);
     }
-   return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep); 
-    
+  }
+
+  lineages.clear();
+
+  return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
+
 }
 
 template<class T>

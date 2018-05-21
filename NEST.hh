@@ -9,7 +9,7 @@
 #include <float.h>
 
 #include "RandomGen.hh"
-#include "VDetector.hh"
+#include "Detectors/VDetector.hh"
 
 #define W_DEFAULT 13.7
 #define NEST_AVO 6.0221409e+23

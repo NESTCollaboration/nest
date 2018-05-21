@@ -35,7 +35,7 @@ int main ( int argc, char** argv ) {
 	DetectorExample_XENON10* detector = new DetectorExample_XENON10();
 	
 	// Custom parameter modification functions
-	//detector->SetTime(1.);
+	//detector->ExampleFunction();
 
 	// Construct NEST class using detector object
 	NEST::NESTcalc n(detector);

@@ -34,7 +34,7 @@ public:
 	virtual void Initialization() {
 		
 		// Primary Scintillation (S1) parameters
-		g1 = 0.0760; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
+		g1 = 0.1; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
 		sPEres = 0.58; //single phe resolution (Gaussian assumed)
 		sPEthr = 0.35; //POD threshold in phe, usually used IN PLACE of sPEeff
 		sPEeff = 1.00; //actual efficiency, can be used in lieu of POD threshold
@@ -97,19 +97,11 @@ public:
 	        return 1.; // unitless, 1.000 at detector center
 	}
 	
-	// Vary parameters as necessary based on the timestamp of the event, or any other
-	// custom dependencies. Any protected parameters from VDetector can be modified here.
-	virtual void SetTime(double timestamp) {
-		Modify_g1(timestamp);
-	}
-
-private:
-
-	// Parameter modification functions
-	void Modify_g1(double timestamp) {
-		// if timestamp falls in certain range...
+	// Vary VDetector parameters through custom functions
+	virtual void ExampleFunction() {
 		set_g1(0.0760);
 	}
+
 
 };
 

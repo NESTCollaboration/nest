@@ -19,7 +19,7 @@ class VDetector {
 		VDetector();
 		virtual ~VDetector();
 		virtual void Initialization();
-		virtual void SetTime(double timestamp) { }
+		virtual void SetTime(unsigned int timestamp) { }
 
 		// "Get Functions"
 		// Primary Scintillation (S1) parameters
@@ -53,6 +53,7 @@ class VDetector {
 		double get_radius(){return radius;}
 		double get_TopDrift(){return TopDrift;}
 		double get_anode(){return anode;}
+                double get_cathode(){return cathode;}
 		double get_gate(){return gate;}
 
 		// 2-D (X & Y) Position Reconstruction
@@ -92,6 +93,7 @@ class VDetector {
 		void set_radius(double param){ radius = param; }
 		void set_TopDrift(double param){ TopDrift = param; }
 		void set_anode(double param){ anode = param; }
+                void set_cathode(double param){ cathode = param; }
 		void set_gate(double param){ gate = param; }
 
 		// 2-D (X & Y) Position Reconstruction
@@ -127,7 +129,7 @@ class VDetector {
 		double T_Kelvin, p_bar;
 
 		// Data Analysis Parameters and Geometry
-		double dtCntr, dt_min, dt_max, radius, TopDrift, anode, gate;
+                double dtCntr, dt_min, dt_max, radius, TopDrift, anode, cathode, gate;
 
 		// 2-D (X & Y) Position Reconstruction
 		double PosResExp, PosResBase;

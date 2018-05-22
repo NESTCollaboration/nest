@@ -83,7 +83,7 @@ Run Instructions:
 This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector:
 	./testNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 
-For 8B or WIMPs, numEvts is kg-days of exposure:
+For 8B, numEvts (integer) is replaced with kg-days of exposure (floating-point #) with all other input parameters the same (unchanged). For WIMPs:
 	./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 
 For cosmic-ray muons or other similar particles with elongated track lengths:

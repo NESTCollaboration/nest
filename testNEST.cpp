@@ -49,7 +49,7 @@ int main ( int argc, char** argv ) {
     {
       cout << "This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector:" << endl;
       cout << "\t./testNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
-      cout << "For 8B or WIMPs, numEvts is kg-days of exposure:" << endl;
+      cout << "For 8B, numEvts is kg-days of exposure with everything else same. For WIMPs:" << endl;
       cout << "\t./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
       cout << "For cosmic-ray muons or other similar particles with elongated track lengths:" << endl;
       cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] step_size[cm] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
@@ -114,7 +114,7 @@ int main ( int argc, char** argv ) {
   
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
-
+  
   double rho = n.SetDensity ( detector->get_T_Kelvin(), detector->get_p_bar() ); //cout.precision(12);
   if ( rho < 1. ) detector->set_inGas(true);
   
@@ -155,7 +155,7 @@ int main ( int argc, char** argv ) {
   double keV = -999.;
   for (unsigned long int j = 0; j < numEvts; j++) {
     
-    if (eMin == eMax) {
+    if (eMin == eMax && eMin >= 0. && eMax > 0. ) {
       keV = eMin;
     } else {
       switch (type_num) {
@@ -185,7 +185,7 @@ int main ( int argc, char** argv ) {
       }
     }
     
-    if ( type_num != WIMP ) {
+    if ( type_num != WIMP && type_num != B8 ) {
       if (keV > eMax) keV = eMax;
       if (keV < eMin) keV = eMin;
     }
@@ -286,6 +286,7 @@ int main ( int argc, char** argv ) {
       signal1.push_back(scint[7]);
     else signal1.push_back(-999.);
     
+    if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
     vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD);
     if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
@@ -328,6 +329,7 @@ int main ( int argc, char** argv ) {
     if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
+      if ( pos_z < detector->get_cathode() ) printf("g-X ");
       if ( keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||
 	   //switch to exponential notation to make output more readable, if energy is too high (>1 MeV)
 	   type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {

@@ -287,6 +287,8 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum ( double mass, d
       else
 	{
 	  spectrum.xMax = double(i - 1) / divisor;
+	  if ( spectrum.xMax <= 0.0 )
+	    cerr << "ERROR: The maximum possible WIMP recoil is negative, which usually means your E_step is too small." << endl;
 	  break;
 	}
     }

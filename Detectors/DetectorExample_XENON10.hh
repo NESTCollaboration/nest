@@ -34,7 +34,7 @@ public:
 	virtual void Initialization() {
 		
 		// Primary Scintillation (S1) parameters
-		g1 = 0.1; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
+		g1 = 0.0760; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
 		sPEres = 0.58; //single phe resolution (Gaussian assumed)
 		sPEthr = 0.35; //POD threshold in phe, usually used IN PLACE of sPEeff
 		sPEeff = 1.00; //actual efficiency, can be used in lieu of POD threshold
@@ -73,7 +73,8 @@ public:
 		//In a gas TPC, this is not TopDrift (top of drift region), but a few mm above it
 		gate = 147.5; //mm. This is where the E-field changes (higher)
 		// in gas detectors, the gate is still the gate, but it's where S2 starts
-
+		cathode = 1.00; //mm. Defines point below which events are gamma-X
+		
 		// 2-D (X & Y) Position Reconstruction
 		PosResExp = 0.015; // exp increase in pos recon res at hi r, 1/mm
 		PosResBase = 70.8364; // baseline unc in mm, see NEST.cpp for usage

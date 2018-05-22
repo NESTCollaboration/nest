@@ -63,7 +63,8 @@ void VDetector::Initialization() {
 	//In a gas TPC, this is not TopDrift (top of drift region), but a few mm above it
 	gate = 147.5; //mm. This is where the E-field changes (higher)
 	// in gas detectors, the gate is still the gate, but it's where S2 starts
-
+	cathode = 1.00; //mm. Defines point below which events are gamma-X
+	
 	// 2-D (X & Y) Position Reconstruction
 	PosResExp = 0.015; // exp increase in pos recon res at hi r, 1/mm
 	PosResBase = 70.8364; // baseline unc in mm, see NEST.cpp for usage

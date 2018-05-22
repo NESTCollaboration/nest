@@ -19,7 +19,6 @@ class VDetector {
 		VDetector();
 		virtual ~VDetector();
 		virtual void Initialization();
-		virtual void SetTime(unsigned int timestamp) { }
 
 		// "Get Functions"
 		// Primary Scintillation (S1) parameters

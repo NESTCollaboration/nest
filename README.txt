@@ -87,7 +87,7 @@ For 8B, numEvts (integer) is replaced with kg-days of exposure (floating-point #
 	./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 
 For cosmic-ray muons or other similar particles with elongated track lengths:
-	./testNEST numEvts {MIP} LET[MeV*cm^2/gram] step_size[cm] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
+	./testNEST numEvts {MIP} LET[MeV*cm^2/gram] x,y-position[mm](Initial) field_drift[V/cm] x,y,z-position[mm](Final) {optional:seed}
 
 NOTES:
 	- If you want to use the default drift field from detector settings, put -1 as the argument for field_drift.

@@ -52,7 +52,7 @@ int main ( int argc, char** argv ) {
       cout << "For 8B, numEvts is kg-days of exposure with everything else same. For WIMPs:" << endl;
       cout << "\t./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
       cout << "For cosmic-ray muons or other similar particles with elongated track lengths:" << endl;
-      cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] step_size[cm] field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl << endl;
+      cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] x,y-position[mm](Initial) field_drift[V/cm] x,y,z-position[mm](Final) {optional:seed}" << endl << endl;
       return 0;
     }
   unsigned long int numEvts = atoi(argv[1]);
@@ -254,26 +254,70 @@ int main ( int argc, char** argv ) {
     }
     
     NEST::YieldResult yields; NEST::QuantaResult quanta;
-    double zStep = eMax;
     if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
-      double dEOdx = eMin, eStep = dEOdx * rho * zStep * 1e3, refEnergy = 1e6; keV = 0.;
+      double xi = -999., yi = -999.;
+      if ( atof(argv[4]) == -1. ) {
+	r = detector->get_radius()
+	  * sqrt ( RandomGen::rndm()->rand_uniform() );
+	phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
+	xi = r * cos(phi); yi = r * sin(phi);
+      }
+      else {
+	position = argv[4];
+	delimiter = ",";
+	loc = 0; int ii = 0;
+	while ( (loc = position.find(delimiter)) != string::npos ) {
+	  token = position.substr(0,loc);
+	  if ( ii == 0 ) xi = stof(token);
+	  else yi = stof(token);
+	  position.erase(0,loc+delimiter.length());
+	  ii++;
+	}
+	yi = stof(position);
+      }
+      double dEOdx = eMin, eStep = dEOdx * rho * z_step * 1e2, refEnergy = 1e6; keV = 0.;
       int Nph = 0, Ne = 0;
-      for ( double zz = detector->get_TopDrift(); zz > 0; zz -= zStep*10. ) { //only VERTICAL-going muons work right now
-	yields = n.GetYields ( beta, refEnergy, rho, detector->FitEF(pos_x, pos_y, zz), double(massNum), double(atomNum), NuisParam );
+      double xx = xi, yy = yi, zz = detector->get_TopDrift();
+      double xf = pos_x; double yf = pos_y;
+      double distance = sqrt(pow(xf-xi,2.)+pow(yf-yi,2.)+pow(detector->get_TopDrift(),2.));
+      double norm[3];
+      norm[0] = ( xf - xi ) / distance;
+      norm[1] = ( yf - yi ) / distance;
+      norm[2] = -detector->get_TopDrift() / distance;
+      while ( zz > 0. && sqrt(pow(xx,2.)+pow(yy,2.)) < detector->get_radius() ) {
+	yields = n.GetYields ( beta, refEnergy, rho, detector->FitEF ( xx, yy, zz ), double(massNum), double(atomNum), NuisParam );
 	quanta = n.GetQuanta ( yields, rho );
 	Nph+= quanta.photons * (eStep/refEnergy);
-	Ne += quanta.electrons*(eStep/refEnergy);
+	index = int(floor(zz/z_step));
+	if ( index >= vTable.size() )
+	  index = vTable.size() - 1;
+	vD = vTable[index];
+	driftTime = ( detector->get_TopDrift() - zz ) / vD;
+	if ( pos_z >= detector->get_cathode() )
+	  Ne += quanta.electrons*(eStep/refEnergy)*exp(-driftTime/detector->get_eLife_us());
 	keV+= eStep;
-			}
+	xx += norm[0] * z_step;
+	yy += norm[1] * z_step;
+	zz += norm[2] * z_step; //cout << xx << " " << yy << " " << zz << endl;
+      }
       quanta.photons = Nph; quanta.electrons = Ne;
-      pos_z = detector->get_TopDrift() / 2.; //approximate everything as middle of detector since muon goes through whole detector
-      driftTime = ( detector->get_TopDrift() - pos_z ) / vD_middle;
-    	field = detector->FitEF(pos_x, pos_y, pos_z);
-		}
+      pos_z = detector->get_TopDrift() / 2.; driftTime = 0.00;
+      vD = vD_middle;
+      pos_x = .5*(xi+xf); pos_y = .5*(yi+yf);
+      field = detector->FitEF(pos_x,pos_y,pos_z);
+    }
     else {
       yields = n.GetYields(type_num,keV,rho,field,
 			   double(massNum),double(atomNum),NuisParam);
       quanta = n.GetQuanta(yields,rho);
+    }
+    
+    if ( j == 0 ) g2 = 20.;
+    double Nphd_S2 = g2 * quanta.electrons * exp(-driftTime/detector->get_eLife_us());
+    if ( !MCtruthPos && Nphd_S2 > PHE_MIN ) {
+      vector<double> xySmeared(2); xySmeared = n.xyResolution ( pos_x, pos_y, Nphd_S2 );
+      pos_x = xySmeared[0];
+      pos_y = xySmeared[1];
     }
     
     vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,
@@ -319,12 +363,6 @@ int main ( int argc, char** argv ) {
       signalE.push_back(0.);
     else
       signalE.push_back(keV);
-    
-    if ( !MCtruthPos && fabs(scint2[6]) > PHE_MIN ) {
-      vector<double> xySmeared(2); xySmeared = n.xyResolution ( pos_x, pos_y, fabs(scint2[6]) );
-      pos_x = xySmeared[0];
-      pos_y = xySmeared[1];
-    }
     
     if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in

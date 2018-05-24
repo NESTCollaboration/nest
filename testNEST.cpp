@@ -40,8 +40,8 @@ int main ( int argc, char** argv ) {
 	// Construct NEST class using detector object
 	NEST::NESTcalc n(detector);
 
-	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; int index;
-  string position, delimiter, token; size_t loc;
+	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; //scaling factors, for now just for NR Ly & Qy. But must initialize!
+	string position, delimiter, token; size_t loc; int index;
   double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
   NEST::YieldResult yieldsMax;
   
@@ -65,7 +65,7 @@ int main ( int argc, char** argv ) {
     {
       if (atof(argv[3])<0.44) { cerr << "WIMP mass too low, you're crazy!" << endl; return 0; }
       type_num = WIMP;
-      spec.wimp_spectrum_prep= spec.WIMP_prep_spectrum(atof(argv[3]), E_step);
+      spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(atof(argv[3]), E_step);
       numEvts = RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral * 1.0 * atof(argv[1]) * atof(argv[4]) / 1e-36);
     }
   else if ( type == "B8" || type == "Boron8" || type == "8Boron" || type == "8B" || type == "Boron-8" )
@@ -128,12 +128,12 @@ int main ( int argc, char** argv ) {
   else vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, atof(argv[5]));
   cout << "Density = " << rho << " g/mL" << "\t";
   cout << "central vDrift = " << vD_middle << " mm/us\n";
-  cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!\n";
+  cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Extr\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1_raw [PE]\tS1_Zcorr\tS1c_spike\tNe-Extr\tS2_rawArea\tS2_Zcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
   
   if (argc >= 8) RandomGen::rndm()->SetSeed(atoi(argv[7]));
   
@@ -283,8 +283,8 @@ int main ( int argc, char** argv ) {
       double norm[3];
       norm[0] = ( xf - xi ) / distance;
       norm[1] = ( yf - yi ) / distance;
-      norm[2] = -detector->get_TopDrift() / distance;
-      while ( zz > 0. && sqrt(pow(xx,2.)+pow(yy,2.)) < detector->get_radius() ) {
+      norm[2] = -detector->get_TopDrift() / distance; //have not yet tested muons which leave before hitting Z=0, would have to modify code here
+      while ( zz > 0. && sqrt(pow(xx,2.)+pow(yy,2.)) < detector->get_radius() ) { //stop making S1 and S2 if particle exits Xe vol
 	yields = n.GetYields ( beta, refEnergy, rho, detector->FitEF ( xx, yy, zz ), double(massNum), double(atomNum), NuisParam );
 	quanta = n.GetQuanta ( yields, rho );
 	Nph+= quanta.photons * (eStep/refEnergy);
@@ -302,7 +302,7 @@ int main ( int argc, char** argv ) {
       }
       quanta.photons = Nph; quanta.electrons = Ne;
       pos_z = detector->get_TopDrift() / 2.; driftTime = 0.00;
-      vD = vD_middle;
+      vD = vD_middle; //approximate things not already done right in loop as middle of detector since muon traverses whole length
       pos_x = .5*(xi+xf); pos_y = .5*(yi+yf);
       field = detector->FitEF(pos_x,pos_y,pos_z);
     }

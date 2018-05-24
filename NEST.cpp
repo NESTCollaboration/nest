@@ -188,8 +188,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
       Qy = 1. / (ThomasImel*sqrt(energy+9.75));
       Ly = Nq / energy - Qy;
-      Ne = Qy * energy * ScaleFactor[1] * NuisParam[1];
-      Nph= Ly * energy * ScaleFactor[0] * NuisParam[0];
+      Ne = Qy * energy * ScaleFactor[1] * NuisParam[1]; //use for PLR
+      Nph= Ly * energy * ScaleFactor[0] * NuisParam[0]; //use for PLR
       NexONi = 1.00*erf(0.01*energy); Nq = Nph + Ne;
       L = ( Nq / energy ) * Wq_eV * 1e-3;
     } break;

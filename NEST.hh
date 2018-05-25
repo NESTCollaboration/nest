@@ -49,6 +49,8 @@ namespace NEST {
   struct QuantaResult{
     int photons;
     int electrons;
+    int ions;
+    int excitons;
   };
   
   typedef std::vector<double> photonstream;
@@ -73,8 +75,8 @@ namespace NEST {
 			NESTcalc(VDetector* detector);
 			long BinomFluct(long, double);
 			NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam);
-			double PhotonTime(INTERACTION_TYPE species,bool exciton);
-			photonstream GetPhotonTimes(INTERACTION_TYPE species, QuantaResult result);
+	  double PhotonTime(INTERACTION_TYPE species,bool exciton, double dfield, double energy);
+	  photonstream GetPhotonTimes(INTERACTION_TYPE species, QuantaResult result, double dfield, double energy);
 			YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
 			QuantaResult GetQuanta(YieldResult yields, double density);
 			std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species );

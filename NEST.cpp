@@ -35,56 +35,50 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,doub
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
-  result.photon_times = GetPhotonTimes(species,result.quanta);
+  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy);
   return result;
   
 }
 
-double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton){
+double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
+			      double dfield, double energy ) {
   
-  //old code put here by Jason
-  //times in ns
-  double return_time=0;
-  double tau1 = RandomGen::rndm()->rand_gauss(3.1,.7); //err from wgted avg.
-  double tau3 = RandomGen::rndm()->rand_gauss(24.,1.); //ibid.
-  //these singlet and triplet times may not be the ones you're
-  //used to, but are the world average: Kubota 79, Hitachi 83 (2
-  //data sets), Teymourian 11, Morikawa 89, and Akimov '02
-  double SingTripRatioX, SingTripRatioR;
-  if(species==beta || species==Kr83m || species == gammaRay){ //these classes are questionable
-    //disregard tauR from original model--it's very small for any electric field.
-    SingTripRatioX = RandomGen::rndm()->rand_gauss(0.17,0.05);
-    SingTripRatioR = RandomGen::rndm()->rand_gauss(0.8, 0.2);
-  }
-  else if(species==ion){ //these classes are questionable
-    SingTripRatioR = RandomGen::rndm()->rand_gauss(2.3,0.51);
-    SingTripRatioX = SingTripRatioR;
-  }
-  else{//NR //these classes are questionable
-    SingTripRatioR = RandomGen::rndm()->rand_gauss(7.8,1.5);
-    SingTripRatioX = SingTripRatioR;
-  }
-  if(exciton){
-    if (RandomGen::rndm()->rand_uniform() < SingTripRatioR / (1 + SingTripRatioR))
-      return_time = tau1 * -log(RandomGen::rndm()->rand_uniform());
-    else return_time = tau3 * -log(RandomGen::rndm()->rand_uniform());
-  } else {
-    if (RandomGen::rndm()->rand_uniform() < SingTripRatioX / (1 + SingTripRatioX))
-      return_time = tau1 * -log(RandomGen::rndm()->rand_uniform());
-    else return_time = tau3 * -log(RandomGen::rndm()->rand_uniform());
+  double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97, tau1 = 3.27; //arXiv:1802.06162
+  if ( fdetector->get_inGas() ) { //from G4S1Light.cc in old NEST
+    tau1 = 5.18;
+    tau3 = 100.1;
   }
   
-  return return_time;
+  if ( species <= Cf ) //NR
+    SingTripRatio = 0.15 * pow ( energy, 0.15 ); //arXiv:1802.06162
+  else if ( species == ion ) //e.g., alphas
+    SingTripRatio = 0.065* pow ( energy, 0.416); //spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
+  else { //ER
+    if ( !exciton ) {
+      tauR = 3.5 * exp ( -0.00900 * dfield ) * ( 7.3138 + 3.8431 * log10 ( energy ) ); //arXiv:1310.1117
+      SingTripRatio = 0.069* pow ( energy,-0.12 ); //see comment below
+    }
+    else
+      SingTripRatio = 0.015* pow ( energy,-0.12 ); //mixing arXiv:1802.06162 with Kubota 1979
+  }
+  
+  time_ns += tauR * ( 1.0 / RandomGen::rndm()->rand_uniform() - 1. );
+  if ( RandomGen::rndm()->rand_uniform() < SingTripRatio / ( 1. + SingTripRatio ) )
+    time_ns -= tau1 * log ( RandomGen::rndm()->rand_uniform() );
+  else
+    time_ns -= tau3 * log ( RandomGen::rndm()->rand_uniform() );
+  
+  return time_ns;
   
 }
 
-photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species, QuantaResult result){
+photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, QuantaResult result,
+					double dfield, double energy ) {
   
-  
-  photonstream return_photons;
-  for (int ip = 0; ip < result.photons; ++ip) {
-    bool isExciton = false;///TODO by MATTHEW
-    return_photons.push_back(PhotonTime(species,isExciton));
+  photonstream return_photons; bool isExciton;
+  for ( int ip = 0; ip < result.photons; ++ip ) {
+    if ( ip < result.excitons ) isExciton = true;
+    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy));
   }
   
   return return_photons;
@@ -155,8 +149,10 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( (Nph+Ne) != (Nex+Ni) )
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
   
-  result.photons =Nph;
+  result.photons = Nph;
   result.electrons=Ne;
+  result.ions=Ni;
+  result.excitons = Nex;
   
   return result; //quanta returned with recomb fluctuations
   

@@ -21,6 +21,7 @@ class RandomGen {
 		double rand_gauss(double mean, double sigma);
 		double rand_exponential(double half_life);
 		int poisson_draw(double mean);
+  int integer_range ( int min, int max );
 		vector<double> VonNeumann(double xMin, double xMax, double yMin, double yMax, 
 			double xTest, double yTest, double fValue);
 		int SelectRanXeAtom();

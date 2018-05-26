@@ -35,6 +35,11 @@ int RandomGen::poisson_draw(double mean) {
 	return distribution(rng);
 }
 
+int RandomGen::integer_range ( int min, int max ) {
+  std::uniform_int_distribution<int> distribution(min,max);
+  return distribution(rng);
+}
+
 vector<double> RandomGen::VonNeumann(double xMin, double xMax, double yMin, double yMax,
 				    double xTest, double yTest, double fValue){
   

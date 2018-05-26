@@ -48,6 +48,7 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
     tau1 = 5.18;
     tau3 = 100.1;
   }
+  //tau1 = 3.5*ns; tau3 = 20.*ns; tauR = 40.*ns for solid Xe from old NEST. Here assuming same as in liquid
   
   if ( species <= Cf ) //NR
     SingTripRatio = 0.15 * pow ( energy, 0.15 ); //arXiv:1802.06162
@@ -78,6 +79,7 @@ photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, QuantaResult r
   photonstream return_photons; bool isExciton;
   for ( int ip = 0; ip < result.photons; ++ip ) {
     if ( ip < result.excitons ) isExciton = true;
+    else isExciton = false;
     return_photons.push_back(PhotonTime(species,isExciton,dfield,energy));
   }
   
@@ -206,7 +208,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double densDep = pow(density/0.2679,-2.3245);
       double massDep = 0.02966094*exp(0.17687876*(massNum/4.-1.))+1.-0.02966094;
       double fieldDep= pow ( 1.+pow ( dfield/95., 8.7 ), 0.0592 );
-      if ( density < 1. ) fieldDep = sqrt ( dfield );
+      if ( fdetector->get_inGas() ) fieldDep = sqrt ( dfield );
       ThomasImel = 0.00625 * massDep / ( 1. + densDep ) / fieldDep;
       const double logden = log10(density);
       Wq_eV = 28.259+25.667*logden
@@ -232,7 +234,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double densCorr = 240720. / pow ( density, 8.2076 );
       double m7 = 66.825 + (829.25 - 66.825) / (1. + pow(dfield /densCorr,.83344));
       Nq = energy * 1000. / Wq_eV;
-      if ( density < 1. ) m8 = -2.;
+      if ( fdetector->get_inGas() ) m8 = -2.;
       Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
       Ly = Nq / energy - Qy;
       Ne = Qy * energy;
@@ -265,7 +267,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double DokeBirks = 1652.264+(1.415935e10-1652.264)/(1.+pow(dfield/0.02673144,1.564691));
       Nq = energy * 1e3 / Wq_eV;//( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
       double LET_power = -2.;
-      if ( density < 1. ) LET_power = 2.;
+      if ( fdetector->get_inGas() ) LET_power = 2.;
       double QyLvlhighE =28.;
       if ( density > 3. ) QyLvlhighE=49.;
       Qy = QyLvlmedE+(QyLvllowE-QyLvlmedE)/pow(1.+1.304*pow(energy,2.1393),0.35535)+QyLvlhighE/(1.+DokeBirks*pow(energy,LET_power));
@@ -528,7 +530,7 @@ double NESTcalc::SetDensity ( double Kelvin, double bara ) { // currently only f
 
 double NESTcalc::SetDriftVelocity ( double Kelvin, double Density, double eField ) { //for liquid and solid only
   
-  if ( Density < 1. ) return SetDriftVelocity_MagBoltz ( Density, eField );
+  if ( fdetector->get_inGas() ) return SetDriftVelocity_MagBoltz ( Density, eField );
   
   double speed = 0.0; // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j; double vi, vf, slope, Ti, Tf, offset;

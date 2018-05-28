@@ -30,18 +30,18 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 }
 
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,
-		  double A,double Z,vector<double> NuisParam){
+				     double A,double Z,vector<double> NuisParam, double x, double y, double z){
   
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
-  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy);
+  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z);
   return result;
   
 }
 
 double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
-			      double dfield, double energy ) {
+			      double dfield, double energy, double x, double y, double z ) {
   
   double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97, tau1 = 3.27; //arXiv:1802.06162
   if ( fdetector->get_inGas() ) { //from G4S1Light.cc in old NEST
@@ -56,7 +56,7 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
     SingTripRatio = 0.065* pow ( energy, 0.416); //spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
   else { //ER
     if ( !exciton ) {
-      tauR = 3.5 * exp ( -0.00900 * dfield ) * ( 7.3138 + 3.8431 * log10 ( energy ) ); //arXiv:1310.1117
+      tauR = 0.5 * exp ( -0.00900 * dfield ) * ( 7.3138 + 3.8431 * log10 ( energy ) ); //arXiv:1310.1117
       SingTripRatio = 0.069* pow ( energy,-0.12 ); //see comment below
     }
     else
@@ -69,18 +69,23 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
   else
     time_ns -= tau3 * log ( RandomGen::rndm()->rand_uniform() );
   
+#ifndef GEANT4
+  time_ns += fdetector->OptTrans( x, y, z ); //in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
+#endif
+    
   return time_ns;
   
 }
 
 photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, QuantaResult result,
-					double dfield, double energy ) {
+					double dfield, double energy,
+					double x, double y, double z ) {
   
   photonstream return_photons; bool isExciton;
   for ( int ip = 0; ip < result.photons; ++ip ) {
     if ( ip < result.excitons ) isExciton = true;
     else isExciton = false;
-    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy));
+    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy,x,y,z));
   }
   
   return return_photons;

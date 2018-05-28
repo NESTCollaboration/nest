@@ -97,7 +97,34 @@ public:
 	virtual double FitS2 ( double xPos_mm, double yPos_mm ) {
 	        return 1.; // unitless, 1.000 at detector center
 	}
-	
+
+  virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+    
+    double phoTravT, approxCenter = ( TopDrift + cathode ) / 2., relativeZ = zPos_mm - approxCenter;
+    
+    double A = 0.048467 - 7.6386e-6 * relativeZ + 1.2016e-6 * pow ( relativeZ, 2. ) - 6.0833e-9 * pow ( relativeZ, 3. );
+    if ( A < 0. ) A = 0.; //cannot have negative probability
+    double B_a =0.99373 + 0.0010309 * relativeZ - 2.5788e-6 * pow ( relativeZ, 2. ) - 1.2000e-8 * pow ( relativeZ, 3. );
+    double B_b = 1. - B_a;
+    double tau_a = 11.15; //all times in nanoseconds
+    double tau_b = 4.5093 + 0.03437 * relativeZ -0.00018406 * pow ( relativeZ, 2. ) - 1.6383e-6 * pow ( relativeZ, 3. );
+    if ( tau_b < 0. ) tau_b = 0.; //cannot have negative time
+    
+    if ( RandomGen::rndm()->rand_uniform() < A )
+      phoTravT = 0.; //direct travel time to PMTs (low)
+    else { //using P0(t) = A*delta(t)+(1-A)*[(B_a/tau_a)e^(-t/tau_a)+(B_b/tau_b)e^(-t/tau_b)] LUX PSD paper, but should apply to all detectors w/ diff #'s
+      if ( RandomGen::rndm()->rand_uniform() < B_a )
+	phoTravT = -tau_a * log ( RandomGen::rndm()->rand_uniform() );
+      else
+	phoTravT = -tau_b * log ( RandomGen::rndm()->rand_uniform() );
+    }
+    
+    double sig= RandomGen::rndm()->rand_gauss(3.84,.09); //includes stat unc but not syst
+    phoTravT += RandomGen::rndm()->rand_gauss(0.00,sig); //the overall width added to photon time spectra by the effects in the electronics and the data reduction pipeline
+    
+    return phoTravT; //this function follows LUX (arXiv:1802.06162) not Xe10 technically but tried to make general
+  }
+  
 	// Vary VDetector parameters through custom functions
 	virtual void ExampleFunction() {
 		set_g1(0.0760);

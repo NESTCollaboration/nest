@@ -111,8 +111,9 @@ class VDetector {
 		//S2 PDE custom fit for function of r
 		//s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
 		virtual double FitS2 ( double xPos_mm, double yPos_mm ) { return 1.; }
-		
-	
+  
+  virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) { return 0.; }
+  
 	protected:
 		
 		// Primary Scintillation (S1) parameters

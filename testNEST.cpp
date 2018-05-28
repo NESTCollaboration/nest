@@ -319,7 +319,7 @@ int main ( int argc, char** argv ) {
       }
       else {
 	NESTresult results = n.FullCalculation(type_num,keV,rho,field,
-					       double(massNum),double(atomNum),NuisParam);
+					       double(massNum),double(atomNum),NuisParam,pos_x,pos_y,pos_z);
 	yields = results.yields;
 	quanta = results.quanta;
 	photon_times.clear();
@@ -407,14 +407,14 @@ int main ( int argc, char** argv ) {
 	      jj = RandomGen::rndm()->integer_range(0,quanta.excitons-1);
 	    else
 	      jj = RandomGen::rndm()->integer_range(quanta.excitons,photon_times.size()-1);
-	    if ( photon_times[jj] > 0.0 ) break;
+	    if ( photon_times[jj] != -999. ) break;
 	  }
 	  if ( jj < 0 ) jj = 0;
 	  fprintf ( pulseFile, "%.1f\t", photon_times[jj] );
 	  if ( ii >= (abs(long(scint[0]))-xtraPE) )
 	    fprintf ( pulseFile, "%.1f\t", photon_times[jj] );
 	  replace ( photon_times.begin(), photon_times.end(),
-		    photon_times[jj], 0.000 ); }
+		    photon_times[jj], -999. ); }
       }
     } //always execute statement, if(1) above, because if is just place-holder in case you want to drop all sub-threshold data
     

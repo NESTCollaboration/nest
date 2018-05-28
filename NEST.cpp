@@ -136,7 +136,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb > 1. ) recombProb = 1.;
   
   double ef = yields.ElectricField;
-  double cc = 0.3+(2.419110e-2-0.3)/(1.+pow(ef/1.431556e4,0.5));
+  double cc = -1.8818e-8*pow(ef-1566.1,2.)+0.088155;
+  if ( cc < 0. ) cc = 0.;
   double bb = 0.54;
   double aa = cc/pow(1.-bb,2.);
   double omega = -aa*pow(recombProb-bb,2.)+cc;

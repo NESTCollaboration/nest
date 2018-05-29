@@ -1,5 +1,4 @@
 
-#include "analysis.hh"
 #include "NEST.hh"
 
 using namespace std;
@@ -313,8 +312,8 @@ NESTcalc::NESTcalc (VDetector* detector) {
 	fdetector = detector;
 }
 
-vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz,
-       double driftVelocity, double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy ) {
+vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftVelocity,
+       double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, bool useTiming ) {
   
   int Nph = quanta.photons;
   

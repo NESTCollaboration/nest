@@ -326,7 +326,7 @@ int main ( int argc, char** argv ) {
     }
     
     vector<double> scint = n.GetS1(quanta,pos_x,pos_y,pos_z,
-				   vD,vD_middle,type_num,j,field,keV);
+				   vD,vD_middle,type_num,j,field,keV,useTiming);
     if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
     else if ( usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )

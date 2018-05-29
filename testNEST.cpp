@@ -43,7 +43,7 @@ int main ( int argc, char** argv ) {
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; //scaling factors, for now just for NR Ly & Qy. But must initialize!
 	string position, delimiter, token; size_t loc; int index;
   double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
-  NEST::YieldResult yieldsMax; photonstream photon_times; FILE *pulseFile;
+  NEST::YieldResult yieldsMax;
   
   if (argc < 7)
     {
@@ -312,19 +312,9 @@ int main ( int argc, char** argv ) {
       field = detector->FitEF(pos_x,pos_y,pos_z);
     }
     else {
-      if ( !useTiming ) {
-	yields = n.GetYields(type_num,keV,rho,field,
-			     double(massNum),double(atomNum),NuisParam);
-	quanta = n.GetQuanta(yields,rho);
-      }
-      else {
-	NESTresult results = n.FullCalculation(type_num,keV,rho,field,
-					       double(massNum),double(atomNum),NuisParam,pos_x,pos_y,pos_z);
-	yields = results.yields;
-	quanta = results.quanta;
-	photon_times.clear();
-	photon_times = results.photon_times;
-      }
+      yields = n.GetYields(type_num,keV,rho,field,
+			   double(massNum),double(atomNum),NuisParam);
+      quanta = n.GetQuanta(yields,rho);
     }
     
     if ( j == 0 ) g2 = 20.;
@@ -335,8 +325,8 @@ int main ( int argc, char** argv ) {
       pos_y = xySmeared[1];
     }
     
-    vector<double> scint = n.GetS1(quanta.photons,pos_x,pos_y,pos_z,
-				   vD,vD_middle,type_num);
+    vector<double> scint = n.GetS1(quanta,pos_x,pos_y,pos_z,
+				   vD,vD_middle,type_num,j,field,keV);
     if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
     else if ( usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
@@ -393,32 +383,9 @@ int main ( int argc, char** argv ) {
 	printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5], scint[7]); //see GetS1 inside of NEST.cpp for full explanation of all 8 scint return vector elements. Sample 3 most common
 	printf("%i\t%.6f\t%.6f\n", (int)scint2[0], scint2[4], scint2[7]); //see GetS2 inside of NEST.cpp for full explanation of all 8 scint2 vector elements. Change as you desire
       }
-      if ( useTiming ) {
-	if ( j == 0 ) {
-	  if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
-	  pulseFile = fopen ( "photon_times.txt", "a" );
-	  fprintf ( pulseFile, "Event#\tTimes [nano-seconds] ==>" );
-	}
-	fprintf ( pulseFile, "\n%lu\t", j ); int jj = 0;
-	long xtraPE = abs(long(scint[1])) - abs(long(scint[0]));
-	for ( long ii = 0; ii < abs(long(scint[0])); ++ii ) {
-	  while ( true ) {
-	    if ( RandomGen::rndm()->rand_uniform() < quanta.excitons/double(quanta.excitons+quanta.ions) )
-	      jj = RandomGen::rndm()->integer_range(0,quanta.excitons-1);
-	    else
-	      jj = RandomGen::rndm()->integer_range(quanta.excitons,photon_times.size()-1);
-	    if ( photon_times[jj] != -999. ) break;
-	  }
-	  if ( jj < 0 ) jj = 0;
-	  fprintf ( pulseFile, "%.1f\t", photon_times[jj] );
-	  if ( ii >= (abs(long(scint[0]))-xtraPE) )
-	    fprintf ( pulseFile, "%.1f\t", photon_times[jj] );
-	  replace ( photon_times.begin(), photon_times.end(),
-		    photon_times[jj], -999. ); }
-      }
     } //always execute statement, if(1) above, because if is just place-holder in case you want to drop all sub-threshold data
     
-  } if ( useTiming ) fclose ( pulseFile );
+  }
   
   if ( eMin != eMax ) {
     if ( useS2 == 2 )

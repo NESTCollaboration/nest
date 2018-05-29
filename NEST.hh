@@ -81,7 +81,8 @@ namespace NEST {
 	  photonstream GetPhotonTimes(INTERACTION_TYPE species, QuantaResult result, double dfield, double energy, double x, double y, double z);
 			YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
 			QuantaResult GetQuanta(YieldResult yields, double density);
-			std::vector<double> GetS1 ( int Nph,double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species );
+	  std::vector<double> GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftSpeed, double dS_mid,
+				      INTERACTION_TYPE species, long evtNum, double dfield, double energy );
 			std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
 			std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, double driftSpeed );
 			double SetDriftVelocity ( double T, double D, double F );

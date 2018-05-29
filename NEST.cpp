@@ -1,4 +1,5 @@
 
+#include "analysis.hh"
 #include "NEST.hh"
 
 using namespace std;
@@ -312,9 +313,13 @@ NESTcalc::NESTcalc (VDetector* detector) {
 	fdetector = detector;
 }
 
-vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
-  double dz, double driftVelocity, double dV_mid, INTERACTION_TYPE type_num ) {
+vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz,
+       double driftVelocity, double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy ) {
   
+  int Nph = quanta.photons;
+  
+  photonstream photon_times; FILE *pulseFile;
+  vector<double> photon_areas[2];
   vector<double> scintillation(9);  // return vector
   vector<double> newSpike(2); // for re-doing spike counting more precisely
   
@@ -331,7 +336,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   double pulseArea = 0., spike = 0., prob;
   
   // If single photo-electron efficiency is under 1 and the threshold is above 0 (some phe will be below threshold)
-	if ( fdetector->get_sPEthr() > 0. && nHits < fdetector->get_numPMTs() ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
+  if ( useTiming || (fdetector->get_sPEthr() > 0. && nHits < fdetector->get_numPMTs()) ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area
@@ -352,6 +357,14 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
       }
       // Save the phe area and increment the spike count (very perfect spike count) if area is above threshold
       if ( (phe1+phe2) > fdetector->get_sPEthr() ) { spike++; pulseArea += phe1 + phe2; }
+      if ( useTiming ) {
+	if ( (phe1+phe2) > fdetector->get_sPEthr() ) {
+	  photon_areas[0].push_back(phe1);
+	  photon_areas[1].push_back(phe2);
+	}
+	else {
+	  photon_areas[0].push_back(0.00);
+          photon_areas[1].push_back(0.00); } }
     }
   }
   else { // apply just an empirical efficiency by itself, without direct area threshold
@@ -410,6 +423,33 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   }
   
   scintillation[8] = fdetector->get_g1();
+  
+  if ( useTiming ) {
+    photonstream photon_times;
+    photon_times.clear();
+    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz);
+    if ( evtNum == 0 ) {
+      if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
+      pulseFile = fopen ( "photon_times.txt", "a" );
+      fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
+    }
+    else
+      pulseFile = fopen ( "photon_times.txt", "a" );
+    int jj = 0;
+    for ( long ii = 0; ii < abs(long(nHits)); ++ii ) {
+      while ( true ) {
+	if ( RandomGen::rndm()->rand_uniform() < quanta.excitons/double(quanta.excitons+quanta.ions) )
+	  jj = RandomGen::rndm()->integer_range(0,quanta.excitons-1);
+	else
+	  jj = RandomGen::rndm()->integer_range(quanta.excitons,photon_times.size()-1);
+	if ( photon_times[jj] != -999. ) break;
+      }
+      if ( jj < 0 ) jj = 0;
+      fprintf ( pulseFile, "%lu\t%.1f\t%.2f\t%.2f\n", evtNum, photon_times[jj], photon_areas[0][ii], photon_areas[1][ii] );
+      replace ( photon_times.begin(), photon_times.end(),
+		photon_times[jj], -999. ); }
+    fclose ( pulseFile );
+  }
   
   return scintillation;
   

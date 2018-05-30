@@ -35,13 +35,14 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,doub
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
-  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z);
+  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z,true);
   return result;
   
 }
 
 double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
-			      double dfield, double energy, double x, double y, double z ) {
+			      double dfield, double energy,
+			      double x, double y, double z, bool Geant4 ) {
   
   double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97, tau1 = 3.27; //arXiv:1802.06162
   if ( fdetector->get_inGas() ) { //from G4S1Light.cc in old NEST
@@ -69,23 +70,22 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
   else
     time_ns -= tau3 * log ( RandomGen::rndm()->rand_uniform() );
   
-#ifndef GEANT4
-  time_ns += fdetector->OptTrans( x, y, z ); //in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
-#endif
-    
+  if ( !Geant4 )
+    time_ns += fdetector->OptTrans( x, y, z ); //in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
+  
   return time_ns;
   
 }
 
 photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, QuantaResult result,
 					double dfield, double energy,
-					double x, double y, double z ) {
+					double x, double y, double z, bool Geant4 ) {
   
   photonstream return_photons; bool isExciton;
   for ( int ip = 0; ip < result.photons; ++ip ) {
     if ( ip < result.excitons ) isExciton = true;
     else isExciton = false;
-    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy,x,y,z));
+    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy,x,y,z,Geant4));
   }
   
   return return_photons;
@@ -136,7 +136,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb > 1. ) recombProb = 1.;
   
   double ef = yields.ElectricField;
-  double cc = 0.3+(2.419110e-2-0.3)/(1.+pow(ef/1.431556e4,0.5));
+  double cc = -1.8818e-8*pow(ef-1566.1,2.)+0.088155;
+  if ( cc < 0. ) cc = 0.;
   double bb = 0.54;
   double aa = cc/pow(1.-bb,2.);
   double omega = -aa*pow(recombProb-bb,2.)+cc;
@@ -311,9 +312,13 @@ NESTcalc::NESTcalc (VDetector* detector) {
 	fdetector = detector;
 }
 
-vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
-  double dz, double driftVelocity, double dV_mid, INTERACTION_TYPE type_num ) {
+vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftVelocity,
+       double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, bool useTiming ) {
   
+  int Nph = quanta.photons;
+  
+  photonstream photon_times; FILE *pulseFile;
+  vector<double> photon_areas[2];
   vector<double> scintillation(9);  // return vector
   vector<double> newSpike(2); // for re-doing spike counting more precisely
   
@@ -330,7 +335,7 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   double pulseArea = 0., spike = 0., prob;
   
   // If single photo-electron efficiency is under 1 and the threshold is above 0 (some phe will be below threshold)
-	if ( fdetector->get_sPEthr() > 0. && nHits < fdetector->get_numPMTs() ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
+  if ( useTiming || (fdetector->get_sPEthr() > 0. && nHits < fdetector->get_numPMTs()) ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
     // Step through the pmt hits
     for ( int i = 0; i < nHits; i++ ) {
       // generate photo electron, integer count and area
@@ -351,6 +356,14 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
       }
       // Save the phe area and increment the spike count (very perfect spike count) if area is above threshold
       if ( (phe1+phe2) > fdetector->get_sPEthr() ) { spike++; pulseArea += phe1 + phe2; }
+      if ( useTiming ) {
+	if ( (phe1+phe2) > fdetector->get_sPEthr() ) {
+	  photon_areas[0].push_back(phe1);
+	  photon_areas[1].push_back(phe2);
+	}
+	else {
+	  photon_areas[0].push_back(0.00);
+          photon_areas[1].push_back(0.00); } }
     }
   }
   else { // apply just an empirical efficiency by itself, without direct area threshold
@@ -409,6 +422,33 @@ vector<double> NESTcalc::GetS1 ( int Nph, double dx, double dy,
   }
   
   scintillation[8] = fdetector->get_g1();
+  
+  if ( useTiming ) {
+    photonstream photon_times;
+    photon_times.clear();
+    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false);
+    if ( evtNum == 0 ) {
+      if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
+      pulseFile = fopen ( "photon_times.txt", "a" );
+      fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
+    }
+    else
+      pulseFile = fopen ( "photon_times.txt", "a" );
+    int jj = 0;
+    for ( long ii = 0; ii < abs(long(nHits)); ++ii ) {
+      while ( true ) {
+	if ( RandomGen::rndm()->rand_uniform() < quanta.excitons/double(quanta.excitons+quanta.ions) )
+	  jj = RandomGen::rndm()->integer_range(0,quanta.excitons-1);
+	else
+	  jj = RandomGen::rndm()->integer_range(quanta.excitons,photon_times.size()-1);
+	if ( photon_times[jj] != -999. ) break;
+      }
+      if ( jj < 0 ) jj = 0;
+      fprintf ( pulseFile, "%lu\t%.1f\t%.2f\t%.2f\n", evtNum, photon_times[jj], photon_areas[0][ii], photon_areas[1][ii] );
+      replace ( photon_times.begin(), photon_times.end(),
+		photon_times[jj], -999. ); }
+    fclose ( pulseFile );
+  }
   
   return scintillation;
   

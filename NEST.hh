@@ -8,6 +8,7 @@
 #include <fstream>
 #include <assert.h>
 #include <float.h>
+#include <algorithm>
 
 #include "RandomGen.hh"
 #include "Detectors/VDetector.hh"

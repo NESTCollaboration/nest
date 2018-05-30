@@ -34,8 +34,9 @@ namespace NEST {
     gammaRay = 7,
     beta = 8,
     CH3T = 9,
-    Kr83m = 10,
-    NoneType=11
+    C14 = 10,    
+    Kr83m = 11,
+    NoneType=12
     
   } INTERACTION_TYPE;
   

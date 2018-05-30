@@ -42,6 +42,44 @@ double TestSpectra::CH3T_spectrum ( double xMin, double xMax ) {
   
 }
 
+double TestSpectra::C14_spectrum ( double xMin, double xMax ) {
+  
+  double m_e = 510.9989461; //e- rest mass-energy [keV]
+  double aa = 0.0072973525664; //fine structure constant
+  double ZZ = 7.;
+  double V0 = 0.495; //effective offset in T due to screening of the nucleus by electrons
+  
+  
+  if(xMax>156.)xMax=156.; //C14 beta decay endpoint [keV]
+  if(xMin<0.)xMin=0.;
+  double yMax = 2.5e9; //top of the beta decay E histogram
+  vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
+			  yMax * RandomGen::rndm()->rand_uniform(),1.};
+  while ( xyTry[2] > 0. ) {
+  	double Ee=xyTry[0]+m_e; //Total energy of electron
+	double pe=sqrt(Ee*Ee-m_e*m_e); //momentum of the electron
+	//phase space part of spectrum
+	double dNdE_phasespace=pe*Ee*(156.-xyTry[0])*(156.-xyTry[0]); 
+	
+	//Fermi function (Bethe-Bacher approximation)
+	double Ee_screen=Ee-V0;
+	double W_screen=(Ee_screen)/m_e;
+	double p_screen=sqrt(W_screen*W_screen-1);
+	double WW=(Ee)/m_e;
+	double pp=sqrt(WW*WW-1);
+	double G_screen=(Ee_screen)/(m_e); //Gamma, Total energy(KE+M) over M
+	double B_screen=sqrt((G_screen*G_screen-1)/(G_screen*G_screen)); // v/c of electron. Ratio of velocity to speed of light in vacuum.
+	double x_screen=(2*M_PI*ZZ*aa)/B_screen;
+	double F_nr_screen = W_screen*p_screen/(WW*pp)*x_screen*(1/(1-exp(-x_screen)));
+	double F_bb_screen=F_nr_screen*pow(W_screen*W_screen*(1+4*(aa*ZZ)*(aa*ZZ))-1,sqrt(1 - aa*aa*ZZ*ZZ)-1);
+    
+    double FuncValue=dNdE_phasespace*F_bb_screen;
+    xyTry = RandomGen::rndm()->VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
+  }
+  return xyTry[0];
+  
+}
+
 double TestSpectra::B8_spectrum ( double xMin, double xMax ) {
   
   if(xMax!=4.)xMax=4.;

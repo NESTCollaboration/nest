@@ -35,13 +35,14 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,doub
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
-  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z);
+  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z,true);
   return result;
   
 }
 
 double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
-			      double dfield, double energy, double x, double y, double z ) {
+			      double dfield, double energy,
+			      double x, double y, double z, bool Geant4 ) {
   
   double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97, tau1 = 3.27; //arXiv:1802.06162
   if ( fdetector->get_inGas() ) { //from G4S1Light.cc in old NEST
@@ -69,23 +70,22 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
   else
     time_ns -= tau3 * log ( RandomGen::rndm()->rand_uniform() );
   
-#ifndef GEANT4
-  time_ns += fdetector->OptTrans( x, y, z ); //in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
-#endif
-    
+  if ( !Geant4 )
+    time_ns += fdetector->OptTrans( x, y, z ); //in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
+  
   return time_ns;
   
 }
 
 photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, QuantaResult result,
 					double dfield, double energy,
-					double x, double y, double z ) {
+					double x, double y, double z, bool Geant4 ) {
   
   photonstream return_photons; bool isExciton;
   for ( int ip = 0; ip < result.photons; ++ip ) {
     if ( ip < result.excitons ) isExciton = true;
     else isExciton = false;
-    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy,x,y,z));
+    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy,x,y,z,Geant4));
   }
   
   return return_photons;
@@ -426,7 +426,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   if ( useTiming ) {
     photonstream photon_times;
     photon_times.clear();
-    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz);
+    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false);
     if ( evtNum == 0 ) {
       if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
       pulseFile = fopen ( "photon_times.txt", "a" );

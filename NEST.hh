@@ -77,8 +77,8 @@ namespace NEST {
 			long BinomFluct(long, double);
 	  NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam,
 				     double x, double y, double z);
-	  double PhotonTime(INTERACTION_TYPE species,bool exciton, double dfield, double energy, double x, double y, double z);
-	  photonstream GetPhotonTimes(INTERACTION_TYPE species, QuantaResult result, double dfield, double energy, double x, double y, double z);
+	  double PhotonTime(INTERACTION_TYPE species,bool exciton, double dfield, double energy, double x, double y, double z, bool G4);
+	  photonstream GetPhotonTimes(INTERACTION_TYPE species, QuantaResult result, double dfield, double energy, double x, double y, double z, bool G4);
 			YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
 			QuantaResult GetQuanta(YieldResult yields, double density);
 	  std::vector<double> GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftSpeed, double dS_mid,

@@ -424,13 +424,16 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   scintillation[8] = fdetector->get_g1();
   
   if ( useTiming ) {
+    vector<double> PEperBin;
+    double phase = -999.;
     photonstream photon_times;
     photon_times.clear();
     photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false);
     if ( evtNum == 0 ) {
       if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
       pulseFile = fopen ( "photon_times.txt", "a" );
-      fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
+      //fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
+      fprintf ( pulseFile, "Event #\tt [ns]\tA [PE]\n" );
     }
     else
       pulseFile = fopen ( "photon_times.txt", "a" );
@@ -443,11 +446,18 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 	  jj = RandomGen::rndm()->integer_range(quanta.excitons,photon_times.size()-1);
 	if ( photon_times[jj] != -999. ) break;
       }
-      if ( jj < 0 ) jj = 0;
-      fprintf ( pulseFile, "%lu\t%.1f\t%.2f\t%.2f\n", evtNum, photon_times[jj], photon_areas[0][ii], photon_areas[1][ii] );
-      replace ( photon_times.begin(), photon_times.end(),
-		photon_times[jj], -999. ); }
-    fclose ( pulseFile );
+      if ( jj < 0 ) jj = 0; PEperBin.clear();
+      if ( (photon_areas[0][ii]+photon_areas[1][ii]) > 0. )
+	PEperBin = fdetector->SinglePEWaveForm(photon_areas[0][ii] + photon_areas[1][ii], photon_times[jj], phase);
+      int total = PEperBin.size() - 1;
+      //for ( int kk = 0; kk < total; ++kk )
+      //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, PEperBin[0] + kk * 10., PEperBin[kk+1] );
+      if ( total >= 0 )
+	fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, PEperBin[0], photon_areas[0][ii] + photon_areas[1][ii] );
+      if ( phase == -999. && total > 0 ) phase = PEperBin[0];
+      replace ( photon_times.begin(), photon_times.end(), photon_times[jj], -999. );
+    }
+    fclose(pulseFile);
   }
   
   return scintillation;

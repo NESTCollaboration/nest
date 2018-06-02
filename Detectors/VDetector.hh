@@ -11,6 +11,7 @@
 #ifndef VDetector_hh
 #define VDetector_hh 1
 
+#include <vector>
 
 class VDetector {
 
@@ -113,6 +114,7 @@ class VDetector {
 		virtual double FitS2 ( double xPos_mm, double yPos_mm ) { return 1.; }
   
   virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) { return 0.; }
+  virtual std::vector<double> SinglePEWaveForm ( double area, double t0, double phase ) { std::vector<double> PEperBin; return PEperBin; }
   
 	protected:
 		

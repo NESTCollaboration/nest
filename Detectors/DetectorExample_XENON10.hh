@@ -34,7 +34,7 @@ public:
 	virtual void Initialization() {
 		
 		// Primary Scintillation (S1) parameters
-		g1 = 0.0760; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
+	        g1 = 0.0760; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
 		sPEres = 0.58; //single phe resolution (Gaussian assumed)
 		sPEthr = 0.35; //POD threshold in phe, usually used IN PLACE of sPEeff
 		sPEeff = 1.00; //actual efficiency, can be used in lieu of POD threshold
@@ -110,6 +110,8 @@ public:
     double tau_b = 4.5093 + 0.03437 * relativeZ -0.00018406 * pow ( relativeZ, 2. ) - 1.6383e-6 * pow ( relativeZ, 3. );
     if ( tau_b < 0. ) tau_b = 0.; //cannot have negative time
     
+    //A = 0.0574; B_a = 1.062; tau_a = 11.1; tau_b = 2.70; B_b = 1.0 - B_a; //LUX D-D conditions
+    
     if ( RandomGen::rndm()->rand_uniform() < A )
       phoTravT = 0.; //direct travel time to PMTs (low)
     else { //using P0(t) = A*delta(t)+(1-A)*[(B_a/tau_a)e^(-t/tau_a)+(B_b/tau_b)e^(-t/tau_b)] LUX PSD paper, but should apply to all detectors w/ diff #'s
@@ -125,6 +127,52 @@ public:
     return phoTravT; //this function follows LUX (arXiv:1802.06162) not Xe10 technically but tried to make general
   }
   
+  virtual vector<double> SinglePEWaveForm ( double area, double t0, double phase ) {
+    
+    vector<double> PEperBin; area *= 10.5;
+    
+    double sigma = 10.; //ns
+    double amplitude = area / ( sigma * sqrt ( 2. * M_PI ) ), signal; //assumes perfect Gaussian
+    double threshold = 0.005; //photo-electrons
+    
+    double tStep1 = 0.1; //ns, make sure much smaller than sample size; used to generate MC-true pulses essentially
+    double tStep2 = 10.; //ns; 1 over digitization rate, 100 MHz assumed here
+    
+    double time = -5.*sigma;
+    bool digitizeMe = false;
+    while ( true ) {
+      signal = amplitude * exp(-pow(time,2.)/(2.*sigma*sigma));
+      if ( signal < threshold ) {
+	if ( digitizeMe ) break;
+	else ; //do nothing - goes down to advancing time block
+      }
+      else {
+	if ( digitizeMe )
+	  PEperBin.push_back(signal);
+	else {
+	  if ( RandomGen::rndm()->rand_uniform() < 2.*(tStep1/tStep2) ) {
+	    /*if ( phase != -999. ) {
+	      if ( RandomGen::rndm()->rand_uniform() < 0.5 )
+		{ while ( fabs(fabs(time+t0-phase)/tStep2-int(fabs(time+t0-phase)/tStep2)) > 0.0001 ) time -= 0.0001; }
+	      else
+		{ while ( fabs(fabs(phase-time-t0)/tStep2-int(fabs(phase-time-t0)/tStep2)) > 0.0001 ) time += 0.0001; }
+	      signal = amplitude * exp(-pow(time,2.)/(2.*sigma*sigma));
+	    }*/
+	    PEperBin.push_back(time+t0);
+	     PEperBin.push_back(signal);
+	    digitizeMe = true;
+	  }
+	  else {}
+	}
+      }
+      if ( digitizeMe ) time += tStep2;
+      else time += tStep1;
+      if ( time > 5.*sigma ) break;
+    }
+    
+    return PEperBin;
+
+  }  
 	// Vary VDetector parameters through custom functions
 	virtual void ExampleFunction() {
 		set_g1(0.0760);

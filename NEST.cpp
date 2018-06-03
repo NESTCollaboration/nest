@@ -355,23 +355,84 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 	// The dphe occurs simultaneously to the first one from the same source photon. If the first one is seen, so should be the second one
       }
       // Save the phe area and increment the spike count (very perfect spike count) if area is above threshold
-      if ( (phe1+phe2) > fdetector->get_sPEthr() ) { spike++; pulseArea += phe1 + phe2; }
       if ( useTiming ) {
 	if ( (phe1+phe2) > fdetector->get_sPEthr() ) {
+	  pulseArea += phe1 + phe2;
+	  spike++;
 	  photon_areas[0].push_back(phe1);
 	  photon_areas[1].push_back(phe2);
 	}
 	else {
 	  photon_areas[0].push_back(0.00);
-          photon_areas[1].push_back(0.00); } }
-    }
+          photon_areas[1].push_back(0.00);
+	}
+      }
+      else { //use approximation to find timing
+	if ( (phe1+phe2) > fdetector->get_sPEthr() && -20.*log(RandomGen::rndm()->rand_uniform()) < fdetector->get_coinWind() ) {
+	  spike++;
+	  pulseArea += phe1 + phe2;
+	}
+	else ; } }
   }
   else { // apply just an empirical efficiency by itself, without direct area threshold
     Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe()); double eff=fdetector->get_sPEeff(); if(nHits>=fdetector->get_numPMTs()) eff=1.;
     pulseArea = RandomGen::rndm()->rand_gauss(BinomFluct(Nphe,1.-(1.-eff)/(1.+fdetector->get_P_dphe())),fdetector->get_sPEres()*sqrt(Nphe));
     spike = (double)nHits;
   }
+  
+  if ( useTiming ) {
+    vector<double> PEperBin, TimeTable[2];
+    double phase = -999.;
+    photonstream photon_times;
+    photon_times.clear();
+    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false);
+    if ( evtNum == 0 ) {
+      if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
+      pulseFile = fopen ( "photon_times.txt", "a" );
+      //fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
+      fprintf ( pulseFile, "Event #\tt [ns]\tA [PE]\n" );
+    }
+    else
+      pulseFile = fopen ( "photon_times.txt", "a" );
+    int jj = 0; long ii; double min = 1e100;
+    for ( ii = 0; ii < abs(long(nHits)); ++ii ) {
+      while ( true ) {
+	if ( RandomGen::rndm()->rand_uniform() < quanta.excitons/double(quanta.excitons+quanta.ions) )
+	  jj=RandomGen::rndm()->integer_range(0,quanta.excitons-1);
+	else
+	  jj=RandomGen::rndm()->integer_range(quanta.excitons,(signed long)photon_times.size()-1);
+	if ( jj >= photon_times.size() || jj < 0 )
+	  jj = 0; //avoids segmentation fault where accessing non-existent entry
+	if ( photon_times[jj] != -999. ) break;
+      }
+      PEperBin.clear();
+      if ( (photon_areas[0][ii]+photon_areas[1][ii]) > 0. )
+	PEperBin = fdetector->SinglePEWaveForm(photon_areas[0][ii] + photon_areas[1][ii], photon_times[jj], phase);
+      int total = (unsigned int)PEperBin.size() - 1;
+      //for ( int kk = 0; kk < total; ++kk )
+      //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, PEperBin[0] + kk * 10., PEperBin[kk+1] );
+      if ( total >= 0 ) {
+	if ( PEperBin[0] < min ) min = PEperBin[0];
+	TimeTable[0].push_back(PEperBin[0]);
+	TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
+      }
+      if ( phase == -999. && total > 0 ) phase = PEperBin[0];
+      replace ( photon_times.begin(), photon_times.end(), photon_times[jj], -999. );
+    }
+    for ( ii = 0; ii < TimeTable[0].size(); ++ii ) {
+      fprintf ( pulseFile, "%lu\t%.1f\t%.2f", evtNum, TimeTable[0][ii], TimeTable[1][ii] );
+      if ( (TimeTable[0][ii]-min) > fdetector->get_coinWind() ) {
+	fprintf ( pulseFile, "\tOUTSIDE COINCIDENCE WINDOW!!\n" );
+	--spike;
+	pulseArea -= TimeTable[1][ii];
+      }
+      else fprintf ( pulseFile, "\n" );
+    }
+    fclose(pulseFile);
+  }
+  
   if ( pulseArea < 0. ) pulseArea = 0.;
+  if ( spike < 0 ) spike = 0;
   double pulseAreaC= pulseArea / posDep;
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
@@ -398,7 +459,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
         for ( int i = spike; i > 0; i-- ) {
           denom += nCr ( fdetector->get_numPMTs(), i );
           if ( i >= fdetector->get_coinLevel() ) numer += nCr ( fdetector->get_numPMTs(), i );
-	}
+        }
         prob = numer / denom;
       } //end of case of coinLevel of 3 or higher
     } // end of case of spike is equal to 9 or lower
@@ -422,43 +483,6 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   }
   
   scintillation[8] = fdetector->get_g1();
-  
-  if ( useTiming ) {
-    vector<double> PEperBin;
-    double phase = -999.;
-    photonstream photon_times;
-    photon_times.clear();
-    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false);
-    if ( evtNum == 0 ) {
-      if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
-      pulseFile = fopen ( "photon_times.txt", "a" );
-      //fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
-      fprintf ( pulseFile, "Event #\tt [ns]\tA [PE]\n" );
-    }
-    else
-      pulseFile = fopen ( "photon_times.txt", "a" );
-    int jj = 0;
-    for ( long ii = 0; ii < abs(long(nHits)); ++ii ) {
-      while ( true ) {
-	if ( RandomGen::rndm()->rand_uniform() < quanta.excitons/double(quanta.excitons+quanta.ions) )
-	  jj = RandomGen::rndm()->integer_range(0,quanta.excitons-1);
-	else
-	  jj = RandomGen::rndm()->integer_range(quanta.excitons,photon_times.size()-1);
-	if ( photon_times[jj] != -999. ) break;
-      }
-      if ( jj < 0 ) jj = 0; PEperBin.clear();
-      if ( (photon_areas[0][ii]+photon_areas[1][ii]) > 0. )
-	PEperBin = fdetector->SinglePEWaveForm(photon_areas[0][ii] + photon_areas[1][ii], photon_times[jj], phase);
-      int total = PEperBin.size() - 1;
-      //for ( int kk = 0; kk < total; ++kk )
-      //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, PEperBin[0] + kk * 10., PEperBin[kk+1] );
-      if ( total >= 0 )
-	fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, PEperBin[0], photon_areas[0][ii] + photon_areas[1][ii] );
-      if ( phase == -999. && total > 0 ) phase = PEperBin[0];
-      replace ( photon_times.begin(), photon_times.end(), photon_times[jj], -999. );
-    }
-    fclose(pulseFile);
-  }
   
   return scintillation;
   
@@ -717,4 +741,3 @@ vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A
   return xySmeared; //new X and Y position in mm with empirical smearing. LUX Run03 example
 
 }
-

@@ -90,7 +90,7 @@ int main ( int argc, char** argv ) {
     type_num = gammaRay; //includes photo-absorption and electron capture
   else if ( type == "Kr83m" || type == "83mKr" || type == "Kr83" ) type_num = Kr83m;
   else if ( type == "CH3T" || type == "tritium" ) type_num = CH3T;
-  else if ( type == "C14" ) type_num = C14;
+  else if ( type == "C14" || type == "Carbon14" || type == "14C" ) type_num = C14;
   else if ( type == "beta" || type == "ER" || type == "Compton" || type == "compton" || type == "electron" || type == "e-" ||
 	    type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" )
     type_num = beta; //default electron recoil model
@@ -107,9 +107,9 @@ int main ( int argc, char** argv ) {
     cerr << "gamma or gammaRay," << endl;
     cerr << "x-ray or xray or xRay or X-ray or Xray or XRay," << endl;
     cerr << "Kr83m or 83mKr or Kr83," << endl;
-    cerr << "CH3T or tritium, " << endl;
-    cerr << "C14, and" << endl;
-    cerr << "beta or ER or Compton or compton or electron or e-" << endl;
+    cerr << "CH3T or tritium," << endl;
+    cerr << "Carbon14 or 14C or C14," << endl;
+    cerr << "beta or ER or Compton or compton or electron or e-, and" << endl;
     cerr << "muon or MIP or LIP or mu or mu-" << endl;
     return 0;
   }
@@ -169,7 +169,7 @@ int main ( int argc, char** argv ) {
       case CH3T:
 	keV = spec.CH3T_spectrum(eMin, eMax);
 	break;
-	  case C14:
+      case C14:
 	keV = spec.C14_spectrum(eMin, eMax);
 	break;
       case B8: //normalize this to ~3500 / 10-ton / year, for E-threshold of 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV

@@ -30,6 +30,7 @@ class VDetector {
 		double* get_noise(){return &noise[0];}
 		double get_P_dphe(){return P_dphe;}
 
+                int get_coinWind(){return coinWind;}
 		int get_coinLevel(){return coinLevel;}
 		int get_numPMTs(){return numPMTs;}
 
@@ -70,6 +71,7 @@ class VDetector {
 		void set_noise(double p1, double p2){ noise[0] = p1; noise[1] = p2; }
 		void set_P_dphe(double param){ P_dphe = param; }
 
+                void set_coinWind(double param){coinWind =param; }
 		void set_coinLevel(int param){ coinLevel = param; }
 		void set_numPMTs(int param){ numPMTs = param; }
 
@@ -120,7 +122,7 @@ class VDetector {
 		
 		// Primary Scintillation (S1) parameters
 		int coinLevel, numPMTs;
-		double g1, sPEres, sPEthr, sPEeff, P_dphe;  
+                double g1, sPEres, sPEthr, sPEeff, P_dphe, coinWind;
 		double noise[2];
 
 		// Ionization and Secondary Scintillation (S2) parameters

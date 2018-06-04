@@ -35,7 +35,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,doub
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
-  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z,true);
+  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z,true,1);
   return result;
   
 }
@@ -79,11 +79,20 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
 
 photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, QuantaResult result,
 					double dfield, double energy,
-					double x, double y, double z, bool Geant4 ) {
+					double x, double y, double z, bool Geant4, int nHits ) {
   
   photonstream return_photons; bool isExciton;
-  for ( int ip = 0; ip < result.photons; ++ip ) {
-    if ( ip < result.excitons ) isExciton = true;
+  int total, excit;
+  if ( Geant4 ) {
+    total = result.photons;
+    excit = result.excitons;
+  }
+  else {
+    excit = int((double(nHits)/double(result.photons))*double(result.excitons)+0.5);
+    total = nHits;
+  }
+  for ( int ip = 0; ip < total; ++ip ) {
+    if ( ip < excit ) isExciton = true;
     else isExciton = false;
     return_photons.push_back(PhotonTime(species,isExciton,dfield,energy,x,y,z,Geant4));
   }
@@ -362,10 +371,6 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 	  photon_areas[0].push_back(phe1);
 	  photon_areas[1].push_back(phe2);
 	}
-	else {
-	  photon_areas[0].push_back(0.00);
-          photon_areas[1].push_back(0.00);
-	}
       }
       else { //use approximation to find timing
 	if ( (phe1+phe2) > fdetector->get_sPEthr() && -20.*log(RandomGen::rndm()->rand_uniform()) < fdetector->get_coinWind() ) {
@@ -385,7 +390,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     double phase = -999.;
     photonstream photon_times;
     photon_times.clear();
-    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false);
+    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false,(int)fabs(spike));
     if ( evtNum == 0 ) {
       if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
       pulseFile = fopen ( "photon_times.txt", "a" );
@@ -394,30 +399,21 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     }
     else
       pulseFile = fopen ( "photon_times.txt", "a" );
-    int jj = 0; long ii; double min = 1e100;
-    for ( ii = 0; ii < abs(long(nHits)); ++ii ) {
-      while ( true ) {
-	if ( RandomGen::rndm()->rand_uniform() < quanta.excitons/double(quanta.excitons+quanta.ions) )
-	  jj=RandomGen::rndm()->integer_range(0,quanta.excitons-1);
-	else
-	  jj=RandomGen::rndm()->integer_range(quanta.excitons,(signed long)photon_times.size()-1);
-	if ( jj >= photon_times.size() || jj < 0 )
-	  jj = 0; //avoids segmentation fault where accessing non-existent entry
-	if ( photon_times[jj] != -999. ) break;
-      }
+    int ii; double min = 1e100;
+    for ( ii = 0; ii < (int)fabs(spike); ++ii ) {
       PEperBin.clear();
-      if ( (photon_areas[0][ii]+photon_areas[1][ii]) > 0. )
-	PEperBin = fdetector->SinglePEWaveForm(photon_areas[0][ii] + photon_areas[1][ii], photon_times[jj], phase);
+      PEperBin = fdetector->SinglePEWaveForm(photon_areas[0][ii] + photon_areas[1][ii], photon_times[ii], phase);
       int total = (unsigned int)PEperBin.size() - 1;
       //for ( int kk = 0; kk < total; ++kk )
       //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, PEperBin[0] + kk * 10., PEperBin[kk+1] );
       if ( total >= 0 ) {
 	if ( PEperBin[0] < min ) min = PEperBin[0];
 	TimeTable[0].push_back(PEperBin[0]);
-	TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
       }
+      else
+	TimeTable[0].push_back(-999.);
+      TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
       if ( phase == -999. && total > 0 ) phase = PEperBin[0];
-      replace ( photon_times.begin(), photon_times.end(), photon_times[jj], -999. );
     }
     for ( ii = 0; ii < TimeTable[0].size(); ++ii ) {
       fprintf ( pulseFile, "%lu\t%.1f\t%.2f", evtNum, TimeTable[0][ii], TimeTable[1][ii] );

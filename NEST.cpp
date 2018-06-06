@@ -386,8 +386,8 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   }
   
   if ( useTiming ) {
-    vector<double> PEperBin, TimeTable[2];
-    double phase = -999.;
+    vector<double> PEperBin, AreaTable, TimeTable[2];
+    AreaTable.resize(SAMPLE_SIZE*10,0.);
     photonstream photon_times;
     photon_times.clear();
     photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false,(int)fabs(spike));
@@ -395,39 +395,49 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
       if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
       pulseFile = fopen ( "photon_times.txt", "a" );
       //fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
-      fprintf ( pulseFile, "Event #\tt [ns]\tA [PE]\n" );
+      fprintf ( pulseFile, "Event#\tt [ns]\tA [PE]\tin win\n" );
     }
     else
       pulseFile = fopen ( "photon_times.txt", "a" );
-    int ii; double min = 1e100;
+    int ii, index; double min = 1e100, pTime;
     for ( ii = 0; ii < (int)fabs(spike); ++ii ) {
       PEperBin.clear();
-      PEperBin = fdetector->SinglePEWaveForm(photon_areas[0][ii] + photon_areas[1][ii], photon_times[ii], phase);
+      PEperBin=fdetector->SinglePEWaveForm(photon_areas[0][ii]+photon_areas[1][ii],photon_times[ii]);
       int total = (unsigned int)PEperBin.size() - 1;
-      //for ( int kk = 0; kk < total; ++kk )
-      //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, PEperBin[0] + kk * 10., PEperBin[kk+1] );
+      for ( int kk = 0; kk < total; ++kk ) {
+	pTime = PEperBin[0] + kk * SAMPLE_SIZE;
+	index = int(floor(pTime/SAMPLE_SIZE)) +SAMPLE_SIZE*5;
+	if ( index < 0 ) index = 0;
+	if ( index >= SAMPLE_SIZE*10 ) index = SAMPLE_SIZE*10 - 1;
+	AreaTable[index] += PEperBin[kk+1];
+      }
       if ( total >= 0 ) {
 	if ( PEperBin[0] < min ) min = PEperBin[0];
 	TimeTable[0].push_back(PEperBin[0]);
       }
-      else
-	TimeTable[0].push_back(-999.);
-      TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
-      if ( phase == -999. && total > 0 ) phase = PEperBin[0];
+      //else
+      //TimeTable[0].push_back(-999.);
+      //TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
+    }
+    for ( ii = 0; ii < SAMPLE_SIZE*10; ++ii ) {
+      if ( AreaTable[ii] <= 0. ) continue;
+      fprintf ( pulseFile, "%lu\t%d\t%.2f", evtNum, (ii-SAMPLE_SIZE*5)*SAMPLE_SIZE, AreaTable[ii] );
+      if ( ((ii-SAMPLE_SIZE*5)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() ) {
+	pulseArea -= AreaTable[ii];
+	fprintf ( pulseFile, "\t0\n" );
+      }
+      else fprintf ( pulseFile, "\t1\n" );
     }
     for ( ii = 0; ii < TimeTable[0].size(); ++ii ) {
-      fprintf ( pulseFile, "%lu\t%.1f\t%.2f", evtNum, TimeTable[0][ii], TimeTable[1][ii] );
-      if ( (TimeTable[0][ii]-min) > fdetector->get_coinWind() ) {
-	fprintf ( pulseFile, "\tOUTSIDE COINCIDENCE WINDOW!!\n" );
+      if ( (TimeTable[0][ii]-min) > fdetector->get_coinWind() )
 	--spike;
-	pulseArea -= TimeTable[1][ii];
-      }
-      else fprintf ( pulseFile, "\n" );
+      //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, TimeTable[0][ii], TimeTable[1][ii] );
     }
     fclose(pulseFile);
   }
   
-  if ( pulseArea < 0. ) pulseArea = 0.;
+  if ( pulseArea < fdetector->get_sPEthr() )
+    pulseArea = 0.;
   if ( spike < 0 ) spike = 0;
   double pulseAreaC= pulseArea / posDep;
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());

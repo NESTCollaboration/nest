@@ -31,8 +31,8 @@ void VDetector::Initialization() {
 	noise[0] = 0.0; //baseline noise mean and width in PE (Gaussian)
 	noise[1] = 0.0; //baseline noise mean and width in PE (Gaussian)
 	P_dphe = 0.2; //chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
-
-	coinWind = 100.; //S1 coincidence window in ns
+	
+	coinWind =100;//S1 coincidence window in ns
 	coinLevel= 2; //how many PMTs have to fire for an S1 to count
 	numPMTs = 89; //For coincidence calculation
 

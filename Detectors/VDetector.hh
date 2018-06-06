@@ -30,7 +30,7 @@ class VDetector {
 		double* get_noise(){return &noise[0];}
 		double get_P_dphe(){return P_dphe;}
 
-                int get_coinWind(){return coinWind;}
+             double get_coinWind(){return coinWind;}
 		int get_coinLevel(){return coinLevel;}
 		int get_numPMTs(){return numPMTs;}
 
@@ -116,12 +116,12 @@ class VDetector {
 		virtual double FitS2 ( double xPos_mm, double yPos_mm ) { return 1.; }
   
   virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) { return 0.; }
-  virtual std::vector<double> SinglePEWaveForm ( double area, double t0, double phase ) { std::vector<double> PEperBin; return PEperBin; }
+  virtual std::vector<double> SinglePEWaveForm ( double area, double t0 ) { std::vector<double> PEperBin; return PEperBin; }
   
 	protected:
 		
 		// Primary Scintillation (S1) parameters
-		int coinLevel, numPMTs;
+                int coinLevel, numPMTs;
                 double g1, sPEres, sPEthr, sPEeff, P_dphe, coinWind;
 		double noise[2];
 

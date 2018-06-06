@@ -42,7 +42,7 @@ public:
 		noise[1] = 0.0; //baseline noise mean and width in PE (Gaussian)
 		P_dphe = 0.2; //chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
 		
-		coinWind=100.;//S1 coincidence window in ns
+		coinWind= 100;//S1 coincidence window in ns
 		coinLevel= 2; //how many PMTs have to fire for an S1 to count
 		numPMTs = 89; //For coincidence calculation
 
@@ -128,16 +128,16 @@ public:
     return phoTravT; //this function follows LUX (arXiv:1802.06162) not Xe10 technically but tried to make general
   }
   
-  virtual vector<double> SinglePEWaveForm ( double area, double t0, double phase ) {
+  virtual vector<double> SinglePEWaveForm ( double area, double t0 ) {
     
-    vector<double> PEperBin; area *= 10.5;
+    vector<double> PEperBin; area *= SAMPLE_SIZE;
     
-    double sigma = 10.; //ns
+    double sigma = SAMPLE_SIZE; //ns
     double amplitude = area / ( sigma * sqrt ( 2. * M_PI ) ), signal; //assumes perfect Gaussian
     double threshold = 0.005; //photo-electrons
     
-    double tStep1 = 0.1; //ns, make sure much smaller than sample size; used to generate MC-true pulses essentially
-    double tStep2 = 10.; //ns; 1 over digitization rate, 100 MHz assumed here
+    double tStep1 = SAMPLE_SIZE/1e2; //ns, make sure much smaller than sample size; used to generate MC-true pulses essentially
+    double tStep2 = SAMPLE_SIZE; //ns; 1 over digitization rate, 100 MHz assumed here
     
     double time = -5.*sigma;
     bool digitizeMe = false;
@@ -152,13 +152,6 @@ public:
 	  PEperBin.push_back(signal);
 	else {
 	  if ( RandomGen::rndm()->rand_uniform() < 2.*(tStep1/tStep2) ) {
-	    /*if ( phase != -999. ) {
-	      if ( RandomGen::rndm()->rand_uniform() < 0.5 )
-		{ while ( fabs(fabs(time+t0-phase)/tStep2-int(fabs(time+t0-phase)/tStep2)) > 0.0001 ) time -= 0.0001; }
-	      else
-		{ while ( fabs(fabs(phase-time-t0)/tStep2-int(fabs(phase-time-t0)/tStep2)) > 0.0001 ) time += 0.0001; }
-	      signal = amplitude * exp(-pow(time,2.)/(2.*sigma*sigma));
-	    }*/
 	    PEperBin.push_back(time+t0);
 	     PEperBin.push_back(signal);
 	    digitizeMe = true;

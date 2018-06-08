@@ -117,6 +117,15 @@ int main ( int argc, char** argv ) {
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
   
+  if ( type_num == Kr83m ) {
+    if ( eMin == 9.4 && eMax == 9.4 ) {}
+    else if ( eMin == 32.1 &&
+	      eMax == 32.1 ) {}
+    else
+      { cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV please." << endl;
+	return 0; }
+  }
+  
   if ( (eMin < 10. || eMax < 10.) && type_num == gammaRay ) {
     cerr << "WARNING: Typically beta model works better for ER BG at low energies as in a WS." << endl;
     cerr << "ER data is often best matched by a weighted average of the beta & gamma models." << endl;
@@ -153,8 +162,12 @@ int main ( int argc, char** argv ) {
 				  double(massNum), double(atomNum), NuisParam);
   }
   else {
-    yieldsMax = n.GetYields(type_num, eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
-			    double(massNum), double(atomNum), NuisParam);
+    if ( type_num == Kr83m )
+      yieldsMax = n.GetYields(  beta  , eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+			      double(massNum), double(atomNum), NuisParam); //the reason for this: don't do the special Kr stuff when just checking max
+    else
+      yieldsMax = n.GetYields(type_num, eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+			      double(massNum), double(atomNum), NuisParam);
   }
   if ( (detector->get_g1()*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
     cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";

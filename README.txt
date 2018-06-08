@@ -23,7 +23,7 @@ To create a detector, one can do (within the Detectors/ folder):
 	
 	cp DetectorExample_XENON10.hh MyDetector.hh
 
-Then, one can edit the parameters/functions in MyDetector.hh as desired.
+Then, one can edit the parameters/functions in MyDetector.hh as desired. SEE Detector.txt for more information on important values!
 One would start by replacing every instance of "DetectorExample_XENON10" with "MyDetector":
 
 	e.g. 

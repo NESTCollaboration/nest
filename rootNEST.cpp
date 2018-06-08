@@ -97,6 +97,9 @@ int main ( int argc, char** argv ) {
     TGraph *gr1 = new TGraph ( numBins, NRbandX, NRbandY );
     TF1 *fitf = new TF1("NRbandGCentroid","[0]/(x+[1])+[2]*x+[3]",minS1,maxS1);
     gr1->Fit(fitf,"rq","",minS1,maxS1);
+    double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
+    if ( chi2 > 2. )
+      cerr << "ERROR: Poor fit to NR Gaussian band centroids i.e. means of log(S2) or log(S2/S1) histograms in S1 bins. Investigate please!" << endl;
     /*fprintf(stderr,"Band Fit Parameters: %f %f %f %f\n",
 	    fitf->GetParameter(0),
 	    fitf->GetParameter(1),

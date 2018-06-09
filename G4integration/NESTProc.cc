@@ -130,15 +130,15 @@ NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
 }
 
 template<class T>
-void NESTProc<T>::FillSecondaryInfo(const std::vector<G4Track*>* secondaries, NESTTrackInformation* parentInfo) const
+void NESTProc<T>::FillSecondaryInfo(const std::vector<G4Track*>& secondaries, NESTTrackInformation* parentInfo) const
 {
-  if (secondaries)
-  {
-    for (G4Track* sec : *secondaries){
+
+
+    for (G4Track* sec : secondaries){
         NESTTrackInformation* infoNew = new NESTTrackInformation(*parentInfo);
         sec->SetUserInformation(infoNew);    
     }
-  }
+
 }
 
 template<class T>
@@ -146,7 +146,10 @@ INTERACTION_TYPE NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track*
 {
   //logic to determine what processes are kicked off by this track and also set the info
 
-  const G4String sec_creator = sec->GetCreatorProcess()->GetProcessName();
+  G4String sec_creator="";
+  if(sec->GetCreatorProcess()){
+   sec_creator = sec->GetCreatorProcess()->GetProcessName();
+  }
   if (aTrack && aTrack->GetDefinition() == G4Neutron::Definition())
   {
     return NR;
@@ -170,13 +173,14 @@ INTERACTION_TYPE NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track*
   return NoneType;
 }
   
-  
+bool VERB=1;
 
 
 template<class T>
 G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
 {
-  // If a user is doing other UserTrackInfo stuff, grab it and prserve it so we don't lose the information
+  aParticleChange.Initialize(aTrack);
+//   If a user is doing other UserTrackInfo stuff, grab it and preserve it so we don't lose the information
   G4VUserTrackInformation* oldInfo=aTrack.GetUserInformation();
   T* oldInfo_T = static_cast<T*>(oldInfo);
   NESTTrackInformation* oldInfo_N = dynamic_cast<NESTTrackInformation* >(oldInfo_T);
@@ -186,12 +190,12 @@ G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step
   
   //hacky way to grab secondaries created in this step without them becoming const. Don't abuse this by altering the secondaries besides setting UserTrackInfo!
   const std::vector<const G4Track*>* secondaries_c = (aStep.GetSecondaryInCurrentStep());
-  std::vector< G4Track*>* secondaries;
+  std::vector< G4Track*> secondaries;
   const G4TrackVector* fSecondary = aStep.GetSecondary();
   G4int nSecondary = fSecondary->size();
   for (G4int i=nSecondary - secondaries_c->size(); i < nSecondary; i++)
   {
-    secondaries->push_back((*fSecondary)[i]);
+    secondaries.push_back((*fSecondary)[i]);
   }
   
   //If the current track is already in a lineage, its secondaries inherit that lineage.
@@ -200,29 +204,29 @@ G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step
   }
   //otherwise, we may need to start a new lineage
   else{
-    if(secondaries){
-      for ( G4Track* sec : *secondaries){
-        //Each secondary has a type (including the possible NoneType)
-        INTERACTION_TYPE sec_type= GetChildType(&aTrack, sec);
-        //The first secondary will change the step_type. Subsequent secondaries better have the same type as the first. If they don't, something is weird
-        assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
-        //if this is the first secondary to have a non-None type, we've started a new lineage
-        if(step_type==NoneType && sec_type !=NoneType){
-          lineages.push_back(Lineage(sec_type));
-        }
-        step_type=sec_type;
-        //If the secondary has a non-None type, it also gets a lineage ID.
-        int lineage_id = (sec_type==NoneType ? -1: lineages.size()-1);
-        //If there's old (non-NEST) user info to pass on, do that. In either case, make a new NESTTrackInfo for this secondary.
-        if(oldInfo_T){
-          sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id,*oldInfo_T));
-        }
-        else{
-          sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id));
-        }
+
+    for ( G4Track* sec : secondaries){
+      //Each secondary has a type (including the possible NoneType)
+      INTERACTION_TYPE sec_type= GetChildType(&aTrack, sec);
+      //The first secondary will change the step_type. Subsequent secondaries better have the same type as the first. If they don't, something is weird
+      assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
+      //if this is the first secondary to have a non-None type, we've started a new lineage
+      if(step_type==NoneType && sec_type !=NoneType){
+        lineages.push_back(Lineage(sec_type));
       }
-    
+      step_type=sec_type;
+      //If the secondary has a non-None type, it also gets a lineage ID.
+      int lineage_id = (sec_type==NoneType ? -1: lineages.size()-1);
+      //If there's old (non-NEST) user info to pass on, do that. In either case, make a new NESTTrackInfo for this secondary.
+      if(oldInfo_T){
+        sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id,*oldInfo_T));
+      }
+      else{
+        sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id));
+      }
     }
+    
+    
     //What if the parent is a primary? Give it a lineage just as if it were one of its own secondaries
     if(aTrack.GetParentID()==0){
       INTERACTION_TYPE sec_type= GetChildType(0, &aTrack);

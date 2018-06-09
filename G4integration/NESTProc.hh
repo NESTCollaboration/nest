@@ -128,7 +128,7 @@ namespace NEST
     G4double GetScintillationYieldFactor() const;
     // Returns the quantum (photon/electron) yield factor. See above.
 
-    void FillSecondaryInfo(const std::vector<G4Track*>* secondaries, NESTTrackInformation* parentInfo) const;
+    void FillSecondaryInfo(const std::vector<G4Track*>& secondaries, NESTTrackInformation* parentInfo) const;
     INTERACTION_TYPE GetChildType(const G4Track* aTrack, const G4Track* sec) const;
     double efield=0;
 

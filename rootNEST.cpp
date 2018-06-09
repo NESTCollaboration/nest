@@ -96,10 +96,18 @@ int main ( int argc, char** argv ) {
     }
     TGraph *gr1 = new TGraph ( numBins, NRbandX, NRbandY );
     TF1 *fitf = new TF1("NRbandGCentroid","[0]/(x+[1])+[2]*x+[3]",minS1,maxS1);
+    fitf->SetParameters(10., 15., -1.5e-3, 2.);
     gr1->Fit(fitf,"rq","",minS1,maxS1);
     double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
-    if ( chi2 > 2. )
-      cerr << "ERROR: Poor fit to NR Gaussian band centroids i.e. means of log(S2) or log(S2/S1) histograms in S1 bins. Investigate please!" << endl;
+    if ( chi2 > 1.5 ) {
+      cerr << "WARNING: Poor fit to NR Gaussian band centroids i.e. means of log(S2) or log(S2/S1) histograms in S1 bins. Investigate please!" << endl;
+      fitf = new TF1("NRbandGCentroid","[0]+([1]-[0])/(1+(x/[2])^[3])",minS1,maxS1);
+      fitf->SetParameters(0.5, 3., 1e2, 0.4);
+      gr1->Fit(fitf,"rq","",minS1,maxS1);
+      chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
+      if ( chi2 > 2. )
+	{ cerr << "ERROR: Even the backup plan to use sigmoid failed as well!" << endl; return 0; }
+    }
     /*fprintf(stderr,"Band Fit Parameters: %f %f %f %f\n",
 	    fitf->GetParameter(0),
 	    fitf->GetParameter(1),
@@ -231,7 +239,7 @@ void GetFile ( char* fileName ) {
     outputs = GetBand_Gaussian ( GetBand(S1cor_spike, S2cor_phd, false ) );
   }
   //fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
-  fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\tSig Error\tX^2/DOF\n");
+  fprintf(stdout,"Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig Error\tX^2/DOF\n");
   for ( o = 0; o < numBins; o++ ) {
     //fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
     fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5],band[o][6]);
@@ -330,11 +338,12 @@ vector< vector<double> > GetBand_Gaussian ( vector< vector<double> > signals ) {
     TString HistName;
     HistName.Form("%i",j);
     HistogramArray[j].SetName(HistName.Data());
-    HistogramArray[j].SetBins(40,0.6,3.);
+    HistogramArray[j].SetBins(50,0.6,3.6);
     for ( unsigned long i = 0; i < signals[j].size(); i++ )
       HistogramArray[j].Fill(signals[j][i]);
     HistogramArray[j].Draw();
     TF1 *f = new TF1("band","gaus");
+    f->SetParameters(1.,0.1);
     HistogramArray[j].Fit(f,"Q");
     band[j][2] = f->GetParameter("Mean");
     band[j][3] = f->GetParameter("Sigma");

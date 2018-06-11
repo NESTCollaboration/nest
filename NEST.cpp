@@ -391,7 +391,8 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   
   if ( useTiming ) {
     vector<double> PEperBin, AreaTable, TimeTable[2];
-    AreaTable.resize(SAMPLE_SIZE*10,0.);
+    int numPts = 1100-100*SAMPLE_SIZE;
+  AreaTable.resize(numPts,0.);
     photonstream photon_times;
     photon_times.clear();
     photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false,(int)fabs(spike));
@@ -410,10 +411,11 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
       int total = (unsigned int)PEperBin.size() - 1;
       for ( int kk = 0; kk < total; ++kk ) {
 	pTime = PEperBin[0] + kk * SAMPLE_SIZE;
-	index = int(floor(pTime/SAMPLE_SIZE)) +SAMPLE_SIZE*5;
+	index = int(floor(pTime/SAMPLE_SIZE)) + numPts / 2;
 	if ( index < 0 ) index = 0;
-	if ( index >= SAMPLE_SIZE*10 ) index = SAMPLE_SIZE*10 - 1;
-	AreaTable[index] += PEperBin[kk+1];
+	if ( index >= numPts ) index = numPts - 1;
+	AreaTable[index] +=
+	  10.*(photon_areas[0][ii]+photon_areas[1][ii])/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(pTime-photon_times[ii],2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
       }
       if ( total >= 0 ) {
 	if ( PEperBin[0] < min ) min = PEperBin[0];
@@ -423,10 +425,10 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
       //TimeTable[0].push_back(-999.);
       //TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
-    for ( ii = 0; ii < SAMPLE_SIZE*10; ++ii ) {
+    for ( ii = 0; ii < numPts; ++ii ) {
       if ( AreaTable[ii] <= 0. ) continue;
-      fprintf ( pulseFile, "%lu\t%d\t%.2f", evtNum, (ii-SAMPLE_SIZE*5)*SAMPLE_SIZE, AreaTable[ii] );
-      if ( ((ii-SAMPLE_SIZE*5)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() ) {
+      fprintf ( pulseFile, "%lu\t%d\t%.2f", evtNum, (ii-numPts/2)*SAMPLE_SIZE, AreaTable[ii] );
+      if ( ((ii-numPts/2)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() ) {
 	pulseArea -= AreaTable[ii];
 	fprintf ( pulseFile, "\t0\n" );
       }

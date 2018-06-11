@@ -130,9 +130,9 @@ public:
   
   virtual vector<double> SinglePEWaveForm ( double area, double t0 ) {
     
-    vector<double> PEperBin; area *= SAMPLE_SIZE;
+    vector<double> PEperBin; area *= 10.;
     
-    double sigma = SAMPLE_SIZE; //ns
+    double sigma = PULSE_WIDTH; //ns
     double amplitude = area / ( sigma * sqrt ( 2. * M_PI ) ), signal; //assumes perfect Gaussian
     double threshold = 0.005; //photo-electrons
     

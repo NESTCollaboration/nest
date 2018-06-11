@@ -19,6 +19,7 @@
 #define MOLAR_MASS 131.293
 #define PHE_MIN 1e-6
 #define SAMPLE_SIZE 10
+#define PULSE_WIDTH 10
 
 namespace NEST {
   
@@ -101,6 +102,5 @@ namespace NEST {
   };
 
 }
-
 
 #endif

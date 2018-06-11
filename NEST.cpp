@@ -145,7 +145,7 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( recombProb > 1. ) recombProb = 1.;
   
   double ef = yields.ElectricField;
-  double cc = -1.8818e-8*pow(ef-1566.1,2.)+0.088155;
+  double cc = 0.075351+(0.050461-0.075351)/pow(1.+pow(ef/30057.,3.0008),2.9832e5);
   if ( cc < 0. ) cc = 0.;
   double bb = 0.54;
   double aa = cc/pow(1.-bb,2.);
@@ -278,14 +278,18 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   default: //beta, CH3T
     {
       double QyLvllowE = 1e3/Wq_eV+6.5*(1.-1./(1.+pow(dfield/47.408,1.9851)));
-      double QyLvlmedE =32.988-32.988/(1.+pow(dfield/(0.026715*exp(density/0.33926)),0.6705));
+      double HiFieldQy = 1.+0.4607/pow(1.+pow(dfield/621.74,-2.2717),53.502);
+      double QyLvlmedE = 32.988-32.988/(1.+pow(dfield/(0.026715*exp(density/0.33926)),0.6705));
+      QyLvlmedE *= HiFieldQy;
       double DokeBirks = 1652.264+(1.415935e10-1652.264)/(1.+pow(dfield/0.02673144,1.564691));
       Nq = energy * 1e3 / Wq_eV;//( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
       double LET_power = -2.;
       if ( fdetector->get_inGas() ) LET_power = 2.;
-      double QyLvlhighE =28.;
+      double QyLvlhighE = 28.;
       if ( density > 3. ) QyLvlhighE=49.;
       Qy = QyLvlmedE+(QyLvllowE-QyLvlmedE)/pow(1.+1.304*pow(energy,2.1393),0.35535)+QyLvlhighE/(1.+DokeBirks*pow(energy,LET_power));
+      if ( Qy > QyLvllowE && energy > 1. && dfield > 1e4 )
+	Qy = QyLvllowE;
       Ly = Nq / energy - Qy;
       Ne = Qy * energy;
       Nph= Ly * energy;

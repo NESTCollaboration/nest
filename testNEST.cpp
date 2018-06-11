@@ -271,7 +271,7 @@ int main ( int argc, char** argv ) {
       cerr << "ERROR: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }
-    if ( pos_z >= detector->get_TopDrift() || driftTime <= 0.0 ) {
+    if ( pos_z > detector->get_TopDrift() || driftTime <= 0.0 ) {
       cerr << "ERROR: unphysically big Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }

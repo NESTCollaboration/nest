@@ -5,13 +5,14 @@ Installation Instructions:
 
 	>> mkdir build; cd build
 
-2. In the new build directory, run the following to configure CMake: 
+2. In the new build directory, configure CMake. On systems where the C compiler/C++ compiler 
+paths are already specified, one can simply do:
 
-	>> cmake -DCMAKE_C_COMPILER="/path/to/bin/gcc" -DCMAKE_CXX_COMPILER="/path/to/bin/g++" -DCMAKE_INSTALL_PREFIX=${PWD} ../relative/path/to/NobleElementSimulationTechnique
+	>> cmake -DCMAKE_INSTALL_PREFIX=${PWD} ../relative/path/NobleElementSimulationTechnique
 
-If the build directory was created as a subdirectory in the source folder, this is simply:
+If the compiler paths cannot be found (for example, on some cluster environments), one should do:
 
-	>> cmake -DCMAKE_C_COMPILER="/path/to/bin/gcc" -DCMAKE_CXX_COMPILER="/path/to/bin/g++" -DCMAKE_INSTALL_PREFIX=${PWD} ../
+	>> cmake -DCMAKE_C_COMPILER="/path/to/bin/gcc" -DCMAKE_CXX_COMPILER="/path/to/bin/g++" -DCMAKE_INSTALL_PREFIX=${PWD} ../relative/path/NobleElementSimulationTechnique
 
 3. To build the source code into a library and generate the testNEST executable:
 	

@@ -519,6 +519,13 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/fdetector->get_eLife_us())); //MAKE this 1 for SINGLE e- DEBUGGING
   
+  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)* // arXiv:1207.2292
+    ( fdetector->get_anode() - fdetector->get_TopDrift() ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
+  if ( (fdetector->get_anode() - fdetector->get_TopDrift()) <= 0. ) {
+    cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
+  }
+  long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE;
+  
   if ( useTiming ) {
     vector<double> electronstream;
     electronstream.resize(Nee,dt);
@@ -534,6 +541,12 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     double tauTrap = 1680e-3 / fdetector->get_E_gas(); // arXiv:1310.1117
     FILE* pulseFile = fopen ( "photon_times.txt", "a" );
     for ( i = 0; i < Nee; ++i ) {
+      SE = floor(RandomGen::rndm()->
+		 rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5);
+      Nph += long(SE);
+      SE = (double)BinomFluct(long(SE),fdetector->get_g1_gas()*posDep); nHits += long(SE);
+      SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
+      SE = RandomGen::rndm()->rand_gauss(SE,fdetector->get_sPEres()*sqrt(SE)); pulseArea += SE;
       elecTravT = 0.;
       DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
       DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);
@@ -551,17 +564,14 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     }
     fclose ( pulseFile );
   }
-  
-  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)* // arXiv:1207.2292
-    ( fdetector->get_anode() - fdetector->get_TopDrift() ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
-  if ( (fdetector->get_anode() - fdetector->get_TopDrift()) <= 0. ) {
-    cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
+  else {
+    Nph = long(floor(RandomGen::rndm()->rand_gauss(elYield*double(Nee),
+		      sqrt(fdetector->get_s2Fano()*elYield*double(Nee)))+0.5));
+    nHits = BinomFluct(Nph,fdetector->get_g1_gas()*posDep);
+    Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe());
+    pulseArea=RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
   }
-  long Nph = long(floor(RandomGen::rndm()->rand_gauss(elYield*double(Nee),
-				   sqrt(fdetector->get_s2Fano()*elYield*double(Nee)))+0.5));
-  long nHits = BinomFluct(Nph,fdetector->get_g1_gas()*posDep);
-  long Nphe = nHits + BinomFluct(nHits,fdetector->get_P_dphe());
-  double pulseArea=RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
+  
   double pulseAreaC= pulseArea/exp(-dt/fdetector->get_eLife_us()) / posDep;
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
@@ -582,7 +592,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   
   if(pulseArea<fabs(fdetector->get_s2_thr())) for(i=0;i<8;i++) { if(ionization[i]==0.)ionization[i]=PHE_MIN; ionization[i]*=-1.; }
   
-  double SE = elYield* fdetector->get_g1_gas();
+  SE = elYield* fdetector->get_g1_gas();
   double g2 = ExtEff * SE;
   if ( fdetector->get_s2_thr() < 0 )
     g2 *= fdetector->get_S2botTotRatio();

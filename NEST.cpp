@@ -522,20 +522,32 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( useTiming ) {
     vector<double> electronstream;
     electronstream.resize(Nee,dt);
-    double elecTravT = 0., DL, DL_time;
-    double Diff_Long=13.859 * pow ( 1e-3 * dfield, -0.58559 ); //fit to Aprile and Doke review paper and to Sorensen 2011, arXiv:1102.2865
+    double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
+    double Diff_Tran=37.368 * pow ( dfield, 0.093452 ) * exp ( -8.1651e-5 * dfield ); // arXiv:1609.04467 (EXO-200)
+    double Diff_Long=2089.2 * pow ( dfield,-0.699050 ) * exp ( -168.35000 / dfield ); // fit to Aprile & Doke review paper and to arXiv:1102.2865; plus, LUX Run02+03
+    if ( fdetector->get_inGas() ) {
+      Diff_Long = 4.265 + 19097. / dfield - 1.7397e6 / pow ( dfield, 2. ) + 1.2477e8 / pow ( dfield, 3. ); // Nygren, NEXT
+      Diff_Tran *= 0.01; // another good rule of thumb: Diff_Long ~ 0.15 * Diff_Tran, as in LAr
+    }
     double sigmaDL = 10. *sqrt ( 2. * Diff_Long * dt * 1e-6 ); //sqrt of cm^2/s * s = cm; times 10 for mm.
-    double tauTrap = 1680e-3 / fdetector->get_E_gas();
+    double sigmaDT = 10. *sqrt ( 2. * Diff_Tran * dt * 1e-6 );
+    double tauTrap = 1680e-3 / fdetector->get_E_gas(); // arXiv:1310.1117
     FILE* pulseFile = fopen ( "photon_times.txt", "a" );
     for ( i = 0; i < Nee; ++i ) {
       elecTravT = 0.;
       DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
+      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);
+      phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+      sigX = DT * cos ( phi );
+      sigY = DT * sin ( phi );
+      newX = dx + sigX;
+      newY = dy + sigY;
       DL_time = DL / driftVelocity;
       elecTravT += DL_time;
       if ( !fdetector->get_inGas() && fdetector->get_E_gas() != 0. )
-	elecTravT -= tauTrap * log ( RandomGen::rndm()->rand_uniform() );
+	elecTravT -= tauTrap*log(RandomGen::rndm()->rand_uniform());
       electronstream[i] += elecTravT;
-      fprintf ( pulseFile, "%lu\t%.0f\t%s\n", evtNum, electronstream[i]*1e3, "S2 electron!" );
+      fprintf ( pulseFile, "%lu\t%.0f\t%.3f\t%.3f\n", evtNum, electronstream[i]*1e3, newX, newY );
     }
     fclose ( pulseFile );
   }

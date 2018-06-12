@@ -500,12 +500,13 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   
 }
 
-vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity ) {
+vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity,
+				 long evtNum, double dfield, bool useTiming ) {
   
-  vector<double> ionization(9);
+  vector<double> ionization(9); int i;
   double alpha = 0.137, beta = 177., gamma = 45.7;
-  double epsilonRatio = 1.85 / 1.00126;
-  if ( fdetector->get_inGas() ) epsilonRatio = 1.;
+  double epsilonRatio = 1.85/1.00126;
+  if ( fdetector->get_inGas() ) epsilonRatio=1.;
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = fdetector->FitS2( dx, dy ); // XY is always in mm now, never cm
@@ -517,6 +518,27 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( ExtEff > 1. || fdetector->get_inGas() ) ExtEff = 1.;
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/fdetector->get_eLife_us())); //MAKE this 1 for SINGLE e- DEBUGGING
+  
+  if ( useTiming ) {
+    vector<double> electronstream;
+    electronstream.resize(Nee,dt);
+    double elecTravT = 0., DL, DL_time;
+    double Diff_Long=13.859 * pow ( 1e-3 * dfield, -0.58559 ); //fit to Aprile and Doke review paper and to Sorensen 2011, arXiv:1102.2865
+    double sigmaDL = 10. *sqrt ( 2. * Diff_Long * dt * 1e-6 ); //sqrt of cm^2/s * s = cm; times 10 for mm.
+    double tauTrap = 1680e-3 / fdetector->get_E_gas();
+    FILE* pulseFile = fopen ( "photon_times.txt", "a" );
+    for ( i = 0; i < Nee; ++i ) {
+      elecTravT = 0.;
+      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
+      DL_time = DL / driftVelocity;
+      elecTravT += DL_time;
+      if ( !fdetector->get_inGas() && fdetector->get_E_gas() != 0. )
+	elecTravT -= tauTrap * log ( RandomGen::rndm()->rand_uniform() );
+      electronstream[i] += elecTravT;
+      fprintf ( pulseFile, "%lu\t%.0f\t%s\n", evtNum, electronstream[i]*1e3, "S2 electron!" );
+    }
+    fclose ( pulseFile );
+  }
   
   double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)* // arXiv:1207.2292
     ( fdetector->get_anode() - fdetector->get_TopDrift() ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
@@ -546,7 +568,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     ionization[6] = S2b / (1.+fdetector->get_P_dphe()); ionization[7] = S2bc / (1.+fdetector->get_P_dphe());
   }
   
-  if(pulseArea<fabs(fdetector->get_s2_thr())) for(int i=0;i<8;i++) { if(ionization[i]==0.)ionization[i]=PHE_MIN; ionization[i]*=-1.; }
+  if(pulseArea<fabs(fdetector->get_s2_thr())) for(i=0;i<8;i++) { if(ionization[i]==0.)ionization[i]=PHE_MIN; ionization[i]*=-1.; }
   
   double SE = elYield* fdetector->get_g1_gas();
   double g2 = ExtEff * SE;

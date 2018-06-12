@@ -135,7 +135,7 @@ int main ( int argc, char** argv ) {
   if ( rho < 1. ) detector->set_inGas(true);
   
 	// Print g1 and g2 values, requiring S2 calculation for 1 SE and x,y,d = 0,0,0
-  vector<double> secondary = n.GetS2 ( 1, 0., 0., 0., 1. );
+  vector<double> secondary = n.GetS2 ( 1, 0., 0., 0., 1., 0, 1e2, false );
   
 	if ( atof(argv[5]) == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
@@ -354,7 +354,7 @@ int main ( int argc, char** argv ) {
     else signal1.push_back(-999.);
     
     if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
-    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD);
+    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming);
     if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
     else if ( usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )

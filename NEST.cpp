@@ -45,7 +45,7 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
 			      double x, double y, double z, bool Geant4 ) {
   
   double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97, tau1 = 3.27; //arXiv:1802.06162
-  if ( fdetector->get_inGas() ) { //from G4S1Light.cc in old NEST
+  if ( fdetector->get_inGas() || energy < W_DEFAULT*0.001 ) { //from G4S1Light.cc in old NEST
     tau1 = 5.18;
     tau3 = 100.1;
   }
@@ -63,6 +63,8 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
     else
       SingTripRatio = 0.015* pow ( energy,-0.12 ); //mixing arXiv:1802.06162 with Kubota 1979
   }
+  
+  if ( fdetector->get_inGas() || energy < W_DEFAULT*0.001 ) { SingTripRatio = 0.1; tauR = 0.; }
   
   time_ns += tauR * ( 1.0 / RandomGen::rndm()->rand_uniform() - 1. );
   if ( RandomGen::rndm()->rand_uniform() < SingTripRatio / ( 1. + SingTripRatio ) )
@@ -519,15 +521,15 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/fdetector->get_eLife_us())); //MAKE this 1 for SINGLE e- DEBUGGING
   
-  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)* // arXiv:1207.2292
-    ( fdetector->get_anode() - fdetector->get_TopDrift() ) * 0.1; //EL gap in mm -> cm, affecting S2 size linearly
-  if ( (fdetector->get_anode() - fdetector->get_TopDrift()) <= 0. ) {
+  double gasGap = fdetector->get_anode() - fdetector->get_TopDrift(); //EL gap in mm -> cm, affecting S2 size linearly
+  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292
+  if ( gasGap <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-  long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE, phe;
+  long k, Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE, phe, driftVelocity_gas, rho, KE, origin; QuantaResult quanta;
   
   if ( useTiming ) {
-    vector<double> electronstream;
+    vector<double> electronstream; photonstream photon_times;
     electronstream.resize(Nee,dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran=37.368 * pow ( dfield, 0.093452 ) * exp ( -8.1651e-5 * dfield ); // arXiv:1609.04467 (EXO-200)
@@ -541,15 +543,6 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     double tauTrap = 1680e-3 / fdetector->get_E_gas(); // arXiv:1310.1117
     FILE* pulseFile = fopen ( "photon_times.txt", "a" );
     for ( i = 0; i < Nee; ++i ) {
-      SE = floor(RandomGen::rndm()->
-		 rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5);
-      Nph += long(SE);
-      SE = (double)BinomFluct(long(SE),fdetector->get_g1_gas()*posDep); nHits += long(SE);
-      SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
-      for ( double j = 0.; j < SE; j += 1. ) {
-	phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());
-	pulseArea += phe;
-      }
       elecTravT = 0.; //resetting for the current electron
       DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
       DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);
@@ -563,7 +556,28 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       if ( !fdetector->get_inGas() && fdetector->get_E_gas() != 0. )
 	elecTravT -= tauTrap*log(RandomGen::rndm()->rand_uniform());
       electronstream[i] += elecTravT;
-      fprintf ( pulseFile, "%lu\t%.0f\t%.3f\t%.3f\n", evtNum, electronstream[i]*1e3, newX, newY );
+      //fprintf ( pulseFile, "%lu\t%.0f\t%.3f\t%.3f\n", evtNum, electronstream[i]*1e+3, newX, newY );
+      SE = floor(RandomGen::rndm()->
+                 rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5);
+      Nph += long(SE);
+      SE = (double)BinomFluct(long(SE),fdetector->get_g1_gas()*posDep); nHits += long(SE);
+      rho = fdetector->get_p_bar() * 1e5 / ( fdetector->get_T_Kelvin() * 8.314 ) * MOLAR_MASS * 1e-6;
+      driftVelocity_gas = SetDriftVelocity_MagBoltz ( rho, fdetector->get_E_gas() * 1000. );
+      KE = 0.5 * ELEC_MASS * driftVelocity_gas * driftVelocity_gas * 1e6 / 1.602e-16;
+      origin = fdetector->get_TopDrift() + gasGap / 2.;
+      quanta.photons = int(SE);
+      quanta.electrons = 0;
+      quanta.ions = 0;
+      quanta.excitons = int(floor(0.0566*SE+0.5));
+      photon_times.clear();
+      photon_times = GetPhotonTimes ( (INTERACTION_TYPE)(beta), quanta, dfield, KE, newX, newY, origin, false, quanta.photons );
+      SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
+      for ( double j = 0.; j < SE; j += 1. ) {
+        phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());
+        pulseArea += phe;
+	origin = fdetector->get_TopDrift() + gasGap * RandomGen::rndm()->rand_uniform();
+	k = long(j); if ( k >= photon_times.size() ) k -= photon_times.size();
+	fprintf ( pulseFile, "%lu\t%.0f\t%.2f\n", evtNum, ((fdetector->get_anode()-origin)/driftVelocity_gas+electronstream[i])*1e3+photon_times[k], phe ); }
     }
     fclose ( pulseFile );
   }

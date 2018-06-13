@@ -20,6 +20,7 @@
 #define PHE_MIN 1e-6
 #define SAMPLE_SIZE 10
 #define PULSE_WIDTH 10
+#define ELEC_MASS 9.109e-31 //kg
 
 namespace NEST {
   

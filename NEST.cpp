@@ -524,7 +524,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( (fdetector->get_anode() - fdetector->get_TopDrift()) <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-  long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE;
+  long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE, phe;
   
   if ( useTiming ) {
     vector<double> electronstream;
@@ -546,8 +546,11 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       Nph += long(SE);
       SE = (double)BinomFluct(long(SE),fdetector->get_g1_gas()*posDep); nHits += long(SE);
       SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
-      SE = RandomGen::rndm()->rand_gauss(SE,fdetector->get_sPEres()*sqrt(SE)); pulseArea += SE;
-      elecTravT = 0.;
+      for ( double j = 0.; j < SE; j += 1. ) {
+	phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());
+	pulseArea += phe;
+      }
+      elecTravT = 0.; //resetting for the current electron
       DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
       DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);
       phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();

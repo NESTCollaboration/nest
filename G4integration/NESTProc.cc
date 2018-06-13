@@ -102,7 +102,7 @@ NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
     for (auto lineage : lineages)
     {
       double etot = std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0., [](double a, Hit b){return a + b.E;});
-      NESTresult result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z, std::vector<double>{1, 1});
+      NESTresult result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z);
       auto photontimes = result.photon_times.begin();
       double ecum=0;
       double ecum_p=0;
@@ -142,7 +142,7 @@ void NESTProc<T>::FillSecondaryInfo(const std::vector<G4Track*>& secondaries, NE
 }
 
 template<class T>
-INTERACTION_TYPE NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track* sec) const
+Lineage NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track* sec) const
 {
   //logic to determine what processes are kicked off by this track and also set the info
 
@@ -152,28 +152,29 @@ INTERACTION_TYPE NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track*
   }
   if (aTrack && aTrack->GetDefinition() == G4Neutron::Definition())
   {
-    return NR;
+    return Lineage(NR);
   } else if (aTrack && aTrack->GetDefinition() == G4Gamma::Definition())
   {
 
     if (sec_creator.contains("compt"))
     {
-      return beta;
+      return Lineage(beta);
     } else if (sec_creator.contains("phot"))
     {
-      return gammaRay;
+      return Lineage(gammaRay);
     }
   } else if (sec->GetDefinition() == G4Electron::Definition() && (sec_creator.contains("decay")|| !aTrack))
   {
-    return beta;
+    return Lineage(beta);
   } else if (sec->GetDefinition()->GetAtomicMass()>1 && (sec_creator.contains("decay") || !aTrack)){
-    return ion;
+    Lineage ion_lin = Lineage(ion);
+    ion_lin.A=sec->GetDefinition()->GetAtomicMass();
+    ion_lin.Z=sec->GetDefinition()->GetAtomicNumber();
+    return ion_lin;
   }
   
-  return NoneType;
+  return Lineage(NoneType);
 }
-  
-bool VERB=1;
 
 
 template<class T>
@@ -207,7 +208,8 @@ G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step
 
     for ( G4Track* sec : secondaries){
       //Each secondary has a type (including the possible NoneType)
-      INTERACTION_TYPE sec_type= GetChildType(&aTrack, sec);
+      Lineage sec_lin = GetChildType(&aTrack, sec);
+      INTERACTION_TYPE sec_type= sec_lin.type;
       //The first secondary will change the step_type. Subsequent secondaries better have the same type as the first. If they don't, something is weird
       assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
       //if this is the first secondary to have a non-None type, we've started a new lineage
@@ -229,10 +231,11 @@ G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step
     
     //What if the parent is a primary? Give it a lineage just as if it were one of its own secondaries
     if(aTrack.GetParentID()==0){
-      INTERACTION_TYPE sec_type= GetChildType(0, &aTrack);
+      Lineage sec_lin= GetChildType(0, &aTrack);
+      INTERACTION_TYPE sec_type = sec_lin.type;
       assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
       if(step_type==NoneType && sec_type !=NoneType){
-          lineages.push_back(Lineage(sec_type));
+          lineages.push_back(sec_lin);
         }
         step_type=sec_type;
       int hit_id = (sec_type==NoneType ? -1: lineages.size()-1);

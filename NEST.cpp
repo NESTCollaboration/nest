@@ -30,19 +30,18 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 }
 
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,
-				     double A,double Z,vector<double> NuisParam, double x, double y, double z){
+				     double A,double Z,vector<double> NuisParam /*={1,1}*/){
   
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);
   result.quanta=GetQuanta(result.yields,density);
-  result.photon_times = GetPhotonTimes(species,result.quanta,dfield,energy,x,y,z,true,1);
+  result.photon_times = GetPhotonTimes(species,result.quanta.photons,result.quanta.excitons,dfield,energy);
   return result;
   
 }
 
 double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
-			      double dfield, double energy,
-			      double x, double y, double z, bool Geant4 ) {
+			      double dfield, double energy) {
   
   double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97, tau1 = 3.27; //arXiv:1802.06162
   if ( fdetector->get_inGas() || energy < W_DEFAULT*0.001 ) { //from G4S1Light.cc in old NEST
@@ -72,31 +71,32 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
   else
     time_ns -= tau3 * log ( RandomGen::rndm()->rand_uniform() );
   
-  if ( !Geant4 )
-    time_ns += fdetector->OptTrans( x, y, z ); //in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
-  
+
   return time_ns;
   
 }
 
-photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, QuantaResult result,
-					double dfield, double energy,
-					double x, double y, double z, bool Geant4, int nHits ) {
+//in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
+photonstream NESTcalc::AddPhotonTransportTime (photonstream emitted_times, double x, double y, double z){
+  photonstream return_photons;
+  for(auto t : emitted_times){
+    double newtime = t+ fdetector->OptTrans(x,y,z);
+    return_photons.push_back(newtime);
+  }
+  return return_photons;
+}
+
+photonstream NESTcalc::GetPhotonTimes ( INTERACTION_TYPE species, int total_photons, int excitons,
+					double dfield, double energy) {
   
-  photonstream return_photons; bool isExciton;
+  photonstream return_photons; 
   int total, excit;
-  if ( Geant4 ) {
-    total = result.photons;
-    excit = result.excitons;
-  }
-  else {
-    excit = int((double(nHits)/double(result.photons))*double(result.excitons)+0.5);
-    total = nHits;
-  }
-  for ( int ip = 0; ip < total; ++ip ) {
-    if ( ip < excit ) isExciton = true;
-    else isExciton = false;
-    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy,x,y,z,Geant4));
+  
+
+  for ( int ip = 0; ip < total_photons; ++ip ) {
+    bool isExciton=false;
+    if ( ip < excitons ) isExciton = true;
+    return_photons.push_back(PhotonTime(species,isExciton,dfield,energy));
   }
   
   return return_photons;
@@ -181,11 +181,11 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
 				  double dfield, double massNum, double atomNum, vector<double> NuisParam ) {
   
   
-  double Ne = -999; double Nph = -999; double NexONi = -999; double m8 = 2., L = 1.;
+  double Ne = -999; double Nph = -999; double NexONi = -999; double m8 = 2., L = 1.; //result storage, modified below
   const double deltaT_ns_halflife = 154.4;
   
   double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
-  double alpha = 0.067366 + density * 0.039693, Ni, recombProb, Nq, Ly, Qy, ThomasImel;
+  double alpha = 0.067366 + density * 0.039693;
   switch ( species ) {
   case NR:
   case WIMP:
@@ -199,10 +199,10 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       else massNumber = RandomGen::rndm()->SelectRanXeAtom();
       ScaleFactor[0] = sqrt(MOLAR_MASS/(double)massNumber);
       ScaleFactor[1] = ScaleFactor[0];
-      Nq = 12.6 * pow ( energy, 1.05 );
-      ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
-      Qy = 1. / (ThomasImel*sqrt(energy+9.75));
-      Ly = Nq / energy - Qy;
+      int Nq = 12.6 * pow ( energy, 1.05 );
+      int ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
+      int Qy = 1. / (ThomasImel*sqrt(energy+9.75));
+      int Ly = Nq / energy - Qy;
       Ne = Qy * energy * ScaleFactor[1] * NuisParam[1]; //use for PLR
       Nph= Ly * energy * ScaleFactor[0] * NuisParam[0]; //use for PLR
       NexONi = 1.00*erf(0.01*energy); Nq = Nph + Ne;
@@ -226,7 +226,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double massDep = 0.02966094*exp(0.17687876*(massNum/4.-1.))+1.-0.02966094;
       double fieldDep= pow ( 1.+pow ( dfield/95., 8.7 ), 0.0592 );
       if ( fdetector->get_inGas() ) fieldDep = sqrt ( dfield );
-      ThomasImel = 0.00625 * massDep / ( 1. + densDep ) / fieldDep;
+      int ThomasImel = 0.00625 * massDep / ( 1. + densDep ) / fieldDep;
       const double logden = log10(density);
       Wq_eV = 28.259+25.667*logden
 	-33.611*pow(logden,2.)
@@ -237,9 +237,9 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
 	-2.2352*pow(logden,7.);
       alpha = 0.64 / pow ( 1. + pow ( density / 10., 2. ), 449.61 );
       NexONi = alpha + 0.00178 * pow ( atomNum, 1.587 );
-      Nq = 1e3 * L * energy / Wq_eV;
-      Ni = Nq / ( 1. + NexONi );
-      recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
+      int Nq = 1e3 * L * energy / Wq_eV;
+      int Ni = Nq / ( 1. + NexONi );
+      int recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
       Nph = Nq * NexONi / ( 1. + NexONi ) + recombProb * Ni; Ne = Nq - Nph;
     } break;
   case gammaRay:
@@ -250,16 +250,17 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double m5 = 23.156 + (10.737 - 23.156) / (1. + pow(dfield / 34.195, .87459));
       double densCorr = 240720. / pow ( density, 8.2076 );
       double m7 = 66.825 + (829.25 - 66.825) / (1. + pow(dfield /densCorr,.83344));
-      Nq = energy * 1000. / Wq_eV;
+      int Nq = energy * 1000. / Wq_eV;
       if ( fdetector->get_inGas() ) m8 = -2.;
-      Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
-      Ly = Nq / energy - Qy;
+      int Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
+      int Ly = Nq / energy - Qy;
       Ne = Qy * energy;
       Nph =Ly * energy;
       NexONi = alpha*erf(0.05*energy);
     } break;
   case Kr83m:
     {
+      int Nq=0;
       if ( energy == 9.4 ) {
 	double deltaT_ns = RandomGen::rndm()->rand_exponential ( deltaT_ns_halflife );
 	Nq = energy * ( 1e3 / Wq_eV + 6.5 );
@@ -284,15 +285,15 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double QyLvlmedE = 32.988-32.988/(1.+pow(dfield/(0.026715*exp(density/0.33926)),0.6705));
       QyLvlmedE *= HiFieldQy;
       double DokeBirks = 1652.264+(1.415935e10-1652.264)/(1.+pow(dfield/0.02673144,1.564691));
-      Nq = energy * 1e3 / Wq_eV;//( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
+      int Nq = energy * 1e3 / Wq_eV;//( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
       double LET_power = -2.;
       if ( fdetector->get_inGas() ) LET_power = 2.;
       double QyLvlhighE = 28.;
       if ( density > 3. ) QyLvlhighE=49.;
-      Qy = QyLvlmedE+(QyLvllowE-QyLvlmedE)/pow(1.+1.304*pow(energy,2.1393),0.35535)+QyLvlhighE/(1.+DokeBirks*pow(energy,LET_power));
+      int Qy = QyLvlmedE+(QyLvllowE-QyLvlmedE)/pow(1.+1.304*pow(energy,2.1393),0.35535)+QyLvlhighE/(1.+DokeBirks*pow(energy,LET_power));
       if ( Qy > QyLvllowE && energy > 1. && dfield > 1e4 )
 	Qy = QyLvllowE;
-      Ly = Nq / energy - Qy;
+      int Ly = Nq / energy - Qy;
       Ne = Qy * energy;
       Nph= Ly * energy;
       NexONi = alpha*erf(0.05*energy);
@@ -395,9 +396,12 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     vector<double> PEperBin, AreaTable, TimeTable[2];
     int numPts = 1100-100*SAMPLE_SIZE;
   AreaTable.resize(numPts,0.);
-    photonstream photon_times;
-    photon_times.clear();
-    photon_times = GetPhotonTimes(type_num,quanta,dfield,energy,dx,dy,dz,false,(int)fabs(spike));
+    //MATTHEW check this part
+    int total_photons = fabs(spike);
+    int excitons = int((double(nHits)/double(quanta.photons))*double(quanta.excitons)+0.5);
+    photonstream photon_emission_times = GetPhotonTimes(type_num,total_photons,excitons,dfield,energy);
+    photonstream photon_times = AddPhotonTransportTime(photon_emission_times,dx,dy,dz);
+    
     if ( evtNum == 0 ) {
       if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
       pulseFile = fopen ( "photon_times.txt", "a" );

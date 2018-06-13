@@ -30,7 +30,7 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 }
 
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,
-				     double A,double Z,vector<double> NuisParam){
+				     double A,double Z,vector<double> NuisParam /*={1,1}*/){
   
   NESTresult result;
   result.yields = GetYields(species,energy,density,dfield,A,Z,NuisParam);

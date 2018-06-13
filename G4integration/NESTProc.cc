@@ -102,7 +102,7 @@ NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
     for (auto lineage : lineages)
     {
       double etot = std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0., [](double a, Hit b){return a + b.E;});
-      NESTresult result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z, std::vector<double>{1, 1});
+      NESTresult result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z);
       auto photontimes = result.photon_times.begin();
       double ecum=0;
       double ecum_p=0;
@@ -167,7 +167,10 @@ Lineage NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track* sec) con
   {
     return Lineage(beta);
   } else if (sec->GetDefinition()->GetAtomicMass()>1 && (sec_creator.contains("decay") || !aTrack)){
-    return Lineage(ion);
+    Lineage ion_lin = Lineage(ion);
+    ion_lin.A=sec->GetDefinition()->GetAtomicMass();
+    ion_lin.Z=sec->GetDefinition()->GetAtomicNumber();
+    return ion_lin;
   }
   
   return Lineage(NoneType);

@@ -79,7 +79,7 @@ namespace NEST {
 			NESTcalc();
 			NESTcalc(VDetector* detector);
 			long BinomFluct(long, double);
-	  NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam);
+	  NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam={1,1});
 	  double PhotonTime(INTERACTION_TYPE species,bool exciton, double dfield, double energy);
           photonstream AddPhotonTransportTime (photonstream emitted_times, double x, double y, double z);
 	  photonstream GetPhotonTimes(INTERACTION_TYPE species, int total_photons, int excitons, double dfield, double energy);

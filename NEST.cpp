@@ -530,10 +530,12 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( gasGap <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-  long k, Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE, phe, driftVelocity_gas, rho, KE, origin; QuantaResult quanta;
+  long k, Nph = 0, nHits = 0, Nphe = 0; 
+  double pulseArea = 0., SE, phe, driftVelocity_gas, rho, KE; 
+  QuantaResult quanta;
   
   if ( useTiming ) {
-    vector<double> electronstream; photonstream photon_times;
+    vector<double> electronstream;
     electronstream.resize(Nee,dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran=37.368 * pow ( dfield, 0.093452 ) * exp ( -8.1651e-5 * dfield ); // arXiv:1609.04467 (EXO-200)
@@ -568,13 +570,13 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       rho = fdetector->get_p_bar() * 1e5 / ( fdetector->get_T_Kelvin() * 8.314 ) * MOLAR_MASS * 1e-6;
       driftVelocity_gas = SetDriftVelocity_MagBoltz ( rho, fdetector->get_E_gas() * 1000. );
       KE = 0.5 * ELEC_MASS * driftVelocity_gas * driftVelocity_gas * 1e6 / 1.602e-16;
-      origin = fdetector->get_TopDrift() + gasGap / 2.;
+      double origin = fdetector->get_TopDrift() + gasGap / 2.;
       quanta.photons = int(SE);
       quanta.electrons = 0;
       quanta.ions = 0;
       quanta.excitons = int(floor(0.0566*SE+0.5));
-      photon_times.clear();
-      photon_times = GetPhotonTimes ( (INTERACTION_TYPE)(beta), quanta, dfield, KE, newX, newY, origin, false, quanta.photons );
+      photonstream photon_emission_times = GetPhotonTimes ( INTERACTION_TYPE::beta, quanta.photons,quanta.excitons, dfield, KE );
+      photonstream photon_times = AddPhotonTransportTime(photon_emission_times,newX,newY,origin);
       SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
       for ( double j = 0.; j < SE; j += 1. ) {
         phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());

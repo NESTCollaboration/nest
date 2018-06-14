@@ -45,6 +45,8 @@ namespace NEST
     double density=-1;
     int A=-1;
     int Z=-1;
+    NESTresult result;
+    bool result_calculated=false;
   } ;
 
  
@@ -138,6 +140,8 @@ namespace NEST
 
     std::unique_ptr<NEST::NESTcalc> fNESTcalc = NULL;
     std::vector<NEST::Lineage> lineages;
+    std::vector<NEST::Lineage> lineages_prevEvent;
+    std::vector<G4Track> photons_prevEvent;
 
 
     G4double YieldFactor; // turns scint. on/off
@@ -158,19 +162,7 @@ namespace NEST
     return true;
   }
 
-  template<class T>
-  inline
-  void NESTProc<T>::SetTrackSecondariesFirst(const G4bool state)
-  {
-    fTrackSecondariesFirst = state;
-  }
 
-  template<class T>
-  inline
-  G4bool NESTProc<T>::GetTrackSecondariesFirst() const
-  {
-    return fTrackSecondariesFirst;
-  }
 
   template<class T>
   inline

@@ -41,30 +41,29 @@ file(GLOB core ${PROJECT_SOURCE_DIR}/*.cpp)
 list(REMOVE_ITEM core ${PROJECT_SOURCE_DIR}/rootNEST.cpp)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/*.hh ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
 
+add_library(NEST_core STATIC ${core} ${headers} )
+add_executable(testNEST testNEST.cpp)
+target_link_libraries(testNEST NEST_core)
+
 if(G4)
     find_package(Geant4 REQUIRED)
     include_directories(${Geant4_INCLUDE_DIR})
     file(GLOB g4src ${PROJECT_SOURCE_DIR}/G4integration/*.cc)
     file(GLOB g4headers ${PROJECT_SOURCE_DIR}/G4integration/*.hh)
     add_library(NEST SHARED ${core} ${g4src} ${headers} ${g4headers})
-    add_library(NEST_core SHARED ${core} ${headers} )
     set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers};${g4headers}")
-    add_executable(testNEST testNEST.cpp)
-    target_link_libraries(testNEST NEST_core)
+    
 else(G4)
     add_library(NEST SHARED ${core} ${headers})
     set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers}")
-    add_executable(testNEST testNEST.cpp)
-    target_link_libraries(testNEST NEST)
 endif()
 
-
-install(TARGETS NEST
+install(TARGETS NEST testNEST
   # IMPORTANT: Add the library to the "export-set"
 	EXPORT NESTTargets
+        RUNTIME DESTINATION "${INSTALL_CMAKE_DIR}"
 	LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
 	PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
-
 
 
 

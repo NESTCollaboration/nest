@@ -46,10 +46,10 @@
 
 using namespace NEST;
 
+NESTProc<G4VUserTrackInformation> proc;
 
-
-
-NESTProc::NESTProc(const G4String& processName, G4ProcessType type, double efield)
+template<class T>
+NESTProc<T>::NESTProc(const G4String& processName, G4ProcessType type, double efield)
       : G4VRestDiscreteProcess(processName, type), efield(efield)
 {
     
@@ -63,8 +63,8 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type, double efiel
 	  G4cout << GetProcessName() << " is created " << G4endl;
         }
 }
-
-NESTProc::~NESTProc(){} //destructor needed to avoid linker error
+template<class T>
+NESTProc<T>::~NESTProc(){} //destructor needed to avoid linker error
 
 
 
@@ -89,15 +89,11 @@ G4Track* MakePhoton(G4ThreeVector xyz, double t) {
     
 }
 
-
+template<class T>
 G4VParticleChange*
-NESTProc::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
+NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
 {
   aParticleChange.Initialize(aTrack);
-  
-
-  
-  
   //ready to pop out OP and TE?
   if (NESTStackingAction::theStackingAction->isUrgentEmpty()
       && aStep.GetSecondary()->empty())
@@ -109,7 +105,6 @@ NESTProc::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
     {
       double etot = std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0., [](double a, Hit b){return a + b.E;});
       lineage.result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z);
-      lineage.result_calculated=true;
       auto photontimes = lineage.result.photon_times.begin();
       double ecum=0;
       double ecum_p=0;
@@ -134,16 +129,26 @@ NESTProc::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
       lineages_prevEvent.push_back(lineage);
     }
     lineages.clear();
-    track_lins.clear();
   }
 
   return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
 
 }
 
+template<class T>
+void NESTProc<T>::FillSecondaryInfo(const std::vector<G4Track*>& secondaries, NESTTrackInformation* parentInfo) const
+{
 
 
-Lineage NESTProc::GetChildType(const G4Track* aTrack, const G4Track* sec) const
+    for (G4Track* sec : secondaries){
+        NESTTrackInformation* infoNew = new NESTTrackInformation(*parentInfo);
+        sec->SetUserInformation(infoNew);    
+    }
+
+}
+
+template<class T>
+Lineage NESTProc<T>::GetChildType(const G4Track* aTrack, const G4Track* sec) const
 {
   //logic to determine what processes are kicked off by this track and also set the info
 
@@ -178,32 +183,36 @@ Lineage NESTProc::GetChildType(const G4Track* aTrack, const G4Track* sec) const
 }
 
 
-
-G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
+template<class T>
+G4VParticleChange* NESTProc<T>::PostStepDoIt(const G4Track& aTrack, const G4Step& aStep)
 {
   aParticleChange.Initialize(aTrack);
+//   If a user is doing other UserTrackInfo stuff, grab it and preserve it so we don't lose the information
+  G4VUserTrackInformation* oldInfo=aTrack.GetUserInformation();
+  T* oldInfo_T = static_cast<T*>(oldInfo);
+  NESTTrackInformation* oldInfo_N = dynamic_cast<NESTTrackInformation* >(oldInfo_T);
   
-  auto myLinID = track_lins.find(std::make_tuple());
   //Type of this step.
   INTERACTION_TYPE step_type=NoneType;
   
   //hacky way to grab secondaries created in this step without them becoming const. Don't abuse this by altering the secondaries besides setting UserTrackInfo!
-  
+  const std::vector<const G4Track*>* secondaries_c = (aStep.GetSecondaryInCurrentStep());
+  std::vector< G4Track*> secondaries;
   const G4TrackVector* fSecondary = aStep.GetSecondary();
-
-  const vector<const G4Track*> secondaries(fSecondary->begin(),fSecondary->end());
-
+  G4int nSecondary = fSecondary->size();
+  for (G4int i=nSecondary - secondaries_c->size(); i < nSecondary; i++)
+  {
+    secondaries.push_back((*fSecondary)[i]);
+  }
   
   //If the current track is already in a lineage, its secondaries inherit that lineage.
-  if(myLinID != track_lins.end() ){
-    for (const G4Track* sec : secondaries){
-      track_lins.insert(make_pair(sec->GetTrackID(),myLinID->second));
-    }
+  if(oldInfo_N && oldInfo_N->parentType!=NoneType ){
+    FillSecondaryInfo(secondaries,oldInfo_N);
   }
   //otherwise, we may need to start a new lineage
   else{
 
-    for (const G4Track* sec : secondaries){
+    for ( G4Track* sec : secondaries){
       //Each secondary has a type (including the possible NoneType)
       Lineage sec_lin = GetChildType(&aTrack, sec);
       INTERACTION_TYPE sec_type= sec_lin.type;
@@ -215,29 +224,46 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack, const G4Step& a
       }
       step_type=sec_type;
       //If the secondary has a non-None type, it also gets a lineage ID.
-      if(sec_type!=NoneType)   track_lins.insert(std::make_pair(sec->GetTrackID(),lineages.size()-1));
-      
+      int lineage_id = (sec_type==NoneType ? -1: lineages.size()-1);
+      //If there's old (non-NEST) user info to pass on, do that. In either case, make a new NESTTrackInfo for this secondary.
+      if(oldInfo_T){
+        sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id,*oldInfo_T));
+      }
+      else{
+        sec->SetUserInformation(new NESTTrackInformation(sec_type,lineage_id));
+      }
     }
     
     
-    
-  }
-  
-
-  //What if the parent is a primary? Give it a lineage just as if it were one of its own secondaries
+    //What if the parent is a primary? Give it a lineage just as if it were one of its own secondaries
     if(aTrack.GetParentID()==0){
       Lineage sec_lin= GetChildType(0, &aTrack);
       INTERACTION_TYPE sec_type = sec_lin.type;
-      if( sec_type !=NoneType){
+      assert(sec_type==step_type || sec_type==NoneType || step_type==NoneType);
+      if(step_type==NoneType && sec_type !=NoneType){
           lineages.push_back(sec_lin);
         }
-      if(sec_type!=NoneType)   track_lins.insert(std::make_pair(aTrack.GetTrackID(),lineages.size()-1));
+        step_type=sec_type;
+      int hit_id = (sec_type==NoneType ? -1: lineages.size()-1);
+      G4Track& aTrack_nonc = const_cast<G4Track&>( aTrack);
+      if(oldInfo_T){
+          aTrack_nonc.SetUserInformation(new NESTTrackInformation(sec_type,hit_id,*oldInfo_T));
+        }
+        else{
+          aTrack_nonc.SetUserInformation(new NESTTrackInformation(sec_type,hit_id));
+        }
     }
+    if(step_type!=NoneType){
+
+    }
+  }
+  
 //  If the current track is part of a lineage...
- 
-  auto myLinID2 = track_lins.find(aTrack.GetTrackID());
-  if (myLinID2==track_lins.end()) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
-  Lineage* myLineage = &lineages.at(myLinID2->second);
+  G4VUserTrackInformation* trackInfo=aTrack.GetUserInformation();
+  T* trackInfo_T = static_cast<T*>(trackInfo);
+  NESTTrackInformation* trackInfo_N = dynamic_cast<NESTTrackInformation* >(trackInfo_T);
+  if(!trackInfo_N || trackInfo_N->parentType==NoneType) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+  Lineage* myLineage = &lineages.at(trackInfo_N->hit_id);
   //...if the step deposited energy...
   if (aStep.GetTotalEnergyDeposit() <= 0) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
 
@@ -296,8 +322,8 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack, const G4Step& a
 
 // GetMeanFreePath
 // ---------------
-
-G4double NESTProc::GetMeanFreePath(const G4Track&,
+template<class T>
+G4double NESTProc<T>::GetMeanFreePath(const G4Track&,
                                           G4double ,
                                           G4ForceCondition* condition)
 {
@@ -313,8 +339,8 @@ G4double NESTProc::GetMeanFreePath(const G4Track&,
 
 // GetMeanLifeTime
 // ---------------
-
-G4double NESTProc::GetMeanLifeTime(const G4Track&,
+template<class T>
+G4double NESTProc<T>::GetMeanLifeTime(const G4Track&,
                                           G4ForceCondition* condition)
 {
         *condition = Forced;

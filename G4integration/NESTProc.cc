@@ -98,28 +98,35 @@ NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
   if (NESTStackingAction::theStackingAction->isUrgentEmpty()
       && aStep.GetSecondary()->empty())
   {
+    lineages_prevEvent.clear();
+    photons_prevEvent.clear();
 
     for (auto lineage : lineages)
     {
       double etot = std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0., [](double a, Hit b){return a + b.E;});
-      NESTresult result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z);
-      auto photontimes = result.photon_times.begin();
+      lineage.result = fNESTcalc->FullCalculation(lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z);
+      auto photontimes = lineage.result.photon_times.begin();
       double ecum=0;
       double ecum_p=0;
-      const double e_p = etot / result.quanta.photons;
+      const double e_p = etot / lineage.result.quanta.photons;
       for (auto hit : lineage.hits)
       {
         ecum+= hit.E;
         while (ecum_p < ecum)
         {
           G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
-          aParticleChange.AddSecondary(onePhoton);
+          if(YieldFactor==1) aParticleChange.AddSecondary(onePhoton);
+          else if (YieldFactor>0){
+            if(RandomGen::rndm()->rand_uniform()<YieldFactor) aParticleChange.AddSecondary(onePhoton);
+          }
           ecum_p+=e_p;
           photontimes++;
+          photons_prevEvent.emplace_back(*onePhoton);
         }
 
       }
       assert(ecum == etot);
+      lineages_prevEvent.push_back(lineage);
     }
   }
 

@@ -199,10 +199,10 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       else massNumber = RandomGen::rndm()->SelectRanXeAtom();
       ScaleFactor[0] = sqrt(MOLAR_MASS/(double)massNumber);
       ScaleFactor[1] = ScaleFactor[0];
-      int Nq = 12.6 * pow ( energy, 1.05 );
-      int ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
-      int Qy = 1. / (ThomasImel*sqrt(energy+9.75));
-      int Ly = Nq / energy - Qy;
+      double Nq = 12.6 * pow ( energy, 1.05 );
+      double ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
+      double Qy = 1. / (ThomasImel*sqrt(energy+9.75));
+      double Ly = Nq / energy - Qy;
       Ne = Qy * energy * ScaleFactor[1] * NuisParam[1]; //use for PLR
       Nph= Ly * energy * ScaleFactor[0] * NuisParam[0]; //use for PLR
       NexONi = 1.00*erf(0.01*energy); Nq = Nph + Ne;
@@ -226,7 +226,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double massDep = 0.02966094*exp(0.17687876*(massNum/4.-1.))+1.-0.02966094;
       double fieldDep= pow ( 1.+pow ( dfield/95., 8.7 ), 0.0592 );
       if ( fdetector->get_inGas() ) fieldDep = sqrt ( dfield );
-      int ThomasImel = 0.00625 * massDep / ( 1. + densDep ) / fieldDep;
+      double ThomasImel = 0.00625 * massDep / ( 1. + densDep ) / fieldDep;
       const double logden = log10(density);
       Wq_eV = 28.259+25.667*logden
 	-33.611*pow(logden,2.)
@@ -237,9 +237,9 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
 	-2.2352*pow(logden,7.);
       alpha = 0.64 / pow ( 1. + pow ( density / 10., 2. ), 449.61 );
       NexONi = alpha + 0.00178 * pow ( atomNum, 1.587 );
-      int Nq = 1e3 * L * energy / Wq_eV;
-      int Ni = Nq / ( 1. + NexONi );
-      int recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
+      double Nq = 1e3 * L * energy / Wq_eV;
+      double Ni = Nq / ( 1. + NexONi );
+      double recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
       Nph = Nq * NexONi / ( 1. + NexONi ) + recombProb * Ni; Ne = Nq - Nph;
     } break;
   case gammaRay:
@@ -250,17 +250,17 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double m5 = 23.156 + (10.737 - 23.156) / (1. + pow(dfield / 34.195, .87459));
       double densCorr = 240720. / pow ( density, 8.2076 );
       double m7 = 66.825 + (829.25 - 66.825) / (1. + pow(dfield /densCorr,.83344));
-      int Nq = energy * 1000. / Wq_eV;
+      double Nq = energy * 1000. / Wq_eV;
       if ( fdetector->get_inGas() ) m8 = -2.;
-      int Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
-      int Ly = Nq / energy - Qy;
+      double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 + (m6 - m5) / (1. + pow(energy / m7, m8));
+      double Ly = Nq / energy - Qy;
       Ne = Qy * energy;
       Nph =Ly * energy;
       NexONi = alpha*erf(0.05*energy);
     } break;
   case Kr83m:
     {
-      int Nq=0;
+      double Nq = 0.;
       if ( energy == 9.4 ) {
 	double deltaT_ns = RandomGen::rndm()->rand_exponential ( deltaT_ns_halflife );
 	Nq = energy * ( 1e3 / Wq_eV + 6.5 );
@@ -285,15 +285,15 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       double QyLvlmedE = 32.988-32.988/(1.+pow(dfield/(0.026715*exp(density/0.33926)),0.6705));
       QyLvlmedE *= HiFieldQy;
       double DokeBirks = 1652.264+(1.415935e10-1652.264)/(1.+pow(dfield/0.02673144,1.564691));
-      int Nq = energy * 1e3 / Wq_eV;//( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
+      double Nq = energy * 1e3 / Wq_eV;//( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
       double LET_power = -2.;
       if ( fdetector->get_inGas() ) LET_power = 2.;
       double QyLvlhighE = 28.;
       if ( density > 3. ) QyLvlhighE=49.;
-      int Qy = QyLvlmedE+(QyLvllowE-QyLvlmedE)/pow(1.+1.304*pow(energy,2.1393),0.35535)+QyLvlhighE/(1.+DokeBirks*pow(energy,LET_power));
+      double Qy = QyLvlmedE+(QyLvllowE-QyLvlmedE)/pow(1.+1.304*pow(energy,2.1393),0.35535)+QyLvlhighE/(1.+DokeBirks*pow(energy,LET_power));
       if ( Qy > QyLvllowE && energy > 1. && dfield > 1e4 )
 	Qy = QyLvllowE;
-      int Ly = Nq / energy - Qy;
+      double Ly = Nq / energy - Qy;
       Ne = Qy * energy;
       Nph= Ly * energy;
       NexONi = alpha*erf(0.05*energy);
@@ -394,10 +394,11 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   
   if ( useTiming ) {
     vector<double> PEperBin, AreaTable, TimeTable[2];
-    int numPts = 1100-100*SAMPLE_SIZE;
-  AreaTable.resize(numPts,0.);
-    //MATTHEW check this part
-    int total_photons = fabs(spike);
+    int numPts =
+      1100-100*SAMPLE_SIZE;
+    AreaTable.resize(numPts,0.);
+    
+    int total_photons = (int)fabs(spike);
     int excitons = int((double(nHits)/double(quanta.photons))*double(quanta.excitons)+0.5);
     photonstream photon_emission_times = GetPhotonTimes(type_num,total_photons,excitons,dfield,energy);
     photonstream photon_times = AddPhotonTransportTime(photon_emission_times,dx,dy,dz);
@@ -530,10 +531,12 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( gasGap <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-  long k, Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE, phe, driftVelocity_gas, rho, KE, origin; QuantaResult quanta;
+  long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE;
   
   if ( useTiming ) {
-    vector<double> electronstream; photonstream photon_times;
+    double phe, driftVelocity_gas, rho, KE, origin; QuantaResult quanta;
+    long k;
+    vector<double> electronstream; photonstream photon_times, photon_emission_times;
     electronstream.resize(Nee,dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran=37.368 * pow ( dfield, 0.093452 ) * exp ( -8.1651e-5 * dfield ); // arXiv:1609.04467 (EXO-200)
@@ -573,8 +576,10 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       quanta.electrons = 0;
       quanta.ions = 0;
       quanta.excitons = int(floor(0.0566*SE+0.5));
+      photon_emission_times.clear();
       photon_times.clear();
-      photon_times = GetPhotonTimes ( (INTERACTION_TYPE)(beta), quanta, dfield, KE, newX, newY, origin, false, quanta.photons );
+      photon_emission_times = GetPhotonTimes ( (INTERACTION_TYPE)(beta), quanta.photons, quanta.excitons, dfield, KE );      
+      photon_times = AddPhotonTransportTime( photon_emission_times, newX, newY, origin);
       SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
       for ( double j = 0.; j < SE; j += 1. ) {
         phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());

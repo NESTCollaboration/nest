@@ -128,9 +128,8 @@ NESTProc<T>::AtRestDoIt(const G4Track& aTrack, const G4Step& aStep)
       assert(ecum == etot);
       lineages_prevEvent.push_back(lineage);
     }
+    lineages.clear();
   }
-
-  lineages.clear();
 
   return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
 

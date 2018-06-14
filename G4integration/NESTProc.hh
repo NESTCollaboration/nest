@@ -52,8 +52,10 @@ namespace NEST
  
 
 
-  class NESTProc : public G4VRestDiscreteProcess
+  template<class T> class NESTProc : public G4VRestDiscreteProcess
   {
+    static_assert(std::is_base_of<G4VUserTrackInformation, T>::value, "T must derive from G4VUserTrackInformation");
+    static_assert(std::is_copy_constructible<T>::value, "T must be copy-constructable");
 
     
   public: // constructor and destructor
@@ -62,6 +64,27 @@ namespace NEST
              G4ProcessType type = fElectromagnetic, double efield=0);
     ~NESTProc();
 
+    class NESTTrackInformation : public T
+    {
+    public:
+
+      NESTTrackInformation(NEST::INTERACTION_TYPE iType, int hit_id) : parentType(iType), hit_id(hit_id), T()
+      {
+      }
+
+      NESTTrackInformation(NEST::INTERACTION_TYPE iType,int hit_id, T t) : T(t), parentType(iType), hit_id(hit_id)
+      {
+      }
+
+      NESTTrackInformation(const NESTTrackInformation& orig) : T(orig), parentType(orig.parentType), hit_id(orig.hit_id)
+      {
+      }
+
+
+   
+      NEST::INTERACTION_TYPE parentType;
+      int hit_id;
+    } ;
 
   public: // methods, with descriptions
     G4bool IsApplicable(const G4ParticleDefinition& aParticleType);
@@ -107,7 +130,7 @@ namespace NEST
     G4double GetScintillationYieldFactor() const;
     // Returns the quantum (photon/electron) yield factor. See above.
 
-    
+    void FillSecondaryInfo(const std::vector<G4Track*>& secondaries, NESTTrackInformation* parentInfo) const;
     Lineage GetChildType(const G4Track* aTrack, const G4Track* sec) const;
     double efield=0;
 
@@ -119,7 +142,6 @@ namespace NEST
     std::vector<NEST::Lineage> lineages;
     std::vector<NEST::Lineage> lineages_prevEvent;
     std::vector<G4Track> photons_prevEvent;
-    std::map<std::tuple<int,int,int>,int> track_lins;
 
 
     G4double YieldFactor; // turns scint. on/off
@@ -130,8 +152,8 @@ namespace NEST
   // Inline methods
   ////////////////////
 
-  
-  inline G4bool NESTProc::IsApplicable(const G4ParticleDefinition& aParticleType)
+  template<class T>
+  inline G4bool NESTProc<T>::IsApplicable(const G4ParticleDefinition& aParticleType)
   {
     if (aParticleType.GetParticleName() == "opticalphoton") return false;
     if (aParticleType.IsShortLived()) return false;
@@ -142,15 +164,16 @@ namespace NEST
 
 
 
-
+  template<class T>
   inline
-  void NESTProc::SetScintillationYieldFactor(const G4double yieldfactor)
+  void NESTProc<T>::SetScintillationYieldFactor(const G4double yieldfactor)
   {
     YieldFactor = yieldfactor;
   }
 
+  template<class T>
   inline
-  G4double NESTProc::GetScintillationYieldFactor() const
+  G4double NESTProc<T>::GetScintillationYieldFactor() const
   {
     return YieldFactor;
   }

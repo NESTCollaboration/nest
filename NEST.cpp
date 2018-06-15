@@ -333,7 +333,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   
   int Nph = quanta.photons;
   
-  photonstream photon_times; FILE *pulseFile;
+  FILE *pulseFile;
   vector<double> photon_areas[2];
   vector<double> scintillation(9);  // return vector
   vector<double> newSpike(2); // for re-doing spike counting more precisely

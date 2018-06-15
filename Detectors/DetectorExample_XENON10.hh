@@ -125,16 +125,20 @@ public:
     double sig= RandomGen::rndm()->rand_gauss(3.84,.09); //includes stat unc but not syst
     phoTravT += RandomGen::rndm()->rand_gauss(0.00,sig); //the overall width added to photon time spectra by the effects in the electronics and the data reduction pipeline
     
+    if ( phoTravT > DBL_MAX ) phoTravT = tau_a;
+    if ( phoTravT <-DBL_MAX ) phoTravT = 0.000;
+    
     return phoTravT; //this function follows LUX (arXiv:1802.06162) not Xe10 technically but tried to make general
   }
   
   virtual vector<double> SinglePEWaveForm ( double area, double t0 ) {
     
-    vector<double> PEperBin; area *= 10.;
+    vector<double> PEperBin;
     
-    double sigma = PULSE_WIDTH; //ns
-    double amplitude = area / ( sigma * sqrt ( 2. * M_PI ) ), signal; //assumes perfect Gaussian
     double threshold = 0.005; //photo-electrons
+    double sigma = PULSE_WIDTH; //ns
+    area *= 10. * ( 1. + threshold );
+    double amplitude = area / ( sigma * sqrt ( 2. * M_PI ) ), signal; //assumes perfect Gaussian
     
     double tStep1 = SAMPLE_SIZE/1e2; //ns, make sure much smaller than sample size; used to generate MC-true pulses essentially
     double tStep2 = SAMPLE_SIZE; //ns; 1 over digitization rate, 100 MHz assumed here

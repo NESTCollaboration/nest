@@ -380,7 +380,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 	}
       }
       else { //use approximation to find timing
-	if ( (phe1+phe2) > fdetector->get_sPEthr() && -20.*log(RandomGen::rndm()->rand_uniform()) < fdetector->get_coinWind() ) {
+	if ( (phe1+phe2) > fdetector->get_sPEthr() && (-20.*log(RandomGen::rndm()->rand_uniform()) < fdetector->get_coinWind() || nHits > fdetector->get_coinLevel()) ) {
 	  spike++;
 	  pulseArea += phe1 + phe2;
 	}
@@ -422,7 +422,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 	if ( index < 0 ) index = 0;
 	if ( index >= numPts ) index = numPts - 1;
 	AreaTable[index] +=
-	  10.*(photon_areas[0][ii]+photon_areas[1][ii])/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(pTime-photon_times[ii],2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
+	  10.05*(photon_areas[0][ii]+photon_areas[1][ii])/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(pTime-photon_times[ii],2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
       }
       if ( total >= 0 ) {
 	if ( PEperBin[0] < min ) min = PEperBin[0];
@@ -435,14 +435,14 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     for ( ii = 0; ii < numPts; ++ii ) {
       if ( AreaTable[ii] <= 0. ) continue;
       fprintf ( pulseFile, "%lu\t%d\t%.2f", evtNum, (ii-numPts/2)*SAMPLE_SIZE, AreaTable[ii] );
-      if ( ((ii-numPts/2)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() ) {
+      if ( ((ii-numPts/2)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() && nHits <= fdetector->get_coinLevel() ) {
 	pulseArea -= AreaTable[ii];
 	fprintf ( pulseFile, "\t0\n" );
       }
       else fprintf ( pulseFile, "\t1\n" );
     }
     for ( ii = 0; ii < TimeTable[0].size(); ++ii ) {
-      if ( (TimeTable[0][ii]-min) > fdetector->get_coinWind() )
+      if ( (TimeTable[0][ii]-min) > fdetector->get_coinWind() && nHits <= fdetector->get_coinLevel() )
 	--spike;
       //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, TimeTable[0][ii], TimeTable[1][ii] );
     }

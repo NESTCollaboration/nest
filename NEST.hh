@@ -13,14 +13,16 @@
 #include "RandomGen.hh"
 #include "VDetector.hh"
 
-#define W_DEFAULT 13.7
+#define W_DEFAULT 13.7 //default work function, in eV
 #define NEST_AVO 6.0221409e+23
-#define ATOM_NUM 54.
-#define MOLAR_MASS 131.293
-#define PHE_MIN 1e-6
-#define SAMPLE_SIZE 10
-#define PULSE_WIDTH 10
+#define ATOM_NUM 54. //period to make float
+#define MOLAR_MASS 131.293 //grams per mole
+#define PHE_MIN 1e-6 //area
 #define ELEC_MASS 9.109e-31 //kg
+
+#define SAMPLE_SIZE 10 //nano-seconds
+#define PULSE_WIDTH 10 //nano-seconds
+#define PULSEHEIGHT 0.005 //threshold height, in PE
 
 namespace NEST {
   

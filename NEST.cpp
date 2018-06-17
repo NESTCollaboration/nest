@@ -422,7 +422,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 	if ( index < 0 ) index = 0;
 	if ( index >= numPts ) index = numPts - 1;
 	AreaTable[index] +=
-	  10.05*(photon_areas[0][ii]+photon_areas[1][ii])/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(pTime-photon_times[ii],2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
+	  10.*(1.+PULSEHEIGHT)*(photon_areas[0][ii]+photon_areas[1][ii])/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(pTime-photon_times[ii],2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
       }
       if ( total >= 0 ) {
 	if ( PEperBin[0] < min ) min = PEperBin[0];
@@ -433,7 +433,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
       //TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
     for ( ii = 0; ii < numPts; ++ii ) {
-      if ( AreaTable[ii] <= 0. ) continue;
+      if ( AreaTable[ii] <= PULSEHEIGHT ) continue;
       fprintf ( pulseFile, "%lu\t%d\t%.2f", evtNum, (ii-numPts/2)*SAMPLE_SIZE, AreaTable[ii] );
       if ( ((ii-numPts/2)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() && nHits <= fdetector->get_coinLevel() ) {
 	pulseArea -= AreaTable[ii];
@@ -536,7 +536,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   if ( useTiming ) {
     double phe, driftVelocity_gas, rho, KE; QuantaResult quanta;
     long k;
-    vector<double> electronstream;
+    vector<double> electronstream, AreaTable[2], TimeTable;
     electronstream.resize(Nee,dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran=37.368 * pow ( dfield, 0.093452 ) * exp ( -8.1651e-5 * dfield ); // arXiv:1609.04467 (EXO-200)
@@ -549,6 +549,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     double sigmaDT = 10. *sqrt ( 2. * Diff_Tran * dt * 1e-6 );
     double tauTrap = 1680e-3 / fdetector->get_E_gas(); // arXiv:1310.1117
     FILE* pulseFile = fopen ( "photon_times.txt", "a" );
+    double min = 1e100;
     for ( i = 0; i < Nee; ++i ) {
       elecTravT = 0.; //resetting for the current electron
       DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
@@ -584,7 +585,27 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
         pulseArea += phe;
 	origin = fdetector->get_TopDrift() + gasGap * RandomGen::rndm()->rand_uniform();
 	k = long(j); if ( k >= photon_times.size() ) k -= photon_times.size();
-	fprintf ( pulseFile, "%lu\t%.0f\t%.2f\n", evtNum, ((fdetector->get_anode()-origin)/driftVelocity_gas+electronstream[i])*1e3+photon_times[k], phe ); }
+	double offset = ((fdetector->get_anode()-origin)/driftVelocity_gas+electronstream[i])*1e3+photon_times[k];
+	if ( offset < min ) min = offset;
+	AreaTable[0].push_back(phe); TimeTable.push_back(offset);
+	//fprintf ( pulseFile, "%lu\t%.0f\t%.2f\n", evtNum, offset, phe );
+      }
+    }
+    AreaTable[1].resize(nHits/1000,0.);
+    min -= 5.*SAMPLE_SIZE;
+    for ( k = 0; k < Nphe; ++k ) {
+      vector<double> PEperBin = fdetector->SinglePEWaveForm(AreaTable[0][k],TimeTable[k]-min);
+      for ( i = 0; i < int(PEperBin.size())-1; ++i ) {
+        double eTime = PEperBin[0] + i * SAMPLE_SIZE;
+	int index = int(floor(eTime/SAMPLE_SIZE));
+        if ( index < 0 ) index = 0;
+        if ( index >= AreaTable[1].size() ) index = AreaTable[1].size() - 1;
+	AreaTable[1][index] += 10.*AreaTable[0][k]/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(eTime-TimeTable[k]+min,2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
+      }
+    }
+    for ( k = 0; k < AreaTable[1].size(); ++k ) {
+      if ( AreaTable[1][k] <= PULSEHEIGHT ) continue;
+      fprintf ( pulseFile, "%lu\t%ld\t%.2f\n", evtNum, k*SAMPLE_SIZE+long(min+SAMPLE_SIZE/2.), AreaTable[1][k] );
     }
     fclose ( pulseFile );
   }

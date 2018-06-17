@@ -135,7 +135,7 @@ public:
     
     vector<double> PEperBin;
     
-    double threshold = 0.005; //photo-electrons
+    double threshold = PULSEHEIGHT; //photo-electrons
     double sigma = PULSE_WIDTH; //ns
     area *= 10. * ( 1. + threshold );
     double amplitude = area / ( sigma * sqrt ( 2. * M_PI ) ), signal; //assumes perfect Gaussian

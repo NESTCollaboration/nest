@@ -591,7 +591,9 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
 	//fprintf ( pulseFile, "%lu\t%.0f\t%.2f\n", evtNum, offset, phe );
       }
     }
-    AreaTable[1].resize(nHits/1000,0.);
+    int numPts = nHits / 1000;
+    if ( numPts < 1000 / SAMPLE_SIZE ) numPts = 1000 / SAMPLE_SIZE;
+    AreaTable[1].resize(numPts,0.);
     min -= 5.*SAMPLE_SIZE;
     for ( k = 0; k < Nphe; ++k ) {
       vector<double> PEperBin = fdetector->SinglePEWaveForm(AreaTable[0][k],TimeTable[k]-min);
@@ -599,11 +601,11 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
         double eTime = PEperBin[0] + i * SAMPLE_SIZE;
 	int index = int(floor(eTime/SAMPLE_SIZE));
         if ( index < 0 ) index = 0;
-        if ( index >= AreaTable[1].size() ) index = AreaTable[1].size() - 1;
+        if ( index >= numPts ) index = numPts - 1;
 	AreaTable[1][index] += 10.*AreaTable[0][k]/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(eTime-TimeTable[k]+min,2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
       }
     }
-    for ( k = 0; k < AreaTable[1].size(); ++k ) {
+    for ( k = 0; k < numPts; ++k ) {
       if ( AreaTable[1][k] <= PULSEHEIGHT ) continue;
       fprintf ( pulseFile, "%lu\t%ld\t%.2f\n", evtNum, k*SAMPLE_SIZE+long(min+SAMPLE_SIZE/2.), AreaTable[1][k] );
     }

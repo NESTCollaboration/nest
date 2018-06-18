@@ -534,26 +534,33 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE;
   
   if ( useTiming ) {
-    double phe, driftVelocity_gas, rho, KE; QuantaResult quanta;
     long k;
     vector<double> electronstream, AreaTable[2], TimeTable;
     electronstream.resize(Nee,dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran=37.368 * pow ( dfield, 0.093452 ) * exp ( -8.1651e-5 * dfield ); // arXiv:1609.04467 (EXO-200)
     double Diff_Long=2089.2 * pow ( dfield,-0.699050 ) * exp ( -168.35000 / dfield ); // fit to Aprile & Doke review paper and to arXiv:1102.2865; plus, LUX Run02+03
+    // a good rule of thumb but only for liquids, as gas kind of opposite: Diff_Long ~ 0.15 * Diff_Tran, as it is in LAr, at least as field goes to infinity
+    double Diff_Long_Gas = 4.265+19097./(1e3*fdetector->get_E_gas())-1.7397e6/pow(1e3*fdetector->get_E_gas(),2.)+1.2477e8/pow(1e3*fdetector->get_E_gas(),3.); // Nygren, NEXT
+    double Diff_Tran_Gas = Diff_Tran * 0.01;
     if ( fdetector->get_inGas() ) {
-      Diff_Long = 4.265 + 19097. / dfield - 1.7397e6 / pow ( dfield, 2. ) + 1.2477e8 / pow ( dfield, 3. ); // Nygren, NEXT
-      Diff_Tran *= 0.01; // another good rule of thumb: Diff_Long ~ 0.15 * Diff_Tran, as in LAr
+      Diff_Tran *= 0.01;
+      Diff_Long = 4.265+19097./dfield-1.7397e6/pow(dfield,2.)+1.2477e8/pow(dfield,3.);
     }
     double sigmaDL = 10. *sqrt ( 2. * Diff_Long * dt * 1e-6 ); //sqrt of cm^2/s * s = cm; times 10 for mm.
     double sigmaDT = 10. *sqrt ( 2. * Diff_Tran * dt * 1e-6 );
-    double tauTrap = 1680e-3 / fdetector->get_E_gas(); // arXiv:1310.1117
+    double rho = fdetector->get_p_bar() * 1e5 / ( fdetector->get_T_Kelvin() * 8.314 ) * MOLAR_MASS * 1e-6;
+    double driftVelocity_gas = SetDriftVelocity_MagBoltz ( rho, fdetector->get_E_gas() * 1000. );
+    double dt_gas = gasGap / driftVelocity_gas;
+    double sigmaDLg = 10. * sqrt ( 2. * Diff_Long_Gas * dt_gas * 1e-6 );
+    double sigmaDTg = 10. * sqrt ( 2. * Diff_Tran_Gas * dt_gas * 1e-6 );
+    double tauTrap = 2.35 / fdetector->get_E_gas(); // arXiv:1310.1117, modified to better fit XENON10 data
     FILE* pulseFile = fopen ( "photon_times.txt", "a" );
     double min = 1e100;
     for ( i = 0; i < Nee; ++i ) {
       elecTravT = 0.; //resetting for the current electron
-      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
-      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);
+      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL/sqrt(2.*log(2.))); //conversion factor needed to fit data, probably a FWHM vs. sigma issue
+      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT/sqrt(2.*log(2.)));
       phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
       sigX = DT * cos ( phi );
       sigY = DT * sin ( phi );
@@ -569,10 +576,9 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
                  rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5);
       Nph += long(SE);
       SE = (double)BinomFluct(long(SE),fdetector->get_g1_gas()*posDep); nHits += long(SE);
-      rho = fdetector->get_p_bar() * 1e5 / ( fdetector->get_T_Kelvin() * 8.314 ) * MOLAR_MASS * 1e-6;
-      driftVelocity_gas = SetDriftVelocity_MagBoltz ( rho, fdetector->get_E_gas() * 1000. );
-      KE = 0.5 * ELEC_MASS * driftVelocity_gas * driftVelocity_gas * 1e6 / 1.602e-16;
+      double KE = 0.5 * ELEC_MASS * driftVelocity_gas * driftVelocity_gas * 1e6 / 1.602e-16;
       double origin = fdetector->get_TopDrift() + gasGap / 2.;
+      QuantaResult quanta;
       quanta.photons = int(SE);
       quanta.electrons = 0;
       quanta.ions = 0;
@@ -580,18 +586,27 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       photonstream photon_emission_times = GetPhotonTimes ( INTERACTION_TYPE::beta, quanta.photons, quanta.excitons, dfield, KE );
       photonstream photon_times = AddPhotonTransportTime( photon_emission_times, newX, newY, origin);
       SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
+      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDLg/sqrt(2.*log(2.)));
+      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDTg/sqrt(2.*log(2.)));
+      phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+      sigX = DT * cos ( phi );
+      sigY = DT * sin ( phi );
+      newX += sigX;
+      newY += sigY;
+      DL_time = DL / driftVelocity_gas;
+      electronstream[i] += DL_time;
       for ( double j = 0.; j < SE; j += 1. ) {
-        phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());
+        double phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());
         pulseArea += phe;
 	origin = fdetector->get_TopDrift() + gasGap * RandomGen::rndm()->rand_uniform();
 	k = long(j); if ( k >= photon_times.size() ) k -= photon_times.size();
-	double offset = ((fdetector->get_anode()-origin)/driftVelocity_gas+electronstream[i])*1e3+photon_times[k];
+	double offset = ( (fdetector->get_anode()-origin)/driftVelocity_gas + electronstream[i] ) * 1e3 + photon_times[k];
 	if ( offset < min ) min = offset;
 	AreaTable[0].push_back(phe); TimeTable.push_back(offset);
 	//fprintf ( pulseFile, "%lu\t%.0f\t%.2f\n", evtNum, offset, phe );
       }
     }
-    int numPts = nHits / 1000;
+    int numPts = Nphe * 1000;
     if ( numPts < 1000 / SAMPLE_SIZE ) numPts = 1000 / SAMPLE_SIZE;
     AreaTable[1].resize(numPts,0.);
     min -= 5.*SAMPLE_SIZE;

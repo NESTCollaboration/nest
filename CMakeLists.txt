@@ -35,11 +35,12 @@ else()
 endif()
 
 include_directories("${PROJECT_SOURCE_DIR}")  
+include_directories("${PROJECT_SOURCE_DIR}/include")  
 include_directories("${PROJECT_SOURCE_DIR}/Detectors")  
 
 file(GLOB core ${PROJECT_SOURCE_DIR}/*.cpp)
 list(REMOVE_ITEM core ${PROJECT_SOURCE_DIR}/rootNEST.cpp)
-file(GLOB headers ${PROJECT_SOURCE_DIR}/*.hh ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
+file(GLOB headers ${PROJECT_SOURCE_DIR}/*.hh ${PROJECT_SOURCE_DIR}/include/*.hh ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
 
 add_library(NEST_core STATIC ${core} ${headers} )
 add_executable(testNEST testNEST.cpp)

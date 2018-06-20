@@ -538,8 +538,8 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     vector<double> electronstream, AreaTable[2], TimeTable;
     electronstream.resize(Nee,dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
-    double Diff_Tran=37.368 * pow ( dfield, 0.093452 ) * exp ( -8.1651e-5 * dfield ); // arXiv:1609.04467 (EXO-200)
-    double Diff_Long=2089.2 * pow ( dfield,-0.699050 ) * exp ( -168.35000 / dfield ); // fit to Aprile & Doke review paper and to arXiv:1102.2865; plus, LUX Run02+03
+    double Diff_Tran=37.368 * pow ( dfield, .093452 ) * exp ( -8.1651e-5*dfield ); // arXiv:1609.04467 (EXO-200)
+    double Diff_Long=345.92 * pow ( dfield,-0.47880 ) * exp ( -81.3230 / dfield ); // fit to Aprile & Doke review paper and to arXiv:1102.2865; plus, LUX Run02+03
     // a good rule of thumb but only for liquids, as gas kind of opposite: Diff_Long ~ 0.15 * Diff_Tran, as it is in LAr, at least as field goes to infinity
     double Diff_Long_Gas = 4.265+19097./(1e3*fdetector->get_E_gas())-1.7397e6/pow(1e3*fdetector->get_E_gas(),2.)+1.2477e8/pow(1e3*fdetector->get_E_gas(),3.); // Nygren, NEXT
     double Diff_Tran_Gas = Diff_Tran * 0.01;
@@ -554,13 +554,13 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     double dt_gas = gasGap / driftVelocity_gas;
     double sigmaDLg = 10. * sqrt ( 2. * Diff_Long_Gas * dt_gas * 1e-6 );
     double sigmaDTg = 10. * sqrt ( 2. * Diff_Tran_Gas * dt_gas * 1e-6 );
-    double tauTrap = 2.35 / fdetector->get_E_gas(); // arXiv:1310.1117, modified to better fit XENON10 data
+    double tauTrap = 0.185; // microseconds from arXiv:1310.1117, modified to better fit XENON10 and LUX data at same time
     FILE* pulseFile = fopen ( "photon_times.txt", "a" );
     double min = 1e100;
     for ( i = 0; i < Nee; ++i ) {
       elecTravT = 0.; //resetting for the current electron
-      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL/sqrt(2.*log(2.))); //conversion factor needed to fit data, probably a FWHM vs. sigma issue
-      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT/sqrt(2.*log(2.)));
+      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
+      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);
       phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
       sigX = DT * cos ( phi );
       sigY = DT * sin ( phi );
@@ -586,8 +586,8 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       photonstream photon_emission_times = GetPhotonTimes ( INTERACTION_TYPE::beta, quanta.photons, quanta.excitons, dfield, KE );
       photonstream photon_times = AddPhotonTransportTime( photon_emission_times, newX, newY, origin);
       SE+= (double)BinomFluct(long(SE),fdetector->get_P_dphe()); Nphe += long(SE);
-      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDLg/sqrt(2.*log(2.)));
-      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDTg/sqrt(2.*log(2.)));
+      DL = RandomGen::rndm()->rand_gauss(0.,sigmaDLg);
+      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDTg);
       phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
       sigX = DT * cos ( phi );
       sigY = DT * sin ( phi );

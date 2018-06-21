@@ -20,6 +20,7 @@
 #include "analysis.hh"
 
 #define NUMBINS_MAX 200
+//#define FIT
 
 using namespace std;
 
@@ -48,6 +49,38 @@ int main ( int argc, char** argv ) {
     leak =false;
   else
     leak = true;
+  
+#ifdef FIT
+  
+  int freeParam;
+  cout << "Number of free parameters, for calculating DOF, for chi^2: ";
+  cin >> freeParam;
+  int DoF = numBins - freeParam;
+  FILE* ifp = fopen ( argv[2], "r" );
+  for ( i = 0; i < numBins; i++ ) {
+    fscanf ( ifp, "%lf %lf %lf %lf %lf %lf",
+	     &band2[i][0],
+	     &band2[i][1],
+	     &band2[i][2],
+	     &band2[i][4],
+	     &band2[i][3],
+	     &band2[i][5] );
+  }
+  GetFile ( argv[1] );
+  double error, chi2[2] = { 0., 0. };
+  for ( i = 0; i < numBins; i++ ) {
+    error = sqrt ( pow ( band[i][4], 2. ) + pow ( band2[i][4], 2. ) );
+    chi2[0] += pow ( ( band2[i][2] - band[i][2] ) / error, 2. );
+    error = sqrt ( pow ( band[i][5], 2. ) + pow ( band2[i][5], 2. ) );
+    chi2[1] += pow ( ( band2[i][3] - band[i][3] ) / error, 2. );
+  }
+  chi2[0] /= double ( DoF - 1 );
+  chi2[1] /= double ( DoF - 1 );
+  cout.precision ( 3 );
+  cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width" << endl;
+  return 1;
+
+#endif
   
   if ( leak ) {
     GetFile ( argv[2] );
@@ -150,7 +183,7 @@ void GetFile ( char* fileName ) {
   
   FILE *ifp = fopen(fileName,"r");
   double a,b,c,d,e,f,g,h,i,j,k,l,m,n;
-  int ch, nLines, o;
+  int ch, nLines = 0, o;
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne, S1cor_phe, S2cor_phe,
     S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr, S2raw_phe, S2cor_phd;
   

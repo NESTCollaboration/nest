@@ -41,5 +41,7 @@ NOTES:
 	- If you want to use the ROOT tools provided (and have ROOT installed already on your machine of course!) then to compile
 	g++ -g -Wno-deprecated-declarations -Ofast -o rootNEST `root-config --cflags --libs` rootNEST.cpp
 	Wno-... flag is optional, gets rid of annoying warning that's ROOT's fault not you. Ofast optional too, for speed. Might be -O3 on your machine.
+	You can now also use #define FIT mode with rootNEST to fit a band. Example XENON10 band files courtesy of Luiz de Viveiros are included in the 6-column format:
+	Bin Center  Bin Actual  Gaus Mean  Mean Error  Gaus Sigma  Sig Error  (in files Xe10_ERBand_Luiz.txt and Xe10_NRBand_Luiz.txt)
 	
 	- NuisParam is available to change the mean light and charge yields of nuclear recoils (separately) as E-independent multiplicative factors

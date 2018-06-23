@@ -21,6 +21,7 @@
 
 #define NUMBINS_MAX 200
 //#define FIT
+//#define LIMIT
 
 using namespace std;
 
@@ -49,6 +50,33 @@ int main ( int argc, char** argv ) {
     leak =false;
   else
     leak = true;
+  
+#ifdef LIMIT
+  
+  FILE * ifp = fopen ( argv[1], "r" );
+  int ch, nLines = 0;
+  while ( EOF != ( ch = getc ( ifp ) ) ) {
+    if ( '\n' == ch ) nLines++;
+  }
+  double energy[nLines], efficiency[nLines];
+  rewind ( ifp );
+  for ( i = 0; i < nLines; i++ )
+    fscanf ( ifp, "%lf %lf", &energy[i], &efficiency[i] );
+  TGraph* gr1 = new TGraph ( nLines, energy, efficiency );
+  TF1* fitf = new TF1 ( "FracEffVkeVEnergy", "10.^(2.-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5]))/100.", 0.000, energy[nLines-1] );
+  fitf->SetParameters(10.,2.,1.,20.,1e4,-2.5);
+  gr1->Fit(fitf,"rq","",0.000,energy[nLines-1]);
+  fprintf ( stderr, "Fractional Efficiency versus Energy in keV, Parameters: %f %f %f %f %f %f\n",
+	    fitf->GetParameter(0),
+	    fitf->GetParameter(1),
+	    fitf->GetParameter(2),
+	    fitf->GetParameter(3),
+	    fitf->GetParameter(4),
+	    fitf->GetParameter(5) );
+  delete gr1; delete fitf;
+  return 1;
+  
+#endif
   
 #ifdef FIT
   

@@ -23,7 +23,7 @@
 //#define FIT
 //#define LIMIT
 #define CL 0.90 //confidence level
-#define VSTEP 1e-3
+#define VSTEP 1e-3 //step size in keV for convolving WIMP recoil energy with efficiency
 
 using namespace std;
 
@@ -43,12 +43,9 @@ struct WIMP_spectrum_prep {
 };
 WIMP_spectrum_prep wimp_spectrum_prep;
 
-double WIMP_spectrum ( WIMP_spectrum_prep wimp_spectrum, double mass );
-double WIMP_dRate ( double ER, double mWimp );
 WIMP_spectrum_prep WIMP_prep_spectrum ( double mass, double eStep );
 int SelectRanXeAtom ( );
-vector<double> VonNeumann ( double xMin, double xMax, double yMin, double yMax,
-			   double xTest, double yTest,double fValue );
+double WIMP_dRate ( double ER, double mWimp );
 long double Factorial ( double x );
 double expectedUlFc ( double mub, TFeldmanCousins fc );
 
@@ -127,7 +124,7 @@ int main ( int argc, char** argv ) {
     return 0;
   }
   
-  const int masses = 200; double massMax = 1e5;
+  const int masses = NUMBINS_MAX; double massMax = 1e5;
   double mass[masses] = { 3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,
 			  10,11,12,13,14,15,16,17,18,19,
 			  20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,
@@ -138,26 +135,23 @@ int main ( int argc, char** argv ) {
 			  1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,
 			  2000,2200,2400,2600,2800,3000,3200,3400,3600,3800,4000,4200,4400,4600,4800,
 			  5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,1E+4,massMax }; //in GeV
-  double eStep, sigAboveThr[masses], xSect[masses]; //array for the cross-sections
+  double eStep, sigAboveThr[masses], xSect[masses]; //arrays for the fraction of WIMP signal events above threshold and for the cross-sections
   //cout << "\nWIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
   cout << "\nWIMP Mass [GeV/c^2]\tEff's times Acc [frac]" << endl;
-  unsigned long eventsCheck, numEvents[masses]; //array for the number of WIMP signal events above threshold
   
   i = 0;
   while ( mass[i] < massMax ) { //Iterate across each sample wimp Mass
-    eventsCheck = long ( floor ( 1E7 / mass[i] ) ); //number of events to run (mass-dependent)
-    numEvents[i] = 0;
+    sigAboveThr[i] = 0.;
     eStep = 0.5 * pow ( mass[i], 0.5 );
     if ( eStep > E_step )
       eStep = E_step;
     wimp_spectrum_prep = WIMP_prep_spectrum ( mass[i], eStep );
-    for ( long j = 0; j < eventsCheck; j++ ) { //Iterate across each event within each sample wimp mass
-      double keV = WIMP_spectrum ( wimp_spectrum_prep, mass[i] );
-      double eff = pow(10.,2.-aa*exp(-bb*pow(keV,cc))-dd*exp(-ee*pow(keV,ff)))/100.;
-      if ( r.Uniform() < eff && keV > loE && keV < hiE ) numEvents[i]++;
+    for ( double j = VSTEP; j < wimp_spectrum_prep.xMax; j += VSTEP ) { //Iterate across energies within each sample wimp mass
+      double eff = pow(10.,2.-aa*exp(-bb*pow(j,cc))-dd*exp(-ee*pow(j,ff)))/100.;
+      if ( j > loE && j < hiE )
+	sigAboveThr[i] += VSTEP * WIMP_dRate ( j, mass[i] ) * eff * xEff * NRacc / wimp_spectrum_prep.integral;
     }
     i++;
-    sigAboveThr[i-1] = ( (double)numEvents[i-1] / double(eventsCheck) ) * xEff * NRacc;
     cout << mass[i-1] << "\t\t\t" << sigAboveThr[i-1] << endl;
   }
   
@@ -680,34 +674,6 @@ WIMP_spectrum_prep WIMP_prep_spectrum ( double mass, double eStep ) {
   
 }
 
-double WIMP_spectrum ( WIMP_spectrum_prep wimp_spectrum, double mass ) {
-  
-  double xMin = 0., FuncValue = 0.00, x = 0.;
-  double yMax = WIMP_dRate ( xMin, mass );
-  vector<double> xyTry(3);
-  xyTry[2] = 1.;
-  xyTry[0] = xMin +  ( wimp_spectrum.xMax - xMin ) * r.Rndm();
-  xyTry[1] = yMax * r.Rndm();
-
-  while ( xyTry[2] > 0. )
-    {
-      while ( xyTry[1] > (-WIMP_dRate(0.,mass)/wimp_spectrum.xMax*xyTry[0]+WIMP_dRate(0.,mass)) ) { //triangle cut more efficient than rectangle
-	xyTry[0] = (wimp_spectrum.xMax-xMin)*r.Rndm(); xyTry[1] = yMax*r.Rndm(); }
-      for ( x = 0; x < wimp_spectrum.xMax; x+=(1./wimp_spectrum.divisor) )
-	{
-	  if ( xyTry[0] > x && xyTry[0] < (x + 1./wimp_spectrum.divisor) )
-	    {
-	      FuncValue = wimp_spectrum.base[int(x*wimp_spectrum.divisor)] * exp(-wimp_spectrum.exponent[int(x*wimp_spectrum.divisor)] * xyTry[0]);
-	      break;
-	    }
-	}
-      xyTry = VonNeumann ( xMin, wimp_spectrum.xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue );
-    }
-  
-  return xyTry[0];
-  
-}
-
 int SelectRanXeAtom ( ) {
   
   int A;
@@ -732,26 +698,6 @@ int SelectRanXeAtom ( ) {
   else
     A = 136;
   return A;
-  
-}
-
-vector<double> VonNeumann ( double xMin, double xMax, double yMin, double yMax,
-			   double xTest, double yTest,double fValue ) {
-  
-  vector<double> xyTry(3);
-  
-  xyTry[0] = xTest;
-  xyTry[1] = yTest;
-  
-  if ( xyTry[1] > fValue ) {
-    xyTry[0] = xMin + ( xMax - xMin ) * r.Uniform ( );
-    xyTry[1] = yMin + ( yMax - yMin ) * r.Uniform ( );
-    xyTry[2] = 1.;
-  }
-  else
-    xyTry[2] = 0.;
-  
-  return xyTry; //doing a vector means you can return 2 values at the same time
   
 }
 

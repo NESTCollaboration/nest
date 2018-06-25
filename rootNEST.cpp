@@ -34,20 +34,15 @@ double band[NUMBINS_MAX][7];
 void GetFile ( char* fileName );
 vector< vector<double> > outputs, inputs;
 
-struct WIMP_spectrum_prep {
-  double base[100];
-  double exponent[100];
-  double integral;
-  double xMax;
-  double divisor;
-};
-WIMP_spectrum_prep wimp_spectrum_prep;
-
-WIMP_spectrum_prep WIMP_prep_spectrum ( double mass, double eStep );
-int SelectRanXeAtom ( );
 double WIMP_dRate ( double ER, double mWimp );
+int SelectRanXeAtom ( );
 long double Factorial ( double x );
 double expectedUlFc ( double mub, TFeldmanCousins fc );
+
+// Convert all velocities from km/s into cm/s
+const double v_0   = 220. * 1e5; //peak WIMP velocity
+const double v_esc = 544. * 1e5; //escape velocity
+const double v_e   = 232. * 1e5; //Earth's velocity
 
 int main ( int argc, char** argv ) {
   
@@ -124,43 +119,12 @@ int main ( int argc, char** argv ) {
     return 0;
   }
   
-  const int masses = NUMBINS_MAX; double massMax = 1e5;
-  double mass[masses] = { 3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,
-			  10,11,12,13,14,15,16,17,18,19,
-			  20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,
-			  50,55,60,65,70,75,80,85,90,95,
-			  100,110,120,130,140,150,160,170,180,190,
-			  200,220,240,260,280,300,320,340,360,380,400,420,440,460,480,
-			  500,550,600,650,700,750,800,850,900,950,
-			  1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,
-			  2000,2200,2400,2600,2800,3000,3200,3400,3600,3800,4000,4200,4400,4600,4800,
-			  5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,1E+4,massMax }; //in GeV
-  double eStep, sigAboveThr[masses], xSect[masses]; //arrays for the fraction of WIMP signal events above threshold and for the cross-sections
-  //cout << "\nWIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
-  cout << "\nWIMP Mass [GeV/c^2]\tEff's times Acc [frac]" << endl;
-  
-  i = 0;
-  while ( mass[i] < massMax ) { //Iterate across each sample wimp Mass
-    sigAboveThr[i] = 0.;
-    eStep = 0.5 * pow ( mass[i], 0.5 );
-    if ( eStep > E_step )
-      eStep = E_step;
-    wimp_spectrum_prep = WIMP_prep_spectrum ( mass[i], eStep );
-    for ( double j = VSTEP; j < wimp_spectrum_prep.xMax; j += VSTEP ) { //Iterate across energies within each sample wimp mass
-      double eff = pow(10.,2.-aa*exp(-bb*pow(j,cc))-dd*exp(-ee*pow(j,ff)))/100.;
-      if ( j > loE && j < hiE )
-	sigAboveThr[i] += VSTEP * WIMP_dRate ( j, mass[i] ) * eff * xEff * NRacc / wimp_spectrum_prep.integral;
-    }
-    i++;
-    cout << mass[i-1] << "\t\t\t" << sigAboveThr[i-1] << endl;
-  }
-  
   double Ul, v;
   if ( numBGeventsExp == 0. ) {
     for ( v = 0.; v < 1e3; v += VSTEP ) {
       double sum = 0.0;
       for ( i = 0; i < (numBGeventsObs+1.); i++ )
-	sum += exp(-v)*pow(v,i)/Factorial(double(i));
+        sum += exp(-v)*pow(v,i)/Factorial(double(i));
       if ( sum <= ( 1. - CL ) ) break;
     }
     Ul = 0.5 * ( 2. * v - VSTEP );
@@ -174,6 +138,45 @@ int main ( int argc, char** argv ) {
     double powCon = fc.CalculateUpperLimit(0.,0.);
     if ( Ul < powCon ) Ul = powCon;
   }
+  
+  const int masses = NUMBINS_MAX; double massMax = 1e5;
+  double mass[masses] = {
+    2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2,3.3,3.4,3.5,
+    3.6,3.7,3.8,3.9,4.0,4.1,4.2,4.3,4.4,4.5,4.6,4.7,4.8,4.9,5.0,5.2,5.4,5.6,5.8,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,
+    10,11,12,13,14,15,16,17,18,19,
+    20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,
+    50,55,60,65,70,75,80,85,90,95,
+    100,110,120,130,140,150,160,170,180,190,
+    200,220,240,260,280,300,320,340,360,380,400,420,440,460,480,
+    500,550,600,650,700,750,800,850,900,950,
+    1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,
+    2000,2200,2400,2600,2800,3000,3200,3400,3600,3800,4000,4200,4400,4600,4800,
+    5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,1E+4,massMax }; //in GeV
+  double sigAboveThr[masses], xSect[masses]; //arrays for the fraction of WIMP signal events above threshold and for the cross-sections
+  cout << "\nWIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
+  
+  i = 0;
+  while ( mass[i] < massMax ) { //Iterate across each sample wimp Mass
+    sigAboveThr[i] = 0.;
+    for ( double j = VSTEP; j < hiE; j += VSTEP ) { //Iterate across energies within each sample wimp mass
+      double eff = pow(10.,2.-aa*exp(-bb*pow(j,cc))-dd*exp(-ee*pow(j,ff)))/100.;
+      if ( j > loE )
+	sigAboveThr[i] += VSTEP * WIMP_dRate ( j, mass[i] ) * eff * xEff * NRacc;
+    }
+    i++;
+    xSect[i-1] = 1e-36 * Ul / ( sigAboveThr[i-1] * fidMass * time );
+    if ( xSect[i-1] < DBL_MAX && xSect[i-1] > 0. && !std::isnan(xSect[i-1]) )
+      cout << mass[i-1] << "\t\t\t" << xSect[i-1] << endl;
+  }
+  int iMax = i;
+  
+  printf ( "{[" );
+  for ( i = 0; i < (iMax-1); i++ ) {
+    if ( xSect[i] < DBL_MAX && xSect[i] > 0. && !std::isnan(xSect[i]) )
+      printf ( "%.1f %e; ", mass[i], xSect[i] );
+  }
+  printf ( "%.1f %e", mass[iMax-1], xSect[iMax-1] );
+  printf ( "]}\n" );
   
   return 1;
   
@@ -538,12 +541,7 @@ double WIMP_dRate ( double ER, double mWimp ) {
   double SecondsPerDay = 60. * 60. * 24.;//Conversion factor
   double KiloGramsPerGram = 0.001;       //Conversion factor
   double keVperGeV = 1.e6;               //Conversion factor
-  double cmPerkm = 1.e5;                 //Conversion factor
   double SqrtPi = pow(M_PI, 0.5); double root2 = sqrt(2.);
-  // Convert all velocities from km/s into cm/s
-  double v_0   = 220. * cmPerkm;
-  double v_esc = 544. * cmPerkm;
-  double v_e   = 232. * cmPerkm;
   
   // Define the detector Z and A and the mass of the target nucleus
   double Z = 54.;
@@ -622,55 +620,6 @@ double WIMP_dRate ( double ER, double mWimp ) {
   dSpec *= (((Z * fp) + ((A - Z) * fn)) / fn) * (((Z * fp) + ((A - Z) * fn)) / fn) * zeta * FormFactor*FormFactor * SecondsPerDay / keVperGeV;
   
   return dSpec;
-  
-}
-
-WIMP_spectrum_prep WIMP_prep_spectrum ( double mass, double eStep ) {
-  
-  WIMP_spectrum_prep spectrum;
-  double EnergySpec[10001]={0}, divisor, x1, x2;
-  int numberPoints;
-  
- RE_START:
-  
-  if ( mass < 2.0 ) { // GeV/c^2
-    divisor = 100 / eStep; if ( (eStep*0.01) > 0.01 ) cerr << "WARNING, <= 0.01 keV step size recommended" << endl;
-    numberPoints=int(10000./eStep);
-  }
-  else if ( mass < 10. ) {
-    divisor = 10. / eStep;
-    numberPoints = int ( 1000. / eStep );
-  }
-  else {
-    divisor = 1.0 / eStep;
-    numberPoints = int ( 100. / eStep );
-  }
-  
-  for ( int i = 0; i < (numberPoints+1); i++ ) {
-    EnergySpec[i] = WIMP_dRate( double(i)/divisor, mass );
-  }
-  
-  spectrum.integral = 0.;
-  for ( long i = 0; i < 1000000; i++ ) {
-    spectrum.integral += WIMP_dRate( double(i)/1e4, mass ) / 1e4;
-  }
-  
-  for ( int i = 0; i < numberPoints; i++ )
-    {
-      x1 = double(i)/divisor; x2 = double(i+1)/divisor;
-      spectrum.base[i] = EnergySpec[i+1] * pow(EnergySpec[i+1] / EnergySpec[i], x2/(x1-x2));
-      spectrum.exponent[i] = log(EnergySpec[i+1] / EnergySpec[i]) / ( x1 - x2 );
-      if ( spectrum.base[i] > 0. && spectrum.base[i] < DBL_MAX && spectrum.exponent[i] > 0. && spectrum.exponent[i] < DBL_MAX )
-	;//spectrum.integral+=spectrum.base[i]/spectrum.exponent[i]*(exp(-spectrum.exponent[i]*x1)-exp(-spectrum.exponent[i]*x2));
-      else
-	{
-	  spectrum.xMax = double(i - 1) / divisor;
-	  if ( spectrum.xMax <= 0.0 ) goto RE_START;
-          break;
-	}
-    }
-  
-  spectrum.divisor = divisor; return spectrum;
   
 }
 

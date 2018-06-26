@@ -134,8 +134,9 @@ int main ( int argc, char** argv ) {
   double rho = n.SetDensity ( detector->get_T_Kelvin(), detector->get_p_bar() ); //cout.precision(12);
   if ( rho < 1. ) detector->set_inGas(true);
   
-	// Print g1 and g2 values, requiring S2 calculation for 1 SE and x,y,d = 0,0,0
-  vector<double> secondary = n.GetS2 ( 1, 0., 0., 0., 1., 0, 1e2, false );
+	// Calculate and print g1, g2 parameters (once per detector)
+	vector<double> g2_params = n.CalculateG2();
+	g2 = g2_params.back();
   
 	if ( atof(argv[5]) == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
@@ -335,7 +336,6 @@ int main ( int argc, char** argv ) {
       quanta = n.GetQuanta(yields,rho);
     }
     
-    if ( j == 0 ) g2 = 20.;
     double Nphd_S2 = g2 * quanta.electrons * exp(-driftTime/detector->get_eLife_us());
     if ( !MCtruthPos && Nphd_S2 > PHE_MIN ) {
       vector<double> xySmeared(2); xySmeared = n.xyResolution ( pos_x, pos_y, Nphd_S2 );
@@ -354,14 +354,13 @@ int main ( int argc, char** argv ) {
     else signal1.push_back(-999.);
     
     if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
-    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming);
+    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming, g2_params);
     if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
     else if ( usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )
       signal2.push_back(scint2[7]); //no spike option for S2
     else signal2.push_back(-999.);
 
-    g2 = fabs(scint2[8]);
     if ( !MCtruthE ) {
       double Nph, g1 = detector->get_g1(), Ne;
       if ( usePD == 0 )
@@ -387,6 +386,36 @@ int main ( int argc, char** argv ) {
     else
       signalE.push_back(keV);
     
+		// Possible outputs from "scint" vector
+		// scint[0] = nHits; // MC-true integer hits in same OR different PMTs, NO double phe effect
+		// scint[1] = Nphe; // MC-true integer hits WITH double phe effect (Nphe > nHits)
+		// scint[2] = pulseArea; // floating real# smeared DAQ pulse areas in phe, NO XYZ correction
+		// scint[3] = pulseAreaC; // smeared DAQ pulse areas in phe, WITH XYZ correction
+		// scint[4] = Nphd; // same as pulse area, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
+		// scint[5] = NphdC; // same as Nphd, but XYZ-corrected
+		// scint[6] = spike; // floating real# spike count, NO XYZ correction
+		// scint[7] = spikeC; // floating real# spike count, WITH XYZ correction
+		// scint[8] = fdetector->get_g1(); // g1 (light collection efficiency in liquid)
+
+		// Possible outputs from "scint2" vector
+		// scint2[0] = Nee; // integer number of electrons unabsorbed in liquid then getting extracted
+		// scint2[1] = Nph; // raw number of photons produced in the gas gap
+		// scint2[2] = nHits; // MC-true integer hits in same OR different PMTs, NO double phe effect
+		// scint2[3] = Nphe; // MC-true integer hits WITH double phe effect (Nphe > nHits). S2 has more steps than S1 (e's 1st)
+		// 
+		// If S2 threshold is set to positive (normal mode)
+		// scint2[4] = pulseArea; // floating real# smeared DAQ pulse areas in phe, NO XYZ correction
+		// scint2[5] = pulseAreaC; // smeared DAQ pulse areas in phe, WITH XYZ correction
+		// scint2[6] = Nphd; // same as pulse area, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
+		// scint2[7] = NphdC; // same as Nphd, but XYZ-corrected
+		//
+		// If S2 threshold is set to negative (switches from S2 -> S2 bottom, NOT literally negative)
+		// scint2[4] = S2b; // floating real# smeared pulse areas in phe ONLY including bottom PMTs, NO XYZ correction
+		// scint2[5] = S2bc; // floating real# smeared pulse areas in phe ONLY including bottom PMTs, WITH XYZ correction
+		// scint2[6] = S2b / (1.+fdetector->get_P_dphe()); // same as S2b, but adjusted for 2-PE effect (LUX phd units)
+		// scint2[7] = S2bc / (1.+fdetector->get_P_dphe()); // same as S2bc, but adjusted for 2-PE effect (LUX phd units)
+		// scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in gas gap (from CalculateG2)
+	  
     if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means

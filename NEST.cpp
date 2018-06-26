@@ -457,11 +457,15 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
   double spikeC = spike / posDep;
   
-  scintillation[0] = nHits; scintillation[1] = Nphe; //MC-true integer hits in same OR different PMTs, first without then with double phe's (Nphe > nHits)
-  scintillation[2] = pulseArea; scintillation[3] = pulseAreaC; //floating real# smeared DAQ pulse areas in phe, uncorrected and XYZ corrected respectively
-  scintillation[4] = Nphd; scintillation[5] = NphdC; //same as pulse areas except adjusted *downward* by constant for average 2-PE effect. (LUX phd units)
-  scintillation[6] = spike; scintillation[7] = spikeC; //uncorrected and pos-corrected spike counts, both floats, but made more accurate later in GetSpike
-  
+  scintillation[0] = nHits; // MC-true integer hits in same OR different PMTs, NO double phe effect
+	scintillation[1] = Nphe; // MC-true integer hits WITH double phe effect (Nphe > nHits)
+  scintillation[2] = pulseArea; // floating real# smeared DAQ pulse areas in phe, NO XYZ correction
+	scintillation[3] = pulseAreaC; // smeared DAQ pulse areas in phe, WITH XYZ correction
+  scintillation[4] = Nphd; // same as pulse area, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
+	scintillation[5] = NphdC; // same as Nphd, but XYZ-corrected
+  scintillation[6] = spike; // floating real# spike count, NO XYZ correction
+	scintillation[7] = spikeC; // floating real# spike count, WITH XYZ correction
+	
   if ( spike < fdetector->get_coinLevel() ) //no chance of meeting coincidence requirement. Here, spike is still "perfect" (integer)
     prob = 0.;
   else {
@@ -485,8 +489,8 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   } //the end of case of spike >= coinLevel
   
   newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, dV_mid, scintillation ); // over-write spike with smeared version, ~real data
-  scintillation[6] = newSpike[0]; // uncorr
-  scintillation[7] = newSpike[1]; // 3-D corr spike RQ
+  scintillation[6] = newSpike[0]; // S1 spike count (NOT adjusted for double phe effect), IF sufficiently small nHits (otherwise = Nphd)
+  scintillation[7] = newSpike[1]; // same as newSpike[0], but WITH XYZ correction
   
   if ( RandomGen::rndm()->rand_uniform() < prob ) // coincidence has to happen in different PMTs
     { ; }
@@ -501,37 +505,33 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     if ( scintillation[7] == 0. ) scintillation[7] = PHE_MIN; scintillation[7] *= -1.;
   }
   
-  scintillation[8] = fdetector->get_g1();
+  scintillation[8] = fdetector->get_g1(); // g1 (light collection efficiency in liquid)
   
   return scintillation;
   
 }
 
 vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity,
-				 long evtNum, double dfield, bool useTiming ) {
-  
+				 long evtNum, double dfield, bool useTiming, vector<double> &g2_params ) {
+ 
+	double elYield = g2_params[0];
+	double ExtEff = g2_params[1];
+	double SE = g2_params[2];
+	double g2 = g2_params[3];
+	 
   vector<double> ionization(9); int i;
-  double alpha = 0.137, beta = 177., gamma = 45.7;
-  double epsilonRatio = 1.85/1.00126;
-  if ( fdetector->get_inGas() ) epsilonRatio=1.;
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = fdetector->FitS2( dx, dy ); // XY is always in mm now, never cm
   posDep /= fdetector->FitS2( 0., 0. );
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
-  double E_liq = fdetector->get_E_gas() / epsilonRatio; //kV per cm
-  double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
-  if ( ExtEff > 1. || fdetector->get_inGas() ) ExtEff = 1.;
-  if ( ExtEff < 0. ) ExtEff = 0.;
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/fdetector->get_eLife_us())); //MAKE this 1 for SINGLE e- DEBUGGING
-  
   double gasGap = fdetector->get_anode() - fdetector->get_TopDrift(); //EL gap in mm -> cm, affecting S2 size linearly
-  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292
   if ( gasGap <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-  long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0., SE;
+  long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0.;
   
   if ( useTiming ) {
     long k;
@@ -641,32 +641,68 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   double S2b = RandomGen::rndm()->rand_gauss(fdetector->get_S2botTotRatio()*pulseArea,sqrt(fdetector->get_S2botTotRatio()*pulseArea*(1.-fdetector->get_S2botTotRatio())));
   double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()) / posDep; // for detectors using S2 bottom-only in their analyses
   
-  ionization[0] = Nee; ionization[1] = Nph; //integer number of electrons unabsorbed in liquid then getting extracted, followed by raw number of photons produced in the gas gap
-  ionization[2] = nHits; ionization[3] = Nphe; //identical definitions to GetS1 follow, see above, except no spike, as S2 too big generally. S2 has more steps than S1 (e's 1st)
+  ionization[0] = Nee; // integer number of electrons unabsorbed in liquid then getting extracted
+	ionization[1] = Nph; // raw number of photons produced in the gas gap
+  ionization[2] = nHits; // MC-true integer hits in same OR different PMTs, NO double phe effect
+	ionization[3] = Nphe; // MC-true integer hits WITH double phe effect (Nphe > nHits). S2 has more steps than S1 (e's 1st)
   if ( fdetector->get_s2_thr() >= 0 ) {
-    ionization[4] = pulseArea; ionization[5] = pulseAreaC;
-    ionization[6] = Nphd; ionization[7] = NphdC;
+    ionization[4] = pulseArea; // floating real# smeared DAQ pulse areas in phe, NO XYZ correction
+		ionization[5] = pulseAreaC; // smeared DAQ pulse areas in phe, WITH XYZ correction
+    ionization[6] = Nphd; // same as pulse area, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
+		ionization[7] = NphdC; // same as Nphd, but XYZ-corrected
   }
-  else { // the negative threshold is a polymorphic hidden feature: allows for header switching from total S2 to S2 bottom; doesn't mean literally negative, nor below threshold
-    ionization[4] = S2b; ionization[5] = S2bc;
-    ionization[6] = S2b / (1.+fdetector->get_P_dphe()); ionization[7] = S2bc / (1.+fdetector->get_P_dphe());
+	// Negative S2 threshold is a hidden feature, which switches from S2 -> S2 bottom (NOT literally negative)
+  else {
+    ionization[4] = S2b; // floating real# smeared pulse areas in phe ONLY including bottom PMTs, NO XYZ correction
+		ionization[5] = S2bc; // floating real# smeared pulse areas in phe ONLY including bottom PMTs, WITH XYZ correction
+    ionization[6] = S2b / (1.+fdetector->get_P_dphe()); // same as S2b, but adjusted for 2-PE effect (LUX phd units)
+		ionization[7] = S2bc / (1.+fdetector->get_P_dphe()); // same as S2bc, but adjusted for 2-PE effect (LUX phd units)
   }
   
-  if(pulseArea<fabs(fdetector->get_s2_thr())) for(i=0;i<8;i++) { if(ionization[i]==0.)ionization[i]=PHE_MIN; ionization[i]*=-1.; }
+	if(pulseArea<fabs(fdetector->get_s2_thr())) for(i=0;i<8;i++) { if(ionization[i]==0.)ionization[i]=PHE_MIN; ionization[i]*=-1.; }
   
-  SE = elYield* fdetector->get_g1_gas();
+	ionization[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in gas gap (from CalculateG2)
+  
+	return ionization;
+  
+}
+
+vector<double> NESTcalc::CalculateG2() {
+	vector<double> g2_params(4);
+  
+	// Set parameters for calculating EL yield and extraction
+	double alpha = 0.137, beta = 177., gamma = 45.7;
+  double epsilonRatio = 1.85/1.00126;
+  if ( fdetector->get_inGas() ) epsilonRatio=1.;
+ 
+ 	// Convert gas extraction field to liquid field 
+	double E_liq = fdetector->get_E_gas() / epsilonRatio; //kV per cm
+  double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
+  if ( ExtEff > 1. || fdetector->get_inGas() ) ExtEff = 1.;
+  if ( ExtEff < 0. ) ExtEff = 0.;
+ 
+ 	// Calculate EL yield based on gas gap, ext. field and pressure 
+  double gasGap = fdetector->get_anode() - fdetector->get_TopDrift(); //EL gap in mm -> cm, affecting S2 size linearly
+  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292
+  if ( gasGap <= 0. ) {
+    cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
+  }
+
+	// Calculate single electron size and then g2
+  double SE = elYield * fdetector->get_g1_gas();
   double g2 = ExtEff * SE;
-  if ( fdetector->get_s2_thr() < 0 )
-    g2 *= fdetector->get_S2botTotRatio();
-  ionization[8]=g2;
+  if ( fdetector->get_s2_thr() < 0 ) g2 *= fdetector->get_S2botTotRatio();
   
-  if ( !dx && !dy && !dt && Ne == 1 ) {
-    cout << endl << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
-    cout << ExtEff*100. << "%, while SE_mean = " << SE << ")\t";
-  }
-  
-  return ionization;
-  
+	cout << endl << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
+	cout << ExtEff*100. << "%, while SE_mean = " << SE << ")\t";
+
+	// Store the g2 parameters in a vector for later (calculated once per detector)	
+	g2_params[0] = elYield;
+	g2_params[1] = ExtEff;
+	g2_params[2] = SE;
+	g2_params[3] = g2;
+ 
+	return g2_params;
 }
 
 long double NESTcalc::Factorial ( double x ) {

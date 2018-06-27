@@ -579,7 +579,7 @@ double WIMP_dRate ( double ER, double mWimp ) {
   // Rescale the recoil energy and the inelastic scattering parameter into GeV
   ER /= keVperGeV;
   double delta = 0. / keVperGeV; //Setting this to a nonzero value will allow
-  //for inelastic dark matter...
+                                   //for inelastic dark matter...
   // Set up your dummy WIMP model (this is just to make sure that the numbers 
   // came out correctly for definite values of these parameters, the overall 
   // normalization of this spectrum doesn't matter since we generate a definite 

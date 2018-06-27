@@ -195,7 +195,7 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
   // something that we make an argument later, but this is good enough to start.
   // Some constants:
   double M_N = 0.9395654; //Nucleon mass [GeV]
-  double N_A = 6.022e23; //Avagadro's number [atoms/mol]
+  double N_A = NEST_AVO; //Avogadro's number [atoms/mol]
   double c = 2.99792458e10; //Speed of light [cm/s]
   double GeVperAMU = 0.9315;             //Conversion factor
   double SecondsPerDay = 60. * 60. * 24.;//Conversion factor
@@ -256,7 +256,7 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
   switch(thisCase){
   case 1:
     zeta=((SqrtPi*SqrtPi*SqrtPi*v_0*v_0)/(2.*N*x_e))*(erf(x_min+x_e)-erf(x_min-x_e)
-						-((4.*x_e)/SqrtPi)*exp(-x_esc*x_esc)*(1+bet*(x_esc*x_esc-x_e*x_e/3.-x_min*x_min)));
+						      -((4.*x_e)/SqrtPi)*exp(-x_esc*x_esc)*(1+bet*(x_esc*x_esc-x_e*x_e/3.-x_min*x_min)));
     break;
   case 2:
     zeta=((SqrtPi*SqrtPi*SqrtPi*v_0*v_0)/(2.*N*x_e))*(erf(x_esc)+erf(x_e-x_min)
@@ -272,16 +272,19 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
     cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
   }
   
-  double a = 0.52;
-  double C = 1.23*pow(A,1./3.)-0.60;
-  double s = 0.9;
-  double rn= sqrt(C*C+(7./3.)*M_PI*M_PI*a*a-5.*s*s);
-  double q = 6.92*sqrt(A*ER); double FormFactor;
-  if ( q * rn > 0. ) FormFactor = 3.*exp(-0.5*q*q*s*s)*(sin(q*rn)-q*rn*cos(q*rn))/(q*rn*q*rn*q*rn);
+  double a = 0.52; //in fm
+  double C = 1.23*pow(A,1./3.)-0.60; //fm
+  double s = 0.9; //skin depth of nucleus in fm. Originally used by Karen Gibson; XENON100 1fm; 2.30 acc. to Lewin and Smith maybe?
+  double rn= sqrt(C*C+(7./3.)*M_PI*M_PI*a*a-5.*s*s); //alternatives: 1.14*A^1/3 given in L&S, or rv=1.2*A^1/3 then rn = sqrt(pow(rv,2.)-5.*pow(s,2.)); used by XENON100 (fm)
+  double q = 6.92*sqrt(A*ER); //in units of 1 over distance or length
+  double FormFactor;
+  if ( q * rn > 0. ) FormFactor = 3.*exp(-0.5*q*q*s*s)*(sin(q*rn)-q*rn*cos(q*rn))/(q*rn*q*rn*q*rn); // qr and qs unitless inside Bessel function, which is dimensionless too
   else FormFactor = 1.;
   
   // Now, the differential spectrum for this bin!
   double dSpec = 0.5 * (c * c) * N_T * (rho_D / m_d) * (M_T * sigma_n / (mu_ND * mu_ND));
+  //zeta=1.069-1.4198*ER+.81058*pow(ER,2.)-.2521*pow(ER,3.)+.044466*pow(ER,4.)-0.0041148*pow(ER,5.)+0.00013957*pow(ER,6.)+2.103e-6*pow(ER,7.);
+  //if ( ER > 4.36 ) squiggle = 0.; //parameterization for 7 GeV WIMP using microMegas
   dSpec *= (((Z * fp) + ((A - Z) * fn)) / fn) * (((Z * fp) + ((A - Z) * fn)) / fn) * zeta * FormFactor*FormFactor * SecondsPerDay / keVperGeV;
   
   return dSpec;

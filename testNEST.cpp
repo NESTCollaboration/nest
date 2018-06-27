@@ -152,7 +152,12 @@ int main ( int argc, char** argv ) {
   else
     fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
   
-  if (argc >= 8) RandomGen::rndm()->SetSeed(atoi(argv[7]));
+  if ( argc >= 8 ) {
+    if ( atoi(argv[7]) == -1 )
+      RandomGen::rndm()->SetSeed( time (NULL) );
+    else
+      RandomGen::rndm()->SetSeed(atoi(argv[7]));
+  }
   
   if ( type_num == WIMP ) {
     yieldsMax = n.GetYields(      NR, 25.0, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),

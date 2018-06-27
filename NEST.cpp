@@ -513,13 +513,18 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 
 vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity,
 				 long evtNum, double dfield, bool useTiming, vector<double> &g2_params ) {
- 
+  
 	double elYield = g2_params[0];
 	double ExtEff = g2_params[1];
 	double SE = g2_params[2];
 	double g2 = g2_params[3];
 	 
   vector<double> ionization(9); int i;
+  
+  if ( dfield < 1. //"zero"-field detector (< 1 V/cm) has no S2
+       || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. ) {
+    for ( i = 0; i < 8; i++ ) ionization[i]=0.; return ionization;
+  }
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = fdetector->FitS2( dx, dy ); // XY is always in mm now, never cm
@@ -678,8 +683,8 @@ vector<double> NESTcalc::CalculateG2() {
  	// Convert gas extraction field to liquid field 
 	double E_liq = fdetector->get_E_gas() / epsilonRatio; //kV per cm
   double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
-  if ( ExtEff > 1. || fdetector->get_inGas() ) ExtEff = 1.;
-  if ( ExtEff < 0. ) ExtEff = 0.;
+  if ( ExtEff > 1. || fdetector->get_inGas() || E_liq > 7. ) ExtEff = 1.;
+  if ( ExtEff < 0. || E_liq <= 0. ) ExtEff = 0.;
  
  	// Calculate EL yield based on gas gap, ext. field and pressure 
   double gasGap = fdetector->get_anode() - fdetector->get_TopDrift(); //EL gap in mm -> cm, affecting S2 size linearly

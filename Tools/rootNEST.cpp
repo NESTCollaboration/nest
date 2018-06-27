@@ -17,11 +17,16 @@
 #include <string.h>
 #include <vector>
 
-#include "analysis.hh"
+#include "../analysis.hh"
 
 #define NUMBINS_MAX 200
-//#define FIT
-//#define LIMIT
+
+// Set the compile mode:
+//#define FIT //outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)
+//#define LIMIT //outputs wimp masses and cross-sections for given efficiency
+// default if neither is selected is to provide the ER BG discrimination & leakage frac
+
+// non-input parameters hardcoded in
 #define CL 0.90 //confidence level
 #define VSTEP 1e-3 //step size in keV for convolving WIMP recoil energy with efficiency
 
@@ -29,16 +34,17 @@ using namespace std;
 
 vector< vector<double> > GetBand_Gaussian ( vector< vector<double> > signals );
 vector< vector<double> > GetBand ( vector<double> S1s, vector<double> S2s, bool resol );
-TRandom3 r;
+TRandom3 r; //r.SetSeed(10);
 double band[NUMBINS_MAX][7];
 void GetFile ( char* fileName );
 vector< vector<double> > outputs, inputs;
 
 double WIMP_dRate ( double ER, double mWimp );
-int SelectRanXeAtom ( );
+int SelectRanXeAtom ( ); //to determine the isotope of Xe
 long double Factorial ( double x );
 double expectedUlFc ( double mub, TFeldmanCousins fc );
 
+const double rho_D = 0.3; //local halo density in [GeV/cm^3]
 // Convert all velocities from km/s into cm/s
 const double v_0   = 220. * 1e5; //peak WIMP velocity
 const double v_esc = 544. * 1e5; //escape velocity
@@ -64,6 +70,11 @@ int main ( int argc, char** argv ) {
     leak = true;
   
 #ifdef LIMIT
+  
+  if ( argc < 3 ) {
+    cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
+    return 0;
+  }
   
   FILE * ifp = fopen ( argv[1], "r" );
   int ch, nLines = 0;
@@ -94,40 +105,40 @@ int main ( int argc, char** argv ) {
   delete gr1; delete fitf;
   
   // Get input parameters for sensitivity or limit calculation
-  double time, fidMass, loE, hiE, xEff, NRacc, numBGeventsExp, numBGeventsObs;
+  double time, fidMass, loE, hiE, xEff, NRacc, numBGeventsExp = 0., numBGeventsObs;
   cout << "Target Mass (kilograms): ";
   cin >> fidMass;
   cout << "Run Time (provide days): ";
   cin >> time;
   cout << "Multiplicative factor on the efficiency of NR event detection from file (usually ~>0.9): ";
-  cin >> xEff;
+  cin >> xEff; //unitless fraction of one
   cout << "Acceptance for NR events post electron recoil background discrimination (usually ~ 50%): ";
-  cin >> NRacc;
+  cin >> NRacc;//unitless fraction of one
     cout << "Number of BG events observed: ";
   cin >> numBGeventsObs;
   if ( numBGeventsObs > 0. ) {
     cout << "Number of BG events expected: ";
-    cin >> numBGeventsExp;
+    cin >> numBGeventsExp; //for FC stats
   }
   cout << "Minimum energy (keV) for detection: ";
   cin >> loE;
   cout << "Maximum energy (keV) for detection: ";
   cin >> hiE;
   // Make sure inputs were valid.
-  if ( cin.fail() ) {
-    cerr << endl << "Input error. Make sure all inputs were numbers" << endl;
+  if ( cin.fail() || fidMass <= 0. || time <= 0. || xEff <= 0. || NRacc <= 0. || loE < 0. || hiE <= 0. || numBGeventsExp < 0. || numBGeventsObs < 0. ) {
+    cerr << endl << "Input error. Make sure all inputs were numbers (most also positive or at least 0)" << endl;
     return 0;
   }
   
-  double Ul, v;
+  double Ul, v; // Start of code block to evaluate upper limit on # of events to use
   if ( numBGeventsExp == 0. ) {
     for ( v = 0.; v < 1e3; v += VSTEP ) {
       double sum = 0.0;
       for ( i = 0; i < (numBGeventsObs+1.); i++ )
-        sum += exp(-v)*pow(v,i)/Factorial(double(i));
+        sum += exp(-v)*pow(v,i)/Factorial(double(i)); //using Poisson statistics as the probability distribution
       if ( sum <= ( 1. - CL ) ) break;
     }
-    Ul = 0.5 * ( 2. * v - VSTEP );
+    Ul = 0.5 * ( 2. * v - VSTEP ); //should result in 2.3 events as the UL (0 BG)
   }
   else {
     TFeldmanCousins fc ( CL );
@@ -135,12 +146,12 @@ int main ( int argc, char** argv ) {
       Ul = fc.CalculateUpperLimit(numBGeventsObs,numBGeventsExp);
     else
       Ul = expectedUlFc ( numBGeventsExp, fc );
-    double powCon = fc.CalculateUpperLimit(0.,0.);
+    double powCon = fc.CalculateUpperLimit(0.,0.); //can't do better than 2.44 ever!
     if ( Ul < powCon ) Ul = powCon;
   }
   
   const int masses = NUMBINS_MAX; double massMax = 1e5;
-  double mass[masses] = {
+  double mass[masses] = { //list of masses to run
     2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2,3.3,3.4,3.5,
     3.6,3.7,3.8,3.9,4.0,4.1,4.2,4.3,4.4,4.5,4.6,4.7,4.8,4.9,5.0,5.2,5.4,5.6,5.8,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,
     10,11,12,13,14,15,16,17,18,19,
@@ -161,21 +172,35 @@ int main ( int argc, char** argv ) {
     for ( double j = VSTEP; j < hiE; j += VSTEP ) { //Iterate across energies within each sample wimp mass
       double eff = pow(10.,2.-aa*exp(-bb*pow(j,cc))-dd*exp(-ee*pow(j,ff)))/100.;
       if ( j > loE )
-	sigAboveThr[i] += VSTEP * WIMP_dRate ( j, mass[i] ) * eff * xEff * NRacc;
+	sigAboveThr[i] += VSTEP * WIMP_dRate ( j, mass[i] ) * eff * xEff * NRacc; //integrating (Riemann, left sum) mass-dependent differential rate with effxacc and step size
     }
+    xSect[i] = 1e-36 * Ul / ( sigAboveThr[i] * fidMass * time ); //derive the cross-section based upon the desired upper limit, calculated above (aka "Ul"). Relative to 1pb
+    if ( atof(argv[2]) > 0. ) { //uses arXiv:1602.03489 (LUX Run03 SD) which in turn uses Klos et al.
+      xSect[i] *= ( 1.
+		    -2.9592/pow(mass[i],1.)
+		    +352.53/pow(mass[i],2.)
+		    -14808./pow(mass[i],3.)
+		    +2.7368e+5/pow(mass[i],4.)
+		    -2.5154e+6/pow(mass[i],5.)
+		    +1.2301e+7/pow(mass[i],6.)
+		    -3.0769e+7/pow(mass[i],7.)
+		    +3.1065e+7/pow(mass[i],8.)
+		    );
+      if ( atof(argv[2]) == 1. ) xSect[i] *= 1.66e5;
+      if ( atof(argv[2]) == 2. ) xSect[i] *= 5.64e6;
+    } //end spin-dep. code block
     i++;
-    xSect[i-1] = 1e-36 * Ul / ( sigAboveThr[i-1] * fidMass * time );
-    if ( xSect[i-1] < DBL_MAX && xSect[i-1] > 0. && !std::isnan(xSect[i-1]) )
-      cout << mass[i-1] << "\t\t\t" << xSect[i-1] << endl;
+    if ( xSect[i-1] < DBL_MAX && xSect[i-1] > 0. && !std::isnan(xSect[i-1]) ) //Print the results, skipping any weirdness (low WIMP masses prone)
+      cout << mass[i-1] << "\t\t\t" << xSect[i-1] << endl; //final answer
   }
   int iMax = i;
   
-  printf ( "{[" );
+  printf ( "{[" ); //DM tools format (i.e. Matlab)
   for ( i = 0; i < (iMax-1); i++ ) {
     if ( xSect[i] < DBL_MAX && xSect[i] > 0. && !std::isnan(xSect[i]) )
       printf ( "%.1f %e; ", mass[i], xSect[i] );
   }
-  printf ( "%.1f %e", mass[iMax-1], xSect[iMax-1] );
+  printf ( "%.1f %e", mass[iMax-1], xSect[iMax-1] ); //last bin special
   printf ( "]}\n" );
   
   return 1;
@@ -296,7 +321,7 @@ int main ( int argc, char** argv ) {
       finalSums[0] += (double)below[i]; finalSums[1] += (double)outputs[i].size();
     }
     fprintf(stderr,"OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = %.12f%%, total: Gaussian + non-Gaussian ('anomalous'). Leakage Fraction = %.12e\n",
-	    ( 1. - finalSums[0] / finalSums[1] ) * 100., finalSums[0] / finalSums[1]);
+	    ( 1. - finalSums[0] / finalSums[1] ) * 100., finalSums[0] / finalSums[1]); //Dividing by total for average
     double HighValue, LowValue;
     LowValue = ( finalSums[0] + sqrt(finalSums[0]) ) / ( finalSums[1] - sqrt(finalSums[1]) );
     HighValue= ( finalSums[0] - sqrt(finalSums[0]) ) / ( finalSums[1] + sqrt(finalSums[1]) );
@@ -535,7 +560,7 @@ double WIMP_dRate ( double ER, double mWimp ) {
   // something that we make an argument later, but this is good enough to start.
   // Some constants:
   double M_N = 0.9395654; //Nucleon mass [GeV]
-  double N_A = 6.022e23; //Avagadro's number [atoms/mol]
+  double N_A = 6.022e23; //Avogadro's number [atoms/mol]
   double c = 2.99792458e10; //Speed of light [cm/s]
   double GeVperAMU = 0.9315;             //Conversion factor
   double SecondsPerDay = 60. * 60. * 24.;//Conversion factor
@@ -559,7 +584,6 @@ double WIMP_dRate ( double ER, double mWimp ) {
   // came out correctly for definite values of these parameters, the overall 
   // normalization of this spectrum doesn't matter since we generate a definite 
   // number of events from the macro).
-  double rho_D = 0.3;      // [GeV/cm^3]
   double m_d   = mWimp;      // [GeV]
   double sigma_n = 1.e-36; //[cm^2] 1 pb reference
   // Calculate the other factors in this expression
@@ -607,16 +631,19 @@ double WIMP_dRate ( double ER, double mWimp ) {
     cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
   }
   
-  double a = 0.52;
-  double C = 1.23*pow(A,1./3.)-0.60;
-  double s = 0.9;
-  double rn= sqrt(C*C+(7./3.)*M_PI*M_PI*a*a-5.*s*s);
-  double q = 6.92*sqrt(A*ER); double FormFactor;
-  if ( q * rn > 0. ) FormFactor = 3.*exp(-0.5*q*q*s*s)*(sin(q*rn)-q*rn*cos(q*rn))/(q*rn*q*rn*q*rn);
+  double a = 0.52; //in fm
+  double C = 1.23*pow(A,1./3.)-0.60; //fm
+  double s = 0.9; //skin depth of nucleus in fm. Originally used by Karen Gibson; XENON100 1fm; 2.30 acc. to Lewin and Smith maybe?
+  double rn= sqrt(C*C+(7./3.)*M_PI*M_PI*a*a-5.*s*s); //alternatives: 1.14*A^1/3 given in L&S, or rv=1.2*A^1/3 then rn = sqrt(pow(rv,2.)-5.*pow(s,2.)); used by XENON100 (fm)
+  double q = 6.92*sqrt(A*ER); //in units of 1 over distance or length
+  double FormFactor;
+  if ( q * rn > 0. ) FormFactor = 3.*exp(-0.5*q*q*s*s)*(sin(q*rn)-q*rn*cos(q*rn))/(q*rn*q*rn*q*rn); // qr and qs unitless inside Bessel function, which is dimensionless too
   else FormFactor = 1.;
   
   // Now, the differential spectrum for this bin!
   double dSpec = 0.5 * (c * c) * N_T * (rho_D / m_d) * (M_T * sigma_n / (mu_ND * mu_ND));
+  //zeta=1.069-1.4198*ER+.81058*pow(ER,2.)-.2521*pow(ER,3.)+.044466*pow(ER,4.)-0.0041148*pow(ER,5.)+0.00013957*pow(ER,6.)+2.103e-6*pow(ER,7.);
+  //if ( ER > 4.36 ) squiggle = 0.; //parameterization for 7 GeV WIMP using microMegas
   dSpec *= (((Z * fp) + ((A - Z) * fn)) / fn) * (((Z * fp) + ((A - Z) * fn)) / fn) * zeta * FormFactor*FormFactor * SecondsPerDay / keVperGeV;
   
   return dSpec;

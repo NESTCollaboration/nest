@@ -267,7 +267,7 @@ int main ( int argc, char** argv ) {
     driftTime = ( detector->get_TopDrift() - pos_z ) / vD; // (mm - mm) / (mm / us) = us
     if ( atof(argv[5]) != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD )
       { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
-    if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (atof(argv[6]) == -1. || stof(position) == -1.) )
+    if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (atof(argv[6]) == -1. || stof(position) == -1.) && field >= 1. )
       goto Z_NEW;
     if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
@@ -517,11 +517,11 @@ vector<vector<double>> GetBand ( vector<double> S1s,
 	  }
 	  else {
 	    if ( useS2 == 0 )
-	      { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S2s[i]/S1s[i])); else signals[j].push_back(0.); }
+	      { if ( S1s[i] && S2s[i] && log10(S2s[i]/S1s[i])>logMin && log10(S2s[i]/S1s[i])<logMax ) signals[j].push_back(log10(S2s[i]/S1s[i])); else signals[j].push_back(0.); }
 	    else if ( useS2 == 1 )
-	      { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S2s[i])); else signals[j].push_back(0.); }
+	      { if ( S1s[i] && S2s[i] && log10(S2s[i]) > logMin && log10(S2s[i]) < logMax ) signals[j].push_back(log10(S2s[i])); else signals[j].push_back(0.); }
 	    else
-	      { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S1s[i]/S2s[i])); else signals[j].push_back(0.); }
+	      { if ( S1s[i] && S2s[i] && log10(S1s[i]/S2s[i])>logMin && log10(S1s[i]/S2s[i])<logMax ) signals[j].push_back(log10(S1s[i]/S2s[i])); else signals[j].push_back(0.); }
 	  }
 	  band[j][2] += signals[j].back();
 	  if ( resol )

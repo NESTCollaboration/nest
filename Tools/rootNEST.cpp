@@ -16,7 +16,6 @@
 
 #include <string.h>
 #include <vector>
-
 #include "../analysis.hh"
 
 #define NUMBINS_MAX 200
@@ -527,8 +526,8 @@ vector< vector<double> > GetBand_Gaussian ( vector< vector<double> > signals ) {
   for ( j = 0; j < numBins; j++ ) {
     TString HistName;
     HistName.Form("%i",j);
-    HistogramArray[j].SetName(HistName.Data());
-    HistogramArray[j].SetBins(50,0.6,3.6);
+    HistogramArray[j].SetName( HistName.Data() );
+    HistogramArray[j].SetBins(50 ,logMin,logMax);
     for ( unsigned long i = 0; i < signals[j].size(); i++ )
       HistogramArray[j].Fill(signals[j][i]);
     HistogramArray[j].Draw();
@@ -548,7 +547,8 @@ vector< vector<double> > GetBand_Gaussian ( vector< vector<double> > signals ) {
   
 }
 
-// The following was copied wholesale from TestSpectra.cpp on 06-23-2018
+// The following was copied wholesale from TestSpectra.cpp on 06-27-2018.
+// Find a way to just compile or link against this
 //------++++++------++++++------++++++------++++++------++++++------++++++------
 //dR() //generator written by Vic Gehman originally
 //------++++++------++++++------++++++------++++++------++++++------++++++------

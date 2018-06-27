@@ -20,6 +20,10 @@ int numBins = 33;
 double minS2 = 0.0;
 double maxS2 = 1e9;
 
+// log(S2/S1) or log(S2) admitted into analysis incl. limit
+double logMax = 3.6;
+double logMin = 0.6;
+
 //some numbers for fine-tuning the speed vs. the accuracy
 double z_step = 0.1; //mm, for integrating non-uniform field
 double E_step = 2.0; //keV, for integrating WIMP spectrum

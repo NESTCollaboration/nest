@@ -148,9 +148,9 @@ int main ( int argc, char** argv ) {
   cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
   
   if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
   else
-    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
   
   if ( argc >= 8 ) {
     if ( atoi(argv[7]) == -1 )

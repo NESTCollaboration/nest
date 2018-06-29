@@ -494,7 +494,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   scintillation[6] = newSpike[0]; // S1 spike count (NOT adjusted for double phe effect), IF sufficiently small nHits (otherwise = Nphd)
   scintillation[7] = newSpike[1]; // same as newSpike[0], but WITH XYZ correction
   
-  if ( RandomGen::rndm()->rand_uniform() < prob ) // coincidence has to happen in different PMTs
+  if ( RandomGen::rndm()->rand_uniform() < prob || prob >= 1. ) // coincidence has to happen in different PMTs
     { ; }
   else { // some of these are set to -1 to flag them as having been below threshold
     if ( scintillation[0] == 0. ) scintillation[0] = PHE_MIN; scintillation[0] *= -1.;
@@ -523,7 +523,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
 	 
   vector<double> ionization(9); int i;
   
-  if ( dfield < 1. //"zero"-field detector (< 1 V/cm) has no S2
+  if ( dfield < FIELD_MIN //"zero"-drift-field detector has no S2
        || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. ) {
     for ( i = 0; i < 8; i++ ) ionization[i]=0.; return ionization;
   }
@@ -822,7 +822,7 @@ double NESTcalc::SetDriftVelocity ( double Kelvin, double Density, double eField
   }
   
   if ( speed <= 0. ) {
-    if ( eField < 1e2 ) cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n";
+    if ( eField < 1e2 && eField >= FIELD_MIN ) cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n";
     if ( eField > 1e4 ) cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO HIGH\n";
   }
   return speed;

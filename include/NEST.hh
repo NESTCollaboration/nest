@@ -19,6 +19,7 @@
 #define MOLAR_MASS 131.293 //grams per mole
 #define PHE_MIN 1e-6 //area
 #define ELEC_MASS 9.109e-31 //kg
+#define FIELD_MIN 1. //min elec field to make S2 (in V/cm)
 
 #define SAMPLE_SIZE 10 //nano-seconds
 #define PULSE_WIDTH 10 //nano-seconds

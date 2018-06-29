@@ -182,8 +182,9 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
 YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, double density,
 				  double dfield, double massNum, double atomNum, vector<double> NuisParam ) {
   
-  
-  double Ne = -999; double Nph = -999; double NexONi = -999; double m8 = 2., L = 1.; //result storage, modified below
+	// For temporary variables for storing results 
+  double Ne = -999; double Nph = -999; double NexONi = -999, deltaT_ns = -999; 
+	double m8 = 2., L = 1.;
   const double deltaT_ns_halflife = 154.4;
   
   double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
@@ -264,12 +265,11 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
     {
       double Nq = 0.;
       if ( energy == 9.4 ) {
-	double deltaT_ns = RandomGen::rndm()->rand_exponential ( deltaT_ns_halflife );
+	deltaT_ns = RandomGen::rndm()->rand_exponential ( deltaT_ns_halflife );
 	Nq = energy * ( 1e3 / Wq_eV + 6.5 );
 	double medTlevel = 47.8 + ( 69.201 - 47.8 ) / pow ( 1. + pow ( dfield / 250.13, 0.9 ), 1. );
 	double highTrise = 1.15 + ( 1. - 1.15 ) / ( 1. + pow ( deltaT_ns / 1200., 18. ) );
 	double lowTdrop = 14. * pow ( dfield, 0.19277 );
-	printf ( "%.6f\t", deltaT_ns );
 	Nph = energy*highTrise*(5.1e4*pow(2.*deltaT_ns+10.,-1.5)+medTlevel)/(1.+pow(deltaT_ns/lowTdrop,-3.));
 	alpha = 0.;
       }
@@ -317,6 +317,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   result.ExcitonRatio =NexONi;
   result.Lindhard = L;
   result.ElectricField = dfield;
+  result.DeltaT_Scint = deltaT_ns;
   return result; //everything needed to calculate fluctuations
   
 }
@@ -674,7 +675,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   
 }
 
-vector<double> NESTcalc::CalculateG2() {
+vector<double> NESTcalc::CalculateG2( bool verbosity ) {
 	vector<double> g2_params(4);
   
 	// Set parameters for calculating EL yield and extraction
@@ -700,8 +701,10 @@ vector<double> NESTcalc::CalculateG2() {
   double g2 = ExtEff * SE;
   if ( fdetector->get_s2_thr() < 0 ) g2 *= fdetector->get_S2botTotRatio();
   
-	cout << endl << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
-	cout << ExtEff*100. << "%, while SE_mean = " << SE << ")\t";
+	if (verbosity) {
+		cout << endl << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
+		cout << ExtEff*100. << "%, while SE_mean = " << SE << ")\t";
+	}
 
 	// Store the g2 parameters in a vector for later (calculated once per detector)	
 	g2_params[0] = elYield;

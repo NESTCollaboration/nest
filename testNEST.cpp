@@ -55,9 +55,22 @@ int main ( int argc, char** argv ) {
       cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] x,y-position[mm](Initial) field_drift[V/cm] x,y,z-position[mm](Final) {optional:seed}" << endl << endl;
       return 0;
     }
-  unsigned long int numEvts = atoi(argv[1]);
   
+	unsigned long int numEvts = atoi(argv[1]);
   string type = argv[2];
+  double eMin = atof(argv[3]);
+  double eMax = atof(argv[4]);
+	double inField = atof(argv[5]);
+  position = argv[6];
+	double fPos = atof(argv[6]);
+  
+	if ( argc == 8 ) {
+    if ( atoi(argv[7]) == -1 )
+      RandomGen::rndm()->SetSeed( time (NULL) );
+    else
+      RandomGen::rndm()->SetSeed(atoi(argv[7]));
+  }
+  
   INTERACTION_TYPE type_num;
 	TestSpectra spec;
   if ( type == "NR" || type == "neutron" ) type_num = NR;
@@ -114,9 +127,6 @@ int main ( int argc, char** argv ) {
     return 0;
   }
   
-  double eMin = atof(argv[3]);
-  double eMax = atof(argv[4]);
-  
   if ( type_num == Kr83m ) {
     if ( eMin == 9.4 && eMax == 9.4 ) {}
     else if ( eMin == 32.1 &&
@@ -135,30 +145,26 @@ int main ( int argc, char** argv ) {
   if ( rho < 1. ) detector->set_inGas(true);
   
 	// Calculate and print g1, g2 parameters (once per detector)
-	vector<double> g2_params = n.CalculateG2();
+	vector<double> g2_params = n.CalculateG2(verbosity);
 	g2 = g2_params.back();
   
-	if ( atof(argv[5]) == -1. ) {
+	if ( inField == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
     vD_middle = vTable[int(floor(.5*detector->get_TopDrift()/z_step))];
   }
-  else vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, atof(argv[5]));
-  cout << "Density = " << rho << " g/mL" << "\t";
-  cout << "central vDrift = " << vD_middle << " mm/us\n";
-  cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
+  else vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, inField);
   
-  if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-    fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
-  else
-    fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
-  
-  if ( argc >= 8 ) {
-    if ( atoi(argv[7]) == -1 )
-      RandomGen::rndm()->SetSeed( time (NULL) );
-    else
-      RandomGen::rndm()->SetSeed(atoi(argv[7]));
-  }
-  
+	if (verbosity) {
+		cout << "Density = " << rho << " g/mL" << "\t";
+		cout << "central vDrift = " << vD_middle << " mm/us\n";
+		cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
+
+		if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
+			fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+		else
+			fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+ 	}
+
   if ( type_num == WIMP ) {
     yieldsMax = n.GetYields(      NR, 25.0, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
 				  double(massNum), double(atomNum), NuisParam);
@@ -220,14 +226,13 @@ int main ( int argc, char** argv ) {
     }
     
   Z_NEW:
-    if ( atof(argv[6]) == -1. ) { // -1 means default, random location mode
+    if ( fPos == -1. ) { // -1 means default, random location mode
       pos_z = 0. + ( detector->get_TopDrift() - 0. ) * RandomGen::rndm()->rand_uniform(); // initial guess
       r = detector->get_radius() * sqrt ( RandomGen::rndm()->rand_uniform() );
       phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
       pos_x = r * cos(phi); pos_y = r * sin(phi);
     }
     else {
-      position = argv[6];
       delimiter = ",";
       loc = 0; int i = 0;
       while ( (loc = position.find(delimiter)) != string::npos ) {
@@ -246,17 +251,17 @@ int main ( int argc, char** argv ) {
 	pos_x = r * cos(phi); pos_y = r * sin(phi); }
     }
     
-    if ( atof(argv[5]) == -1. ) { // -1 means use poly position dependence
+    if ( inField == -1. ) { // -1 means use poly position dependence
 			field = detector->FitEF(pos_x, pos_y, pos_z);
     }
-    else field = atof(argv[5]);
+    else field = inField;
     
     if ( field <= 0. )
       cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
     if ( field > 12.e3 )
       cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are you sure about this?\n";
     
-    if ( atof(argv[5]) == -1. ) {
+    if ( inField == -1. ) {
       //for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
       //cerr << double(jj)*z_step << "\t" << vTable[jj] << endl;
       index = int(floor(pos_z/z_step));
@@ -265,9 +270,9 @@ int main ( int argc, char** argv ) {
     else
       vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,field);
     driftTime = ( detector->get_TopDrift() - pos_z ) / vD; // (mm - mm) / (mm / us) = us
-    if ( atof(argv[5]) != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD )
+    if ( inField != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD )
       { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
-    if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (atof(argv[6]) == -1. || stof(position) == -1.) && field >= 1. )
+    if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (fPos == -1. || stof(position) == -1.) && field >= 1. )
       goto Z_NEW;
     if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
@@ -422,7 +427,8 @@ int main ( int argc, char** argv ) {
 		// scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in gas gap (from CalculateG2)
 	  
     if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
-      printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
+      if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 ) printf ( "%.6f\t", yields.DeltaT_Scint );
+			printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
       if ( pos_z < detector->get_cathode() ) printf("g-X ");
       if ( keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||
@@ -439,46 +445,48 @@ int main ( int argc, char** argv ) {
     
   }
   
-  if ( eMin != eMax ) {
-    if ( useS2 == 2 )
-      GetBand ( signal2, signal1, false );
-    else
-      GetBand ( signal1, signal2, false );
-    fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
-    for ( int j = 0; j < numBins; j++ ) {
-      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3],band[j][5]*100.);
-      if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 || band[j][4] <= 0.0 || band[j][5] <= 0.0 ||
-           std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) || std::isnan(band[j][4]) || std::isnan(band[j][5]) )
-	{ if ( eMax != -999. ) {
-	    if( ( (detector->get_g1()*yieldsMax.PhotonYield) < maxS1 || (g2*yieldsMax.ElectronYield) < maxS2 ) && j != 0)
-	      cerr << "WARNING: Insufficient number of high-energy events to populate highest bins is likely.\n";
-	    else
-	      cerr << "WARNING: Insufficient number of low-energy events to populate lowest bins is likely. Increase minS1 and/or minS2.\n";
-	  }
-	  eMax = -999.; }
-    }
-  }
-  else {
-    GetBand ( signal1, signal2, true );
-    GetEnergyRes ( signalE );
-    if ( type_num == NR ) {
-      fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc [keVnr]\tEc Res[%%]\tEff[%%>thr]\tEc [keVee]\n");
-      keVee /= numEvts;
-    }
-    else
-      fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\tEff[%%>thr]\n"); //the C here refers to the combined (S1+S2) energy scale
-    for ( int j = 0; j < numBins; j++ ) {
-      fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t",band[j][0],band[j][1]/band[j][0]*100.,
-	      band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
-      if ( type_num == NR ) fprintf(stderr,"%lf\n",keVee/energies[2]); else fprintf(stderr,"\n");
-      if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
-	   std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) )
-	cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
-      else if ( energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0 )
-	cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
-      else ;
-    }
-  }
+	if (verbosity) {
+		if ( eMin != eMax ) {
+			if ( useS2 == 2 )
+				GetBand ( signal2, signal1, false );
+			else
+				GetBand ( signal1, signal2, false );
+			fprintf(stderr,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
+			for ( int j = 0; j < numBins; j++ ) {
+				fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[j][0],band[j][1],band[j][2],band[j][4],band[j][3],band[j][5]*100.);
+				if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 || band[j][4] <= 0.0 || band[j][5] <= 0.0 ||
+						 std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) || std::isnan(band[j][4]) || std::isnan(band[j][5]) )
+		{ if ( eMax != -999. ) {
+				if( ( (detector->get_g1()*yieldsMax.PhotonYield) < maxS1 || (g2*yieldsMax.ElectronYield) < maxS2 ) && j != 0)
+					cerr << "WARNING: Insufficient number of high-energy events to populate highest bins is likely.\n";
+				else
+					cerr << "WARNING: Insufficient number of low-energy events to populate lowest bins is likely. Increase minS1 and/or minS2.\n";
+			}
+			eMax = -999.; }
+			}
+		}
+		else {
+			GetBand ( signal1, signal2, true );
+			GetEnergyRes ( signalE );
+			if ( type_num == NR ) {
+				fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc [keVnr]\tEc Res[%%]\tEff[%%>thr]\tEc [keVee]\n");
+				keVee /= numEvts;
+			}
+			else
+				fprintf(stderr,"S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\tEff[%%>thr]\n"); //the C here refers to the combined (S1+S2) energy scale
+			for ( int j = 0; j < numBins; j++ ) {
+				fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t",band[j][0],band[j][1]/band[j][0]*100.,
+					band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
+				if ( type_num == NR ) fprintf(stderr,"%lf\n",keVee/energies[2]); else fprintf(stderr,"\n");
+				if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
+			 std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) )
+		cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
+				else if ( energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0 )
+		cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
+				else ;
+			}
+		}
+	}
   
   return 1;
   

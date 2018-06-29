@@ -1,4 +1,7 @@
 
+// Verbosity flag (for limiting output to purely the yield data)
+bool verbosity = true;
+
 //General parameters of importance changing global behavior
 bool MCtruthE = true; //false means reconstructed energy
 bool MCtruthPos=true; //false means reconstructed position

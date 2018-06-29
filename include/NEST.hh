@@ -52,7 +52,8 @@ namespace NEST {
     double ExcitonRatio;
     double Lindhard;
     double ElectricField;
-  };
+  	double DeltaT_Scint;
+	};
   
   struct QuantaResult{
     int photons;
@@ -92,7 +93,7 @@ namespace NEST {
 				      INTERACTION_TYPE species, long evtNum, double dfield, double energy, bool useTiming );
 			std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
 	  std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, double driftSpeed, long evtNum, double dfield, bool useTiming, vector<double> &g2_params );
-	  std::vector<double> CalculateG2();
+	  std::vector<double> CalculateG2( bool verbosity = true );
 			double SetDriftVelocity ( double T, double D, double F );
 			double SetDriftVelocity_MagBoltz ( double D, double F );
 			std::vector<double> SetDriftVelocity_NonUniform ( double rho, double zStep );

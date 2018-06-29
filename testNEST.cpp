@@ -270,11 +270,11 @@ int main ( int argc, char** argv ) {
     else
       vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,field);
     driftTime = ( detector->get_TopDrift() - pos_z ) / vD; // (mm - mm) / (mm / us) = us
-    if ( inField != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD )
+    if ( inField != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD && field >= FIELD_MIN )
       { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
-    if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (fPos == -1. || stof(position) == -1.) && field >= 1. )
-      goto Z_NEW;
-    if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j )
+    if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (fPos == -1. || stof(position) == -1.) && field >= FIELD_MIN )
+			goto Z_NEW;
+    if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j && field >= FIELD_MIN )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     
     // The following should never happen: this is simply a just-in-case code-block dealing with user error
@@ -282,7 +282,7 @@ int main ( int argc, char** argv ) {
       cerr << "ERROR: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }
-    if ( pos_z > detector->get_TopDrift() || driftTime <= 0.0 ) {
+    if ( (pos_z > detector->get_TopDrift() || driftTime <= 0.0) && field >= FIELD_MIN ) {
       cerr << "ERROR: unphysically big Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }
@@ -373,6 +373,7 @@ int main ( int argc, char** argv ) {
 
     if ( !MCtruthE ) {
       double Nph, g1 = detector->get_g1(), Ne;
+      double Wq_eV = 1.9896 + ( 20.8 - 1.9896 ) / ( 1. + pow ( rho / 4.0434, 1.4407 ) ); // out-of-sync danger: copied from NEST.cpp
       if ( usePD == 0 )
 	Nph= fabs(scint[3]) / (g1*(1.+detector->get_P_dphe()));
       else if ( usePD == 1 ) Nph = fabs(scint[5]) / g1;
@@ -385,13 +386,13 @@ int main ( int argc, char** argv ) {
       if ( signal2.back() <= 0. )
 	Ne = 0.;
       if ( yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0. ) {
-	keV = ( Nph + Ne ) * W_DEFAULT * 1e-3 / yields.Lindhard;
-	keVee+=( Nph + Ne ) * W_DEFAULT * 1e-3;
+	keV = ( Nph + Ne ) * Wq_eV * 1e-3 / yields.Lindhard;
+	keVee+=( Nph + Ne ) * Wq_eV * 1e-3; //as alternative, use W_DEFAULT in both places, but won't account for density dependence
       }
       else
 	keV = 0.;
     }
-    if ( signal1.back() <= 0. || signal2.back() <= 0. )
+    if ( (signal1.back() <= 0. || signal2.back() <= 0.) && field >= FIELD_MIN )
       signalE.push_back(0.);
     else
       signalE.push_back(keV);
@@ -478,10 +479,10 @@ int main ( int argc, char** argv ) {
 				fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t",band[j][0],band[j][1]/band[j][0]*100.,
 					band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
 				if ( type_num == NR ) fprintf(stderr,"%lf\n",keVee/energies[2]); else fprintf(stderr,"\n");
-				if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
-			 std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) )
+				if ( (band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
+				std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3])) && field >= FIELD_MIN )
 		cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
-				else if ( energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0 )
+				else if ( (energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0) && field >= FIELD_MIN )
 		cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
 				else ;
 			}
@@ -547,6 +548,10 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     if ( band[j][0] <= 0. && !resol ) band[j][0] = border + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
+    if ( numPts <= 0 ) {
+      for ( i = 0; i < S1s.size(); i++ ) band[j][0] += S1s[i];
+      numPts = S1s.size();
+    }
     if (resol)
       band[j][0] /= numPts;
     band[j][1] /= numPts;

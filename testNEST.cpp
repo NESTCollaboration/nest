@@ -352,9 +352,12 @@ int main ( int argc, char** argv ) {
       pos_x = xySmeared[0];
       pos_y = xySmeared[1];
     }
-    
+
+    vector<long int> wf_time;
+    vector<double>   wf_amp;
     vector<double> scint = n.GetS1(quanta,pos_x,pos_y,pos_z,
-				   vD,vD_middle,type_num,j,field,keV,useTiming);
+				   vD,vD_middle,type_num,j,field,keV,useTiming, outputTiming,
+				   wf_time, wf_amp);
     if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
     else if ( usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
@@ -364,7 +367,7 @@ int main ( int argc, char** argv ) {
     else signal1.push_back(-999.);
     
     if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
-    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming, g2_params);
+    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming, outputTiming, wf_time, wf_amp, g2_params);
     if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
     else if ( usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )

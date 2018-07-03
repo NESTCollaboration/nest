@@ -322,8 +322,9 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   
 }
 
-NESTcalc::NESTcalc ( ) {
 
+NESTcalc::NESTcalc ( ) {
+  fdetector = NULL;
 }
 
 NESTcalc::NESTcalc (VDetector* detector) {
@@ -331,12 +332,18 @@ NESTcalc::NESTcalc (VDetector* detector) {
 	fdetector = detector;
 }
 
-vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftVelocity,
-       double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, bool useTiming ) {
+NESTcalc::~NESTcalc(){
+  if(pulseFile)pulseFile.close();
+  if(fdetector)delete fdetector;
+}
+
+vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftVelocity, double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, bool useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp ) {
   
   int Nph = quanta.photons;
+
+  wf_time.clear();
+  wf_amp.clear();
   
-  FILE *pulseFile;
   vector<double> photon_areas[2];
   vector<double> scintillation(9);  // return vector
   vector<double> newSpike(2); // for re-doing spike counting more precisely
@@ -406,14 +413,11 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     photonstream photon_emission_times = GetPhotonTimes(type_num,total_photons,excitons,dfield,energy);
     photonstream photon_times = AddPhotonTransportTime(photon_emission_times,dx,dy,dz);
     
-    if ( evtNum == 0 ) {
-      if ( remove ( "photon_times.txt" ) == 0 ) ; else ;
-      pulseFile = fopen ( "photon_times.txt", "a" );
-      //fprintf ( pulseFile, "Event #\tt [ns]\tA1 [PE]\tA2 [PE]\n" );
-      fprintf ( pulseFile, "Event#\tt [ns]\tA [PE]\tin win\n" );
+    if(outputTiming && !pulseFile.is_open()){
+      pulseFile = ofstream("photon_times.txt");	
+      pulseFile << "Event#\tt [ns]\tA [PE]\tin win" <<endl;
     }
-    else
-      pulseFile = fopen ( "photon_times.txt", "a" );
+
     int ii, index; double min = 1e100, pTime;
     for ( ii = 0; ii < (int)fabs(spike); ++ii ) {
       PEperBin.clear();
@@ -437,19 +441,27 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     }
     for ( ii = 0; ii < numPts; ++ii ) {
       if ( AreaTable[ii] <= PULSEHEIGHT ) continue;
-      fprintf ( pulseFile, "%lu\t%d\t%.2f", evtNum, (ii-numPts/2)*SAMPLE_SIZE, AreaTable[ii] );
+
+      wf_time.push_back((ii-numPts/2)*SAMPLE_SIZE);
+      wf_amp.push_back(AreaTable[ii]);
+      
+      if(outputTiming){
+	char line[1000];
+	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back() );
+	pulseFile<<line<<flush;
+      }
+    
       if ( ((ii-numPts/2)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() && nHits <= fdetector->get_coinLevel() ) {
 	pulseArea -= AreaTable[ii];
-	fprintf ( pulseFile, "\t0\n" );
+	pulseFile <<  "\t0" <<endl;
       }
-      else fprintf ( pulseFile, "\t1\n" );
+      else pulseFile << "\t1" <<endl;
     }
     for ( ii = 0; ii < TimeTable[0].size(); ++ii ) {
       if ( (TimeTable[0][ii]-min) > fdetector->get_coinWind() && nHits <= fdetector->get_coinLevel() )
 	--spike;
       //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, TimeTable[0][ii], TimeTable[1][ii] );
     }
-    fclose(pulseFile);
   }
   
   if ( pulseArea < fdetector->get_sPEthr() )
@@ -515,7 +527,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 }
 
 vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity,
-				 long evtNum, double dfield, bool useTiming, vector<double> &g2_params ) {
+				 long evtNum, double dfield, bool useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp, vector<double> &g2_params ) {
   
 	double elYield = g2_params[0];
 	double ExtEff = g2_params[1];
@@ -563,7 +575,6 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     double sigmaDLg = 10. * sqrt ( 2. * Diff_Long_Gas * dt_gas * 1e-6 );
     double sigmaDTg = 10. * sqrt ( 2. * Diff_Tran_Gas * dt_gas * 1e-6 );
     double tauTrap = 0.185; // microseconds from arXiv:1310.1117, modified to better fit XENON10 and LUX data at same time
-    FILE* pulseFile = fopen ( "photon_times.txt", "a" );
     double min = 1e100;
     for ( i = 0; i < Nee; ++i ) {
       elecTravT = 0.; //resetting for the current electron
@@ -630,9 +641,15 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     }
     for ( k = 0; k < numPts; ++k ) {
       if ( AreaTable[1][k] <= PULSEHEIGHT ) continue;
-      fprintf ( pulseFile, "%lu\t%ld\t%.2f\n", evtNum, k*SAMPLE_SIZE+long(min+SAMPLE_SIZE/2.), AreaTable[1][k] );
+      wf_time.push_back(k*SAMPLE_SIZE+long(min+SAMPLE_SIZE/2.));
+      wf_amp.push_back(AreaTable[1][k]);
+      
+      if(outputTiming){
+	char line[1000];
+	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back());
+	pulseFile << line<<endl;
+      }
     }
-    fclose ( pulseFile );
   }
   else {
     Nph = long(floor(RandomGen::rndm()->rand_gauss(elYield*double(Nee),

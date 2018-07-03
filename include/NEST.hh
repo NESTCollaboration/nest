@@ -72,38 +72,42 @@ namespace NEST {
   };
   
   
-	class NESTcalc {
+  class NESTcalc {
     
-		private:
+  private:
 
-			long double Factorial ( double x );
-			double nCr ( double n, double r );
+    long double Factorial ( double x );
+    double nCr ( double n, double r );
 			
-		public:
+  public:
 
-			NESTcalc();
-			NESTcalc(VDetector* detector);
-			long BinomFluct(long, double);
-	  NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam={1,1});
-	  double PhotonTime(INTERACTION_TYPE species,bool exciton, double dfield, double energy);
-          photonstream AddPhotonTransportTime (photonstream emitted_times, double x, double y, double z);
-	  photonstream GetPhotonTimes(INTERACTION_TYPE species, int total_photons, int excitons, double dfield, double energy);
-			YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
-			QuantaResult GetQuanta(YieldResult yields, double density);
-	  std::vector<double> GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftSpeed, double dS_mid,
-				      INTERACTION_TYPE species, long evtNum, double dfield, double energy, bool useTiming );
-			std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
-	  std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, double driftSpeed, long evtNum, double dfield, bool useTiming, vector<double> &g2_params );
-	  std::vector<double> CalculateG2( bool verbosity = true );
-			double SetDriftVelocity ( double T, double D, double F );
-			double SetDriftVelocity_MagBoltz ( double D, double F );
-			std::vector<double> SetDriftVelocity_NonUniform ( double rho, double zStep );
-			double SetDensity ( double T, double P );
-			std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top );
+    NESTcalc();
+    NESTcalc(VDetector* detector);
+    ~NESTcalc();
+    
+    long BinomFluct(long, double);
+    NESTresult FullCalculation(INTERACTION_TYPE species,double energy,double density,double dfield,double A,double Z,std::vector<double> NuisParam={1,1});
+    double PhotonTime(INTERACTION_TYPE species,bool exciton, double dfield, double energy);
+    photonstream AddPhotonTransportTime (photonstream emitted_times, double x, double y, double z);
+    photonstream GetPhotonTimes(INTERACTION_TYPE species, int total_photons, int excitons, double dfield, double energy);
+    YieldResult GetYields ( INTERACTION_TYPE species, double energy, double density, double dfield,double A,double Z,std::vector<double> NuisParam);
+    QuantaResult GetQuanta(YieldResult yields, double density);
+    std::vector<double> GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species, long evtNum, double dfield, double energy, bool useTiming,  bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp );
+    std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
+    std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, double driftSpeed, long evtNum, double dfield, bool useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp,vector<double> &g2_params );
+    std::vector<double> CalculateG2( bool verbosity = true );
+    double SetDriftVelocity ( double T, double D, double F );
+    double SetDriftVelocity_MagBoltz ( double D, double F );
+    std::vector<double> SetDriftVelocity_NonUniform ( double rho, double zStep );
+    double SetDensity ( double T, double P );
+    std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top );
+
+  private:
+    ofstream pulseFile;
+    
+  protected:
 			
-		protected:
-			
-			VDetector* fdetector;
+    VDetector* fdetector;
 	  
   };
 

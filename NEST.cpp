@@ -413,11 +413,12 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     photonstream photon_emission_times = GetPhotonTimes(type_num,total_photons,excitons,dfield,energy);
     photonstream photon_times = AddPhotonTransportTime(photon_emission_times,dx,dy,dz);
     
-    if(outputTiming && !pulseFile.is_open()){
-      pulseFile = ofstream("photon_times.txt");	
-      pulseFile << "Event#\tt [ns]\tA [PE]\tin win" <<endl;
+    if ( outputTiming && !pulseFile.is_open ( ) ) {
+      pulseFile = ofstream ( "photon_times.txt" );
+      //pulseFile << "Event#\tt [ns]\tA [PE]" << endl;
+      pulseFile << "Event#\tt [ns]\tPE/bin\tin win" << endl;
     }
-
+    
     int ii, index; double min = 1e100, pTime;
     for ( ii = 0; ii < (int)fabs(spike); ++ii ) {
       PEperBin.clear();
@@ -445,7 +446,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
       wf_time.push_back((ii-numPts/2)*SAMPLE_SIZE);
       wf_amp.push_back(AreaTable[ii]);
       
-      if(outputTiming){
+      if ( outputTiming ) {
 	char line[1000];
 	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back() );
 	pulseFile<<line<<flush;
@@ -644,7 +645,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       wf_time.push_back(k*SAMPLE_SIZE+long(min+SAMPLE_SIZE/2.));
       wf_amp.push_back(AreaTable[1][k]);
       
-      if(outputTiming){
+      if ( outputTiming ) {
 	char line[1000];
 	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back());
 	pulseFile << line<<endl;

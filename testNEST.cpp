@@ -42,7 +42,7 @@ int main ( int argc, char** argv ) {
 
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; //scaling factors, for now just for NR Ly & Qy. But must initialize!
 	string position, delimiter, token; size_t loc; int index;
-  double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
+	double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0, origX,origY;
   NEST::YieldResult yieldsMax;
   
   if (argc < 7)
@@ -56,15 +56,18 @@ int main ( int argc, char** argv ) {
       return 0;
     }
   
-	unsigned long int numEvts = atoi(argv[1]);
+  unsigned long int numEvts = atoi(argv[1]);
   string type = argv[2];
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);
-	double inField = atof(argv[5]);
+  if(eMax==0.){
+    cerr << "ERROR: The maximum energy cannot be 0 keV!" << endl;
+    return 0; }
+  double inField = atof(argv[5]);
   position = argv[6];
-	double fPos = atof(argv[6]);
+  double fPos = atof(argv[6]);
   
-	if ( argc == 8 ) {
+  if ( argc == 8 ) {
     if ( atoi(argv[7]) == -1 )
       RandomGen::rndm()->SetSeed( time (NULL) );
     else
@@ -146,7 +149,7 @@ int main ( int argc, char** argv ) {
   
 	// Calculate and print g1, g2 parameters (once per detector)
 	vector<double> g2_params = n.CalculateG2(verbosity);
-	g2 = g2_params.back();
+	g2 = fabs(g2_params.back()); double g1 = detector->get_g1();
   
 	if ( inField == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
@@ -174,14 +177,16 @@ int main ( int argc, char** argv ) {
 				  double(massNum), double(atomNum), NuisParam);
   }
   else {
+    double energyMaximum;
+    if ( eMax < 0. ) energyMaximum = 1. / fabs(eMax);
     if ( type_num == Kr83m )
-      yieldsMax = n.GetYields(  beta  , eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+      yieldsMax = n.GetYields(  beta  , energyMaximum, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
 			      double(massNum), double(atomNum), NuisParam); //the reason for this: don't do the special Kr stuff when just checking max
     else
-      yieldsMax = n.GetYields(type_num, eMax, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+      yieldsMax = n.GetYields(type_num, energyMaximum, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
 			      double(massNum), double(atomNum), NuisParam);
   }
-  if ( (detector->get_g1()*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
+  if ( (g1*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
     cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   
   double keV = -999.;
@@ -215,13 +220,16 @@ int main ( int argc, char** argv ) {
 	}
 	break;
       default:
-	keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
+	if ( eMax > 0. )
+	  keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
+	else //negative eMax signals to NEST that you want to use an exponential energy spectrum profile
+	  keV = eMax * log ( RandomGen::rndm()->rand_uniform() );
 	break;
       }
     }
     
     if ( type_num != WIMP && type_num != B8 ) {
-      if (keV > eMax) keV = eMax;
+      if (keV > eMax && eMax > 0. ) keV = eMax;
       if (keV < eMin) keV = eMin;
     }
     
@@ -230,7 +238,7 @@ int main ( int argc, char** argv ) {
       pos_z = 0. + ( detector->get_TopDrift() - 0. ) * RandomGen::rndm()->rand_uniform(); // initial guess
       r = detector->get_radius() * sqrt ( RandomGen::rndm()->rand_uniform() );
       phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
-      pos_x = r * cos(phi); pos_y = r * sin(phi);
+      pos_x = r * cos(phi); pos_y = r * sin(phi); origX = pos_x; origY = pos_y;
     }
     else {
       delimiter = ",";
@@ -248,7 +256,9 @@ int main ( int argc, char** argv ) {
       if ( stof(token) == -999. ) {
 	r = detector->get_radius() * sqrt ( RandomGen::rndm()->rand_uniform() );
 	phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
-	pos_x = r * cos(phi); pos_y = r * sin(phi); }
+	pos_x = r * cos(phi); pos_y = r * sin(phi);
+      }
+      if ( j == 0 ) { origX = pos_x; origY = pos_y; }
     }
     
     if ( inField == -1. ) { // -1 means use poly position dependence
@@ -273,7 +283,7 @@ int main ( int argc, char** argv ) {
     if ( inField != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD && field >= FIELD_MIN )
       { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
     if ( (driftTime > detector->get_dt_max() || driftTime < detector->get_dt_min()) && (fPos == -1. || stof(position) == -1.) && field >= FIELD_MIN )
-			goto Z_NEW;
+      goto Z_NEW;
     if ( detector->get_dt_max() > (detector->get_TopDrift()-0.)/vD && !j && field >= FIELD_MIN )
       { cerr << "WARNING: dt_max is greater than max possible" << endl; }
     
@@ -282,7 +292,7 @@ int main ( int argc, char** argv ) {
       cerr << "ERROR: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }
-    if ( (pos_z > detector->get_TopDrift() || driftTime <= 0.0) && field >= FIELD_MIN ) {
+    if ( (pos_z > (detector->get_TopDrift()+z_step) || driftTime < 0.0) && field >= FIELD_MIN ) {
       cerr << "ERROR: unphysically big Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl;
       return 0;
     }
@@ -348,7 +358,7 @@ int main ( int argc, char** argv ) {
     
     double Nphd_S2 = g2 * quanta.electrons * exp(-driftTime/detector->get_eLife_us());
     if ( !MCtruthPos && Nphd_S2 > PHE_MIN ) {
-      vector<double> xySmeared(2); xySmeared = n.xyResolution ( pos_x, pos_y, Nphd_S2 );
+      vector<double> xySmeared(2); xySmeared = n.xyResolution ( origX, origY, Nphd_S2 );
       pos_x = xySmeared[0];
       pos_y = xySmeared[1];
     }
@@ -356,7 +366,7 @@ int main ( int argc, char** argv ) {
     vector<long int> wf_time;
     vector<double>   wf_amp;
     vector<double> scint = n.GetS1(quanta,pos_x,pos_y,pos_z,
-				   vD,vD_middle,type_num,j,field,keV,useTiming, outputTiming,
+				   vD,vD_middle,type_num,j,field,keV,useTiming, verbosity,
 				   wf_time, wf_amp);
     if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
@@ -367,7 +377,7 @@ int main ( int argc, char** argv ) {
     else signal1.push_back(-999.);
     
     if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
-    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming, outputTiming, wf_time, wf_amp, g2_params);
+    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming, verbosity, wf_time, wf_amp, g2_params);
     if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
     else if ( usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )
@@ -375,8 +385,7 @@ int main ( int argc, char** argv ) {
     else signal2.push_back(-999.);
 
     if ( !MCtruthE ) {
-      double Nph, g1 = detector->get_g1(), Ne;
-      double Wq_eV = 1.9896 + ( 20.8 - 1.9896 ) / ( 1. + pow ( rho / 4.0434, 1.4407 ) ); // out-of-sync danger: copied from NEST.cpp
+      double Nph, Ne, Wq_eV = 1.9896 + ( 20.8 - 1.9896 ) / ( 1. + pow ( rho / 4.0434, 1.4407 ) ); // out-of-sync danger: copied from NEST.cpp
       if ( usePD == 0 )
 	Nph= fabs(scint[3]) / (g1*(1.+detector->get_P_dphe()));
       else if ( usePD == 1 ) Nph = fabs(scint[5]) / g1;
@@ -434,7 +443,7 @@ int main ( int argc, char** argv ) {
       if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 ) printf ( "%.6f\t", yields.DeltaT_Scint );
 			printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
-      if ( pos_z < detector->get_cathode() ) printf("g-X ");
+      if ( pos_z < detector->get_cathode() && verbosity ) printf("g-X ");
       if ( keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||
 	   //switch to exponential notation to make output more readable, if energy is too high (>1 MeV)
 	   type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
@@ -461,7 +470,7 @@ int main ( int argc, char** argv ) {
 				if ( band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 || band[j][4] <= 0.0 || band[j][5] <= 0.0 ||
 						 std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3]) || std::isnan(band[j][4]) || std::isnan(band[j][5]) )
 		{ if ( eMax != -999. ) {
-				if( ( (detector->get_g1()*yieldsMax.PhotonYield) < maxS1 || (g2*yieldsMax.ElectronYield) < maxS2 ) && j != 0)
+				if( ( (g1*yieldsMax.PhotonYield) < maxS1 || (g2*yieldsMax.ElectronYield) < maxS2 ) && j != 0)
 					cerr << "WARNING: Insufficient number of high-energy events to populate highest bins is likely.\n";
 				else
 					cerr << "WARNING: Insufficient number of low-energy events to populate lowest bins is likely. Increase minS1 and/or minS2.\n";
@@ -483,8 +492,11 @@ int main ( int argc, char** argv ) {
 					band[j][2],band[j][3]/band[j][2]*100.,energies[0],energies[1]/energies[0]*100.,energies[2]*100.);
 				if ( type_num == NR ) fprintf(stderr,"%lf\n",keVee/energies[2]); else fprintf(stderr,"\n");
 				if ( (band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 || band[j][3] <= 0.0 ||
-				std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3])) && field >= FIELD_MIN )
-		cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
+				      std::isnan(band[j][0]) || std::isnan(band[j][1]) || std::isnan(band[j][2]) || std::isnan(band[j][3])) && field >= FIELD_MIN ) {
+				  if ( numEvts > 1 )
+				    cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to be too restrictive, please check.\n";
+				  else cerr << "CAUTION: Poor stats. You must have at least 2 events to calculate S1 and S2 and E resolutions.\n";
+				}
 				else if ( (energies[0] == eMin || energies[0] == eMax || energies[1] <= 0.0) && field >= FIELD_MIN )
 		cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
 				else ;
@@ -551,7 +563,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     if ( band[j][0] <= 0. && !resol ) band[j][0] = border + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
-    if ( numPts <= 0 ) {
+    if ( numPts <= 0 && resol ) {
       for ( i = 0; i < S1s.size(); i++ ) band[j][0] += S1s[i];
       numPts = S1s.size();
     }

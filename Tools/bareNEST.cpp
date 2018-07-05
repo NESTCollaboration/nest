@@ -163,13 +163,17 @@ int main ( int argc, char** argv ) {
     pos_x = xySmeared[0];
     pos_y = xySmeared[1];
   }
- 
+	
+	// Vectors for saving times and amplitudes of waveforms (with useTiming and verbosity boolean flags both set to true in analysis.hh)
+	vector<double> wf_amp;
+	vector<long int> wf_time;
+	
 	// Calculate the S1 based on the quanta generated 
-  vector<double> scint = n.GetS1(quanta, pos_x, pos_y, pos_z, vD, vD_middle, type_num, 0, field, keV, useTiming);
+	vector<double> scint = n.GetS1 ( quanta, pos_x, pos_y, pos_z, vD, vD_middle, type_num, 0, field, keV, useTiming, verbosity, wf_time, wf_amp );
  
  	// Take care of gamma-X case for positions below cathode
 	if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
-	vector<double> scint2 = n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, 0, field, useTiming, g2_params);
+	vector<double> scint2 = n.GetS2 ( quanta.electrons, pos_x, pos_y, driftTime, vD, 0, field, useTiming, verbosity, wf_time, wf_amp, g2_params );
 
 	// If using the reconstructed energy, back-calculate energy as measured from yields
   if ( !MCtruthE ) {

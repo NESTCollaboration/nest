@@ -16,6 +16,8 @@
 
 #include <string.h>
 #include <vector>
+
+#include "../include/TestSpectra.hh"
 #include "../analysis.hh"
 
 #define NUMBINS_MAX 200
@@ -45,9 +47,9 @@ double expectedUlFc ( double mub, TFeldmanCousins fc );
 
 const double rho_D = 0.3; //local halo density in [GeV/cm^3]
 // Convert all velocities from km/s into cm/s
-const double v_0   = 220. * 1e5; //peak WIMP velocity
-const double v_esc = 544. * 1e5; //escape velocity
-const double v_e   = 232. * 1e5; //Earth's velocity
+const double v_0   = V_WIMP * 1e5; //peak WIMP velocity
+const double v_esc = V_ESCAPE * 1e5; //escape velocity
+const double v_e   = V_EARTH * 1e5; //the Earth's velocity
 
 int main ( int argc, char** argv ) {
   
@@ -208,6 +210,11 @@ int main ( int argc, char** argv ) {
   
 #ifdef FIT
   
+  if ( numBins == 1 ) {
+    printf("S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\n");
+    GetFile ( argv[1] ); return 1;
+  }
+
   int freeParam;
   cout << "Number of free parameters, for calculating DOF, for chi^2: ";
   cin >> freeParam;
@@ -338,7 +345,7 @@ int main ( int argc, char** argv ) {
 void GetFile ( char* fileName ) {
   
   FILE *ifp = fopen(fileName,"r");
-  double a,b,c,d,e,f,g,h,i,j,k,l,m,n;
+  double a,b,c,d,e,f,g,h,i,j,k,l,m,n; double eMin = 1e100, eMax = -1e100;
   int ch, nLines = 0, o;
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne, S1cor_phe, S2cor_phe,
     S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr, S2raw_phe, S2cor_phd;
@@ -356,6 +363,8 @@ void GetFile ( char* fileName ) {
       break;
     //fprintf(stderr,"%.6f\t%.6f\t%.6f\t%.6f,%.6f,%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n",a,b,c,d,e,f,g,h,i,j,k,l,m,n);
     E_keV.push_back(a);
+    if ( a < eMin ) eMin = a;
+    if ( a > eMax ) eMax = a;
     electricField.push_back(b);
     tDrift_us.push_back(c);
     X_mm.push_back(d);
@@ -400,6 +409,69 @@ void GetFile ( char* fileName ) {
       S2cor_phe.push_back(-999.);
       S2cor_phd.push_back(-999.);
     }
+  }
+  
+  if ( numBins == 1 ) {
+    
+    TH1F* HistogramArray = new TH1F[3];
+    double minimum, maximum, average;
+    unsigned long int i, numPts = E_keV.size();
+    double holder[numPts];
+    
+    for ( int j = 0; j < 3; j++ ) {
+      switch ( j ) {
+      case 0:
+	minimum= minS1;
+	maximum= maxS1;
+	for ( i = 0; i < numPts; i++ ) {
+	  if ( usePD == 0 ) holder[i] = S1cor_phe[i];
+	  else if ( usePD == 1 ) holder[i] = S1cor_phd[i];
+          else holder[i] = S1cor_spike[i];
+	}
+	break;
+      case 1:
+	minimum =minS2;
+	maximum =maxS2;
+	for ( i = 0; i < numPts; i++ ) {
+	  if ( usePD == 0 ) holder[i] = S2cor_phe[i];
+	  else holder[i] = S2cor_phd[i];
+	}
+	break;
+      default:
+	minimum = eMin;
+	maximum = eMax;
+	for ( i = 0; i < numPts; i++ )
+	  holder[i] = E_keV[i];
+	break;
+      }
+      TString HistName;
+      HistName.Form("%d",j);
+      HistogramArray[j].SetName(HistName.Data());
+      HistogramArray[j].SetBins(400,minimum,maximum);
+      for ( i = 0; i < numPts; i++ )
+	HistogramArray[j].Fill(holder[i]);
+      //HistogramArray[j].Draw();
+      TF1* f = new TF1("peak","gaus");
+      average = 0.5*(minimum+maximum);
+      f->SetParameters(average, 0.1 * average);
+      HistogramArray[j].Fit(f,"q");
+      average = f->GetParameter("Mean");
+      printf ( "%lf\t", average );
+      printf ( "%lf\t", f->GetParameter("Sigma") / average * 100. );
+      band[j][0] = f->GetParError(1);
+      band[j][1] = f->GetParError(2) / average * 1e2;
+      band[j][2] = f->GetChisquare() / double ( f->GetNDF() );
+      delete f;
+    }
+    
+    delete[] HistogramArray;
+    cout << endl << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" ;
+    printf ( "\n%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[0][0], band[0][1], band[1][0], band[1][1], band[2][0], band[2][1] );
+    cout << "X^2 / DOF" << "\t\t\t" << "X^2 / DOF" << "\t\t\t" << "X^2 / DOF";
+    printf ( "\n%lf\t\t\t%lf\t\t\t%lf\tEnd Table\n", band[0][2], band[1][2], band[2][2] );
+    
+    return;
+    
   }
   
   //cout << E_keV.size() << "\t" << S2cor_phd.size() << endl;

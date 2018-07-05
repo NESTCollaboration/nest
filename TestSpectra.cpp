@@ -23,9 +23,12 @@ double TestSpectra::CH3T_spectrum ( double xMin, double xMax ) {
   double m_e = 510.9989461; //e- rest mass-energy [keV]
   double aa = 0.0072973525664; //fine structure constant
   double ZZ = 2.;
+  double qValue = 18.5898; //tritium beta decay endpoint [keV]
   
-  if(xMax>18.5898)xMax=18.5898; //tritium beta decay endpoint [keV]
+  if(xMax>qValue)xMax=qValue;
   if(xMin<0.)xMin=0.;
+  if ( xMin != 0. || xMax != qValue )
+    cerr << "WARNING: Recommended energy range is 0 to " << qValue << " keV" << endl;
   double yMax = 1.1e7; //top of the beta decay E histogram
   vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
 			  yMax * RandomGen::rndm()->rand_uniform(),1.};
@@ -34,7 +37,7 @@ double TestSpectra::CH3T_spectrum ( double xMin, double xMax ) {
     double x = (2.*M_PI*ZZ*aa)*(xyTry[0] + m_e)/sqrt(xyTry[0]*xyTry[0] + 2.*xyTry[0]*m_e);
     double FuncValue = (sqrt(2.*xyTry[0]*m_e) *
 			(xyTry[0] + m_e) *
-			(18.5898-xyTry[0]) * (18.5898-xyTry[0]) *
+			(qValue-xyTry[0]) * (qValue-xyTry[0]) *
 			x*(1./(1.-exp(-x)))*(1.002037-0.001427*(B)));
     xyTry = RandomGen::rndm()->VonNeumann(xMin,xMax,0.,yMax,xyTry[0],xyTry[1],FuncValue);
   }
@@ -48,10 +51,12 @@ double TestSpectra::C14_spectrum ( double xMin, double xMax ) {
   double aa = 0.0072973525664; //fine structure constant
   double ZZ = 7.;
   double V0 = 0.495; //effective offset in T due to screening of the nucleus by electrons
+  double qValue = 156.; //C14 beta decay endpoint [keV]
   
-  
-  if(xMax>156.)xMax=156.; //C14 beta decay endpoint [keV]
+  if(xMax>qValue)xMax=qValue;
   if(xMin<0.)xMin=0.;
+  if ( xMin != 0. || xMax != qValue )
+    cerr << "WARNING: Recommended energy range is 0 to " << qValue << " keV" << endl;
   double yMax = 2.5e9; //top of the beta decay E histogram
   vector<double> xyTry = {xMin+(xMax-xMin)*RandomGen::rndm()->rand_uniform(),
 			  yMax * RandomGen::rndm()->rand_uniform(),1.};
@@ -59,7 +64,7 @@ double TestSpectra::C14_spectrum ( double xMin, double xMax ) {
   	double Ee=xyTry[0]+m_e; //Total energy of electron
 	double pe=sqrt(Ee*Ee-m_e*m_e); //momentum of the electron
 	//phase space part of spectrum
-	double dNdE_phasespace=pe*Ee*(156.-xyTry[0])*(156.-xyTry[0]); 
+	double dNdE_phasespace=pe*Ee*(qValue-xyTry[0])*(qValue-xyTry[0]); 
 	
 	//Fermi function (Bethe-Bacher approximation)
 	double Ee_screen=Ee-V0;
@@ -204,9 +209,9 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
   double cmPerkm = 1.e5;                 //Conversion factor
   double SqrtPi = pow(M_PI, 0.5); double root2 = sqrt(2.);
   // Convert all velocities from km/s into cm/s
-  double v_0   = 220. * cmPerkm;
-  double v_esc = 544. * cmPerkm;
-  double v_e   = 232. * cmPerkm;
+  double v_0   = V_WIMP * cmPerkm;
+  double v_esc = V_ESCAPE * cmPerkm;
+  double v_e   = V_EARTH * cmPerkm;
   
   // Define the detector Z and A and the mass of the target nucleus
   double Z = 54.;

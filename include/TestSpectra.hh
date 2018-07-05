@@ -23,10 +23,11 @@
 
 #include "RandomGen.hh"
 
-#define W_DEFAULT 13.7
-#define NEST_AVO 6.0221409e+23
-#define ATOM_NUM 54.
-#define MOLAR_MASS 131.293
+#define NEST_AVO 6.0221409e+23 //(good to keep in sync w/ NEST.hh, can't call 2x)
+
+#define V_EARTH 232.
+#define V_WIMP 220.
+#define V_ESCAPE 544.
 
 class TestSpectra {
   

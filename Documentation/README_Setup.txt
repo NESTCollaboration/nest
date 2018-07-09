@@ -1,14 +1,14 @@
 Installation Instructions:
 
-1. Make an empty directory either inside or outside the NEST source code directory, and go there.
+1. Make empty build and install directories either inside or outside the NEST source code directory, and go to the build directory.
 	For example, from the source code directory: 
 
-	>> mkdir build; cd build
+	>> mkdir build; mkdir install; cd build
 
 2. In the new build directory, configure CMake. On systems where the C compiler/C++ compiler 
 paths are already specified, one can simply do:
 
-	>> cmake -DCMAKE_INSTALL_PREFIX=${PWD} ../relative/path/NobleElementSimulationTechnique
+	>> cmake -DCMAKE_INSTALL_PREFIX=${PWD}/../install/ ../relative/path/NobleElementSimulationTechnique
 
 If the compiler paths cannot be found (for example, on some cluster environments), one should do:
 
@@ -18,12 +18,20 @@ If the compiler paths cannot be found (for example, on some cluster environments
 	
 	>> make; make install
 
-4. After changes to the source code, one should do a clean make for good measure:
+4. The compiled testNEST executable and libraries, and all the headers, are now present in the install directory. 
+Also present in the install directory are cmake configuration files. You may use these to include NEST in cmake-configured
+projects by including in your projects' CMakeLists.txt:
+        find_package(NEST REQUIRED)
+        include_directories(${NEST_INCLUDE_DIRS})
+and running cmake on your projects with the flag:
+        -DNEST_DIR=[path to NEST install directory]
+
+5. After changes to the source code, one should do a clean make for good measure:
 
 	>> make clean; make; make install
 
 
-Run Instructions:
+testNEST run Instructions:
 
 This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector:
 	./testNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}

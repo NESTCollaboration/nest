@@ -1,5 +1,5 @@
-#ifndef nEXOStackingAction_h
-#define nEXOStackingAction_h 1
+#ifndef NESTStackingAction_h
+#define NESTStackingAction_h 1
 
 #include "globals.hh"
 

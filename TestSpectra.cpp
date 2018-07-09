@@ -14,9 +14,8 @@
 #include "TestSpectra.hh"
 
 using namespace std;
-//using namespace NEST;
 
-double power = 3.7488;
+double power = 3.7488; //this is a global variable because it is for both AmBe and 252Cf
 
 double TestSpectra::CH3T_spectrum ( double xMin, double xMax ) {
   
@@ -214,7 +213,7 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
   double v_e   = V_EARTH * cmPerkm;
   
   // Define the detector Z and A and the mass of the target nucleus
-  double Z = 54.;
+  double Z = ATOM_NUM;
   double A = (double)RandomGen::rndm()->SelectRanXeAtom();
   double M_T = A * GeVperAMU;
   
@@ -229,7 +228,6 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
   // came out correctly for definite values of these parameters, the overall 
   // normalization of this spectrum doesn't matter since we generate a definite 
   // number of events from the macro).
-  double rho_D = 0.3;      // [GeV/cm^3]
   double m_d   = mWimp;      // [GeV]
   double sigma_n = 1.e-36; //[cm^2] 1 pb reference
   // Calculate the other factors in this expression
@@ -287,7 +285,7 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
   else FormFactor = 1.;
   
   // Now, the differential spectrum for this bin!
-  double dSpec = 0.5 * (c * c) * N_T * (rho_D / m_d) * (M_T * sigma_n / (mu_ND * mu_ND));
+  double dSpec = 0.5 * (c * c) * N_T * (RHO_NAUGHT / m_d) * (M_T * sigma_n / (mu_ND * mu_ND));
   //zeta=1.069-1.4198*ER+.81058*pow(ER,2.)-.2521*pow(ER,3.)+.044466*pow(ER,4.)-0.0041148*pow(ER,5.)+0.00013957*pow(ER,6.)+2.103e-6*pow(ER,7.);
   //if ( ER > 4.36 ) squiggle = 0.; //parameterization for 7 GeV WIMP using microMegas
   dSpec *= (((Z * fp) + ((A - Z) * fn)) / fn) * (((Z * fp) + ((A - Z) * fn)) / fn) * zeta * FormFactor*FormFactor * SecondsPerDay / keVperGeV;
@@ -365,5 +363,85 @@ double TestSpectra::WIMP_spectrum( WIMP_spectrum_prep wimp_spectrum, double mass
     }
   
   return xyTry[0];
+  
+}
+
+double TestSpectra::ZeplinBackground () { //Z3 FSR ex.
+  
+  double selector = RandomGen::rndm()->rand_uniform();
+  double selEnerg;
+  
+  if ( selector > 0.000000 && selector <= 0.038602 )
+    selEnerg = 1.0482 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.038602 && selector <= 0.081630 )
+    selEnerg = 1.1494 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.081630 && selector <= 0.085197 )
+    selEnerg = 1.2603 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.085197 && selector <= 0.098211 )
+    selEnerg = 1.3820 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.098211 && selector <= 0.116010 )
+    selEnerg = 1.5153 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.116010 && selector <= 0.134960 )
+    selEnerg = 1.6616 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.134960 && selector <= 0.181840 )
+    selEnerg = 1.8219 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.181840 && selector <= 0.215600 )
+    selEnerg = 1.9977 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.215600 && selector <= 0.250500 )
+    selEnerg = 2.1905 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.250500 && selector <= 0.280450 )
+    selEnerg = 2.4019 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.280450 && selector <= 0.307760 )
+    selEnerg = 2.6337 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.307760 && selector <= 0.335780 )
+    selEnerg = 2.8879 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.335780 && selector <= 0.362760 )
+    selEnerg = 3.1665 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.362760 && selector <= 0.404200 )
+    selEnerg = 3.4721 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.404200 && selector <= 0.437260 )
+    selEnerg = 3.8072 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.437260 && selector <= 0.459880 )
+    selEnerg = 4.1746 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.459880 && selector <= 0.493280 )
+    selEnerg = 4.5775 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.493280 && selector <= 0.527320 )
+    selEnerg = 5.0192 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.527320 && selector <= 0.548560 )
+    selEnerg = 5.5036 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.548560 && selector <= 0.577610 )
+    selEnerg = 6.0347 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.577610 && selector <= 0.609550 )
+    selEnerg = 6.6171 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.609550 && selector <= 0.635570 )
+    selEnerg = 7.2556 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.635570 && selector <= 0.656480 )
+    selEnerg = 7.9558 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.656480 && selector <= 0.689470 )
+    selEnerg = 8.7236 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.689470 && selector <= 0.720960 )
+    selEnerg = 9.5654 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.720960 && selector <= 0.749250 )
+    selEnerg = 10.489 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.749250 && selector <= 0.779750 )
+    selEnerg = 11.501 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.779750 && selector <= 0.814330 )
+    selEnerg = 12.611 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.814330 && selector <= 0.842290 )
+    selEnerg = 13.828 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.842290 && selector <= 0.878470 )
+    selEnerg = 15.162 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.878470 && selector <= 0.908490 )
+    selEnerg = 16.625 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.908490 && selector <= 0.939570 )
+    selEnerg = 18.230 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.939570 && selector <= 0.971280 )
+    selEnerg = 19.989 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else if ( selector > 0.971280 && selector < 1.0000000 )
+    selEnerg = 21.918 * ( 1. + 0.08801/2. * (2.*RandomGen::rndm()->rand_uniform()-1.) );
+  else
+    selEnerg = RandomGen::rndm()->rand_uniform()*20.;
+  
+  return selEnerg; //selection under the curve is made
   
 }

@@ -24,7 +24,7 @@ using namespace NEST;
  * 
  */
 
-double band[200][6], energies[3];
+double band[NUMBINS_MAX][6], energies[3];
 vector<vector<double>> GetBand ( vector<double> S1s, vector<double> S2s, bool resol );
 void GetEnergyRes ( vector<double> Es );
 
@@ -38,12 +38,12 @@ int main ( int argc, char** argv ) {
 	//detector->ExampleFunction();
 
 	// Construct NEST class using detector object
-	NEST::NESTcalc n(detector);
+	NESTcalc n(detector);
 
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; //scaling factors, for now just for NR Ly & Qy. But must initialize!
 	string position, delimiter, token; size_t loc; int index;
 	double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0, origX,origY;
-  NEST::YieldResult yieldsMax;
+  YieldResult yieldsMax;
   
   if (argc < 7)
     {
@@ -59,7 +59,10 @@ int main ( int argc, char** argv ) {
   unsigned long int numEvts = atoi(argv[1]);
   string type = argv[2];
   double eMin = atof(argv[3]);
+  if ( eMin == -1. ) eMin = 0.;
   double eMax = atof(argv[4]);
+  if ( eMax == -1. && eMin == 0. )
+    eMax = 1e2; //the default energy max is 100 keV
   if(eMax==0.){
     cerr << "ERROR: The maximum energy cannot be 0 keV!" << endl;
     return 0; }
@@ -76,7 +79,7 @@ int main ( int argc, char** argv ) {
   
   INTERACTION_TYPE type_num;
 	TestSpectra spec;
-  if ( type == "NR" || type == "neutron" ) type_num = NR;
+	if ( type == "NR" || type == "neutron" || type == "-1" ) type_num = NR; //-1: default particle type is also NR
   else if (type == "WIMP")
     {
       if (atof(argv[3])<0.44) { cerr << "WIMP mass too low, you're crazy!" << endl; return 0; }
@@ -220,17 +223,22 @@ int main ( int argc, char** argv ) {
 	}
 	break;
       default:
+	if ( eMin < 0. ) return 0;
 	if ( eMax > 0. )
 	  keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
-	else //negative eMax signals to NEST that you want to use an exponential energy spectrum profile
-	  keV = eMax * log ( RandomGen::rndm()->rand_uniform() );
+	else { //negative eMax signals to NEST that you want to use an exponential energy spectrum profile
+	  if ( eMin == 0. ) return 0;
+	  keV=1e100; //eMin will be used in place of eMax as the maximum energy in exponential scenario
+	  while ( keV > eMin )
+	    keV = eMax * log ( RandomGen::rndm()->rand_uniform() );
+	}
 	break;
       }
     }
     
-    if ( type_num != WIMP && type_num != B8 ) {
-      if (keV > eMax && eMax > 0. ) keV = eMax;
-      if (keV < eMin) keV = eMin;
+    if ( type_num != WIMP && type_num != B8 && eMax > 0. ) {
+      if ( keV > eMax ) keV = eMax;
+      if ( keV < eMin ) keV = eMin;
     }
     
   Z_NEW:
@@ -264,7 +272,7 @@ int main ( int argc, char** argv ) {
     if ( inField == -1. ) { // -1 means use poly position dependence
 			field = detector->FitEF(pos_x, pos_y, pos_z);
     }
-    else field = inField;
+    else field = inField; //no fringing
     
     if ( field <= 0. )
       cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
@@ -297,7 +305,7 @@ int main ( int argc, char** argv ) {
       return 0;
     }
     
-    NEST::YieldResult yields; NEST::QuantaResult quanta;
+    YieldResult yields; QuantaResult quanta;
     if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
       double xi = -999., yi = -999.;
       if ( atof(argv[4]) == -1. ) {
@@ -523,7 +531,7 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     border = minS1;
   }
   int i = 0, j = 0; double s1c, numPts;
-  unsigned long reject[200] = {0};
+  unsigned long reject[NUMBINS_MAX] = {0};
   
   if ( resol ) {
     numBins = 1;
@@ -564,16 +572,18 @@ vector<vector<double>> GetBand ( vector<double> S1s,
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
     if ( numPts <= 0 && resol ) {
-      for ( i = 0; i < S1s.size(); i++ ) band[j][0] += S1s[i];
+      for ( i = 0; i < S1s.size(); i++ ) band[j][0] += fabs(S1s[i]);
       numPts = S1s.size();
     }
     if (resol)
       band[j][0] /= numPts;
     band[j][1] /= numPts;
     band[j][2] /= numPts;
-    for ( i = 0; i < (int)numPts; i++ ) {
-      if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.);
-      if ( resol && S1s[i] >= 0.0 ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
+    for ( i = 0; i <(int)numPts; i++ ) {
+      if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.); //std dev calc
+    }
+    for ( i = 0; i < S1s.size(); i++ ) {
+      if ( resol && S1s[i] > 0.0 && S2s[i] > 0.0 ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
     }
     band[j][3] /= numPts - 1.;
     band[j][3] = sqrt(band[j][3]);

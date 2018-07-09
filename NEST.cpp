@@ -303,8 +303,8 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   }
   
   assert(Ne!=-999 && Nph!=-999 && NexONi!=-999);
-  if ( Nph> energy / 7e-3 ) Nph= energy / 7e-3; //yields can never exceed 1 / [ W ~ 7 eV ]
-  if ( Ne > energy / 7e-3 ) Ne = energy / 7e-3;
+  if ( Nph> energy / W_SCINT ) Nph= energy / W_SCINT; //yields can never exceed 1 / [ W ~ 7 eV ]
+  if ( Ne > energy / W_SCINT ) Ne = energy / W_SCINT;
   if ( Nph < 0. ) Nph = 0.; if ( Ne < 0. ) Ne = 0.;
   if ( NexONi < 0. ) NexONi = 0.;
   if ( L < 0. ) L = 0.;
@@ -414,7 +414,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     photonstream photon_times = AddPhotonTransportTime(photon_emission_times,dx,dy,dz);
     
     if ( outputTiming && !pulseFile.is_open ( ) ) {
-      pulseFile = ofstream ( "photon_times.txt" );
+      pulseFile.open("photon_times.txt");
       //pulseFile << "Event#\tt [ns]\tA [PE]" << endl;
       pulseFile << "Event#\tt [ns]\tPE/bin\tin win" << endl;
     }
@@ -504,9 +504,11 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     } // end of case of spike is equal to 9 or lower
   } //the end of case of spike >= coinLevel
   
-  newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, dV_mid, scintillation ); // over-write spike with smeared version, ~real data
-  scintillation[6] = newSpike[0]; // S1 spike count (NOT adjusted for double phe effect), IF sufficiently small nHits (otherwise = Nphd)
-  scintillation[7] = newSpike[1]; // same as newSpike[0], but WITH XYZ correction
+  if ( spike >= 1. && spikeC > 0. ) {
+    newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, dV_mid, scintillation ); // over-write spike with smeared version, ~real data
+    scintillation[6] = newSpike[0]; // S1 spike count (NOT adjusted for double phe effect), IF sufficiently small nHits (otherwise = Nphd)
+    scintillation[7] = newSpike[1]; // same as newSpike[0], but WITH XYZ correction
+  }
   
   if ( RandomGen::rndm()->rand_uniform() < prob || prob >= 1. ) // coincidence has to happen in different PMTs
     { ; }
@@ -530,15 +532,16 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity,
 				 long evtNum, double dfield, bool useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp, vector<double> &g2_params ) {
   
-	double elYield = g2_params[0];
+	double elYield= g2_params[0];
 	double ExtEff = g2_params[1];
 	double SE = g2_params[2];
 	double g2 = g2_params[3];
+	double gasGap = g2_params[4];
 	 
   vector<double> ionization(9); int i;
   
   if ( dfield < FIELD_MIN //"zero"-drift-field detector has no S2
-       || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. ) {
+       || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. || gasGap <= 0. ) {
     for ( i = 0; i < 8; i++ ) ionization[i]=0.; return ionization;
   }
   
@@ -548,10 +551,6 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/fdetector->get_eLife_us())); //MAKE this 1 for SINGLE e- DEBUGGING
-  double gasGap = fdetector->get_anode() - fdetector->get_TopDrift(); //EL gap in mm -> cm, affecting S2 size linearly
-  if ( gasGap <= 0. ) {
-    cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
-  }
   long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0.;
   
   if ( useTiming ) {
@@ -687,41 +686,42 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   
 	if(pulseArea<fabs(fdetector->get_s2_thr())) for(i=0;i<8;i++) { if(ionization[i]==0.)ionization[i]=PHE_MIN; ionization[i]*=-1.; }
   
-	ionization[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in gas gap (from CalculateG2)
+	ionization[8] = g2; // g2 = ExtEff * SE, gain of EL in gas gap (from CalculateG2)
   
 	return ionization;
   
 }
 
 vector<double> NESTcalc::CalculateG2( bool verbosity ) {
-	vector<double> g2_params(4);
+	vector<double> g2_params(5);
   
 	// Set parameters for calculating EL yield and extraction
 	double alpha = 0.137, beta = 177., gamma = 45.7;
-  double epsilonRatio = 1.85/1.00126;
+	double epsilonRatio = 1.85/1.00126; //LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan McK.
   if ( fdetector->get_inGas() ) epsilonRatio=1.;
  
  	// Convert gas extraction field to liquid field 
 	double E_liq = fdetector->get_E_gas() / epsilonRatio; //kV per cm
-  double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032
+  double ExtEff = -0.03754*pow(E_liq,2.)+0.52660*E_liq-0.84645; // arXiv:1710.11032 (PIXeY)
   if ( ExtEff > 1. || fdetector->get_inGas() || E_liq > 7. ) ExtEff = 1.;
   if ( ExtEff < 0. || E_liq <= 0. ) ExtEff = 0.;
- 
- 	// Calculate EL yield based on gas gap, ext. field and pressure 
+  
   double gasGap = fdetector->get_anode() - fdetector->get_TopDrift(); //EL gap in mm -> cm, affecting S2 size linearly
-  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292
   if ( gasGap <= 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
   }
-
-	// Calculate single electron size and then g2
-  double SE = elYield * fdetector->get_g1_gas();
+  
+  // Calculate EL yield based on gas gap, extraction field, and pressure
+  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292
+  // Calculate single electron size and then g2
+  double SE = elYield * fdetector->get_g1_gas(); //multiplying by light collection efficiency in the gas gap
+  if ( fdetector->get_s2_thr() < 0 ) SE *= fdetector->get_S2botTotRatio();
   double g2 = ExtEff * SE;
-  if ( fdetector->get_s2_thr() < 0 ) g2 *= fdetector->get_S2botTotRatio();
+  double StdDev = sqrt ( (1.-fdetector->get_g1_gas())*SE + fdetector->get_s2Fano()*fdetector->get_s2Fano() + fdetector->get_sPEres() );
   
 	if (verbosity) {
 		cout << endl << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2 << " phd per electron (e-EE = ";
-		cout << ExtEff*100. << "%, while SE_mean = " << SE << ")\t";
+		cout << ExtEff*100. << "%, SE_mean,width = " << SE << "," << StdDev << ")\t";
 	}
 
 	// Store the g2 parameters in a vector for later (calculated once per detector)	
@@ -729,6 +729,7 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
 	g2_params[1] = ExtEff;
 	g2_params[2] = SE;
 	g2_params[3] = g2;
+	g2_params[4] = gasGap;
  
 	return g2_params;
 }
@@ -751,7 +752,7 @@ vector<double> NESTcalc::GetSpike ( int Nph, double dx, double dy, double dz,
   
   vector<double> newSpike(2);
   
-  if ( oldScint[7] > 70. ) {
+  if ( oldScint[7] > SPIKES_MAXM ) {
     newSpike[0] = oldScint[4]; newSpike[1] = oldScint[5];
     return newSpike;
   }

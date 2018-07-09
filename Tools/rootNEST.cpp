@@ -1,3 +1,10 @@
+/*
+ * File:   rootNEST.cpp
+ * Author: mszydagis
+ *
+ * Created on July 7, 2018, 11:14 PM
+ */
+
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -17,10 +24,8 @@
 #include <string.h>
 #include <vector>
 
-#include "../include/TestSpectra.hh"
+#include "../include/TestSpectra.hh" // contains the WIMP, earth, and escape velocities
 #include "../analysis.hh"
-
-#define NUMBINS_MAX 200
 
 // Set the compile mode:
 //#define FIT //outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)
@@ -45,7 +50,9 @@ int SelectRanXeAtom ( ); //to determine the isotope of Xe
 long double Factorial ( double x );
 double expectedUlFc ( double mub, TFeldmanCousins fc );
 
-const double rho_D = 0.3; //local halo density in [GeV/cm^3]
+int modPoisRnd ( double poisMean, double preFactor ); //not used currently, but included jic needed for future use, for stretching and squeezing Poissons
+int modBinom ( int nTot, double prob, double preFactor ); //just like above, but for binomial
+
 // Convert all velocities from km/s into cm/s
 const double v_0   = V_WIMP * 1e5; //peak WIMP velocity
 const double v_esc = V_ESCAPE * 1e5; //escape velocity
@@ -54,7 +61,7 @@ const double v_e   = V_EARTH * 1e5; //the Earth's velocity
 int main ( int argc, char** argv ) {
   
   bool leak, ERis2nd;
-  double band2[NUMBINS_MAX][7], NRbandX[NUMBINS_MAX], NRbandY[NUMBINS_MAX], numSigma[NUMBINS_MAX], leakage[NUMBINS_MAX], discrim[NUMBINS_MAX], errorBars[NUMBINS_MAX][2];
+  double band2[numBins][7], NRbandX[numBins], NRbandY[numBins], numSigma[numBins], leakage[numBins], discrim[numBins], errorBars[numBins][2];
   int i = 0;
   
   if ( argc < 2 ) {
@@ -87,23 +94,16 @@ int main ( int argc, char** argv ) {
   for ( i = 0; i < nLines; i++ )
     fscanf ( ifp, "%lf %lf", &energy[i], &efficiency[i] );
   TGraph* gr1 = new TGraph ( nLines, energy, efficiency );
-  TF1* fitf = new TF1 ( "FracEffVkeVEnergy", "10.^(2.-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5]))/100.", 0.000, energy[nLines-1] ); //eqn inspired by Alex Murphy
+  TF1* fitf = new TF1 ( "FracEffVkeVEnergy", "10.^(2.-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5]))/100.", energy[0], energy[nLines-1] ); //eqn inspired by Alex Murphy
   fitf->SetParameters(10.,2.,1.,20.,1e4,-2.5);
-  gr1->Fit(fitf,"rq","",0.000,energy[nLines-1]);
+  gr1->Fit(fitf,"q");//remove the quiet option q if you want to see all of the parameters' values for Fractional Efficiency versus Energy in keV. Prints to screen
   double aa = fitf->GetParameter(0);
   double bb = fitf->GetParameter(1);
   double cc = fitf->GetParameter(2);
   double dd = fitf->GetParameter(3);
   double ee = fitf->GetParameter(4);
   double ff = fitf->GetParameter(5);
-  /*fprintf ( stderr, "Fractional Efficiency versus Energy in keV, Parameters: %f %f %f %f %f %f\n",
-	    aa,
-	    bb,
-	    cc,
-	    dd,
-	    ee,
-	    ff );*/
-  delete gr1; delete fitf;
+  delete gr1; delete fitf; //it is always important to clear the memory in ROOT
   
   // Get input parameters for sensitivity or limit calculation
   double time, fidMass, loE, hiE, xEff, NRacc, numBGeventsExp = 0., numBGeventsObs;
@@ -211,7 +211,6 @@ int main ( int argc, char** argv ) {
 #ifdef FIT
   
   if ( numBins == 1 ) {
-    printf("S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\n");
     GetFile ( argv[1] ); return 1;
   }
 
@@ -293,7 +292,7 @@ int main ( int argc, char** argv ) {
     TGraph *gr1 = new TGraph ( numBins, NRbandX, NRbandY );
     TF1 *fitf = new TF1("NRbandGCentroid","[0]/(x+[1])+[2]*x+[3]",minS1,maxS1);
     fitf->SetParameters(10., 15., -1.5e-3, 2.);
-    gr1->Fit(fitf,"rq","",minS1,maxS1);
+    gr1->Fit(fitf,"rq","",minS1,maxS1);//remove the q if you want to see the Band Fit Parameters on screen
     double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
     if ( chi2 > 1.5 ) {
       cerr << "WARNING: Poor fit to NR Gaussian band centroids i.e. means of log(S2) or log(S2/S1) histograms in S1 bins. Investigate please!" << endl;
@@ -304,11 +303,6 @@ int main ( int argc, char** argv ) {
       if ( chi2 > 2. )
 	{ cerr << "ERROR: Even the backup plan to use sigmoid failed as well!" << endl; return 0; }
     }
-    /*fprintf(stderr,"Band Fit Parameters: %f %f %f %f\n",
-	    fitf->GetParameter(0),
-	    fitf->GetParameter(1),
-	    fitf->GetParameter(2),
-	    fitf->GetParameter(3));*/
     long below[NUMBINS_MAX] = {0}; double NRbandGCentroid, leakTotal, poisErr[2];
     for ( i = 0; i < numBins; i++ ) {
       below[i] = 0;
@@ -418,6 +412,8 @@ void GetFile ( char* fileName ) {
     unsigned long int i, numPts = E_keV.size();
     double holder[numPts];
     
+    printf("S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc Res[%%]\n");
+    
     for ( int j = 0; j < 3; j++ ) {
       switch ( j ) {
       case 0:
@@ -447,6 +443,7 @@ void GetFile ( char* fileName ) {
       TString HistName;
       HistName.Form("%d",j);
       HistogramArray[j].SetName(HistName.Data());
+    REFIT:
       HistogramArray[j].SetBins(400,minimum,maximum);
       for ( i = 0; i < numPts; i++ )
 	HistogramArray[j].Fill(holder[i]);
@@ -456,6 +453,14 @@ void GetFile ( char* fileName ) {
       f->SetParameters(average, 0.1 * average);
       HistogramArray[j].Fit(f,"q");
       average = f->GetParameter("Mean");
+      if ( average <= 0. ) {
+	minimum -= 10.; goto REFIT;
+      }
+      if ( j == 2 && (average < (eMin+eMax)/4. || average > (eMin+eMax)) ) {
+	minimum = (eMin+eMax)/4.;
+	maximum = (eMin+eMax)*1.;
+	goto REFIT;
+      }
       printf ( "%lf\t", average );
       printf ( "%lf\t", f->GetParameter("Sigma") / average * 100. );
       band[j][0] = f->GetParError(1);
@@ -464,12 +469,12 @@ void GetFile ( char* fileName ) {
       delete f;
     }
     
-    delete[] HistogramArray;
     cout << endl << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" << "\t\t" << "+/-" ;
     printf ( "\n%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[0][0], band[0][1], band[1][0], band[1][1], band[2][0], band[2][1] );
     cout << "X^2 / DOF" << "\t\t\t" << "X^2 / DOF" << "\t\t\t" << "X^2 / DOF";
     printf ( "\n%lf\t\t\t%lf\t\t\t%lf\tEnd Table\n", band[0][2], band[1][2], band[2][2] );
     
+    delete[] HistogramArray;
     return;
     
   }
@@ -593,7 +598,7 @@ vector< vector<double> > GetBand ( vector<double> S1s,
 vector< vector<double> > GetBand_Gaussian ( vector< vector<double> > signals ) {
   
   int j = 0;
-  TH1F *HistogramArray = new TH1F[NUMBINS_MAX];
+  TH1F *HistogramArray = new TH1F[numBins];
   
   for ( j = 0; j < numBins; j++ ) {
     TString HistName;
@@ -713,7 +718,7 @@ double WIMP_dRate ( double ER, double mWimp ) {
   else FormFactor = 1.;
   
   // Now, the differential spectrum for this bin!
-  double dSpec = 0.5 * (c * c) * N_T * (rho_D / m_d) * (M_T * sigma_n / (mu_ND * mu_ND));
+  double dSpec = 0.5 * (c * c) * N_T * (RHO_NAUGHT / m_d) * (M_T * sigma_n / (mu_ND * mu_ND));
   //zeta=1.069-1.4198*ER+.81058*pow(ER,2.)-.2521*pow(ER,3.)+.044466*pow(ER,4.)-0.0041148*pow(ER,5.)+0.00013957*pow(ER,6.)+2.103e-6*pow(ER,7.);
   //if ( ER > 4.36 ) squiggle = 0.; //parameterization for 7 GeV WIMP using microMegas
   dSpec *= (((Z * fp) + ((A - Z) * fn)) / fn) * (((Z * fp) + ((A - Z) * fn)) / fn) * zeta * FormFactor*FormFactor * SecondsPerDay / keVperGeV;
@@ -769,4 +774,44 @@ double expectedUlFc ( double mub, TFeldmanCousins fc )
   }
   return expectedUl;
   
+}
+
+int modPoisRnd ( double poisMean, double preFactor ) {
+  // Must have ROOT, to use PoissonD, the continuous, real version
+  
+  int randomNumber;
+  
+  if ( preFactor >= 1. ) { //essentially, a Poisson convolved with a Gaussian
+    poisMean = r.Gaus(poisMean,sqrt((preFactor-1.)*poisMean));
+    if ( poisMean < 0. ) poisMean = 0.;
+    randomNumber = r.Poisson(poisMean);
+  }
+  else
+    randomNumber = //squeezes a Poisson thinner, opposite of above
+      int(floor(r.PoissonD(poisMean/preFactor)*preFactor+r.Rndm()));
+  
+  if ( randomNumber < 0 ) randomNumber = 0; //just in case
+  
+  return randomNumber;
+}
+
+int modBinom ( int nTot, double prob, double preFactor ) {
+  // based on work by Aaron Manalaysay; not used, very slow
+  int randomNumber, nTotp;
+  
+  if ( preFactor >= 1. ) {
+    prob = r.Gaus(prob,sqrt((preFactor-1.)*prob*nTot)/double(nTot));
+    if ( prob < 0. ) prob = 0.;
+    if ( prob > 1. ) prob = 1.;
+    randomNumber = r.Binomial(nTot,prob);
+  }
+  else {
+    nTotp = int(floor(double(nTot)/preFactor+r.Rndm()));
+    randomNumber = int(floor((double(nTot)/double(nTotp))*
+               double(r.Binomial(nTotp,prob))+r.Rndm()));
+  }
+  
+  if ( randomNumber < 0 ) randomNumber = 0; //just in case
+  
+  return randomNumber;
 }

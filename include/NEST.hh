@@ -14,6 +14,7 @@
 #include "VDetector.hh"
 
 #define W_DEFAULT 13.7 //default work function, in eV
+#define W_SCINT 7e-3 //actual energy of 1 scint phot, keV
 #define NEST_AVO 6.0221409e+23
 #define ATOM_NUM 54. //period to make float
 #define MOLAR_MASS 131.293 //grams per mole
@@ -23,7 +24,8 @@
 
 #define SAMPLE_SIZE 10 //nano-seconds
 #define PULSE_WIDTH 10 //nano-seconds
-#define PULSEHEIGHT 0.005 //threshold height, in PE
+#define PULSEHEIGHT 0.005 //threshold height, in PE, for writing to photon_times
+#define SPIKES_MAXM 70 //above this switch to pulse area
 
 namespace NEST {
   

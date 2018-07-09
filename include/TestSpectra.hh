@@ -23,11 +23,15 @@
 
 #include "RandomGen.hh"
 
-#define NEST_AVO 6.0221409e+23 //(good to keep in sync w/ NEST.hh, can't call 2x)
+#define NEST_AVO 6.0221409e+23 //good to keep in sync w/ NEST.hh, can't define twice
+#define ATOM_NUM 54. //ibid.
 
-#define V_EARTH 232.
+#define RHO_NAUGHT 0.3 //local DM halo density in [GeV/cm^3]
+#define V_EARTH 245. //for LUX Run03; if you want Run04 use 230 km/s (arXiv:1705.03380)
 #define V_WIMP 220.
 #define V_ESCAPE 544.
+
+#define NUMBINS_MAX 200
 
 class TestSpectra {
   
@@ -52,6 +56,7 @@ class TestSpectra {
 		double WIMP_dRate(double ER, double mWimp);
 		WIMP_spectrum_prep WIMP_prep_spectrum(double mass, double eStep);
 		double WIMP_spectrum(WIMP_spectrum_prep wprep, double mass);
+  double ZeplinBackground ( ); //an example of how to do a better (non-flat) ER BG spectrum for a WS, from Henrique Araujo
   
 };
 

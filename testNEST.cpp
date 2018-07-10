@@ -152,7 +152,7 @@ int main ( int argc, char** argv ) {
   
 	// Calculate and print g1, g2 parameters (once per detector)
 	vector<double> g2_params = n.CalculateG2(verbosity);
-	g2 = fabs(g2_params.back()); double g1 = detector->get_g1();
+	g2 = fabs(g2_params[3]); double g1 = detector->get_g1();
   
 	if ( inField == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
@@ -447,7 +447,8 @@ int main ( int argc, char** argv ) {
 		// scint2[7] = S2bc / (1.+fdetector->get_P_dphe()); // same as S2bc, but adjusted for 2-PE effect (LUX phd units)
 		// scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in gas gap (from CalculateG2)
 	  
-    if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific below-threshold events, then please comment in this if statement
+    if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific sub-threshold events, comment in this if statement (save screen/disk space)
+      //other suggestions: minS1, minS2 (or s2_thr) for tighter cuts depending on analysis.hh settings (think of as analysis v. trigger thresholds) and using max's too, pinching both ends
       if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 ) printf ( "%.6f\t", yields.DeltaT_Scint );
 			printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
       //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means

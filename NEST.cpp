@@ -712,7 +712,7 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
   }
   
   // Calculate EL yield based on gas gap, extraction field, and pressure
-  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292
+  double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292 (HA, Vitaly C.)
   // Calculate single electron size and then g2
   double SE = elYield * fdetector->get_g1_gas(); //multiplying by light collection efficiency in the gas gap
   if ( fdetector->get_s2_thr() < 0 ) SE *= fdetector->get_S2botTotRatio();

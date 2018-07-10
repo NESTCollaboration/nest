@@ -58,6 +58,8 @@ const double v_0   = V_WIMP * 1e5; //peak WIMP velocity
 const double v_esc = V_ESCAPE * 1e5; //escape velocity
 const double v_e   = V_EARTH * 1e5; //the Earth's velocity
 
+bool loop = false; double g1x = 1.0, g2x = 1.0; //for looping over small changes in g1 and g2
+
 int main ( int argc, char** argv ) {
   
   bool leak, ERis2nd;
@@ -228,6 +230,11 @@ int main ( int argc, char** argv ) {
 	     &band2[i][3],
 	     &band2[i][5] );
   }
+  // comment in the next 3 lines for g1 and g2 variation loops. Use 2> /dev/null when running to suppress empty data warnings from low g1 sending things out of bounds
+  for ( g1x = 0.90; g1x <= 1.10; g1x += 0.01 ) {
+  for ( g2x = 0.90; g2x <= 1.10; g2x += 0.01 ) {
+    if ( loop ) printf ( "%.2f\t%.2f\t", g1x, g2x );
+    else { g1x = 1.; g2x = 1.; }
   GetFile ( argv[1] );
   double error, chi2[2] = { 0., 0. };
   for ( i = 0; i < numBins; i++ ) {
@@ -240,6 +247,8 @@ int main ( int argc, char** argv ) {
   chi2[1] /= double ( DoF - 1 );
   cout.precision ( 3 );
   cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width" << endl;
+  if ( !loop ) break; }
+  if ( !loop ) break; } // double curly bracket goes with g1x and g2x loops above
   return 1;
 
 #endif
@@ -340,19 +349,16 @@ void GetFile ( char* fileName ) {
   
   FILE *ifp = fopen(fileName,"r");
   double a,b,c,d,e,f,g,h,i,j,k,l,m,n; double eMin = 1e100, eMax = -1e100;
-  int ch, nLines = 0, o;
+  int o; char line[256];
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne, S1cor_phe, S2cor_phe,
     S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr, S2raw_phe, S2cor_phd;
   
-  while ( EOF != ( ch = getc ( ifp ) ) ) {
-    if ( '\n' == ch )
-      nLines++;
-    if ( nLines == 4 ) break;
-  }
-  
-  while ( true ) {
-    fscanf(ifp,"%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
-	   &a,&b,&c,&d,&e,&f,&g,&h,&i,&j,&k,&l,&m,&n);
+  rewind ( ifp );
+  while ( fgets ( line, sizeof ( line ), ifp ) ) {
+    sscanf ( line, "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
+	     &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n );
+    if ( !a && !b && !c && !d && !e && !f && !g && !h && !i && !j && !k && !l && !m && !n )
+      continue;
     if ( feof(ifp) )
       break;
     //fprintf(stderr,"%.6f\t%.6f\t%.6f\t%.6f,%.6f,%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n",a,b,c,d,e,f,g,h,i,j,k,l,m,n);
@@ -404,6 +410,7 @@ void GetFile ( char* fileName ) {
       S2cor_phd.push_back(-999.);
     }
   }
+  fclose ( ifp );
   
   if ( numBins == 1 ) {
     
@@ -504,13 +511,14 @@ void GetFile ( char* fileName ) {
     }
     outputs = GetBand_Gaussian ( GetBand(S1cor_spike, S2cor_phd, false ) );
   }
-  //fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
-  fprintf(stdout,"Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig Error\tX^2/DOF\n");
-  for ( o = 0; o < numBins; o++ ) {
-    //fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
-    fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5],band[o][6]);
+  if ( !loop ) {
+    //fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist Sigma\t\tEff[%%>thr]\n");
+    fprintf(stdout,"Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig Error\tX^2/DOF\n");
+    for ( o = 0; o < numBins; o++ ) {
+      //fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
+      fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5],band[o][6]);
+    }
   }
-  
   return;
   
 }
@@ -536,6 +544,11 @@ vector< vector<double> > GetBand ( vector<double> S1s,
   if ( resol ) {
     numBins = 1;
     binWidth = DBL_MAX;
+  }
+  
+  if ( loop ) {
+    for ( i = 0; i < S1s.size(); i++ ) S1s[i] *= g1x;
+    for ( i = 0; i < S2s.size(); i++ ) S2s[i] *= g2x;
   }
   
   for ( i = 0; i < S1s.size(); i++ ) {

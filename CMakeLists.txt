@@ -6,6 +6,7 @@ set(CMAKE_MACOSX_RPATH 1)
 project(NEST)
 
 option(G4 "Build integration with Geant4" OFF)
+option(BUILD_ROOT "Build ROOT tools" OFF)
 
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -39,12 +40,15 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories("${PROJECT_SOURCE_DIR}/Detectors")  
 
 file(GLOB core ${PROJECT_SOURCE_DIR}/*.cpp)
-list(REMOVE_ITEM core ${PROJECT_SOURCE_DIR}/rootNEST.cpp)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/*.hh ${PROJECT_SOURCE_DIR}/include/*.hh ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
 
 add_library(NEST_core STATIC ${core} ${headers} )
+
 add_executable(testNEST testNEST.cpp)
 target_link_libraries(testNEST NEST_core)
+
+add_executable(bareNEST ${PROJECT_SOURCE_DIR}/Tools/bareNEST.cpp)
+target_link_libraries(bareNEST NEST_core)
 
 if(G4)
     find_package(Geant4 REQUIRED)
@@ -53,10 +57,19 @@ if(G4)
     file(GLOB g4headers ${PROJECT_SOURCE_DIR}/G4integration/*.hh)
     add_library(NEST SHARED ${core} ${g4src} ${headers} ${g4headers})
     set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers};${g4headers}")
-    
 else(G4)
     add_library(NEST SHARED ${core} ${headers})
     set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers}")
+endif()
+
+if(BUILD_ROOT)
+	list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS} $ENV{ROOTSYS}/etc/cmake $ENV{ROOTSYS}/etc/root/cmake)
+	list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS} $ENV{ROOTSYS}/etc/cmake $ENV{ROOTSYS}/etc/root/cmake)
+	find_package(ROOT REQUIRED)
+	include_directories(${ROOT_INCLUDE_DIR})
+	include_directories(${ROOT_INCLUDE_DIRS})
+	add_executable(rootNEST ${PROJECT_SOURCE_DIR}/Tools/rootNEST.cpp)
+	target_link_libraries(rootNEST NEST_core ${ROOT_LIBRARIES})
 endif()
 
 install(TARGETS NEST testNEST
@@ -65,7 +78,6 @@ install(TARGETS NEST testNEST
         RUNTIME DESTINATION "${INSTALL_CMAKE_DIR}"
 	LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
 	PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
-
 
 
 

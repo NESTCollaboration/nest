@@ -337,7 +337,7 @@ NESTcalc::~NESTcalc(){
   if(fdetector)delete fdetector;
 }
 
-vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftVelocity, double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, bool useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp ) {
+vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftVelocity, double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, int useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp ) {
   
   int Nph = quanta.photons;
 
@@ -530,7 +530,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
 }
 
 vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity,
-				 long evtNum, double dfield, bool useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp, vector<double> &g2_params ) {
+				 long evtNum, double dfield, int useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp, vector<double> &g2_params ) {
   
 	double elYield= g2_params[0];
 	double ExtEff = g2_params[1];
@@ -539,6 +539,8 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
 	double gasGap = g2_params[4];
 	 
   vector<double> ionization(9); int i;
+  bool eTrain = false;
+  if ( useTiming == 2 ) eTrain = true;
   
   if ( dfield < FIELD_MIN //"zero"-drift-field detector has no S2
        || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. || gasGap <= 0. ) {
@@ -554,9 +556,13 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   long Nph = 0, nHits = 0, Nphe = 0; double pulseArea = 0.;
   
   if ( useTiming ) {
-    long k;
-    vector<double> electronstream, AreaTable[2], TimeTable;
-    electronstream.resize(Nee,dt);
+    long k; int stopPoint; double tau1, tau2, E_liq, amp2;
+    vector<double> electronstream, AreaTable[2],TimeTable;
+    if ( eTrain )
+      stopPoint = BinomFluct(Ne,exp(-dt/fdetector->get_eLife_us()));
+    else
+      stopPoint = Nee;
+    electronstream.resize(stopPoint,dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran=37.368 * pow ( dfield, .093452 ) * exp ( -8.1651e-5*dfield ); // arXiv:1609.04467 (EXO-200)
     double Diff_Long=345.92 * pow ( dfield,-0.47880 ) * exp ( -81.3230 / dfield ); // fit to Aprile & Doke review paper and to arXiv:1102.2865; plus, LUX Run02+03
@@ -614,9 +620,19 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       newY += sigY;
       DL_time = DL / driftVelocity_gas;
       electronstream[i] += DL_time;
+      if ( i >= Nee && eTrain ) { //all numbers are based on arXiv:1711.07025
+        E_liq = fdetector->get_E_gas() / (1.85/1.00126);
+        tau2 = 0.58313 * exp ( 0.20929 * E_liq ) * 1e3;
+        tau1 = 1.40540 * exp ( 0.15578 * E_liq ) * 1e3 * 1e-2;
+        amp2 = 0.38157 * exp ( 0.21177 * E_liq ) * 1e-2;
+        if ( RandomGen::rndm()->rand_uniform() < ( amp2 / 0.035 ) * ExtEff )
+          electronstream[i] -= tau2*log(RandomGen::rndm()->rand_uniform());
+        else
+          electronstream[i] -= tau1*log(RandomGen::rndm()->rand_uniform());
+      }
       for ( double j = 0.; j < SE; j += 1. ) {
         double phe = RandomGen::rndm()->rand_gauss(1.,fdetector->get_sPEres());
-        pulseArea += phe;
+        if ( i < Nee || !eTrain ) pulseArea += phe;
 	origin = fdetector->get_TopDrift() + gasGap * RandomGen::rndm()->rand_uniform();
 	k = long(j); if ( k >= photon_times.size() ) k -= photon_times.size();
 	double offset = ( (fdetector->get_anode()-origin)/driftVelocity_gas + electronstream[i] ) * 1e3 + photon_times[k];

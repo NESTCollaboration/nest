@@ -95,6 +95,7 @@ int main ( int argc, char** argv ) {
   rewind ( ifp );
   for ( i = 0; i < nLines; i++ )
     fscanf ( ifp, "%lf %lf", &energy[i], &efficiency[i] );
+  fclose ( ifp );
   TGraph* gr1 = new TGraph ( nLines, energy, efficiency );
   TF1* fitf = new TF1 ( "FracEffVkeVEnergy", "10.^(2.-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5]))/100.", energy[0], energy[nLines-1] ); //eqn inspired by Alex Murphy
   fitf->SetParameters(10.,2.,1.,20.,1e4,-2.5);
@@ -230,6 +231,7 @@ int main ( int argc, char** argv ) {
 	     &band2[i][3],
 	     &band2[i][5] );
   }
+  fclose ( ifp );
   // comment in the next 3 lines for g1 and g2 variation loops. Use 2> /dev/null when running to suppress empty data warnings from low g1 sending things out of bounds
   for ( g1x = 0.90; g1x <= 1.10; g1x += 0.01 ) {
   for ( g2x = 0.90; g2x <= 1.10; g2x += 0.01 ) {
@@ -424,25 +426,37 @@ void GetFile ( char* fileName ) {
     for ( int j = 0; j < 3; j++ ) {
       switch ( j ) {
       case 0:
-	minimum= minS1;
-	maximum= maxS1;
 	for ( i = 0; i < numPts; i++ ) {
 	  if ( usePD == 0 ) holder[i] = S1cor_phe[i];
 	  else if ( usePD == 1 ) holder[i] = S1cor_phd[i];
           else holder[i] = S1cor_spike[i];
 	}
+	if ( holder[numPts/2] > 1.0 ) {
+	  minimum = holder[numPts/2] / 2.;
+	  maximum = holder[numPts/2] * 2.;
+	}
+	else {
+	  minimum = minS1;
+	  maximum = maxS1;
+	}
 	break;
       case 1:
-	minimum =minS2;
-	maximum =maxS2;
 	for ( i = 0; i < numPts; i++ ) {
 	  if ( usePD == 0 ) holder[i] = S2cor_phe[i];
 	  else holder[i] = S2cor_phd[i];
 	}
+	if ( holder[numPts/2] > 20. ) {
+	  minimum = holder[numPts/2] / 2.;
+	  maximum = holder[numPts/2] * 2.;
+	}
+	else {
+	  minimum = minS2;
+	  maximum = maxS2;
+	}
 	break;
       default:
 	minimum = eMin;
-	maximum = eMax;
+        maximum = eMax;
 	for ( i = 0; i < numPts; i++ )
 	  holder[i] = E_keV[i];
 	break;
@@ -451,7 +465,7 @@ void GetFile ( char* fileName ) {
       HistName.Form("%d",j);
       HistogramArray[j].SetName(HistName.Data());
     REFIT:
-      HistogramArray[j].SetBins(400,minimum,maximum);
+      HistogramArray[j].SetBins(2*NUMBINS_MAX,minimum,maximum);
       for ( i = 0; i < numPts; i++ )
 	HistogramArray[j].Fill(holder[i]);
       //HistogramArray[j].Draw();

@@ -1,12 +1,13 @@
 
-// Verbosity flag (for limiting output to purely the yield data)
+//Verbosity flag (for limiting output to yields; no timing)
 bool verbosity = true;
 
 //General parameters of importance changing global behavior
 bool MCtruthE = true; //false means reconstructed energy
 bool MCtruthPos=true; //false means reconstructed position
 
-bool useTiming = false; //photon arrival times + pulse shapes
+int useTiming = 0; //photon arrival times + pulse shapes (2=eTrains)
+//if 1 or 2 but verb off, then timing only saved as vectors
 
 //0 means PE, 1 means phd (PE/~1.2), 2 means spike count
 int usePD = 0;
@@ -14,6 +15,7 @@ int usePD = 0;
 int useS2 = 0; // xtra feature: 2 means S2 x-axis energy scale
 
 double minS1 = 0.; //units are controlled by the usePE flag
+//this is separate from S1 thresholds controlled by detector
 double maxS1 = 165.;
 int numBins = 33;
 

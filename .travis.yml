@@ -1,0 +1,34 @@
+# This file is responsible for running the below commands each commit
+# on the TravisCI platform.
+
+language: cpp
+
+# A matrix build means that the following combinations of configurations
+# are tested.
+matrix:
+  include:
+      - os: osx
+        compiler: clang
+      - os: linux
+        compiler: gcc
+      - os: linux
+        compiler: clang
+
+# Email notifications
+notifications:
+  email:
+    - christopher.douglas.tunnell@gmail.com
+
+# Commands to install
+install:
+  - mkdir build
+  - cd build
+  - cmake --version
+  - cmake -DCMAKE_INSTALL_PREFIX=${PWD} ..
+  - make
+  - make install
+
+# Test commands
+script:
+  - ls
+  - ./testNEST

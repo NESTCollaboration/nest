@@ -303,7 +303,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
   }
   
   assert(Ne!=-999 && Nph!=-999 && NexONi!=-999);
-  if ( Nph> energy / W_SCINT ) Nph= energy / W_SCINT; //yields can never exceed 1 / [ W ~ 7 eV ]
+  if ( Nph> energy / W_SCINT ) Nph= energy / W_SCINT; //yields can never exceed 1 / [ W ~ few eV ]
   if ( Ne > energy / W_SCINT ) Ne = energy / W_SCINT;
   if ( Nph < 0. ) Nph = 0.; if ( Ne < 0. ) Ne = 0.;
   if ( NexONi < 0. ) NexONi = 0.;
@@ -939,4 +939,48 @@ vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A
   
   return xySmeared; //new X and Y position in mm with empirical smearing. LUX Run03 example
 
+}
+
+double NESTcalc::PhotonEnergy ( bool state, double tempK, bool s2Flag ) {
+  
+  double wavelength, E_keV; //wavelength is in nanometers
+  
+  if ( !state ) //liquid or solid
+    wavelength = RandomGen::rndm()->rand_gauss(178.,14./2.355); //taken from Jortner JchPh 42 '65
+  else //gas
+    wavelength = RandomGen::rndm()->rand_gauss(175.,5.); //G4S1Light, probably Doke
+  
+  if ( s2Flag ) { //S2 different from ordinary gas (or just measurement error?)
+    if ( tempK < 200. ) //cold gas
+      wavelength = RandomGen::rndm()->rand_gauss(179.,5.); //source is G4S2Light.cc from the old NEST
+    else
+      wavelength = RandomGen::rndm()->rand_gauss(174.,5.); //ditto
+  }
+  
+  E_keV = 1240e-3 / wavelength; //h*c in keV-nm divided by lambda in nm
+  if ( E_keV > W_SCINT )
+    E_keV = W_SCINT; //don't go so high breaks G4. Gauss in lambda -> non-G in E, high tail
+  
+  return E_keV * 1000.; //convert from keV into eV. Eventually add full T, P dependence
+  
+}
+
+double NESTcalc::CalcElectronLET ( double E ) {
+  
+  double LET;
+  
+  // use a spline fit to online ESTAR data
+  if ( E >= 1. ) LET = 58.482-61.183*log10(E)+19.749*pow(log10(E),2)+
+		   2.3101*pow(log10(E),3)-3.3469*pow(log10(E),4)+
+		   0.96788*pow(log10(E),5)-0.12619*pow(log10(E),6)+0.0065108*pow(log10(E),7);
+  // at energies <1 keV, use a different spline, determined manually by
+  // generating sub-keV electrons in Geant4 and looking at their ranges, since
+  // ESTAR does not go this low (4.9.4)
+  else if ( E > 0. && E < 1. ) LET = 6.9463+815.98*E-4828*pow(E,2)+17079*pow(E,3)-
+				36394*pow(E,4)+44553*pow(E,5)-28659*pow(E,6)+7483.8*pow(E,7);
+  else
+    LET = 0.;
+  
+  return LET;
+  
 }

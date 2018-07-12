@@ -50,7 +50,7 @@
 #include <algorithm>
 
 #define W_DEFAULT 13.7 //default work function, in eV
-#define W_SCINT 7e-3 //actual energy of 1 scint phot, keV
+#define W_SCINT 8.5e-3 //the *max* possible energy of 1 scint phot, keV
 #define NEST_AVO 6.0221409e+23
 #define ATOM_NUM 54. //period to make float
 #define MOLAR_MASS 131.293 //grams per mole
@@ -157,6 +157,10 @@ namespace NEST {
     // A simple, approximate but good, density is returned for solid, liquid, or gaseous xenon, as a function of temperature and pressure
     std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top );
     // Utilizing a dependence on radius and the size of the S2 signal, takes MC truth X and Y and outputs smeared values as if you did position reconstruction like in real data
+    double PhotonEnergy ( bool state, double tempK, bool s2Flag );
+    // Determines the birth energies in electron-Volts of scintillation photons, for either S1 or S2, including fluctuations in them, so that you can apply proper QE in G4 for ex.
+    double CalcElectronLET ( double E );
+    // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with density can provide the dE/dx, as a function of energy in keV. Will be more useful in the future
     
   private:
     ofstream pulseFile;

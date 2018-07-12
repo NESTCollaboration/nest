@@ -456,7 +456,7 @@ void GetFile ( char* fileName ) {
 	break;
       default:
 	minimum = eMin;
-        maximum = eMax;
+	maximum = eMax;
 	for ( i = 0; i < numPts; i++ )
 	  holder[i] = E_keV[i];
 	break;
@@ -576,12 +576,12 @@ vector< vector<double> > GetBand ( vector<double> S1s,
 	    signals[j].push_back(S1s[i]); continue;
           }
           else {
-            if ( useS2 == 0 )
-              { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S2s[i]/S1s[i])); else signals[j].push_back(0.); }
+	    if ( useS2 == 0 )
+              { if ( S1s[i] && S2s[i] && log10(S2s[i]/S1s[i])>logMin && log10(S2s[i]/S1s[i])<logMax ) signals[j].push_back(log10(S2s[i]/S1s[i])); else signals[j].push_back(0.); }
             else if ( useS2 == 1 )
-              { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S2s[i])); else signals[j].push_back(0.); }
+              { if ( S1s[i] && S2s[i] && log10(S2s[i]) > logMin && log10(S2s[i]) < logMax ) signals[j].push_back(log10(S2s[i])); else signals[j].push_back(0.); }
             else
-              { if ( S1s[i] && S2s[i] ) signals[j].push_back(log10(S1s[i]/S2s[i])); else signals[j].push_back(0.); }
+              { if ( S1s[i] && S2s[i] && log10(S1s[i]/S2s[i])>logMin && log10(S1s[i]/S2s[i])<logMax ) signals[j].push_back(log10(S1s[i]/S2s[i])); else signals[j].push_back(0.); }
           }
           band[j][2] += signals[j].back();
           if ( resol )
@@ -599,13 +599,19 @@ vector< vector<double> > GetBand ( vector<double> S1s,
     if ( band[j][0] <= 0. && !resol ) band[j][0] = border + binWidth/2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
+    if ( numPts <= 0 && resol ) {
+      for ( i = 0; i < S1s.size(); i++ ) band[j][0] += fabs(S1s[i]);
+      numPts = S1s.size();
+    }
     if (resol)
       band[j][0] /= numPts;
     band[j][1] /= numPts;
     band[j][2] /= numPts;
-    for ( i = 0; i < (int)numPts; i++ ) {
-      if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.);
-      if ( resol && S1s[i] >= 0.0 ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
+    for ( i = 0; i <(int)numPts; i++ ) {
+      if ( signals[j][i] != -999. ) band[j][3] += pow(signals[j][i]-band[j][2],2.); //std dev calc
+    }
+    for ( i = 0; i < S1s.size(); i++ ) {
+      if ( resol && S1s[i] > 0.0 && S2s[i] > 0.0 ) band[j][1] += pow(S1s[i]-band[j][0],2.); //std dev calc
     }
     band[j][3] /= numPts - 1.;
     band[j][3] = sqrt(band[j][3]);
@@ -664,7 +670,7 @@ double WIMP_dRate ( double ER, double mWimp ) {
   // something that we make an argument later, but this is good enough to start.
   // Some constants:
   double M_N = 0.9395654; //Nucleon mass [GeV]
-  double N_A = 6.022e23; //Avogadro's number [atoms/mol]
+  double N_A = NEST_AVO; //Avogadro's number [atoms/mol]
   double c = 2.99792458e10; //Speed of light [cm/s]
   double GeVperAMU = 0.9315;             //Conversion factor
   double SecondsPerDay = 60. * 60. * 24.;//Conversion factor
@@ -673,7 +679,7 @@ double WIMP_dRate ( double ER, double mWimp ) {
   double SqrtPi = pow(M_PI, 0.5); double root2 = sqrt(2.);
   
   // Define the detector Z and A and the mass of the target nucleus
-  double Z = 54.;
+  double Z = ATOM_NUM;
   double A = (double)SelectRanXeAtom();
   double M_T = A * GeVperAMU;
   

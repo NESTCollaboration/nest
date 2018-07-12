@@ -45,8 +45,8 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
   
   double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97, tau1 = 3.27; //arXiv:1802.06162
   if ( fdetector->get_inGas() || energy < W_DEFAULT*0.001 ) { //from G4S1Light.cc in old NEST
-    tau1 = 5.18;
-    tau3 = 100.1;
+    tau1 = 5.18; //uncertainty of 1.55 ns from G4S2Light
+    tau3 = 100.1;//uncertainty of 7.90 ns from G4S2Light
   }
   //tau1 = 3.5*ns; tau3 = 20.*ns; tauR = 40.*ns for solid Xe from old NEST. Here assuming same as in liquid
   
@@ -582,7 +582,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     double sigmaDTg = 10. * sqrt ( 2. * Diff_Tran_Gas * dt_gas * 1e-6 );
     double tauTrap = 0.185; // microseconds from arXiv:1310.1117, modified to better fit XENON10 and LUX data at same time
     double min = 1e100;
-    for ( i = 0; i < Nee; ++i ) {
+    for ( i = 0; i < stopPoint; ++i ) {
       elecTravT = 0.; //resetting for the current electron
       DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
       DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);

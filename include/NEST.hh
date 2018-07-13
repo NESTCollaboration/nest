@@ -162,7 +162,7 @@ namespace NEST {
     // Determines the birth energies in electron-Volts of scintillation photons, for either S1 or S2, including fluctuations in them, so that you can apply proper QE in G4 for ex.
     double CalcElectronLET ( double E );
     // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with density can provide the dE/dx, as a function of energy in keV. Will be more useful in the future
-    VDetector* GetDetector(){return fdetector);
+    VDetector* GetDetector(){return fdetector;}
     
     
   

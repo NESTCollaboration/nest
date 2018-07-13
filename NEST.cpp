@@ -941,7 +941,7 @@ vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A
 
 }
 
-double NESTcalc::PhotonEnergy ( bool state, double tempK, bool s2Flag ) {
+double NESTcalc::PhotonEnergy (bool s2Flag, bool state, double tempK) {
   
   double wavelength, E_keV; //wavelength is in nanometers
   

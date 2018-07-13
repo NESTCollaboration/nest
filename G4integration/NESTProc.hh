@@ -110,7 +110,7 @@ namespace NEST
     
     Lineage GetChildType(const G4Track* aTrack, const G4Track* sec) const;
     double efield=0;
-
+    G4Track* MakePhoton(G4ThreeVector xyz, double t);
   protected:
     G4bool fTrackSecondariesFirst; // see above
     //bools for tracking some special particle cases
@@ -122,7 +122,7 @@ namespace NEST
     std::map<std::tuple<int, CLHEP::Hep3Vector, CLHEP::Hep3Vector>, long unsigned int> track_lins;
 
     G4double YieldFactor; // turns scint. on/off
-
+    
   } ;
 
   ////////////////////

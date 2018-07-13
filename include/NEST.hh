@@ -111,9 +111,10 @@ namespace NEST {
   
   
   class NESTcalc {
-    
+  protected:			
+    VDetector* fdetector;
   private:
-
+    ofstream pulseFile;
     long double Factorial ( double x );
     double nCr ( double n, double r );
 			
@@ -157,17 +158,14 @@ namespace NEST {
     // A simple, approximate but good, density is returned for solid, liquid, or gaseous xenon, as a function of temperature and pressure
     std::vector<double> xyResolution ( double xPos_mm, double yPos_mm, double A_top );
     // Utilizing a dependence on radius and the size of the S2 signal, takes MC truth X and Y and outputs smeared values as if you did position reconstruction like in real data
-    double PhotonEnergy ( bool state, double tempK, bool s2Flag );
+    double PhotonEnergy (bool s2Flag, bool state, double tempK);
     // Determines the birth energies in electron-Volts of scintillation photons, for either S1 or S2, including fluctuations in them, so that you can apply proper QE in G4 for ex.
     double CalcElectronLET ( double E );
     // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with density can provide the dE/dx, as a function of energy in keV. Will be more useful in the future
+    VDetector* GetDetector(){return fdetector);
     
-  private:
-    ofstream pulseFile;
     
-  protected:
-			
-    VDetector* fdetector;
+  
 	  
   };
 

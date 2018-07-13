@@ -68,14 +68,13 @@ NESTProc::~NESTProc(){} //destructor needed to avoid linker error
 
 
 
-G4Track* MakePhoton(G4ThreeVector xyz, double t) {
+G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
     // Determine polarization of new photon
     G4ParticleMomentum photonMomentum(G4RandomDirection());
     G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
     G4ThreeVector photonPolarization = perp.unit();
-
-    G4double PhotMean = 6.97*eV; G4double PhotWidth = 0.23*eV;
-    G4double sampledEnergy = G4RandGauss::shoot(PhotMean, PhotWidth);
+    VDetector* detector = fNESTcalc->GetDetector();
+    G4double sampledEnergy=fNESTcalc->PhotonEnergy(false/*i.e. S1*/, detector->get_inGas(), detector->get_T_Kelvin());
     G4DynamicParticle* aQuantum =
             new G4DynamicParticle(G4OpticalPhoton::OpticalPhoton(),
             photonMomentum);

@@ -5,6 +5,21 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 [![Build Status](https://travis-ci.com/NESTCollaboration/nest.svg?token=8i3psWNJAskpVjC6qe3w&branch=master)](https://travis-ci.com/NESTCollaboration/nest)
 
 
+### Table of Contents
+
+1. [ Getting the Repository ](#get)
+2. [ Building NEST ](#build)
+3. [ Running NEST ](#run)
+4. [ Useful Tools ](#tools)
+5. [ GEANT4 Integration ](#geant)
+6. [ Need Help with Detector Parameters? ](#params)
+7. [ Versioning ](#versions)
+8. [ Authors ](#authors)
+9. [ Citation ](#citation)
+10. [ License ](#license)
+
+
+<a name="get"></a>
 ## Getting the Repository
 
 In the terminal, one can clone this repository by typing the command:
@@ -20,6 +35,7 @@ Anyone in the "NESTCollaboration" organization should be able to develop (push c
 Please contact Matthew Szydagis about becoming involved in development before merging with the master branch. 
 
 
+<a name="build"></a>
 ## Building NEST
 
 ### Prerequisites
@@ -108,13 +124,14 @@ Then, run CMake on your projects with the flag:
 ```
 
 
+<a name="run"></a>
 ## Running testNEST
 
 The testNEST executable is a comprehensive, powerful tool that will implement the NEST class in a 
 pre-structured way. It loads pre-defined detector settings (including electric field, optics, etc. from the 
 "VDetector" inheriting class) and source spectra (from the "TestSpectra" class) to do fast detector simulations.
 
-Note that running testNEST without arguments will remind you of the necessary inputs:
+Running testNEST without arguments will remind you of the necessary inputs:
 
 ```
 ./testNEST
@@ -242,6 +259,7 @@ An explanation of the various parameters:
 WARNING: Whenever you modify this header, **make sure to do a clean recompile**!
 
 
+<a name="tools"></a>
 ## Useful Tools
 
 The "Tools/" folder contains two very useful codes: bareNEST and rootNEST.
@@ -260,6 +278,7 @@ If you want to use the ROOT tools provided (and have ROOT installed already on y
 	With #define LIMIT, you can start calculating an exclusion curve, by first providing an efficiency curve (arXiv:1512.03506 provided as an example <- LUX Run03)
 
 
+<a name="geant"></a>
 ## GEANT4 Integration
 
 1. Make sure you have built NEST with the proper G4 option in the CMake stage (see "Running CMake").
@@ -306,6 +325,7 @@ if (theNEST2ScintillationProcess->IsApplicable(*particle)) {
 ```
 
 
+<a name="params"></a>
 ## Need Help with Detector Parameters?
 
 Be careful not to get too overwhelmed with all of the detector parameters. 
@@ -350,21 +370,25 @@ Just stick with the XENON10 defaults, which are mixed with some published LUX va
 Why? They are there because even though they're old detectors now, their #'s ~representative of any detector past/present/future, big/small even
 
 
+<a name="versions"></a>
 ## Versioning
 
 For the versions available, see the [tags on this repository](https://github.com/NESTCollaboration/nest/tags). 
 
 
+<a name="authors"></a>
 ## Authors
 
 See also the list of [contributors](https://github.com/orgs/NESTCollaboration/people) who participate in this project.
 
 
+<a name="citation"></a>
 ## Citation
 
 TBD
 
 
+<a name="license"></a>
 ## License
 
 

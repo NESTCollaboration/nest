@@ -114,7 +114,8 @@ To generate the NEST library, testNEST executable, and various tools (bareNEST, 
 make; make install
 ```
 
-The compiled executables and libraries, and all the headers, should now be present in the install directory. 
+The compiled executables and libraries, and all the headers, should now be present in the install 
+directory ("../install" if next to the build directory). 
 
 After changes to the source code, one should do a clean make for good measure:
 
@@ -166,13 +167,13 @@ It serves as a template for users to create their own detector. Follow the steps
 2. Edit the parameters/functions in MyDetector.hh as desired. 
 	At minimum, one has to replace every instance of "DetectorExample_XENON10" with "MyDetector": 
 
-	```	
+	```cpp	
 	// DetectorExample_XENON10.hh 
 	
 	--> // MyDetector.hh
 	```
 
-	```
+	```cpp
 	#ifndef DetectorExample_XENON10_hh 
 	
 	--> #ifndef MyDetector_hh
@@ -273,7 +274,7 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 
 * **field_drift**: if set to -1, the electric field map from the detector settings is used.
 	If set to any other value, that drift field (in V/cm) will be used throughout the detector.
-* **x,y,z-position**: if set to -1, each event's position is drawn from a random detector position.
+* **x,y,z-position**: if set to -1, each event's position is drawn randomly within the detector.
 	Otherwise, the **exact** syntax "x,y,z" (with commas) produces events at this coordinate.
 * **seed**: if set to -1, the random seed is internally set based on the timestamp.
 	If another number is provided (optional), that number is the random seed (for debugging purposes).
@@ -284,8 +285,6 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 * **NuisParam**: an array currently located in line 43 of testNEST.cpp.
 	These change the mean light and charge yields of nuclear recoils (separately) as E-independent multiplicative factors.
 
-	WARNING: Whenever you modify this header, **make sure to do a clean recompile**!
-
 
 <a name="tools"></a>
 ## Useful Tools
@@ -295,13 +294,15 @@ The "Tools/" folder contains two very useful codes: bareNEST and rootNEST.
 <a name="barenest"></a>
 ### Using bareNEST
 
-bareNEST is a minimal implementation of NEST, which does not contain the varioius complications
+bareNEST is a minimal implementation of NEST, which does not contain the various complications
 of testNEST (e.g. field non-uniformities, muon tracks, etc.). It provides the "bare minimum" function calls
 needed to demonstrate the yield calculations step-by-step.
 
-This tool provides the basics, showing you how to implement the NEST class in your own code in a no-frills approach.
+This tool provides the basics, showing you how to implement the NEST class in your own code in a no-frills 
+approach.
 
-NOTE: It is currently hard-coded to take no inputs, as this source code is intended for adaptation/customization.
+NOTE: It is currently hard-coded to take no inputs, as this source code is a skeleton intended for 
+adaptation/customization.
 
 <a name="rootnest"></a>
 ### Running rootNEST

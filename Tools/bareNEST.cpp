@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
 
   // Print selected outputs a la testNEST
   fprintf(stdout,
-          "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE "
+          "\nE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE "
           "or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea "
           "[PE]\tS2_3Dcorr [phd]\n");
   printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field, driftTime,

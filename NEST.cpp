@@ -447,7 +447,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
       wf_amp.push_back(AreaTable[ii]);
       
       if ( outputTiming ) {
-	char line[1000];
+	char line[80];
 	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back() );
 	pulseFile<<line<<flush;
       }
@@ -461,7 +461,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     for ( ii = 0; ii < TimeTable[0].size(); ++ii ) {
       if ( (TimeTable[0][ii]-min) > fdetector->get_coinWind() && nHits <= fdetector->get_coinLevel() )
 	--spike;
-      //fprintf ( pulseFile, "%lu\t%.1f\t%.2f\n", evtNum, TimeTable[0][ii], TimeTable[1][ii] );
+      //char line[80]; sprintf ( line, "%lu\t%.1f\t%.2f", evtNum, TimeTable[0][ii], TimeTable[1][ii] ); pulseFile << line << endl;
     }
   }
   
@@ -596,7 +596,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       if ( !fdetector->get_inGas() && fdetector->get_E_gas() != 0. )
 	elecTravT -= tauTrap*log(RandomGen::rndm()->rand_uniform());
       electronstream[i] += elecTravT;
-      //fprintf ( pulseFile, "%lu\t%.0f\t%.3f\t%.3f\n", evtNum, electronstream[i]*1e+3, newX, newY );
+      //char line[80]; sprintf ( line, "%lu\t%.0f\t%.3f\t%.3f", evtNum, electronstream[i]*1e+3, newX, newY ); pulseFile << line << endl;
       SE = floor(RandomGen::rndm()->
                  rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5);
       Nph += long(SE);
@@ -638,7 +638,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
 	double offset = ( (fdetector->get_anode()-origin)/driftVelocity_gas + electronstream[i] ) * 1e3 + photon_times[k];
 	if ( offset < min ) min = offset;
 	AreaTable[0].push_back(phe); TimeTable.push_back(offset);
-	//fprintf ( pulseFile, "%lu\t%.0f\t%.2f\n", evtNum, offset, phe );
+	//char line[80]; sprintf ( line, "%lu\t%.0f\t%.2f\t%i", evtNum, offset, phe, (int)(i<Nee) ); pulseFile << line << endl;
       }
     }
     int numPts = Nphe * 1000;
@@ -661,9 +661,9 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       wf_amp.push_back(AreaTable[1][k]);
       
       if ( outputTiming ) {
-	char line[1000];
+	char line[80];
 	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back());
-	pulseFile << line<<endl;
+	pulseFile << line << endl;
       }
     }
   }
@@ -712,8 +712,8 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
 	vector<double> g2_params(5);
   
 	// Set parameters for calculating EL yield and extraction
-	double alpha = 0.137, beta = 177., gamma = 45.7;
-	double epsilonRatio = 1.85/1.00126; //LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan McK.
+	double alpha = 0.137, beta = 177., gamma = 45.7; //note the value of alpha is similar to ~1/7eV. Not coincidence. Noted in Mock et al.
+	double epsilonRatio = 1.85/1.00126; //LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan M.
   if ( fdetector->get_inGas() ) epsilonRatio=1.;
  
  	// Convert gas extraction field to liquid field 

@@ -147,14 +147,17 @@ int main ( int argc, char** argv ) {
     cerr << "ER data is often best matched by a weighted average of the beta & gamma models." << endl;
   }
   
-  double rho = n.SetDensity ( detector->get_T_Kelvin(), detector->get_p_bar() ); //cout.precision(12);
-  if ( rho < 1. ) detector->set_inGas(true);
+  double rho = n.SetDensity ( detector->get_T_Kelvin(), detector->get_p_bar() );
+  if ( rho <= 0. || detector->get_T_Kelvin() <= 0. || detector->get_p_bar() <= 0. )
+    { cerr << "ERR: Unphysical thermodynamic property!"; return 0; }
+  if ( rho < 1. )
+    detector->set_inGas(true);
   
-	// Calculate and print g1, g2 parameters (once per detector)
-	vector<double> g2_params = n.CalculateG2(verbosity);
-	g2 = fabs(g2_params[3]); double g1 = detector->get_g1();
+  // Calculate and print g1, g2 parameters (once per detector)
+  vector<double> g2_params = n.CalculateG2(verbosity);
+  g2 = fabs(g2_params[3]); double g1 = detector->get_g1();
   
-	if ( inField == -1. ) {
+  if ( inField == -1. ) {
     vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
     vD_middle = vTable[int(floor(.5*detector->get_TopDrift()/z_step))];
   }
@@ -182,6 +185,7 @@ int main ( int argc, char** argv ) {
   else {
     double energyMaximum;
     if ( eMax < 0. ) energyMaximum = 1. / fabs(eMax);
+    else energyMaximum = eMax;
     if ( type_num == Kr83m )
       yieldsMax = n.GetYields(  beta  , energyMaximum, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
 			      double(massNum), double(atomNum), NuisParam); //the reason for this: don't do the special Kr stuff when just checking max

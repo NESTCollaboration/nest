@@ -359,7 +359,8 @@ void GetFile ( char* fileName ) {
   while ( fgets ( line, sizeof ( line ), ifp ) ) {
     sscanf ( line, "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
 	     &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n );
-    if ( !a && !b && !c && !d && !e && !f && !g && !h && !i && !j && !k && !l && !m && !n )
+    if ( a < DBL_MIN && b < DBL_MIN && c < DBL_MIN && d < DBL_MIN && e < DBL_MIN && f < DBL_MIN && g < DBL_MIN &&
+	 h < DBL_MIN && i < DBL_MIN && j < DBL_MIN && k < DBL_MIN && l < DBL_MIN && m < DBL_MIN && n < DBL_MIN )
       continue;
     if ( feof(ifp) )
       break;
@@ -507,21 +508,21 @@ void GetFile ( char* fileName ) {
   if ( usePD <= 0 ) {
     inputs = GetBand ( S1cor_phe, S2cor_phe, true );
     for ( o = 0; o < numBins; o++ ) {
-    band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
+      band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
     }
     outputs = GetBand_Gaussian ( GetBand ( S1cor_phe, S2cor_phe, false ) );
   }
   else if ( usePD == 1 ) {
     inputs = GetBand ( S1cor_phd, S2cor_phd, true );
     for ( o = 0; o < numBins; o++ ) {
-    band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
+      band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
     }
     outputs = GetBand_Gaussian ( GetBand ( S1cor_phd, S2cor_phd, false ) );
   }
   else {
     inputs = GetBand(S1cor_spike, S2cor_phd, true );
     for ( o = 0; o < numBins; o++ ) {
-    band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
+      band[o][0] = 0.; band[o][1] = 0.; band[o][2] = 0.; band[o][3] = 0.; band[o][4] = 0.; band[o][5] = 0.; band[o][6] = 0.;
     }
     outputs = GetBand_Gaussian ( GetBand(S1cor_spike, S2cor_phd, false ) );
   }

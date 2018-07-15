@@ -273,6 +273,7 @@ double TestSpectra::WIMP_dRate ( double ER, double mWimp ) {
     break;
   default:
     cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
+    exit ( 0 );
   }
   
   double a = 0.52; //in fm
@@ -331,8 +332,10 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum ( double mass, d
       else
 	{
 	  spectrum.xMax = double(i - 1) / divisor;
-	  if ( spectrum.xMax <= 0.0 )
+	  if ( spectrum.xMax <= 0.0 ) {
 	    cerr << "ERROR: The maximum possible WIMP recoil is negative, which usually means your E_step is too small." << endl;
+	    exit ( 0 );
+	  }
 	  break;
 	}
     }

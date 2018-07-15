@@ -65,7 +65,8 @@ public:
 		dt_min = 20.; //minimum. Top of detector fiducial volume
 		dt_max = 60.; //maximum. Bottom of detector fiducial volume
 
-		radius = 50.; //millimeters
+		radius = 50.; //millimeters (fiducial rad)
+		radmax = 50.; //actual physical geo. limit
 
 		TopDrift = 150.; //mm not cm or us (but, this *is* where dt=0)
 		//a z-axis value of 0 means the bottom of the detector (cathode OR bottom PMTs)

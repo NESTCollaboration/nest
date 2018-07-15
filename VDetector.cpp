@@ -54,9 +54,10 @@ void VDetector::Initialization() {
 	dtCntr = 40.; //center of detector for S1 corrections, in usec.
 	dt_min = 20.; //minimum. Top of detector fiducial volume
 	dt_max = 60.; //maximum. Bottom of detector fiducial volume
-
+	
 	radius = 50.; //millimeters
-
+	radmax = 50.;
+	
 	TopDrift = 150.; //mm not cm or us (but, this *is* where dt=0)
 	//a z-axis value of 0 means the bottom of the detector (cathode OR bottom PMTs)
 	//In 2-phase, TopDrift=liquid/gas border. In gas detector it's GATE, not anode!

@@ -58,6 +58,9 @@
 #define ELEC_MASS 9.109e-31 //kg
 #define FIELD_MIN 1. //min elec field to make S2 (in V/cm)
 
+#define EPS_GAS 1.00126
+#define EPS_LIQ 1.85 //LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan McK.
+
 #define SAMPLE_SIZE 10 //nano-seconds
 #define PULSE_WIDTH 10 //nano-seconds
 #define PULSEHEIGHT 0.005 //threshold height, in PE, for writing to photon_times
@@ -139,11 +142,11 @@ namespace NEST {
     QuantaResult GetQuanta(YieldResult yields, double density);
     // GetQuanta takes the yields from above and fluctuates them, both the total quanta (photons+electrons) with a Fano-like factor, and the "slosh" between photons and electrons
     // Namely, the recombination fluctuations
-    std::vector<double> GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftSpeed, double dS_mid, INTERACTION_TYPE species, long evtNum, double dfield, double energy, int useTiming,  bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp );
+    std::vector<double> GetS1 ( QuantaResult quanta, double truthPos[3], double smearPos[3], double driftSpeed, double dS_mid, INTERACTION_TYPE species, long evtNum, double dfield, double energy, int useTiming,  bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp );
     // Very comprehensive conversion of the "original" intrinsic scintillation photons into the many possible definitions of S1 as measured by photo-sensors
     std::vector<double> GetSpike(int Nph,double dx,double dy, double dz, double driftSpeed, double dS_mid, std::vector<double> origScint );
     // GetSpike takes the extremely basic digital/integer number of spike counts provided by GetS1 and does more realistic smearing
-    std::vector<double> GetS2 ( int Ne, double dx, double dy, double dt, double driftSpeed, long evtNum, double dfield, int useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp,vector<double> &g2_params );
+    std::vector<double> GetS2 ( int Ne, double truthPos[3], double smearPos[3], double dt, double driftSpeed, long evtNum, double dfield, int useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp,vector<double> &g2_params );
     // Exhaustive conversion of the intrinsic ionization electrons into the many possible definitions of S2 pulse areas as observed in the photo-tubes
     // This function also applies the extraction efficiency (binomial) and finite electron mean free path or life time caused by electronegative impurities (exponential)
     std::vector<double> CalculateG2( bool verbosity = true );

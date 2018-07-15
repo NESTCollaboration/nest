@@ -150,8 +150,9 @@ int main ( int argc, char** argv ) {
   double rho = n.SetDensity ( detector->get_T_Kelvin(), detector->get_p_bar() );
   if ( rho <= 0. || detector->get_T_Kelvin() <= 0. || detector->get_p_bar() <= 0. )
     { cerr << "ERR: Unphysical thermodynamic property!"; return 0; }
-  if ( rho < 1. )
+  if ( rho < 1.75 )
     detector->set_inGas(true);
+  double Wq_eV = 1.9896 + ( 20.8 - 1.9896 ) / ( 1. + pow ( rho / 4.0434, 1.4407 ) ); // out-of-sync danger: copied from NEST.cpp
   
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
@@ -278,7 +279,7 @@ int main ( int argc, char** argv ) {
     }
     else field = inField; //no fringing
     
-    if ( field <= 0. )
+    if ( field <= 0. || std::isnan(field) )
       cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
     if ( field > 12.e3 )
       cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are you sure about this?\n";
@@ -340,7 +341,7 @@ int main ( int argc, char** argv ) {
       norm[0] = ( xf - xi ) / distance;
       norm[1] = ( yf - yi ) / distance;
       norm[2] = -detector->get_TopDrift() / distance; //have not yet tested muons which leave before hitting Z=0, would have to modify code here
-      while ( zz > 0. && sqrt(pow(xx,2.)+pow(yy,2.)) < detector->get_radius() ) { //stop making S1 and S2 if particle exits Xe vol
+      while ( zz > 0. && sqrt(pow(xx,2.)+pow(yy,2.)) < detector->get_radmax() ) { //stop making S1 and S2 if particle exits Xe vol
 	yields = n.GetYields ( beta, refEnergy, rho, detector->FitEF ( xx, yy, zz ), double(massNum), double(atomNum), NuisParam );
 	quanta = n.GetQuanta ( yields, rho );
 	Nph+= quanta.photons * (eStep/refEnergy);
@@ -363,23 +364,40 @@ int main ( int argc, char** argv ) {
       field = detector->FitEF(pos_x,pos_y,pos_z);
     }
     else {
-      yields = n.GetYields(type_num,keV,rho,field,
-			   double(massNum),double(atomNum),NuisParam);
-      quanta = n.GetQuanta(yields,rho);
+      if ( keV > .001 * Wq_eV ) {
+        yields = n.GetYields(type_num,keV,rho,field,
+                             double(massNum),double(atomNum),NuisParam);
+        quanta = n.GetQuanta(yields,rho);
+      }
+      else
+	{
+	yields.PhotonYield = 0.;
+	yields.ElectronYield = 0.;
+	yields.ExcitonRatio = 0.;
+	yields.Lindhard = 0.;
+	yields.ElectricField = 0.;
+	yields.DeltaT_Scint = 0.;
+	quanta.photons = 0;
+	quanta.electrons = 0;
+	quanta.ions = 0;
+	quanta.excitons = 0;
+	}
     }
-    
+
+    double truthPos[3] = { origX, origY, pos_z };
+    double smearPos[3] = { origX, origY, pos_z };
     double Nphd_S2 = g2 * quanta.electrons * exp(-driftTime/detector->get_eLife_us());
     if ( !MCtruthPos && Nphd_S2 > PHE_MIN ) {
       vector<double> xySmeared(2); xySmeared = n.xyResolution ( origX, origY, Nphd_S2 );
-      pos_x = xySmeared[0];
-      pos_y = xySmeared[1];
+      smearPos[0] = xySmeared[0];
+      smearPos[1] = xySmeared[1];
     }
-
+    
     vector<long int> wf_time;
     vector<double>   wf_amp;
-    vector<double> scint = n.GetS1(quanta,pos_x,pos_y,pos_z,
-				   vD,vD_middle,type_num,j,field,keV,useTiming, verbosity,
-				   wf_time, wf_amp);
+    vector<double> scint = n.GetS1 ( quanta,truthPos,smearPos,
+				     vD,vD_middle,type_num,j,field,keV,useTiming,verbosity,
+				     wf_time,wf_amp );
     if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
     else if ( usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
@@ -389,15 +407,15 @@ int main ( int argc, char** argv ) {
     else signal1.push_back(-999.);
     
     if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
-    vector<double> scint2= n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, j, field, useTiming, verbosity, wf_time, wf_amp, g2_params);
+    vector<double> scint2= n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, j, field, useTiming, verbosity, wf_time, wf_amp, g2_params);
     if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
     else if ( usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2 )
       signal2.push_back(scint2[7]); //no spike option for S2
     else signal2.push_back(-999.);
-
+    
     if ( !MCtruthE ) {
-      double Nph, Ne, Wq_eV = 1.9896 + ( 20.8 - 1.9896 ) / ( 1. + pow ( rho / 4.0434, 1.4407 ) ); // out-of-sync danger: copied from NEST.cpp
+      double Nph, Ne;
       if ( usePD == 0 )
 	Nph= fabs(scint[3]) / (g1*(1.+detector->get_P_dphe()));
       else if ( usePD == 1 ) Nph = fabs(scint[5]) / g1;

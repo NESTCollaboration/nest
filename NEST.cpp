@@ -65,7 +65,10 @@ double NESTcalc::PhotonTime ( INTERACTION_TYPE species, bool exciton,
   
   if ( fdetector->get_inGas() || energy < W_DEFAULT*0.001 ) { SingTripRatio = 0.1; tauR = 0.; }
   
+  // the recombination time is non-exponential, but approximates
+  // to exp at long timescales (see Kubota '79)
   time_ns += tauR * ( 1.0 / RandomGen::rndm()->rand_uniform() - 1. );
+  
   if ( RandomGen::rndm()->rand_uniform() < SingTripRatio / ( 1. + SingTripRatio ) )
     time_ns -= tau1 * log ( RandomGen::rndm()->rand_uniform() );
   else
@@ -135,6 +138,12 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
     
   }
   
+  if ( Nq_actual == 0 ) {
+    result.ions = 0; result.excitons = 0;
+    result.photons = 0; result.electrons = 0;
+    return result;
+  }
+  
   if ( Nex < 0 ) Nex = 0;
   if ( Ni < 0 ) Ni = 0;
   if ( Nex > Nq_actual ) Nex = Nq_actual;
@@ -147,6 +156,10 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   double recombProb = 1.-(NexONi+1.)*elecFrac;
   if ( recombProb < 0. ) recombProb = 0.;
   if ( recombProb > 1. ) recombProb = 1.;
+  if ( std::isnan(recombProb) || std::isnan(elecFrac) ) {
+    elecFrac = 1.0;
+    recombProb = 0.0;
+  }
   
   double ef = yields.ElectricField;
   double cc = 0.075351+(0.050461-0.075351)/pow(1.+pow(ef/30057.,3.0008),2.9832e5);
@@ -167,8 +180,10 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( Nph > Nq_actual ) Nph = Nq_actual;
   if ( Nph < Nex ) Nph = Nex;
   
-  if ( (Nph+Ne) != (Nex+Ni) )
+  if ( (Nph+Ne) != (Nex+Ni) ) {
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
+    exit ( 0 );
+  }
   
   result.photons = Nph;
   result.electrons=Ne;
@@ -242,7 +257,9 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       NexONi = alpha + 0.00178 * pow ( atomNum, 1.587 );
       double Nq = 1e3 * L * energy / Wq_eV;
       double Ni = Nq / ( 1. + NexONi );
-      double recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
+      double recombProb;
+      if ( Ni > 0. && ThomasImel > 0. ) recombProb = 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
+      else recombProb = 0.0;
       Nph = Nq * NexONi / ( 1. + NexONi ) + recombProb * Ni; Ne = Nq - Nph;
     } break;
   case gammaRay:
@@ -337,7 +354,7 @@ NESTcalc::~NESTcalc(){
   if(fdetector)delete fdetector;
 }
 
-vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, double dz, double driftVelocity, double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, int useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp ) {
+vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double truthPos[3], double smearPos[3], double driftVelocity, double dV_mid, INTERACTION_TYPE type_num, long evtNum, double dfield, double energy, int useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp ) {
   
   int Nph = quanta.photons;
 
@@ -349,10 +366,12 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   vector<double> newSpike(2); // for re-doing spike counting more precisely
   
   // Add some variability in g1 drawn from a polynomial spline fit
-  double posDep = fdetector->FitS1( dx, dy, dz );
-  double dt = ( fdetector->get_TopDrift() - dz ) / driftVelocity;
+  double posDep = fdetector->FitS1(truthPos[0],truthPos[1],truthPos[2]);
+  double posDepSm=fdetector->FitS1(smearPos[0],smearPos[1],smearPos[2]);
+  double dt = ( fdetector->get_TopDrift() - truthPos[2] ) / driftVelocity;
   double dz_center = fdetector->get_TopDrift() - dV_mid * fdetector->get_dtCntr(); //go from t to z
-  posDep /= fdetector->FitS1( 0., 0., dz_center ); // XYZ always in mm now never cm
+  posDep /= fdetector->FitS1(0.,0.,dz_center); // XYZ always in mm now never cm
+  posDepSm/=fdetector->FitS1(0.,0.,dz_center);
   
   // generate a number of PMT hits drawn from a binomial distribution. Initialize number of photo-electrons
   int nHits=BinomFluct(Nph,fdetector->get_g1()*posDep), Nphe = 0;
@@ -411,7 +430,8 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
     int total_photons = (int)fabs(spike);
     int excitons = int((double(nHits)/double(quanta.photons))*double(quanta.excitons)+0.5);
     photonstream photon_emission_times = GetPhotonTimes(type_num,total_photons,excitons,dfield,energy);
-    photonstream photon_times = AddPhotonTransportTime(photon_emission_times,dx,dy,dz);
+    photonstream photon_times = AddPhotonTransportTime(photon_emission_times,
+						       truthPos[0],truthPos[1],truthPos[2]);
     
     if ( outputTiming && !pulseFile.is_open ( ) ) {
       pulseFile.open("photon_times.txt");
@@ -468,10 +488,10 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   if ( pulseArea < fdetector->get_sPEthr() )
     pulseArea = 0.;
   if ( spike < 0 ) spike = 0;
-  double pulseAreaC= pulseArea / posDep;
+  double pulseAreaC= pulseArea / posDepSm;
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
-  double spikeC = spike / posDep;
+  double spikeC = spike / posDepSm;
   
   scintillation[0] = nHits; // MC-true integer hits in same OR different PMTs, NO double phe effect
 	scintillation[1] = Nphe; // MC-true integer hits WITH double phe effect (Nphe > nHits)
@@ -505,7 +525,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   } //the end of case of spike >= coinLevel
   
   if ( spike >= 1. && spikeC > 0. ) {
-    newSpike = GetSpike ( Nph, dx, dy, dz, driftVelocity, dV_mid, scintillation ); // over-write spike with smeared version, ~real data
+    newSpike = GetSpike ( Nph, smearPos[0], smearPos[1], smearPos[2], driftVelocity, dV_mid, scintillation ); // over-write spike with smeared version, ~real data
     scintillation[6] = newSpike[0]; // S1 spike count (NOT adjusted for double phe effect), IF sufficiently small nHits (otherwise = Nphd)
     scintillation[7] = newSpike[1]; // same as newSpike[0], but WITH XYZ correction
   }
@@ -529,7 +549,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double dx, double dy, doub
   
 }
 
-vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double driftVelocity,
+vector<double> NESTcalc::GetS2 ( int Ne, double truthPos[3], double smearPos[3], double dt, double driftVelocity,
 				 long evtNum, double dfield, int useTiming, bool outputTiming, vector<long int>& wf_time, vector<double>& wf_amp, vector<double> &g2_params ) {
   
 	double elYield= g2_params[0];
@@ -540,7 +560,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
 	 
   vector<double> ionization(9); int i;
   bool eTrain = false;
-  if ( useTiming == 2 ) eTrain = true;
+  if ( useTiming == 2 && !fdetector->get_inGas() ) eTrain = true;
   
   if ( dfield < FIELD_MIN //"zero"-drift-field detector has no S2
        || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. || gasGap <= 0. ) {
@@ -548,8 +568,10 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
   }
   
   // Add some variability in g1_gas drawn from a polynomial spline fit
-  double posDep = fdetector->FitS2( dx, dy ); // XY is always in mm now, never cm
-  posDep /= fdetector->FitS2( 0., 0. );
+  double posDep = fdetector->FitS2(truthPos[0],truthPos[1]); // XY is always in mm now, never cm
+  double posDepSm=fdetector->FitS2(smearPos[0],smearPos[1]);
+  posDep /= fdetector->FitS2(0.,0.);
+  posDepSm/=fdetector->FitS2(0.,0.);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
   int Nee = BinomFluct(Ne,ExtEff*exp(-dt/fdetector->get_eLife_us())); //MAKE this 1 for SINGLE e- DEBUGGING
@@ -585,12 +607,14 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     for ( i = 0; i < stopPoint; ++i ) {
       elecTravT = 0.; //resetting for the current electron
       DL = RandomGen::rndm()->rand_gauss(0.,sigmaDL);
-      DT = RandomGen::rndm()->rand_gauss(0.,sigmaDT);
+      DT = fabs(RandomGen::rndm()->rand_gauss(0.,sigmaDT));
       phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
       sigX = DT * cos ( phi );
       sigY = DT * sin ( phi );
-      newX = dx + sigX;
-      newY = dy + sigY;
+      newX = truthPos[0] + sigX;
+      newY = truthPos[1] + sigY;
+      if ( newX*newX+newY*newY > fdetector->get_radmax()*fdetector->get_radmax() )
+	continue; // remove electrons from outside the maximum possible radius (alternative is squeeze them, depending on your E-fields)
       DL_time = DL / driftVelocity;
       elecTravT += DL_time;
       if ( !fdetector->get_inGas() && fdetector->get_E_gas() != 0. )
@@ -621,7 +645,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
       DL_time = DL / driftVelocity_gas;
       electronstream[i] += DL_time;
       if ( i >= Nee && eTrain ) { //all numbers are based on arXiv:1711.07025
-        E_liq = fdetector->get_E_gas() / (1.85/1.00126);
+        E_liq = fdetector->get_E_gas() / (EPS_LIQ/EPS_GAS);
         tau2 = 0.58313 * exp ( 0.20929 * E_liq ) * 1e3;
         tau1 = 1.40540 * exp ( 0.15578 * E_liq ) * 1e3 * 1e-2;
         amp2 = 0.38157 * exp ( 0.21177 * E_liq ) * 1e-2;
@@ -675,12 +699,12 @@ vector<double> NESTcalc::GetS2 ( int Ne, double dx, double dy, double dt, double
     pulseArea=RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
   }
   
-  double pulseAreaC= pulseArea/exp(-dt/fdetector->get_eLife_us()) / posDep;
+  double pulseAreaC= pulseArea/exp(-dt/fdetector->get_eLife_us()) / posDepSm;
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
   
   double S2b = RandomGen::rndm()->rand_gauss(fdetector->get_S2botTotRatio()*pulseArea,sqrt(fdetector->get_S2botTotRatio()*pulseArea*(1.-fdetector->get_S2botTotRatio())));
-  double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()) / posDep; // for detectors using S2 bottom-only in their analyses
+  double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()) / posDepSm; // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; // integer number of electrons unabsorbed in liquid then getting extracted
 	ionization[1] = Nph; // raw number of photons produced in the gas gap
@@ -713,7 +737,7 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
   
 	// Set parameters for calculating EL yield and extraction
 	double alpha = 0.137, beta = 177., gamma = 45.7; //note the value of alpha is similar to ~1/7eV. Not coincidence. Noted in Mock et al.
-	double epsilonRatio = 1.85/1.00126; //LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan M.
+	double epsilonRatio = EPS_LIQ/EPS_GAS;
   if ( fdetector->get_inGas() ) epsilonRatio=1.;
  
  	// Convert gas extraction field to liquid field 
@@ -723,8 +747,9 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
   if ( ExtEff < 0. || E_liq <= 0. ) ExtEff = 0.;
   
   double gasGap = fdetector->get_anode() - fdetector->get_TopDrift(); //EL gap in mm -> cm, affecting S2 size linearly
-  if ( gasGap <= 0. ) {
+  if ( gasGap <= 0. && E_liq > 0. ) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
+    exit ( 0 );
   }
   
   // Calculate EL yield based on gas gap, extraction field, and pressure
@@ -795,7 +820,9 @@ double NESTcalc::SetDensity ( double Kelvin, double bara ) { // currently only f
   if ( bara < VaporP_bar ) {
     double density = bara * 1e5 / ( Kelvin * 8.314 ); //ideal gas law approximation, mol/m^3
     density *= MOLAR_MASS * 1e-6;
-    cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n"; return density; // in g/cm^3
+    cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
+    fdetector->set_inGas(true);
+    return density; // in g/cm^3
   }
   
   return
@@ -839,6 +866,7 @@ double NESTcalc::SetDriftVelocity ( double Kelvin, double Density, double eField
   else if ( Kelvin >= Temperatures[9] && Kelvin <= Temperatures[10] ) i = 9;
   else {
     cerr << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
+    exit ( 0 );
   }
   
   j = i + 1;
@@ -860,8 +888,8 @@ double NESTcalc::SetDriftVelocity ( double Kelvin, double Density, double eField
   }
   
   if ( speed <= 0. ) {
-    if ( eField < 1e2 && eField >= FIELD_MIN ) cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n";
-    if ( eField > 1e4 ) cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO HIGH\n";
+    if ( eField < 1e2 && eField >= FIELD_MIN ) { cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n"; exit ( 0 ); }
+    if ( eField > 1e4 ) { cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO HIGH\n"; exit ( 0 ); }
   }
   return speed;
   
@@ -905,7 +933,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, double zStep 
       
       if ( pos_z > fdetector->get_gate() ) {
 	if ( !fdetector->get_inGas() )
-	  driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas()/(1.85/1.00126)*1e3);
+	  driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas()/(EPS_LIQ/EPS_GAS)*1e3);
 	else // if gate == TopDrift properly set, shouldn't happen
 	  driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas()*1e3);
       }
@@ -930,7 +958,7 @@ vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A
   double sigmaR = kappa / sqrt ( A_top ); // ibid.
   
   double phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
-  sigmaR = RandomGen::rndm()->rand_gauss ( 0.0, sigmaR );
+  sigmaR = fabs ( RandomGen::rndm()->rand_gauss ( 0.0, sigmaR ) );
   double sigmaX = sigmaR * cos ( phi );
   double sigmaY = sigmaR * sin ( phi );
   

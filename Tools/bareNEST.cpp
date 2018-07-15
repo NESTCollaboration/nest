@@ -195,17 +195,20 @@ int main(int argc, char** argv) {
   // verbosity boolean flags both set to true in analysis.hh)
   vector<double> wf_amp;
   vector<long int> wf_time;
-
+  
+  double truthPos[3] = { pos_x, pos_y, pos_z };
+  double smearPos[3] = { pos_x, pos_y, pos_z };
+  
   // Calculate the S1 based on the quanta generated
   vector<double> scint =
-      n.GetS1(quanta, pos_x, pos_y, pos_z, vD, vD_middle, type_num, 0, field,
-              keV, useTiming, verbosity, wf_time, wf_amp);
+    n.GetS1(quanta, truthPos, smearPos, vD, vD_middle, type_num, 0, field,
+	    keV, useTiming, verbosity, wf_time, wf_amp);
 
   // Take care of gamma-X case for positions below cathode
   if (pos_z < detector->get_cathode()) quanta.electrons = 0;
   vector<double> scint2 =
-      n.GetS2(quanta.electrons, pos_x, pos_y, driftTime, vD, 0, field,
-              useTiming, verbosity, wf_time, wf_amp, g2_params);
+    n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, 0, field,
+	    useTiming, verbosity, wf_time, wf_amp, g2_params);
 
   // If using the reconstructed energy, back-calculate energy as measured from
   // yields

@@ -52,6 +52,7 @@ class VDetector {
 		double get_dt_min(){return dt_min;}
 		double get_dt_max(){return dt_max;}
 		double get_radius(){return radius;}
+                double get_radmax(){return radmax;}
 		double get_TopDrift(){return TopDrift;}
 		double get_anode(){return anode;}
                 double get_cathode(){return cathode;}
@@ -93,6 +94,7 @@ class VDetector {
 		void set_dt_min(double param){ dt_min = param; }
 		void set_dt_max(double param){ dt_max = param; }
 		void set_radius(double param){ radius = param; }
+                void set_radmax(double param){ radmax = param; }
 		void set_TopDrift(double param){ TopDrift = param; }
 		void set_anode(double param){ anode = param; }
                 void set_cathode(double param){ cathode = param; }
@@ -133,7 +135,7 @@ class VDetector {
 		double T_Kelvin, p_bar;
 
 		// Data Analysis Parameters and Geometry
-                double dtCntr, dt_min, dt_max, radius, TopDrift, anode, cathode, gate;
+  double dtCntr, dt_min, dt_max, radius, radmax, TopDrift, anode, cathode, gate;
 
 		// 2-D (X & Y) Position Reconstruction
 		double PosResExp, PosResBase;

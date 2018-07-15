@@ -740,6 +740,7 @@ double WIMP_dRate ( double ER, double mWimp ) {
     break;
   default:
     cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
+    exit ( 0 );
   }
   
   double a = 0.52; //in fm

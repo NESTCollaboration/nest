@@ -39,10 +39,15 @@ int main ( int argc, char** argv ) {
 
 	// Construct NEST class using detector object
 	NESTcalc n(detector);
-
+	
+	if ( detector->get_TopDrift() <= 0. || detector->get_anode() <= 0. || detector->get_gate() <= 0. ) {
+	  cerr << "ERROR, unphysical value(s) of position within the detector geometry."; //negative or 0 for cathode position is OK (e.g., LZ)
+	  return 0;
+	}
+	
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; //scaling factors, for now just for NR Ly & Qy. But must initialize!
 	string position, delimiter, token; size_t loc; int index;
-	double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0, origX,origY;
+	double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
   YieldResult yieldsMax;
   
   if (argc < 7)
@@ -158,29 +163,28 @@ int main ( int argc, char** argv ) {
   vector<double> g2_params = n.CalculateG2(verbosity);
   g2 = fabs(g2_params[3]); double g1 = detector->get_g1();
   
-  if ( inField == -1. ) {
-    vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
-    vD_middle = vTable[int(floor(.5*detector->get_TopDrift()/z_step))];
-  }
-  else vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, inField);
+  double centralField = detector->FitEF(0.0,0.0,detector->get_TopDrift()/2.);
+  vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,centralField);
   
-	if (verbosity) {
-		cout << "Density = " << rho << " g/mL" << "\t";
-		cout << "central vDrift = " << vD_middle << " mm/us\n";
-		cout << "\t\t\t\t\t\t\t\t\t\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
-
-		if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-			fprintf(stdout, "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
-		else
-			fprintf(stdout, "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
- 	}
-
+  if (verbosity) {
+    cout << "Density = " << rho << " g/mL" << "\t";
+    cout << "central vDrift = " << vD_middle << " mm/us\n";
+    cout << "\t\t\t\t\t\t\t\tW = " << Wq_eV << " eV\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
+    
+    if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
+      fprintf(stdout,
+	      "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+    else
+      fprintf(stdout,
+	      "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+  }
+  
   if ( type_num == WIMP ) {
-    yieldsMax = n.GetYields(      NR, 25.0, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+    yieldsMax = n.GetYields(      NR, 25.0, rho, centralField,
 				  double(massNum), double(atomNum), NuisParam);
   }
   else if ( type_num == B8 ) {
-    yieldsMax = n.GetYields(      NR, 4.00, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+    yieldsMax = n.GetYields(      NR, 4.00, rho, centralField,
 				  double(massNum), double(atomNum), NuisParam);
   }
   else {
@@ -188,10 +192,10 @@ int main ( int argc, char** argv ) {
     if ( eMax < 0. ) energyMaximum = 1. / fabs(eMax);
     else energyMaximum = eMax;
     if ( type_num == Kr83m )
-      yieldsMax = n.GetYields(  beta  , energyMaximum, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+      yieldsMax = n.GetYields(  beta  , energyMaximum, rho, centralField,
 			      double(massNum), double(atomNum), NuisParam); //the reason for this: don't do the special Kr stuff when just checking max
     else
-      yieldsMax = n.GetYields(type_num, energyMaximum, rho, detector->FitEF(0., 0., detector->get_TopDrift()/2.),
+      yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
 			      double(massNum), double(atomNum), NuisParam);
   }
   if ( (g1*yieldsMax.PhotonYield) > (2.*maxS1) && eMin != eMax )
@@ -251,7 +255,7 @@ int main ( int argc, char** argv ) {
       pos_z = 0. + ( detector->get_TopDrift() - 0. ) * RandomGen::rndm()->rand_uniform(); // initial guess
       r = detector->get_radius() * sqrt ( RandomGen::rndm()->rand_uniform() );
       phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
-      pos_x = r * cos(phi); pos_y = r * sin(phi); origX = pos_x; origY = pos_y;
+      pos_x = r * cos(phi); pos_y = r * sin(phi);
     }
     else {
       delimiter = ",";
@@ -271,27 +275,40 @@ int main ( int argc, char** argv ) {
 	phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
 	pos_x = r * cos(phi); pos_y = r * sin(phi);
       }
-      if ( j == 0 ) { origX = pos_x; origY = pos_y; }
+      //if ( j == 0 ) { origX = pos_x; origY = pos_y; }
     }
     
     if ( inField == -1. ) { // -1 means use poly position dependence
 			field = detector->FitEF(pos_x, pos_y, pos_z);
     }
     else field = inField; //no fringing
-    
-    if ( field <= 0. || std::isnan(field) )
-      cerr << "\nWARNING: A LITERAL ZERO FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
-    if ( field > 12.e3 )
+
+    if ( field < 0. || detector->get_E_gas() < 0. ) {
+      cerr << "\nERROR: Neg field is not permitted. We don't simulate field dir (yet). Put in magnitude.\n";
+      return 0;
+    }
+    if ( field == 0. || std::isnan(field) )
+      cerr << "\nWARNING: A LITERAL ZERO (or undefined) FIELD MAY YIELD WEIRD RESULTS. USE A SMALL VALUE INSTEAD.\n";
+    if ( field > 12e3 || detector->get_E_gas() > 17e3 )
       cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are you sure about this?\n";
     
+    if ( j == 0 ) {
+      if ( inField == -1. ) {
+	// build a vD table for non-uniform field, but if field varies in XY not just Z you need to do more coding
+	vTable = n.SetDriftVelocity_NonUniform(rho,z_step,pos_x,pos_y);
+	vD_middle = vTable[int(floor(.5*detector->get_TopDrift()/z_step))];
+	//for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
+	//cerr << double(jj)*z_step << "\t" << vTable[jj] << endl;
+      }
+      else {
+	vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,inField);
+	vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,field);
+      }
+    }
     if ( inField == -1. ) {
-      //for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
-      //cerr << double(jj)*z_step << "\t" << vTable[jj] << endl;
       index = int(floor(pos_z/z_step));
       vD = vTable[index];
     }
-    else
-      vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,field);
     driftTime = ( detector->get_TopDrift() - pos_z ) / vD; // (mm - mm) / (mm / us) = us
     if ( inField != -1. && detector->get_dt_min() > ( detector->get_TopDrift() - 0. ) / vD && field >= FIELD_MIN )
       { cerr << "ERROR: dt_min is too restrictive (too large)" << endl; return 0; }
@@ -383,15 +400,14 @@ int main ( int argc, char** argv ) {
 	quanta.excitons = 0;
 	}
     }
-
-    double truthPos[3] = { origX, origY, pos_z };
-    double smearPos[3] = { origX, origY, pos_z };
+    
+    // If we want the smeared positions (non-MC truth), then implement resolution function
+    double truthPos[3] = { pos_x, pos_y, pos_z };
+    double smearPos[3] = { pos_x, pos_y, pos_z };
     double Nphd_S2 = g2 * quanta.electrons * exp(-driftTime/detector->get_eLife_us());
     if ( !MCtruthPos && Nphd_S2 > PHE_MIN ) {
-      vector<double> xySmeared(2); xySmeared = n.xyResolution ( origX, origY, Nphd_S2 );
-      smearPos[0] = xySmeared[0];
-      smearPos[1] = xySmeared[1];
-    }
+      vector<double> xySmeared(2); xySmeared = n.xyResolution ( pos_x, pos_y, Nphd_S2 );
+      smearPos[0] = xySmeared[0]; smearPos[1] = xySmeared[1]; }
     
     vector<long int> wf_time;
     vector<double>   wf_amp;
@@ -406,7 +422,7 @@ int main ( int argc, char** argv ) {
       signal1.push_back(scint[7]);
     else signal1.push_back(-999.);
     
-    if ( pos_z < detector->get_cathode() ) quanta.electrons = 0;
+    if ( truthPos[2] < detector->get_cathode() ) quanta.electrons = 0;
     vector<double> scint2= n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, j, field, useTiming, verbosity, wf_time, wf_amp, g2_params);
     if ( usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2 )
       signal2.push_back(scint2[5]);
@@ -472,9 +488,9 @@ int main ( int argc, char** argv ) {
     if ( 1 ) { //fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if you want to skip specific sub-threshold events, comment in this if statement (save screen/disk space)
       //other suggestions: minS1, minS2 (or s2_thr) for tighter cuts depending on analysis.hh settings (think of as analysis v. trigger thresholds) and using max's too, pinching both ends
       if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 ) printf ( "%.6f\t", yields.DeltaT_Scint );
-			printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,pos_x,pos_y,pos_z,quanta.photons,quanta.electrons); //comment this out when below line in
-      //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,pos_x,pos_y,pos_z,yields.PhotonYield,yields.ElectronYield); //for when you want means
-      if ( pos_z < detector->get_cathode() && verbosity ) printf("g-X ");
+			printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],quanta.photons,quanta.electrons); //comment this out when below line in
+      //printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],yields.PhotonYield,yields.ElectronYield); //for when you want means
+      if ( truthPos[2] < detector->get_cathode() && verbosity ) printf("g-X ");
       if ( keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||
 	   //switch to exponential notation to make output more readable, if energy is too high (>1 MeV)
 	   type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {

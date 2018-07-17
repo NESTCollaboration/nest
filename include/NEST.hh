@@ -155,7 +155,7 @@ namespace NEST {
     // Gives one the drift velocity as a function of temperature and electric field in liquid or solid. If density implies gas, kicks calculation down to the next function below
     double SetDriftVelocity_MagBoltz ( double D, double F );
     // Gas electron drift speed for S2 gas gap in 2-phase TPCs or the whole detector for all gas. Based on simple fits to complicated MagBoltz software output.
-    std::vector<double> SetDriftVelocity_NonUniform ( double rho, double zStep );
+    std::vector<double> SetDriftVelocity_NonUniform ( double rho, double zStep, double dx, double dy );
     // Special handling for the case of non-uniform electric fields in a detector, this integrates over position to find the correct total drift time from any starting point
     double SetDensity ( double T, double P );
     // A simple, approximate but good, density is returned for solid, liquid, or gaseous xenon, as a function of temperature and pressure

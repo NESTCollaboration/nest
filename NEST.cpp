@@ -149,6 +149,9 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   if ( Nex > Nq_actual ) Nex = Nq_actual;
   if ( Ni > Nq_actual ) Ni = Nq_actual;
   
+  result.ions = Ni;
+  result.excitons = Nex;
+  
   double elecFrac = yields.ElectronYield / Nq_mean;
   if ( elecFrac > 1. ) elecFrac = 1.;
   if ( elecFrac < 0. ) elecFrac = 0.;
@@ -156,9 +159,13 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
   double recombProb = 1.-(NexONi+1.)*elecFrac;
   if ( recombProb < 0. ) recombProb = 0.;
   if ( recombProb > 1. ) recombProb = 1.;
-  if ( std::isnan(recombProb) || std::isnan(elecFrac) ) {
-    elecFrac = 1.0;
+  if ( std::isnan(recombProb) || std::isnan(elecFrac) ||
+       Ni == 0 || recombProb == 0.0 ) {
     recombProb = 0.0;
+    elecFrac = 1.0;
+    result.photons = Nex;
+    result.electrons= Ni;
+    return result;
   }
   
   double ef = yields.ElectricField;
@@ -185,10 +192,8 @@ QuantaResult NESTcalc::GetQuanta ( YieldResult yields, double density ) {
     exit ( 0 );
   }
   
-  result.photons = Nph;
+  result.photons= Nph;
   result.electrons=Ne;
-  result.ions=Ni;
-  result.excitons = Nex;
   
   return result; //quanta returned with recomb fluctuations
   
@@ -446,7 +451,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double truthPos[3], double
       int total = (unsigned int)PEperBin.size() - 1;
       for ( int kk = 0; kk < total; ++kk ) {
 	pTime = PEperBin[0] + kk * SAMPLE_SIZE;
-	index = int(floor(pTime/SAMPLE_SIZE)) + numPts / 2;
+	index = int(floor(pTime/SAMPLE_SIZE+0.5)) + numPts / 2;
 	if ( index < 0 ) index = 0;
 	if ( index >= numPts ) index = numPts - 1;
 	AreaTable[index] +=
@@ -525,7 +530,8 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double truthPos[3], double
   } //the end of case of spike >= coinLevel
   
   if ( spike >= 1. && spikeC > 0. ) {
-    newSpike = GetSpike ( Nph, smearPos[0], smearPos[1], smearPos[2], driftVelocity, dV_mid, scintillation ); // over-write spike with smeared version, ~real data
+    // over-write spike with smeared version, ~real data. Last chance to read out digital spike and spikeC in scintillation[6] and [7]
+    newSpike = GetSpike ( Nph, smearPos[0], smearPos[1], smearPos[2], driftVelocity, dV_mid, scintillation );
     scintillation[6] = newSpike[0]; // S1 spike count (NOT adjusted for double phe effect), IF sufficiently small nHits (otherwise = Nphd)
     scintillation[7] = newSpike[1]; // same as newSpike[0], but WITH XYZ correction
   }
@@ -560,7 +566,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double truthPos[3], double smearPos[3],
 	 
   vector<double> ionization(9); int i;
   bool eTrain = false;
-  if ( useTiming == 2 && !fdetector->get_inGas() ) eTrain = true;
+  if ( useTiming >= 2 && !fdetector->get_inGas() ) eTrain = true;
   
   if ( dfield < FIELD_MIN //"zero"-drift-field detector has no S2
        || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. || gasGap <= 0. ) {
@@ -673,7 +679,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double truthPos[3], double smearPos[3],
       vector<double> PEperBin = fdetector->SinglePEWaveForm(AreaTable[0][k],TimeTable[k]-min);
       for ( i = 0; i < int(PEperBin.size())-1; ++i ) {
         double eTime = PEperBin[0] + i * SAMPLE_SIZE;
-	int index = int(floor(eTime/SAMPLE_SIZE));
+	int index = int(floor(eTime/SAMPLE_SIZE+0.5));
         if ( index < 0 ) index = 0;
         if ( index >= numPts ) index = numPts - 1;
 	AreaTable[1][index] += 10.*AreaTable[0][k]/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(eTime-TimeTable[k]+min,2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
@@ -738,7 +744,7 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
 	// Set parameters for calculating EL yield and extraction
 	double alpha = 0.137, beta = 177., gamma = 45.7; //note the value of alpha is similar to ~1/7eV. Not coincidence. Noted in Mock et al.
 	double epsilonRatio = EPS_LIQ/EPS_GAS;
-  if ( fdetector->get_inGas() ) epsilonRatio=1.;
+	if ( fdetector->get_inGas() ) epsilonRatio = 1.; //in an all-gas detector, E_liq variable below simply becomes the field value between anode and gate
  
  	// Convert gas extraction field to liquid field 
 	double E_liq = fdetector->get_E_gas() / epsilonRatio; //kV per cm
@@ -754,6 +760,10 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
   
   // Calculate EL yield based on gas gap, extraction field, and pressure
   double elYield = (alpha*fdetector->get_E_gas()*1e3-beta*fdetector->get_p_bar()-gamma)*gasGap*0.1; // arXiv:1207.2292 (HA, Vitaly C.)
+  if ( elYield <= 0.0 && E_liq != 0. ) {
+    cerr << "\tWARNING, the field in gas must be at least " << 1e-3*(beta*fdetector->get_p_bar()+gamma)/alpha << " kV/cm, for S2 to work," << endl;
+    cerr << "\tOR: your pressure for gas must be less than " << (alpha*fdetector->get_E_gas()*1e3-gamma)/beta << " bar." << endl;
+  }
   // Calculate single electron size and then g2
   double SE = elYield * fdetector->get_g1_gas(); //multiplying by light collection efficiency in the gas gap
   if ( fdetector->get_s2_thr() < 0 ) SE *= fdetector->get_S2botTotRatio();
@@ -921,7 +931,7 @@ double NESTcalc::SetDriftVelocity_MagBoltz ( double density, double efieldinput 
   return edrift * 1e-5; // from cm/s into mm per microsecond
 }
 
-vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, double zStep ) {
+vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, double zStep, double dx, double dy ) {
   
   vector<double> speedTable;
   double driftTime, zz;
@@ -935,10 +945,10 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, double zStep 
 	if ( !fdetector->get_inGas() )
 	  driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas()/(EPS_LIQ/EPS_GAS)*1e3);
 	else // if gate == TopDrift properly set, shouldn't happen
-	  driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas()*1e3);
+	  driftTime += zStep/SetDriftVelocity_MagBoltz(rho, fdetector->get_E_gas()*1e3);
       }
       else
-	driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->FitEF(0., 0., zz));
+	driftTime += zStep/SetDriftVelocity(fdetector->get_T_Kelvin(), rho, fdetector->FitEF(dx, dy, zz)); //update x and y if you want 3-D fields
     }
     
     speedTable.push_back ( ( zz - pos_z ) / driftTime ); //uses highest zz

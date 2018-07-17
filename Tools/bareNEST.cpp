@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
   // Calculate a drift velocity table for non-uniform fields,
   // and calculate the drift velocity at detector center for normalization
   // purposes
-  vTable = n.SetDriftVelocity_NonUniform(rho, z_step);
+  vTable = n.SetDriftVelocity_NonUniform(rho,z_step,pos_x,pos_y);
   vD_middle = vTable[int(floor(.5 * detector->get_TopDrift() / z_step))];
 
   // Regenerate a random position for the event until the corresponding drift
@@ -182,15 +182,7 @@ int main(int argc, char** argv) {
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =
       g2 * quanta.electrons * exp(-driftTime / detector->get_eLife_us());
-
-  // If we want smeared positions (non-MC truth), implement resolution function
-  if (!MCtruthPos && Nphd_S2 > PHE_MIN) {
-    vector<double> xySmeared(2);
-    xySmeared = n.xyResolution(pos_x, pos_y, Nphd_S2);
-    pos_x = xySmeared[0];
-    pos_y = xySmeared[1];
-  }
-
+  
   // Vectors for saving times and amplitudes of waveforms (with useTiming and
   // verbosity boolean flags both set to true in analysis.hh)
   vector<double> wf_amp;
@@ -205,7 +197,7 @@ int main(int argc, char** argv) {
 	    keV, useTiming, verbosity, wf_time, wf_amp);
 
   // Take care of gamma-X case for positions below cathode
-  if (pos_z < detector->get_cathode()) quanta.electrons = 0;
+  if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
   vector<double> scint2 =
     n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, 0, field,
 	    useTiming, verbosity, wf_time, wf_amp, g2_params);
@@ -286,7 +278,7 @@ int main(int argc, char** argv) {
           "or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea "
           "[PE]\tS2_3Dcorr [phd]\n");
   printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field, driftTime,
-         pos_x, pos_y, pos_z, quanta.photons,
+         truthPos[0], truthPos[1], truthPos[2], quanta.photons,
          quanta.electrons);  // comment this out when below line in
   // If energy > 1 MeV, switch output notation
   if (keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2) {

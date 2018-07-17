@@ -4,7 +4,7 @@ bool verbosity = true;
 
 //General parameters of importance changing global behavior
 bool MCtruthE = true; //false means reconstructed energy
-bool MCtruthPos=false; //false means reconstructed position
+bool MCtruthPos=true; //false means reconstructed position
 
 int useTiming = 0; //photon arrival times + pulse shapes (2=eTrains)
 //if 1 or 2 but verb off, then timing only saved as vectors

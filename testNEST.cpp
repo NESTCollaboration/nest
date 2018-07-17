@@ -47,7 +47,7 @@ int main ( int argc, char** argv ) {
 	
 	vector<double> signal1,signal2,signalE, vTable, NuisParam={1.,1.}; //scaling factors, for now just for NR Ly & Qy. But must initialize!
 	string position, delimiter, token; size_t loc; int index;
-	double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle, atomNum=0,massNum=0, keVee=0.0;
+	double g2,pos_x,pos_y,pos_z,r,phi,driftTime, field, vD,vD_middle=0., atomNum=0,massNum=0, keVee=0.0;
   YieldResult yieldsMax;
   
   if (argc < 7)
@@ -163,21 +163,8 @@ int main ( int argc, char** argv ) {
   vector<double> g2_params = n.CalculateG2(verbosity);
   g2 = fabs(g2_params[3]); double g1 = detector->get_g1();
   
-  double centralField = detector->FitEF(0.0,0.0,detector->get_TopDrift()/2.);
-  vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,centralField);
-  
-  if (verbosity) {
-    cout << "Density = " << rho << " g/mL" << "\t";
-    cout << "central vDrift = " << vD_middle << " mm/us\n";
-    cout << "\t\t\t\t\t\t\t\tW = " << Wq_eV << " eV\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
-    
-    if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
-      fprintf(stdout,
-	      "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
-    else
-      fprintf(stdout,
-	      "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
-  }
+  double centralZ = ( detector->get_gate() - 100. + detector->get_cathode() + 1.5 ) / 2.; // fid vol def usually shave more off the top, because of gas interactions (100->10cm)
+  double centralField = detector->FitEF(0.0,0.0,centralZ);
   
   if ( type_num == WIMP ) {
     yieldsMax = n.GetYields(      NR, 25.0, rho, centralField,
@@ -292,11 +279,11 @@ int main ( int argc, char** argv ) {
     if ( field > 12e3 || detector->get_E_gas() > 17e3 )
       cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are you sure about this?\n";
     
-    if ( j == 0 ) {
+    if ( j == 0 && vD_middle == 0. ) {
       if ( inField == -1. ) {
 	// build a vD table for non-uniform field, but if field varies in XY not just Z you need to do more coding
 	vTable = n.SetDriftVelocity_NonUniform(rho,z_step,pos_x,pos_y);
-	vD_middle = vTable[int(floor(.5*detector->get_TopDrift()/z_step))];
+	vD_middle = vTable[int(floor(centralZ/z_step+0.5))];
 	//for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
 	//cerr << double(jj)*z_step << "\t" << vTable[jj] << endl;
       }
@@ -304,9 +291,21 @@ int main ( int argc, char** argv ) {
 	vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,inField);
 	vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,field);
       }
+      if ( verbosity ) {
+	cout << "Density = " << rho << " g/mL" << "\t";
+	cout << "central vDrift = " << vD_middle << " mm/us\n";
+	cout << "\t\t\t\t\t\t\t\tW = " << Wq_eV << " eV\tNegative numbers are flagging things below threshold!   phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
+	
+	if ( type_num == Kr83m && eMin == 9.4 && eMax == 9.4 )
+	  fprintf(stdout,
+	"t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+	else
+	  fprintf(stdout,
+	"E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+      }
     }
     if ( inField == -1. ) {
-      index = int(floor(pos_z/z_step));
+      index = int(floor(pos_z/z_step+0.5));
       vD = vTable[index];
     }
     driftTime = ( detector->get_TopDrift() - pos_z ) / vD; // (mm - mm) / (mm / us) = us
@@ -362,7 +361,7 @@ int main ( int argc, char** argv ) {
 	yields = n.GetYields ( beta, refEnergy, rho, detector->FitEF ( xx, yy, zz ), double(massNum), double(atomNum), NuisParam );
 	quanta = n.GetQuanta ( yields, rho );
 	Nph+= quanta.photons * (eStep/refEnergy);
-	index = int(floor(zz/z_step));
+	index = int(floor(zz/z_step+0.5));
 	if ( index >= vTable.size() )
 	  index = vTable.size() - 1;
 	vD = vTable[index];
@@ -375,10 +374,10 @@ int main ( int argc, char** argv ) {
 	zz += norm[2] * z_step; //cout << xx << " " << yy << " " << zz << endl;
       }
       quanta.photons = Nph; quanta.electrons = Ne;
-      pos_z = detector->get_TopDrift() / 2.; driftTime = 0.00;
+      driftTime = 0.00;
       vD = vD_middle; //approximate things not already done right in loop as middle of detector since muon traverses whole length
       pos_x = .5*(xi+xf); pos_y = .5*(yi+yf);
-      field = detector->FitEF(pos_x,pos_y,pos_z);
+      field = detector->FitEF(pos_x,pos_y,centralZ);
     }
     else {
       if ( keV > .001 * Wq_eV ) {

@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
   // and calculate the drift velocity at detector center for normalization
   // purposes
   vTable = n.SetDriftVelocity_NonUniform(rho,z_step,pos_x,pos_y);
-  vD_middle = vTable[int(floor(.5 * detector->get_TopDrift() / z_step))];
+  vD_middle = vTable[int(floor(.5*(detector->get_gate()-100.+detector->get_cathode()+1.5)/z_step+0.5))];
 
   // Regenerate a random position for the event until the corresponding drift
   // time is within bounds (drift time uses the cumulative Z-dependent drift
@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
     pos_x = r * cos(phi);
     pos_y = r * sin(phi);
     field = detector->FitEF(pos_x, pos_y, pos_z);
-    index = int(floor(pos_z / z_step));
+    index = int(floor(pos_z/z_step+0.5));
     vD = vTable[index];
     driftTime =
         (detector->get_TopDrift() - pos_z) / vD;  // (mm - mm) / (mm / us) = us

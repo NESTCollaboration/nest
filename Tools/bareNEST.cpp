@@ -25,11 +25,13 @@ using namespace NEST;
 
 // Skeleton function for doing a simple NEST calculation
 int main(int argc, char** argv) {
-  
-	// Give a message establishing the use of this code
-	cerr << "NOTE: This is a skeleton code meant to be a starting point for custom uses of NEST." << endl << endl;
-	
-	// Instantiate your own VDetector class here, then load into NEST class
+  // Give a message establishing the use of this code
+  cerr << "NOTE: This is a skeleton code meant to be a starting point for "
+          "custom uses of NEST."
+       << endl
+       << endl;
+
+  // Instantiate your own VDetector class here, then load into NEST class
   // constructor
   DetectorExample_XENON10* detector = new DetectorExample_XENON10();
 
@@ -151,8 +153,11 @@ int main(int argc, char** argv) {
   // Calculate a drift velocity table for non-uniform fields,
   // and calculate the drift velocity at detector center for normalization
   // purposes
-  vTable = n.SetDriftVelocity_NonUniform(rho,z_step,pos_x,pos_y);
-  vD_middle = vTable[int(floor(.5*(detector->get_gate()-100.+detector->get_cathode()+1.5)/z_step+0.5))];
+  vTable = n.SetDriftVelocity_NonUniform(rho, z_step, pos_x, pos_y);
+  vD_middle = vTable[int(
+      floor(.5 * (detector->get_gate() - 100. + detector->get_cathode() + 1.5) /
+                z_step +
+            0.5))];
 
   // Regenerate a random position for the event until the corresponding drift
   // time is within bounds (drift time uses the cumulative Z-dependent drift
@@ -168,7 +173,7 @@ int main(int argc, char** argv) {
     pos_x = r * cos(phi);
     pos_y = r * sin(phi);
     field = detector->FitEF(pos_x, pos_y, pos_z);
-    index = int(floor(pos_z/z_step+0.5));
+    index = int(floor(pos_z / z_step + 0.5));
     vD = vTable[index];
     driftTime =
         (detector->get_TopDrift() - pos_z) / vD;  // (mm - mm) / (mm / us) = us
@@ -182,25 +187,25 @@ int main(int argc, char** argv) {
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =
       g2 * quanta.electrons * exp(-driftTime / detector->get_eLife_us());
-  
+
   // Vectors for saving times and amplitudes of waveforms (with useTiming and
   // verbosity boolean flags both set to true in analysis.hh)
   vector<double> wf_amp;
   vector<long int> wf_time;
-  
-  double truthPos[3] = { pos_x, pos_y, pos_z };
-  double smearPos[3] = { pos_x, pos_y, pos_z };
-  
+
+  double truthPos[3] = {pos_x, pos_y, pos_z};
+  double smearPos[3] = {pos_x, pos_y, pos_z};
+
   // Calculate the S1 based on the quanta generated
   vector<double> scint =
-    n.GetS1(quanta, truthPos, smearPos, vD, vD_middle, type_num, 0, field,
-	    keV, useTiming, verbosity, wf_time, wf_amp);
+      n.GetS1(quanta, truthPos, smearPos, vD, vD_middle, type_num, 0, field,
+              keV, useTiming, verbosity, wf_time, wf_amp);
 
   // Take care of gamma-X case for positions below cathode
   if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
   vector<double> scint2 =
-    n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, 0, field,
-	    useTiming, verbosity, wf_time, wf_amp, g2_params);
+      n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, 0, field,
+              useTiming, verbosity, wf_time, wf_amp, g2_params);
 
   // If using the reconstructed energy, back-calculate energy as measured from
   // yields
@@ -273,10 +278,11 @@ int main(int argc, char** argv) {
   // gas gap (from CalculateG2)
 
   // Print selected outputs a la testNEST
-  fprintf(stdout,
-          "\nE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE "
-          "or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea "
-          "[PE]\tS2_3Dcorr [phd]\n");
+  fprintf(
+      stdout,
+      "\nE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE "
+      "or phe]\tS1_3Dcor [phd]\tS1c_spike\tNe-Extr\tS2_rawArea "
+      "[PE]\tS2_3Dcorr [phd]\n");
   printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field, driftTime,
          truthPos[0], truthPos[1], truthPos[2], quanta.photons,
          quanta.electrons);  // comment this out when below line in

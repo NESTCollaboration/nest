@@ -3,6 +3,7 @@
 Noble Element Simulation Technique (nest) is used to simulate noble-element energy deposition microphysics.
 
 [![Build Status](https://travis-ci.com/NESTCollaboration/nest.svg?token=8i3psWNJAskpVjC6qe3w&branch=master)](https://travis-ci.com/NESTCollaboration/nest)
+[![DOI](https://zenodo.org/badge/96344242.svg)](https://zenodo.org/badge/latestdoi/96344242)
 
 
 ### Table of Contents

@@ -38,7 +38,6 @@ class VDetector {
 		double get_g1_gas(){return g1_gas;}
 		double get_s2Fano(){return s2Fano;}
 		double get_s2_thr(){return s2_thr;}
-		double get_S2botTotRatio(){return S2botTotRatio;}
 		double get_E_gas(){return E_gas;}
 		double get_eLife_us(){return eLife_us;}
 
@@ -80,7 +79,6 @@ class VDetector {
 		void set_g1_gas(double param){ g1_gas = param; }
 		void set_s2Fano(double param){ s2Fano = param; }
 		void set_s2_thr(double param){ s2_thr = param; }
-		void set_S2botTotRatio(double param){ S2botTotRatio = param; }
 		void set_E_gas(double param){ E_gas = param; }
 		void set_eLife_us(double param){ eLife_us = param; }
 
@@ -117,6 +115,8 @@ class VDetector {
 		//s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
 		virtual double FitS2 ( double xPos_mm, double yPos_mm ) { return 1.; }
   
+  virtual std::vector<double> FitTBA ( double xPos_mm, double yPos_mm, double zPos_mm ) { std::vector<double> TopBotAsym; return TopBotAsym; }
+  
   virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) { return 0.; }
   virtual std::vector<double> SinglePEWaveForm ( double area, double t0 ) { std::vector<double> PEperBin; return PEperBin; }
   
@@ -128,7 +128,7 @@ class VDetector {
 		double noise[2];
 
 		// Ionization and Secondary Scintillation (S2) parameters
-		double g1_gas, s2Fano, s2_thr, S2botTotRatio, E_gas, eLife_us;
+		double g1_gas, s2Fano, s2_thr, E_gas, eLife_us;
 
 		// Thermodynamic Properties
 		bool inGas;

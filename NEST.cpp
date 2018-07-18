@@ -223,7 +223,7 @@ YieldResult NESTcalc::GetYields ( INTERACTION_TYPE species, double energy, doubl
       ScaleFactor[0] = sqrt(MOLAR_MASS/(double)massNumber);
       ScaleFactor[1] = ScaleFactor[0];
       double Nq = 12.6 * pow ( energy, 1.05 );
-      double ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/2.9,0.3);
+      double ThomasImel = 0.0522*pow(dfield,-0.0694)*pow(density/DENSITY,0.3);
       double Qy = 1. / (ThomasImel*sqrt(energy+9.75));
       double Ly = Nq / energy - Qy;
       Ne = Qy * energy * ScaleFactor[1] * NuisParam[1]; //use for PLR
@@ -427,10 +427,11 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double truthPos[3], double
   }
   
   if ( useTiming ) {
-    vector<double> PEperBin, AreaTable, TimeTable[2];
+    vector<double> PEperBin, AreaTable[2], TimeTable[2];
     int numPts =
       1100-100*SAMPLE_SIZE;
-    AreaTable.resize(numPts,0.);
+    AreaTable[0].resize(numPts,0.);
+    AreaTable[1].resize(numPts,0.);
     
     int total_photons = (int)fabs(spike);
     int excitons = int((double(nHits)/double(quanta.photons))*double(quanta.excitons)+0.5);
@@ -441,7 +442,7 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double truthPos[3], double
     if ( outputTiming && !pulseFile.is_open ( ) ) {
       pulseFile.open("photon_times.txt");
       //pulseFile << "Event#\tt [ns]\tA [PE]" << endl;
-      pulseFile << "Event#\tt [ns]\tPE/bin\tin win" << endl;
+      pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
     }
     
     int ii, index; double min = 1e100, pTime;
@@ -449,12 +450,17 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double truthPos[3], double
       PEperBin.clear();
       PEperBin=fdetector->SinglePEWaveForm(photon_areas[0][ii]+photon_areas[1][ii],photon_times[ii]);
       int total = (unsigned int)PEperBin.size() - 1;
+      int whichArray;
+      if ( RandomGen::rndm()->rand_uniform() < fdetector->FitTBA(truthPos[0],truthPos[1],truthPos[2])[0] )
+	whichArray = 0;
+      else
+	whichArray = 1;
       for ( int kk = 0; kk < total; ++kk ) {
 	pTime = PEperBin[0] + kk * SAMPLE_SIZE;
 	index = int(floor(pTime/SAMPLE_SIZE+0.5)) + numPts / 2;
 	if ( index < 0 ) index = 0;
 	if ( index >= numPts ) index = numPts - 1;
-	AreaTable[index] +=
+	AreaTable[whichArray][index] +=
 	  10.*(1.+PULSEHEIGHT)*(photon_areas[0][ii]+photon_areas[1][ii])/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(pTime-photon_times[ii],2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
       }
       if ( total >= 0 ) {
@@ -466,19 +472,19 @@ vector<double> NESTcalc::GetS1 ( QuantaResult quanta, double truthPos[3], double
       //TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
     for ( ii = 0; ii < numPts; ++ii ) {
-      if ( AreaTable[ii] <= PULSEHEIGHT ) continue;
-
+      if ( (AreaTable[0][ii]+AreaTable[1][ii]) <= PULSEHEIGHT ) continue;
+      
       wf_time.push_back((ii-numPts/2)*SAMPLE_SIZE);
-      wf_amp.push_back(AreaTable[ii]);
+      wf_amp.push_back(AreaTable[0][ii]+AreaTable[1][ii]);
       
       if ( outputTiming ) {
 	char line[80];
-	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back() );
+	sprintf ( line, "%lu\t%ld\t%.2f\t%.2f", evtNum, wf_time.back(), AreaTable[0][ii], AreaTable[1][ii] );
 	pulseFile<<line<<flush;
       }
     
       if ( ((ii-numPts/2)*SAMPLE_SIZE-(int)min) > fdetector->get_coinWind() && nHits <= fdetector->get_coinLevel() ) {
-	pulseArea -= AreaTable[ii];
+	pulseArea -= (AreaTable[0][ii]+AreaTable[1][ii]);
 	pulseFile <<  "\t0" <<endl;
       }
       else pulseFile << "\t1" <<endl;
@@ -585,7 +591,7 @@ vector<double> NESTcalc::GetS2 ( int Ne, double truthPos[3], double smearPos[3],
   
   if ( useTiming ) {
     long k; int stopPoint; double tau1, tau2, E_liq, amp2;
-    vector<double> electronstream, AreaTable[2],TimeTable;
+    vector<double> electronstream, AreaTableBot[2], AreaTableTop[2], TimeTable;
     if ( eTrain )
       stopPoint = BinomFluct(Ne,exp(-dt/fdetector->get_eLife_us()));
     else
@@ -667,32 +673,48 @@ vector<double> NESTcalc::GetS2 ( int Ne, double truthPos[3], double smearPos[3],
 	k = long(j); if ( k >= photon_times.size() ) k -= photon_times.size();
 	double offset = ( (fdetector->get_anode()-origin)/driftVelocity_gas + electronstream[i] ) * 1e3 + photon_times[k];
 	if ( offset < min ) min = offset;
-	AreaTable[0].push_back(phe); TimeTable.push_back(offset);
+	if ( RandomGen::rndm()->rand_uniform() < fdetector->FitTBA(truthPos[0],truthPos[1],truthPos[2])[1] ) {
+	  AreaTableBot[0].push_back(phe);
+	  AreaTableTop[0].push_back(0.0);
+	}
+	else {
+	  AreaTableBot[0].push_back(0.0);
+	  AreaTableTop[0].push_back(phe);
+	}
+	TimeTable.push_back(offset);
 	//char line[80]; sprintf ( line, "%lu\t%.0f\t%.2f\t%i", evtNum, offset, phe, (int)(i<Nee) ); pulseFile << line << endl;
       }
     }
     int numPts = Nphe * 1000;
     if ( numPts < 1000 / SAMPLE_SIZE ) numPts = 1000 / SAMPLE_SIZE;
-    AreaTable[1].resize(numPts,0.);
+    AreaTableBot[1].resize(numPts,0.);
+    AreaTableTop[1].resize(numPts,0.);
     min -= 5.*SAMPLE_SIZE;
     for ( k = 0; k < Nphe; ++k ) {
-      vector<double> PEperBin = fdetector->SinglePEWaveForm(AreaTable[0][k],TimeTable[k]-min);
+      vector<double> PEperBin;
+      if ( AreaTableBot[0][k] == 0.0 )
+	PEperBin = fdetector->SinglePEWaveForm(AreaTableTop[0][k],TimeTable[k]-min);
+      else
+	PEperBin = fdetector->SinglePEWaveForm(AreaTableBot[0][k],TimeTable[k]-min);
       for ( i = 0; i < int(PEperBin.size())-1; ++i ) {
         double eTime = PEperBin[0] + i * SAMPLE_SIZE;
 	int index = int(floor(eTime/SAMPLE_SIZE+0.5));
         if ( index < 0 ) index = 0;
         if ( index >= numPts ) index = numPts - 1;
-	AreaTable[1][index] += 10.*AreaTable[0][k]/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(eTime-TimeTable[k]+min,2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
+	if ( AreaTableBot[0][k] == 0.0 )
+	  AreaTableTop[1][index] += 10.*AreaTableTop[0][k]/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(eTime-TimeTable[k]+min,2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
+	else
+	  AreaTableBot[1][index] += 10.*AreaTableBot[0][k]/(PULSE_WIDTH*sqrt(2.*M_PI))*exp(-pow(eTime-TimeTable[k]+min,2.)/(2.*PULSE_WIDTH*PULSE_WIDTH));
       }
     }
     for ( k = 0; k < numPts; ++k ) {
-      if ( AreaTable[1][k] <= PULSEHEIGHT ) continue;
+      if ( (AreaTableBot[1][k]+AreaTableTop[1][k]) <= PULSEHEIGHT ) continue;
       wf_time.push_back(k*SAMPLE_SIZE+long(min+SAMPLE_SIZE/2.));
-      wf_amp.push_back(AreaTable[1][k]);
+      wf_amp.push_back ( AreaTableBot[1][k] + AreaTableTop[1][k] );
       
       if ( outputTiming ) {
 	char line[80];
-	sprintf ( line, "%lu\t%ld\t%.2f", evtNum, wf_time.back(), wf_amp.back());
+	sprintf ( line, "%lu\t%ld\t%.2f\t%.2f", evtNum, wf_time.back(), AreaTableBot[1][k], AreaTableTop[1][k] );
 	pulseFile << line << endl;
       }
     }
@@ -709,7 +731,9 @@ vector<double> NESTcalc::GetS2 ( int Ne, double truthPos[3], double smearPos[3],
   double Nphd = pulseArea / (1.+fdetector->get_P_dphe());
   double NphdC= pulseAreaC/ (1.+fdetector->get_P_dphe());
   
-  double S2b = RandomGen::rndm()->rand_gauss(fdetector->get_S2botTotRatio()*pulseArea,sqrt(fdetector->get_S2botTotRatio()*pulseArea*(1.-fdetector->get_S2botTotRatio())));
+  double S2b = RandomGen::rndm()->rand_gauss(fdetector->FitTBA(truthPos[0],truthPos[1],truthPos[2])[1]*pulseArea,
+					     sqrt(fdetector->FitTBA(truthPos[0],truthPos[1],truthPos[2])[1]*
+						  pulseArea*(1.-fdetector->FitTBA(truthPos[0],truthPos[1],truthPos[2])[1])));
   double S2bc= S2b / exp(-dt/fdetector->get_eLife_us()) / posDepSm; // for detectors using S2 bottom-only in their analyses
   
   ionization[0] = Nee; // integer number of electrons unabsorbed in liquid then getting extracted
@@ -766,7 +790,7 @@ vector<double> NESTcalc::CalculateG2( bool verbosity ) {
   }
   // Calculate single electron size and then g2
   double SE = elYield * fdetector->get_g1_gas(); //multiplying by light collection efficiency in the gas gap
-  if ( fdetector->get_s2_thr() < 0 ) SE *= fdetector->get_S2botTotRatio();
+  if ( fdetector->get_s2_thr() < 0 ) SE *= fdetector->FitTBA(0.,0.,fdetector->get_TopDrift()/2.)[1];
   double g2 = ExtEff * SE;
   double StdDev = sqrt ( (1.-fdetector->get_g1_gas())*SE + fdetector->get_s2Fano()*fdetector->get_s2Fano() + fdetector->get_sPEres() );
   
@@ -961,7 +985,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform ( double rho, double zStep,
 vector<double> NESTcalc::xyResolution ( double xPos_mm, double yPos_mm, double A_top ) {
   
   vector<double> xySmeared(2);
-  A_top *= (1.-fdetector->get_S2botTotRatio());
+  A_top *= 1.-fdetector->FitTBA(xPos_mm,yPos_mm,fdetector->get_TopDrift()/2.)[1];
   
   double rad = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
   double kappa = fdetector->get_PosResBase() + exp ( fdetector->get_PosResExp() * rad ); // arXiv:1710.02752

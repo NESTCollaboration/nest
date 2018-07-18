@@ -57,6 +57,7 @@
 #define PHE_MIN 1e-6 //area
 #define ELEC_MASS 9.109e-31 //kg
 #define FIELD_MIN 1. //min elec field to make S2 (in V/cm)
+#define DENSITY 2.90 // g/cm^3, ref density for dependent effects
 
 #define EPS_GAS 1.00126
 #define EPS_LIQ 1.85 //LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan McK.

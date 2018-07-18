@@ -50,7 +50,6 @@ public:
 		g1_gas = 0.06; //phd per S2 photon in gas, used to get SE size
 		s2Fano = 3.61; //Fano-like fudge factor for SE width
 		s2_thr = 300.; //the S2 threshold in phe or PE, *not* phd. Affects NR most
-		S2botTotRatio = 0.4; //bottom-to-total, typically only used for position recon (1-this)
 		E_gas = 12.; //field in kV/cm between liquid/gas border and anode
 		eLife_us = 2200.; //the drift electron mean lifetime in micro-seconds
 
@@ -99,7 +98,18 @@ public:
 	virtual double FitS2 ( double xPos_mm, double yPos_mm ) {
 	        return 1.; // unitless, 1.000 at detector center
 	}
-
+  
+  virtual vector<double> FitTBA ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+    
+    vector<double> BotTotRat(2);
+    
+    BotTotRat[0] = 0.6; //S1 bottom-to-total ratio
+    BotTotRat[1] = 0.4; //S2 bottom-to-total ratio, typically only used for position recon (1-this)
+    
+    return BotTotRat;
+    
+  }
+  
   virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) {
     
     double phoTravT, approxCenter = ( TopDrift + cathode ) / 2., relativeZ = zPos_mm - approxCenter;

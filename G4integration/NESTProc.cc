@@ -84,7 +84,8 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
   aParticleChange.Initialize(aTrack);
-
+  pParticleChange->SetNumberOfSecondaries(1e7);
+  
   // ready to pop out OP and TE?
   if (NESTStackingAction::theStackingAction->isUrgentEmpty() &&
       aStep.GetSecondary()->empty()) {
@@ -172,7 +173,6 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   // const. Don't abuse this by altering the secondaries besides setting
   // UserTrackInfo!
 
-  //  const G4TrackVector* fSecondary = aStep.GetSecondaryInCurrentStep();
 
   const vector<const G4Track*> secondaries = *aStep.GetSecondaryInCurrentStep();
 

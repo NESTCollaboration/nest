@@ -70,12 +70,15 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
   G4ThreeVector photonPolarization = perp.unit();
   VDetector* detector = fNESTcalc->GetDetector();
   G4double sampledEnergy = fNESTcalc->PhotonEnergy(
-      false /*i.e. S1*/, detector->get_inGas(), detector->get_T_Kelvin());
+      false /*i.e. S1*/, detector->get_inGas(), detector->get_T_Kelvin())*eV;
   G4DynamicParticle* aQuantum =
       new G4DynamicParticle(G4OpticalPhoton::OpticalPhoton(), photonMomentum);
   aQuantum->SetPolarization(photonPolarization.x(), photonPolarization.y(),
                             photonPolarization.z());
   aQuantum->SetKineticEnergy(sampledEnergy);
+  if(sampledEnergy<1*eV){
+    std::cout<<"What?"<<std::endl;
+  }
   // calculate time
 
   return new G4Track(aQuantum, t, xyz);
@@ -88,7 +91,7 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
   
   // ready to pop out OP and TE?
   if (NESTStackingAction::theStackingAction->isUrgentEmpty() &&
-      aStep.GetSecondary()->empty()) {
+      aStep.GetSecondary()->empty()) { 
     lineages_prevEvent.clear();
     photons_prevEvent.clear();
 
@@ -99,27 +102,29 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       lineage.result = fNESTcalc->FullCalculation(
           lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z);
       lineage.result_calculated = true;
-      auto photontimes = lineage.result.photon_times.begin();
-      double ecum = 0;
-      double ecum_p = 0;
-      const double e_p = etot / lineage.result.quanta.photons;
-      for (auto hit : lineage.hits) {
-        ecum += hit.E;
-        while (ecum_p < ecum) {
-          G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
-          if (YieldFactor == 1)
-            aParticleChange.AddSecondary(onePhoton);
-          else if (YieldFactor > 0) {
-            if (RandomGen::rndm()->rand_uniform() < YieldFactor)
+      if(lineage.result.quanta.photons){
+        auto photontimes = lineage.result.photon_times.begin();
+        double ecum = 0;
+        double ecum_p = 0;
+        const double e_p = etot / lineage.result.quanta.photons;
+        for (auto hit : lineage.hits) {
+          ecum += hit.E;
+          while (ecum_p < ecum) {
+            G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t+1*s);
+            if (YieldFactor == 1)
               aParticleChange.AddSecondary(onePhoton);
+            else if (YieldFactor > 0) {
+              if (RandomGen::rndm()->rand_uniform() < YieldFactor)
+                aParticleChange.AddSecondary(onePhoton);
+            }
+            ecum_p += e_p;
+            photontimes++;
+            photons_prevEvent.emplace_back(*onePhoton);
           }
-          ecum_p += e_p;
-          photontimes++;
-          photons_prevEvent.emplace_back(*onePhoton);
         }
+        assert(ecum == etot);
+        lineages_prevEvent.push_back(lineage);
       }
-      assert(ecum == etot);
-      lineages_prevEvent.push_back(lineage);
     }
     lineages.clear();
     track_lins.clear();

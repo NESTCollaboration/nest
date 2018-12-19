@@ -76,9 +76,6 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
   aQuantum->SetPolarization(photonPolarization.x(), photonPolarization.y(),
                             photonPolarization.z());
   aQuantum->SetKineticEnergy(sampledEnergy);
-  if(sampledEnergy<1*eV){
-    std::cout<<"What?"<<std::endl;
-  }
   // calculate time
 
   return new G4Track(aQuantum, t, xyz);

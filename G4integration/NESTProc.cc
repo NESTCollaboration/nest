@@ -51,7 +51,7 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
     : G4VRestDiscreteProcess(processName, type), efield(efield) {
   fNESTcalc =
       std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc(detector.get()));
-
+  pParticleChange=&fParticleChange;
   SetProcessSubType(fScintillation);
 
   fTrackSecondariesFirst = false;
@@ -83,7 +83,7 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
 
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
-  aParticleChange.Initialize(aTrack);
+  pParticleChange->Initialize(aTrack);
   pParticleChange->SetNumberOfSecondaries(1e7);
   
   // ready to pop out OP and TE?
@@ -107,12 +107,12 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
         for (auto hit : lineage.hits) {
           ecum += hit.E;
           while (ecum_p < ecum) {
-            G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t+1*s);
+            G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
             if (YieldFactor == 1)
-              aParticleChange.AddSecondary(onePhoton);
+              pParticleChange->AddSecondary(onePhoton);
             else if (YieldFactor > 0) {
               if (RandomGen::rndm()->rand_uniform() < YieldFactor)
-                aParticleChange.AddSecondary(onePhoton);
+                pParticleChange->AddSecondary(onePhoton);
             }
             ecum_p += e_p;
             photontimes++;
@@ -163,7 +163,7 @@ Lineage NESTProc::GetChildType(const G4Track* aTrack,
 
 G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                           const G4Step& aStep) {
-  aParticleChange.Initialize(aTrack);
+  pParticleChange->Initialize(aTrack);
 
   auto myLinID = track_lins.find(
       std::make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(),

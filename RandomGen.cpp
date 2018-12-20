@@ -12,15 +12,27 @@ RandomGen* RandomGen::rndm() {
   return m_pInstance;
 }
 
-void RandomGen::SetSeed(unsigned long int s) { rng.seed(s); }
+std::uint64_t splitmix64(std::uint64_t z) {
+    z += 0x9e3779b97f4a7c15;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+    return z ^ (z >> 31);
+}
+
+void RandomGen::SetSeed(unsigned long int s) {  
+  unsigned long int s1=splitmix64(s);
+  rng = xoroshiro128plus64(s1,splitmix64(s1)); 
+}
 
 double RandomGen::rand_uniform() {
   return (double)(rng() - rng.min()) / (double)(rng.max() - rng.min());
 }
 
 double RandomGen::rand_gauss(double mean, double sigma) {
-  double u = rand_uniform(), v = rand_uniform();
-  return mean + sigma * sqrt(-2. * log(u)) * cos(2. * M_PI * v);
+//  double u = rand_uniform(), v = rand_uniform();
+  std::normal_distribution<double> norm(mean,sigma);
+  return norm(rng);
+//  return mean + sigma * sqrt(-2. * log(u)) * cos(2. * M_PI * v);
 }
 
 double RandomGen::rand_exponential(double half_life) {

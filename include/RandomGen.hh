@@ -5,7 +5,7 @@
 
 #ifndef RANDOMGEN_HH
 #define RANDOMGEN_HH 1
-
+#include "xoroshiro.hh"
 #include <math.h>
 #include <stdlib.h>
 #include <random>
@@ -28,7 +28,8 @@ class RandomGen {
 
  private:
   // Random number generator object for this class only
-  std::ranlux24 rng;
+//  std::ranlux24 rng;
+   xoroshiro128plus64 rng;
 
   RandomGen(){};                // private so that it cannot be manually called
   RandomGen(RandomGen const&);  // copy constructor is private

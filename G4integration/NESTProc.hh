@@ -27,7 +27,7 @@ namespace NEST {
 
 struct Hit {
  public:
-  Hit(double E, double t, G4ThreeVector xyz) : E(E), t(t), xyz(xyz){};
+  Hit(double _E, double _t, G4ThreeVector _xyz) : E(_E), t(_t), xyz(_xyz){};
   double E;
   double t;
   G4ThreeVector xyz;
@@ -35,7 +35,7 @@ struct Hit {
 
 struct Lineage {
  public:
-  Lineage(INTERACTION_TYPE type) : type(type){};
+  Lineage(INTERACTION_TYPE _type) : type(_type){};
   INTERACTION_TYPE type = NoneType;
   std::vector<Hit> hits;
   double density = -1;

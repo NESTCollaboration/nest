@@ -55,8 +55,8 @@ class NESTProc : public G4VRestDiscreteProcess {
  public:  // constructor and destructor
   NESTProc(const G4String& processName = "S1",
            G4ProcessType type = fElectromagnetic, double efield = 0,
-           std::unique_ptr<VDetector> detector =
-               std::unique_ptr<VDetector>(new VDetector()));
+           VDetector* detector =
+               new VDetector());
   ~NESTProc();
 
  public:  // methods, with descriptions
@@ -113,6 +113,7 @@ class NESTProc : public G4VRestDiscreteProcess {
   std::map<std::tuple<int, CLHEP::Hep3Vector, CLHEP::Hep3Vector>,
            long unsigned int>
       track_lins;
+  std::unique_ptr<VDetector> fDetector;
   NoTimeParticleChange fParticleChange;
 
   G4double YieldFactor;  // turns scint. on/off

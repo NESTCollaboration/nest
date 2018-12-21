@@ -47,13 +47,13 @@
 using namespace NEST;
 
 NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
-                   double efield, std::unique_ptr<VDetector> detector)
-    : G4VRestDiscreteProcess(processName, type), efield(efield) {
+                   double efield, VDetector* detector)
+    : G4VRestDiscreteProcess(processName, type), efield(efield), fDetector(detector) {
   fNESTcalc =
-      std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc(detector.get()));
+      std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc(fDetector.get()));
   pParticleChange=&fParticleChange;
   SetProcessSubType(fScintillation);
-
+  
   fTrackSecondariesFirst = false;
 
   if (verboseLevel > 0) {

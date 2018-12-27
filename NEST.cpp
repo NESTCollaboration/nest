@@ -359,7 +359,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       double LET_power = -2.;
       if (fdetector->get_inGas()) LET_power = 2.;
       double QyLvlhighE = 28.;
-      if (density > 3.) QyLvlhighE = 49.;
+//      if (density > 3.) QyLvlhighE = 49.; Solid Xe effect from Yoo. But, beware of enabling this line: enriched liquid Xe for neutrinoless double beta decay has density higher than 3g/cc;
       double Qy = QyLvlmedE +
                   (QyLvllowE - QyLvlmedE) /
                       pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) +

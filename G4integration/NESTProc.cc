@@ -69,8 +69,10 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
   G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
   G4ThreeVector photonPolarization = perp.unit();
   VDetector* detector = fNESTcalc->GetDetector();
-  G4double sampledEnergy = fNESTcalc->PhotonEnergy(
+  G4double sampledEnergy = 7.08*eV; //default if non-detailed secondaries
+  if(detailed_secondaries) G4double sampledEnergy = fNESTcalc->PhotonEnergy(
       false /*i.e. S1*/, detector->get_inGas(), detector->get_T_Kelvin())*eV;
+  
   G4DynamicParticle* aQuantum =
       new G4DynamicParticle(G4OpticalPhoton::OpticalPhoton(), photonMomentum);
   aQuantum->SetPolarization(photonPolarization.x(), photonPolarization.y(),
@@ -79,6 +81,32 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
   // calculate time
 
   return new G4Track(aQuantum, t, xyz);
+}
+
+G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density,double t) {
+  // Determine polarization of new photon
+  G4ParticleMomentum photonMomentum(G4RandomDirection());
+  G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
+  G4ThreeVector photonPolarization = perp.unit();
+  VDetector* detector = fNESTcalc->GetDetector();
+ 
+  if(efield>0)
+  {
+    G4ParticleMomentum electronMomentum(0, 0, -1);
+    G4DynamicParticle* aQuantum = new G4DynamicParticle(NESTThermalElectron::ThermalElectron(), electronMomentum);
+    if(detailed_secondaries){
+      double speed = fNESTcalc->SetDriftVelocity(detector->get_T_Kelvin(),density,efield);
+      double kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(speed*mm/us,2);
+      aQuantum->SetKineticEnergy(kin_E);
+    }
+    return new G4Track(aQuantum, t, xyz);
+  }
+  else{
+    
+  }
+  // calculate time
+
+  
 }
 
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
@@ -90,14 +118,13 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
   if (NESTStackingAction::theStackingAction->isUrgentEmpty() &&
       aStep.GetSecondary()->empty()) { 
     lineages_prevEvent.clear();
-    photons_prevEvent.clear();
 
     for (auto lineage : lineages) {
       double etot =
           std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
                           [](double a, Hit b) { return a + b.E; });
       lineage.result = fNESTcalc->FullCalculation(
-          lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z);
+          lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z,{1.,1.},detailed_secondaries);
       lineage.result_calculated = true;
       if(lineage.result.quanta.photons){
         auto photontimes = lineage.result.photon_times.begin();
@@ -107,21 +134,38 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
         for (auto hit : lineage.hits) {
           ecum += hit.E;
           while (ecum_p < ecum) {
-            G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
-            if (YieldFactor == 1)
+            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
+              G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
               pParticleChange->AddSecondary(onePhoton);
-            else if (YieldFactor > 0) {
-              if (RandomGen::rndm()->rand_uniform() < YieldFactor)
-                pParticleChange->AddSecondary(onePhoton);
+              
             }
             ecum_p += e_p;
+            hit.result.photons++;
             photontimes++;
-            photons_prevEvent.emplace_back(*onePhoton);
           }
         }
         assert(ecum == etot);
-        lineages_prevEvent.push_back(lineage);
       }
+      if(lineage.result.quanta.electrons){
+        double ecum = 0;
+        double ecum_e = 0;
+        const double e_e = etot / lineage.result.quanta.electrons;
+        for (auto hit : lineage.hits) {
+          ecum += hit.E;
+          while (ecum_e < ecum) {
+            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
+              G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t);
+              pParticleChange->AddSecondary(oneElectron);
+              
+            }
+            ecum_e += e_e;
+            hit.result.electrons++;
+          }
+        }
+        assert(ecum == etot);
+      }
+      
+      lineages_prevEvent.push_back(lineage);
     }
     lineages.clear();
     track_lins.clear();
@@ -317,3 +361,62 @@ G4double NESTProc::GetMeanLifeTime(const G4Track&,
   // this function and this condition has the same effect as the above
   return DBL_MAX;
 }
+
+
+#include "G4ParticleTable.hh"
+// ######################################################################
+// ###                    THERMAL (DRIFT) ELECTRON                    ###
+// ######################################################################
+NESTThermalElectron* NESTThermalElectron::theInstance = 0;
+
+NESTThermalElectron* NESTThermalElectron::Definition()
+{
+  if (theInstance !=0) return theInstance;
+  const G4String name = "thermalelectron";
+  // search in particle table]
+  G4ParticleTable* pTable = G4ParticleTable::GetParticleTable();
+  G4ParticleDefinition* anInstance = pTable->FindParticle(name);
+  if (anInstance ==0)
+  {
+  // create particle
+  //
+  //    Arguments for constructor are as follows
+  //               name             mass          width         charge
+  //             2*spin           parity  C-conjugation
+  //          2*Isospin       2*Isospin3       G-parity
+  //               type    lepton number  baryon number   PDG encoding
+  //             stable         lifetime    decay table
+  //             shortlived      subType    anti_encoding
+
+  // use constants in CLHEP
+  //  static const double electron_mass_c2 = 0.51099906 * MeV;
+
+    anInstance = new G4ParticleDefinition(
+                 name,  electron_mass_c2,       0.0*MeV,    -1.*eplus, 
+		    1,                 0,             0,          
+		    0,                 0,             0,             
+	     "lepton",                 1,             0,          11,
+		 true,              -1.0,          NULL,
+             false,                  "e"
+              );
+    // Bohr Magnetron
+   G4double muB =  -0.5*eplus*hbar_Planck/(electron_mass_c2/c_squared) ;
+   
+   anInstance->SetPDGMagneticMoment( muB * 2.* 1.0011596521859 );
+
+  }
+  theInstance = reinterpret_cast<NESTThermalElectron*>(anInstance);
+  return theInstance;
+}
+
+NESTThermalElectron*  NESTThermalElectron::ThermalElectronDefinition()
+{
+  return Definition();
+}
+
+NESTThermalElectron*  NESTThermalElectron::ThermalElectron()
+{
+  return Definition();
+}
+
+

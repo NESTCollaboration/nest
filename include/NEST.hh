@@ -161,7 +161,7 @@ class NESTcalc {
   // non-binomial fluctuations
   NESTresult FullCalculation(INTERACTION_TYPE species, double energy,
                              double density, double dfield, double A, double Z,
-                             std::vector<double> NuisParam = {1, 1});
+                             std::vector<double> NuisParam = {1, 1}, bool do_times=true);
   // the so-called full NEST calculation puts together all the individual
   // functions/calculations below
   double PhotonTime(INTERACTION_TYPE species, bool exciton, double dfield,

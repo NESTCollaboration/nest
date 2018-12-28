@@ -29,12 +29,13 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
-                                     vector<double> NuisParam /*={1,1}*/) {
+                                     vector<double> NuisParam /*={1,1}*/, bool do_times /*=true*/) {
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
   result.quanta = GetQuanta(result.yields, density);
-  result.photon_times = GetPhotonTimes(species, result.quanta.photons,
+  if(do_times) result.photon_times = GetPhotonTimes(species, result.quanta.photons,
                                        result.quanta.excitons, dfield, energy);
+  else result.photon_times = photonstream(result.quanta.photons,0.0); 
   return result;
 }
 

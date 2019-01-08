@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
            type == "compton" || type == "electron" || type == "e-" ||
            type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
            type == "mu-")
-    type_num = beta;  // default electron recoil model
+    type_num = NEST::beta;  // default electron recoil model
   else {
     cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
     cerr << "NR or neutron," << endl;
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
     else
       energyMaximum = eMax;
     if (type_num == Kr83m)
-      yieldsMax = n.GetYields(beta, energyMaximum, rho, centralField,
+      yieldsMax = n.GetYields(NEST::beta, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum),
                               NuisParam);  // the reason for this: don't do the
                                            // special Kr stuff when just
@@ -464,7 +464,7 @@ int main(int argc, char** argv) {
              sqrt(pow(xx, 2.) + pow(yy, 2.)) <
                  detector->get_radmax()) {  // stop making S1 and S2 if particle
                                             // exits Xe vol
-        yields = n.GetYields(beta, refEnergy, rho, detector->FitEF(xx, yy, zz),
+        yields = n.GetYields(NEST::beta, refEnergy, rho, detector->FitEF(xx, yy, zz),
                              double(massNum), double(atomNum), NuisParam);
         quanta = n.GetQuanta(yields, rho);
         Nph += quanta.photons * (eStep / refEnergy);

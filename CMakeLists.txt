@@ -41,9 +41,9 @@ else()
 endif()
 
 # Include all directories which contain needed header files
-include_directories("${PROJECT_SOURCE_DIR}")  
-include_directories("${PROJECT_SOURCE_DIR}/include")  
-include_directories("${PROJECT_SOURCE_DIR}/Detectors")  
+include_directories("${PROJECT_SOURCE_DIR}")
+include_directories("${PROJECT_SOURCE_DIR}/include")
+include_directories("${PROJECT_SOURCE_DIR}/Detectors")
 
 # Gather implementation and header files
 file(GLOB core ${PROJECT_SOURCE_DIR}/*.cpp)
@@ -67,6 +67,7 @@ if(G4)
     file(GLOB g4src ${PROJECT_SOURCE_DIR}/G4integration/*.cc)
     file(GLOB g4headers ${PROJECT_SOURCE_DIR}/G4integration/*.hh)
     add_library(NEST SHARED ${core} ${g4src} ${headers} ${g4headers})
+    target_link_libraries(NEST ${Geant4_LIBRARIES})
     set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers};${g4headers}")
 else(G4)
     add_library(NEST SHARED ${core} ${headers})
@@ -118,13 +119,13 @@ configure_file(NESTConfig.cmake.in
 # ... for both
 configure_file(NESTConfigVersion.cmake.in
   "${PROJECT_BINARY_DIR}/NESTConfigVersion.cmake" @ONLY)
- 
+
 # Install the NESTConfig.cmake and NESTConfigVersion.cmake
 install(FILES
   "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/NESTConfig.cmake"
   "${PROJECT_BINARY_DIR}/NESTConfigVersion.cmake"
   DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
- 
+
 # Install the export set for use with the install-tree
 install(EXPORT NESTTargets DESTINATION
   "${INSTALL_CMAKE_DIR}" COMPONENT dev)

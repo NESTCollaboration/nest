@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
       detector->get_gate() <= 0.) {
     cerr << "ERROR, unphysical value(s) of position within the detector "
             "geometry.";  // negative or 0 for cathode position is OK (e.g., LZ)
-    return 0;
+    return 1;
   }
 
   vector<double> signal1, signal2, signalE, vTable,
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
             "x,y,z-position[mm](Final) {optional:seed}"
          << endl
          << endl;
-    return 0;
+    return 1;
   }
 
   unsigned long int numEvts = atoi(argv[1]);
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     eMax = 1e2;  // the default energy max is 100 keV
   if (eMax == 0.) {
     cerr << "ERROR: The maximum energy cannot be 0 keV!" << endl;
-    return 0;
+    return 1;
   }
   double inField = atof(argv[5]);
   position = argv[6];
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
   else if (type == "WIMP") {
     if (atof(argv[3]) < 0.44) {
       cerr << "WIMP mass too low, you're crazy!" << endl;
-      return 0;
+      return 1;
     }
     type_num = WIMP;
     spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(atof(argv[3]), E_step);
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
     cerr << "Carbon14 or 14C or C14," << endl;
     cerr << "beta or ER or Compton or compton or electron or e-, and" << endl;
     cerr << "muon or MIP or LIP or mu or mu-" << endl;
-    return 0;
+    return 1;
   }
 
   if (type_num == Kr83m) {
@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
       cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV "
               "please."
            << endl;
-      return 0;
+      return 1;
     }
   }
 
@@ -201,7 +201,7 @@ int main(int argc, char** argv) {
   if (rho <= 0. || detector->get_T_Kelvin() <= 0. ||
       detector->get_p_bar() <= 0.) {
     cerr << "ERR: Unphysical thermodynamic property!";
-    return 0;
+    return 1;
   }
   if (rho < 1.75) detector->set_inGas(true);
   double Wq_eV =
@@ -276,12 +276,12 @@ int main(int argc, char** argv) {
           keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, atof(argv[3]));
         } break;
         default:
-          if (eMin < 0.) return 0;
+          if (eMin < 0.) return 1;
           if (eMax > 0.)
             keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
           else {  // negative eMax signals to NEST that you want to use an
                   // exponential energy spectrum profile
-            if (eMin == 0.) return 0;
+            if (eMin == 0.) return 1;
             keV = 1e100;  // eMin will be used in place of eMax as the maximum
                           // energy in exponential scenario
             while (keV > eMin)
@@ -340,7 +340,7 @@ int main(int argc, char** argv) {
     if (field < 0. || detector->get_E_gas() < 0.) {
       cerr << "\nERROR: Neg field is not permitted. We don't simulate field "
               "dir (yet). Put in magnitude.\n";
-      return 0;
+      return 1;
     }
     if (field == 0. || std::isnan(field))
       cerr << "\nWARNING: A LITERAL ZERO (or undefined) FIELD MAY YIELD WEIRD "
@@ -393,7 +393,7 @@ int main(int argc, char** argv) {
         detector->get_dt_min() > (detector->get_TopDrift() - 0.) / vD &&
         field >= FIELD_MIN) {
       cerr << "ERROR: dt_min is too restrictive (too large)" << endl;
-      return 0;
+      return 1;
     }
     if ((driftTime > detector->get_dt_max() ||
          driftTime < detector->get_dt_min()) &&
@@ -410,14 +410,14 @@ int main(int argc, char** argv) {
       cerr << "ERROR: unphysically low Z coordinate (vertical axis of "
               "detector) of "
            << pos_z << " mm" << endl;
-      return 0;
+      return 1;
     }
     if ((pos_z > (detector->get_TopDrift() + z_step) || driftTime < 0.0) &&
         field >= FIELD_MIN) {
       cerr << "ERROR: unphysically big Z coordinate (vertical axis of "
               "detector) of "
            << pos_z << " mm" << endl;
-      return 0;
+      return 1;
     }
 
     YieldResult yields;
@@ -734,7 +734,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  return 1;
+  return 0;
 }
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,

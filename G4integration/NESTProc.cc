@@ -167,6 +167,9 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       
       lineages_prevEvent.push_back(lineage);
     }
+    if(analysisTrigger){
+      analysisTrigger(lineages_prevEvent);
+    }
     lineages.clear();
     track_lins.clear();
   }
@@ -183,7 +186,9 @@ Lineage NESTProc::GetChildType(const G4Track* aTrack,
   if (sec->GetCreatorProcess()) {
     sec_creator = sec->GetCreatorProcess()->GetProcessName();
   }
-  if (aTrack && aTrack->GetDefinition() == G4Neutron::Definition()) {
+  if (aTrack && aTrack->GetDefinition() == G4Neutron::Definition() && 
+      (sec->GetDefinition()->GetAtomicNumber() > 0) ) //neutron inelastic scatters never join the lineage.
+  {
     return Lineage(NR);
   } else if (aTrack && aTrack->GetDefinition() == G4Gamma::Definition()) {
     if (sec_creator.contains("compt")) {
@@ -234,43 +239,53 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   }
   // otherwise, we may need to start a new lineage
   else {
-    for (const G4Track* sec : secondaries) {
-      // Each secondary has a type (including the possible NoneType)
-      Lineage sec_lin = GetChildType(&aTrack, sec);
+    // What if the parent is a primary? Give it a lineage just as if it were one
+    // of its own secondaries
+    if (aTrack.GetParentID() == 0 && aTrack.GetCurrentStepNumber()==0) {
+      Lineage sec_lin = GetChildType(0, &aTrack);
       INTERACTION_TYPE sec_type = sec_lin.type;
-      // The first secondary will change the step_type. Subsequent secondaries
-      // better have the same type as the first. If they don't, something is
-      // weird
-      assert(sec_type == step_type || sec_type == NoneType ||
-             step_type == NoneType);
-      // if this is the first secondary to have a non-None type, we've started a
-      // new lineage
-      if (step_type == NoneType && sec_type != NoneType) {
-        lineages.push_back(Lineage(sec_type));
+      if (sec_type != NoneType) {
+        lineages.push_back(sec_lin);
+        if(verbose>1) cout<<"Made new lineage from primary of type "<<sec_type<<endl;
+        for (const G4Track* sec : secondaries)
+        {
+          track_lins.insert(make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
+                                                 sec->GetMomentumDirection()),
+                                      lineages.size() - 1));
+        }   
+        track_lins.insert(std::make_pair(make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(), aTrack.GetVertexMomentumDirection()),
+            lineages.size() - 1));
       }
-      step_type = sec_type;
-      // If the secondary has a non-None type, it also gets a lineage ID.
-      if (sec_type != NoneType)
-        track_lins.insert(
-            std::make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
-                                      sec->GetMomentumDirection()),
-                           lineages.size() - 1));
     }
-  }
+    
+    else{
+      for (const G4Track* sec : secondaries) {
+        // Each secondary has a type (including the possible NoneType)
+        Lineage sec_lin = GetChildType(&aTrack, sec);
+        INTERACTION_TYPE sec_type = sec_lin.type;
+        // The first secondary will change the step_type. Subsequent secondaries
+        // better have the same type as the first. If they don't, something is
+        // weird
+        assert(sec_type == step_type || sec_type == NoneType ||
+               step_type == NoneType);
+        // if this is the first secondary to have a non-None type, we've started a
+        // new lineage
+        if (step_type == NoneType && sec_type != NoneType) {
+          if(verbose>1) cout<<"Made new lineage from secondary of particle "<<aTrack.GetTrackID()<<" of type "<<sec_type<<endl;
+          lineages.push_back(Lineage(sec_type));
+        }
+        step_type = sec_type;
+        // If the secondary has a non-None type, it also gets a lineage ID.
+        if (sec_type != NoneType)
+          track_lins.insert(
+              std::make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
+                                        sec->GetMomentumDirection()),
+                             lineages.size() - 1));
+      }
+    }
+  
 
-  // What if the parent is a primary? Give it a lineage just as if it were one
-  // of its own secondaries
-  if (aTrack.GetParentID() == 0) {
-    Lineage sec_lin = GetChildType(0, &aTrack);
-    INTERACTION_TYPE sec_type = sec_lin.type;
-    if (sec_type != NoneType) {
-      lineages.push_back(sec_lin);
-    }
-    if (sec_type != NoneType)
-      track_lins.insert(std::make_pair(
-          make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(),
-                     aTrack.GetVertexMomentumDirection()),
-          lineages.size() - 1));
+    
   }
   //  If the current track is part of a lineage...
 

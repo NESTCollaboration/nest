@@ -108,8 +108,8 @@ typedef enum {
   Cf = 5,
   ion = 6,  // includes alphas, Pb-206
   // electron recoil
-  gammaRay = 7,
-  beta = 8,
+  gammaRay = 7, //only photoelectric
+  beta = 8, //includes comptons
   CH3T = 9,
   C14 = 10,
   Kr83m = 11,

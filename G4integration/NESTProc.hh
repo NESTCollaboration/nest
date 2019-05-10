@@ -134,7 +134,7 @@ class NESTProc : public G4VRestDiscreteProcess {
   G4double YieldFactor;  // turns scint. on/off
   bool detailed_secondaries=true;
   
-  int verbose=0;
+  int verbose=2;
   
   std::function<void(std::vector<NEST::Lineage>)> analysisTrigger;
 };

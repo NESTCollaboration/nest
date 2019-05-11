@@ -111,6 +111,8 @@ G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density,double t) {
 
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
+  PostStepDoIt(aTrack,aStep);
+  
   pParticleChange->Initialize(aTrack);
   pParticleChange->SetNumberOfSecondaries(1e7);
   
@@ -167,6 +169,9 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       
       lineages_prevEvent.push_back(lineage);
     }
+    if(analysisTrigger){
+      analysisTrigger(lineages_prevEvent);
+    }
     lineages.clear();
     track_lins.clear();
   }
@@ -174,36 +179,45 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
   return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
 }
 
-Lineage NESTProc::GetChildType(const G4Track* aTrack,
-                               const G4Track* sec) const {
+Lineage NESTProc::GetChildType(const G4Track* parent,
+                               const G4Track* child) const {
   // logic to determine what processes are kicked off by this track and also set
   // the info
 
   G4String sec_creator = "";
-  if (sec->GetCreatorProcess()) {
-    sec_creator = sec->GetCreatorProcess()->GetProcessName();
+  if (child->GetCreatorProcess()) {
+    sec_creator = child->GetCreatorProcess()->GetProcessName();
   }
-  if (aTrack && aTrack->GetDefinition() == G4Neutron::Definition()) {
+  if (parent && parent->GetDefinition() == G4Neutron::Definition() && 
+      (child->GetDefinition()->GetAtomicNumber() > 0) ) //neutron inelastic scatters never join the lineage.
+  {
     return Lineage(NR);
-  } else if (aTrack && aTrack->GetDefinition() == G4Gamma::Definition()) {
+  } else if(parent && parent->GetDefinition()->GetAtomicMass() == 83 && parent->GetDefinition()->GetAtomicNumber()==36 &&
+           parent->GetDefinition()->GetIonLifeTime()*.693<2*60*60*s && parent->GetDefinition()->GetIonLifeTime()*.693>1*60*60*s){
+    return Lineage(Kr83m);
+  }else if (parent && parent->GetDefinition() == G4Gamma::Definition()) {
     if (sec_creator.contains("compt")) {
       return Lineage(beta);
     } else if (sec_creator.contains("phot")) {
       return Lineage(gammaRay);
     }
-  } else if (sec->GetDefinition() == G4Electron::Definition() &&
-             (sec_creator.contains("decay") || !aTrack)) {
+  } else if (child->GetDefinition() == G4Electron::Definition() &&
+             (sec_creator.contains("Decay") || !parent)) {
     return Lineage(beta);
-  } else if (sec->GetDefinition()->GetAtomicMass() > 1 &&
-             (sec_creator.contains("decay") || !aTrack)) {
+  } else if (child->GetDefinition()->GetAtomicMass() > 1 &&
+             (sec_creator.contains("Decay") || !parent)) {
     Lineage ion_lin = Lineage(ion);
-    ion_lin.A = sec->GetDefinition()->GetAtomicMass();
-    ion_lin.Z = sec->GetDefinition()->GetAtomicNumber();
+    ion_lin.A = child->GetDefinition()->GetAtomicMass();
+    ion_lin.Z = child->GetDefinition()->GetAtomicNumber();
     return ion_lin;
   }
+  
 
   return Lineage(NoneType);
 }
+
+
+
 
 G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                           const G4Step& aStep) {
@@ -224,7 +238,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
 
   // If the current track is already in a lineage, its secondaries inherit that
   // lineage.
-  if (myLinID != track_lins.end()) {
+  if (myLinID != track_lins.end() && lineages[myLinID->second].type != ion) {   
     for (const G4Track* sec : secondaries) {
       track_lins.insert(
           make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
@@ -234,6 +248,32 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   }
   // otherwise, we may need to start a new lineage
   else {
+    // What if the parent is a primary? Give it a lineage just as if it were one
+    // of its own secondaries
+    if (aTrack.GetParentID() == 0 && myLinID == track_lins.end()) {
+      Lineage sec_lin = GetChildType(0, &aTrack);
+      INTERACTION_TYPE sec_type = sec_lin.type;
+      if (sec_type != NoneType ) {
+        lineages.push_back(sec_lin);
+        if(verbose>1) cout<<"Made new lineage from primary of type "<<sec_type<<endl;
+        
+        track_lins.insert(std::make_pair(make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(), aTrack.GetVertexMomentumDirection()),
+            lineages.size() - 1));
+        myLinID = --track_lins.end();
+        if(lineages.back().type != ion){
+          for (const G4Track* sec : secondaries)
+          {
+            step_type = sec_type;
+            track_lins.insert(make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
+                                                   sec->GetMomentumDirection()),
+                                        lineages.size() - 1));
+          }   
+        }
+      }
+      
+    }
+    
+    
     for (const G4Track* sec : secondaries) {
       // Each secondary has a type (including the possible NoneType)
       Lineage sec_lin = GetChildType(&aTrack, sec);
@@ -242,13 +282,14 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
       // better have the same type as the first. If they don't, something is
       // weird
       assert(sec_type == step_type || sec_type == NoneType ||
-             step_type == NoneType);
+             step_type == NoneType || step_type==ion || sec_type==ion );
       // if this is the first secondary to have a non-None type, we've started a
       // new lineage
-      if (step_type == NoneType && sec_type != NoneType) {
-        lineages.push_back(Lineage(sec_type));
+      if (sec_type != NoneType && (step_type == NoneType ||  sec_type==ion)) {
+        if(verbose>1) cout<<"Made new lineage from secondary of particle "<<aTrack.GetTrackID()<<" of type "<<sec_type<<endl;
+        lineages.push_back(sec_lin);
       }
-      step_type = sec_type;
+        step_type = sec_type;
       // If the secondary has a non-None type, it also gets a lineage ID.
       if (sec_type != NoneType)
         track_lins.insert(
@@ -256,21 +297,6 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                       sec->GetMomentumDirection()),
                            lineages.size() - 1));
     }
-  }
-
-  // What if the parent is a primary? Give it a lineage just as if it were one
-  // of its own secondaries
-  if (aTrack.GetParentID() == 0) {
-    Lineage sec_lin = GetChildType(0, &aTrack);
-    INTERACTION_TYPE sec_type = sec_lin.type;
-    if (sec_type != NoneType) {
-      lineages.push_back(sec_lin);
-    }
-    if (sec_type != NoneType)
-      track_lins.insert(std::make_pair(
-          make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(),
-                     aTrack.GetVertexMomentumDirection()),
-          lineages.size() - 1));
   }
   //  If the current track is part of a lineage...
 
@@ -322,8 +348,8 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   G4ThreeVector x1 = pPostStepPoint->GetPosition();
   G4ThreeVector x0 = pPreStepPoint->GetPosition();
   G4double evtStrt = pPreStepPoint->GetGlobalTime();
-  G4double t0 = pPreStepPoint->GetLocalTime();
-  G4double t1 = pPostStepPoint->GetLocalTime();
+  G4double t0 = pPreStepPoint->GetGlobalTime();
+  
 
   G4double Density = preMaterial->GetDensity() / (g / cm3);
   if (myLineage->density == -1) myLineage->density = Density;
@@ -403,7 +429,6 @@ NESTThermalElectron* NESTThermalElectron::Definition()
    G4double muB =  -0.5*eplus*hbar_Planck/(electron_mass_c2/c_squared) ;
    
    anInstance->SetPDGMagneticMoment( muB * 2.* 1.0011596521859 );
-
   }
   theInstance = reinterpret_cast<NESTThermalElectron*>(anInstance);
   return theInstance;

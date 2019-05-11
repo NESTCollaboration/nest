@@ -19,9 +19,6 @@
 #include "G4ProductionCuts.hh"
 #include "NEST.hh"
 
-#define AVO 6.022e23  // Avogadro's number (#/mol)
-#define EMASS 9.109e-31 * kg
-#define MillerDriftSpeed true
 
 namespace NEST {
 
@@ -119,6 +116,8 @@ class NESTProc : public G4VRestDiscreteProcess {
   G4Track* MakeElectron(G4ThreeVector xyz, double density,double t);
   std::vector<NEST::Lineage> getLastLineages() const{ return lineages_prevEvent;}
   void SetDetailedSecondaries(bool detailed) { detailed_secondaries=detailed;}
+  void SetAnalysisTrigger(std::function<void(std::vector<NEST::Lineage>) > _analysisTrigger) {this->analysisTrigger=_analysisTrigger; }
+
  protected:
   G4bool fTrackSecondariesFirst;  // see above
   // bools for tracking some special particle cases
@@ -134,6 +133,10 @@ class NESTProc : public G4VRestDiscreteProcess {
 
   G4double YieldFactor;  // turns scint. on/off
   bool detailed_secondaries=true;
+  
+  int verbose=0;
+  
+  std::function<void(std::vector<NEST::Lineage>)> analysisTrigger;
 };
 
 ////////////////////

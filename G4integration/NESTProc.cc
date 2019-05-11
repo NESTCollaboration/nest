@@ -297,7 +297,6 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                       sec->GetMomentumDirection()),
                            lineages.size() - 1));
     }
-
   }
   //  If the current track is part of a lineage...
 
@@ -430,7 +429,6 @@ NESTThermalElectron* NESTThermalElectron::Definition()
    G4double muB =  -0.5*eplus*hbar_Planck/(electron_mass_c2/c_squared) ;
    
    anInstance->SetPDGMagneticMoment( muB * 2.* 1.0011596521859 );
-
   }
   theInstance = reinterpret_cast<NESTThermalElectron*>(anInstance);
   return theInstance;

@@ -196,7 +196,7 @@ Lineage NESTProc::GetChildType(const G4Track* parent,
            parent->GetDefinition()->GetIonLifeTime()*.693<2*60*60*s && parent->GetDefinition()->GetIonLifeTime()*.693>1*60*60*s){
     return Lineage(Kr83m);
   }else if (parent && parent->GetDefinition() == G4Gamma::Definition()) {
-    if (sec_creator.contains("compt")) {
+    if (sec_creator.contains("compt") || sec_creator.contains("conv")) { //conv is pair production
       return Lineage(beta);
     } else if (sec_creator.contains("phot")) {
       return Lineage(gammaRay);
@@ -229,11 +229,8 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   // Type of this step.
   INTERACTION_TYPE step_type = NoneType;
 
-  // hacky way to grab secondaries created in this step without them becoming
-  // const. Don't abuse this by altering the secondaries besides setting
-  // UserTrackInfo!
-
-
+  uint sec_mylinid = 0;
+  
   const vector<const G4Track*> secondaries = *aStep.GetSecondaryInCurrentStep();
 
   // If the current track is already in a lineage, its secondaries inherit that
@@ -287,28 +284,38 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
       // new lineage
       if (sec_type != NoneType && (step_type == NoneType ||  sec_type==ion)) {
         if(verbose>1) cout<<"Made new lineage from secondary of particle "<<aTrack.GetTrackID()<<" of type "<<sec_type<<endl;
-        lineages.push_back(sec_lin);
+        lineages.push_back(sec_lin);       
       }
         step_type = sec_type;
       // If the secondary has a non-None type, it also gets a lineage ID.
-      if (sec_type != NoneType)
+      if (sec_type != NoneType){
         track_lins.insert(
             std::make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
                                       sec->GetMomentumDirection()),
                            lineages.size() - 1));
+        //for comptons/PEs to add in recoil energy in the parent step
+        if(sec_type == gammaRay || sec_type == beta){
+          myLinID = --track_lins.end();
+          sec_mylinid++;
+        }
+        if(verbose>1)  cout<<"Reassigned myLindID "<<sec_mylinid<<" times"<<endl;
+      }
     }
   }
   //  If the current track is part of a lineage...
-
   auto myLinID2 = track_lins.find(
       make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(),
                  aTrack.GetVertexMomentumDirection()));
-  if (myLinID2 == track_lins.end())
-    return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
-  Lineage* myLineage = &lineages.at(myLinID2->second);
+  
+  if (myLinID2 == track_lins.end()){
+    if(sec_mylinid) myLinID2=myLinID;
+    else return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+  }
+  Lineage* myLineage = &lineages.at(myLinID->second);
   //...if the step deposited energy...
-  if (aStep.GetTotalEnergyDeposit() <= 0)
+  if (aStep.GetTotalEnergyDeposit() <= 0){
     return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+  }
 
   //... in a noble element...
   const G4Material* preMaterial = aStep.GetPreStepPoint()->GetMaterial();

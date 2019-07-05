@@ -196,9 +196,12 @@ Lineage NESTProc::GetChildType(const G4Track* parent,
            parent->GetDefinition()->GetIonLifeTime()*.693<2*60*60*s && parent->GetDefinition()->GetIonLifeTime()*.693>1*60*60*s){
     return Lineage(Kr83m);
   }else if (parent && parent->GetDefinition() == G4Gamma::Definition()) {
-    if (sec_creator.contains("compt") || sec_creator.contains("conv")) { //conv is pair production
+    if (sec_creator.contains("compt")){ 
       return Lineage(beta);
-    } else if (sec_creator.contains("phot")) {
+    } else if (sec_creator.contains("conv")) { //conv is pair production
+      return Lineage(beta);
+    }
+      else if (sec_creator.contains("phot")) {
       return Lineage(gammaRay);
     }
   } else if (child->GetDefinition() == G4Electron::Definition() &&
@@ -237,10 +240,14 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   // lineage.
   if (myLinID != track_lins.end() && lineages[myLinID->second].type != ion) {   
     for (const G4Track* sec : secondaries) {
+      if(sec->GetDefinition() == G4OpticalPhoton::Definition() || sec->GetCreatorProcess()->GetProcessName().contains("annihil")) continue;
       track_lins.insert(
           make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
                                sec->GetMomentumDirection()),
                     myLinID->second));
+      if(verbose>2){
+              std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<std::endl;
+      }
     }
   }
   // otherwise, we may need to start a new lineage
@@ -260,10 +267,16 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
         if(lineages.back().type != ion){
           for (const G4Track* sec : secondaries)
           {
+            if(sec->GetDefinition() == G4OpticalPhoton::Definition() || sec->GetCreatorProcess()->GetProcessName().contains("annihil")){
+              continue;
+            }
             step_type = sec_type;
             track_lins.insert(make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
                                                    sec->GetMomentumDirection()),
                                         lineages.size() - 1));
+            if(verbose>2){
+              std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<std::endl;
+            }
           }   
         }
       }

@@ -131,18 +131,16 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       if(lineage.result.quanta.photons){
         auto photontimes = lineage.result.photon_times.begin();
         double ecum = 0;
-        double ecum_p = 0;
-        const double e_p = etot / lineage.result.quanta.photons;
+        int phot_cum = 0;
         for (auto hit : lineage.hits) {
+          hit.result.photons = round((lineage.result.quanta.photons - phot_cum)*hit.E/(etot-ecum));
           ecum += hit.E;
-          while (ecum_p < ecum) {
+          phot_cum += hit.result.photons;
+          for (int i=0; i<hit.result.photons; ++i) {
             if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
               G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
               pParticleChange->AddSecondary(onePhoton);
-              
             }
-            ecum_p += e_p;
-            hit.result.photons++;
             photontimes++;
           }
         }
@@ -150,18 +148,18 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       }
       if(lineage.result.quanta.electrons){
         double ecum = 0;
-        double ecum_e = 0;
-        const double e_e = etot / lineage.result.quanta.electrons;
+        double el_cum = 0;
+
         for (auto hit : lineage.hits) {
+          hit.result.electrons = round((lineage.result.quanta.electrons - el_cum)*hit.E/(etot-ecum));
           ecum += hit.E;
-          while (ecum_e < ecum) {
+          el_cum+= hit.result.electrons;
+          for(int i = 0 ; i<hit.result.electrons; i++){
             if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
               G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t);
-              pParticleChange->AddSecondary(oneElectron);
-              
+              pParticleChange->AddSecondary(oneElectron);          
             }
-            ecum_e += e_e;
-            hit.result.electrons++;
+
           }
         }
         assert(ecum == etot);

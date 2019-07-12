@@ -374,7 +374,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   double step_E = aStep.GetTotalEnergyDeposit() / keV;
 
   // add this hit to the appropriate lineage
-  Hit stepHit(step_E, t0, x0);
+  Hit stepHit(step_E, t0, x1);
   myLineage->hits.push_back(stepHit);
 
   // the end (exiting)

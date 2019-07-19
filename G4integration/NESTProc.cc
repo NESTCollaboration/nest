@@ -46,15 +46,12 @@
 
 using namespace NEST;
 
-NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
-                   double efield, VDetector* detector)
-    : G4VRestDiscreteProcess(processName, type), efield(efield), fDetector(detector) {
+NESTProc::NESTProc(const G4String& processName, G4ProcessType type, VDetector* detector)
+    : G4VRestDiscreteProcess(processName, type), fDetector(detector) {
   fNESTcalc =
       std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc(fDetector.get()));
   pParticleChange=&fParticleChange;
   SetProcessSubType(fScintillation);
-  
-  fTrackSecondariesFirst = false;
 
   if (verboseLevel > 0) {
     G4cout << GetProcessName() << " is created " << G4endl;
@@ -88,14 +85,15 @@ G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density,double t) {
   G4ParticleMomentum photonMomentum(G4RandomDirection());
   G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
   G4ThreeVector photonPolarization = perp.unit();
-  VDetector* detector = fNESTcalc->GetDetector();
- 
-  if(efield>0)
+
+  double efield_here = fDetector->FitEF(xyz.x(),xyz.y(),xyz.z());
+  
+  if(efield_here>0)
   {
     G4ParticleMomentum electronMomentum(0, 0, -1);
     G4DynamicParticle* aQuantum = new G4DynamicParticle(NESTThermalElectron::ThermalElectron(), electronMomentum);
     if(detailed_secondaries){
-      double speed = fNESTcalc->SetDriftVelocity(detector->get_T_Kelvin(),density,efield);
+      double speed = fNESTcalc->SetDriftVelocity(fDetector->get_T_Kelvin(),density,efield_here);
       double kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(speed*mm/us,2);
       aQuantum->SetKineticEnergy(kin_E);
     }
@@ -125,8 +123,11 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       double etot =
           std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
                           [](double a, Hit b) { return a + b.E; });
+      G4ThreeVector maxHit_xyz = std::max_element(lineage.hits.begin(),lineage.hits.end(),
+                                                  [](Hit a, Hit b){return a.E < b.E;})->xyz;
+      double efield_here = fDetector->FitEF(maxHit_xyz.x(),maxHit_xyz.y(),maxHit_xyz.z());
       lineage.result = fNESTcalc->FullCalculation(
-          lineage.type, etot, lineage.density, efield, lineage.A, lineage.Z,{1.,1.},detailed_secondaries);
+          lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z,{1.,1.},detailed_secondaries);
       lineage.result_calculated = true;
       if(lineage.result.quanta.photons){
         auto photontimes = lineage.result.photon_times.begin();
@@ -461,5 +462,3 @@ NESTThermalElectron*  NESTThermalElectron::ThermalElectron()
 {
   return Definition();
 }
-
-

@@ -1,6 +1,7 @@
 #ifndef NESTPROC_h
 #define NESTPROC_h 1
 
+#include "G4Track.hh"
 #include "G4DynamicParticle.hh"
 #include "G4Material.hh"
 #include "G4MaterialPropertiesTable.hh"
@@ -65,10 +66,9 @@ class NESTThermalElectron : public G4ParticleDefinition
 
 class NESTProc : public G4VRestDiscreteProcess {
  public:  // constructor and destructor
-  NESTProc(const G4String& processName = "S1",
-           G4ProcessType type = fElectromagnetic, double efield = 0,
-           VDetector* detector =
-               new VDetector());
+  NESTProc(const G4String& processName ,
+           G4ProcessType type ,
+           VDetector* detector );
   ~NESTProc();
 
  public:  // methods, with descriptions
@@ -111,7 +111,6 @@ class NESTProc : public G4VRestDiscreteProcess {
   // Returns the quantum (photon/electron) yield factor. See above.
 
   Lineage GetChildType(const G4Track* aTrack, const G4Track* sec) const;
-  double efield = 0;
   G4Track* MakePhoton(G4ThreeVector xyz, double t);
   G4Track* MakeElectron(G4ThreeVector xyz, double density,double t);
   std::vector<NEST::Lineage> getLastLineages() const{ return lineages_prevEvent;}
@@ -119,7 +118,6 @@ class NESTProc : public G4VRestDiscreteProcess {
   void SetAnalysisTrigger(std::function<void(std::vector<NEST::Lineage>) > _analysisTrigger) {this->analysisTrigger=_analysisTrigger; }
 
  protected:
-  G4bool fTrackSecondariesFirst;  // see above
   // bools for tracking some special particle cases
 
   std::unique_ptr<NEST::NESTcalc> fNESTcalc = NULL;
@@ -130,10 +128,9 @@ class NESTProc : public G4VRestDiscreteProcess {
       track_lins;
   std::unique_ptr<VDetector> fDetector;
   NoTimeParticleChange fParticleChange;
-
+  
   G4double YieldFactor;  // turns scint. on/off
   bool detailed_secondaries=true;
-  
   int verbose=0;
   
   std::function<void(std::vector<NEST::Lineage>)> analysisTrigger;
@@ -160,11 +157,5 @@ inline G4double NESTProc::GetScintillationYieldFactor() const {
   return YieldFactor;
 }
 
-inline 
-void NESTProc::SetTrackSecondariesFirst(const G4bool state) 
-{ 
-	fTrackSecondariesFirst = state;
-}
-}
-
+}//ensure namespace is closed
 #endif /* NESTPROC_h */

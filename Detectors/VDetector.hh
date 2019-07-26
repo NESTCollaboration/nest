@@ -65,9 +65,11 @@ class VDetector {
   void set_sPEres(double param) { sPEres = param; }
   void set_sPEthr(double param) { sPEthr = param; }
   void set_sPEeff(double param) { sPEeff = param; }
-  void set_noise(double p1, double p2) {
+  void set_noise(double p1, double p2, double p3, double p4) {
     noise[0] = p1;
     noise[1] = p2;
+    noise[2] = p3;
+    noise[3] = p4;
   }
   void set_P_dphe(double param) { P_dphe = param; }
 
@@ -136,7 +138,7 @@ class VDetector {
   // Primary Scintillation (S1) parameters
   int coinLevel, numPMTs;
   double g1, sPEres, sPEthr, sPEeff, P_dphe, coinWind;
-  double noise[2];
+  double noise[4];
 
   // Ionization and Secondary Scintillation (S2) parameters
   double g1_gas, s2Fano, s2_thr, E_gas, eLife_us;

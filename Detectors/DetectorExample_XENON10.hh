@@ -34,7 +34,7 @@ class DetectorExample_XENON10 : public VDetector {
   // function of time
   virtual void Initialization() {
     // Primary Scintillation (S1) parameters
-    g1 = 0.0760;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
+    g1 = 0.073;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     sPEres = 0.58;   // single phe resolution (Gaussian assumed)
     sPEthr = 0.35;   // POD threshold in phe, usually used IN PLACE of sPEeff
     sPEeff = 1.00;   // actual efficiency, can be used in lieu of POD threshold
@@ -45,9 +45,13 @@ class DetectorExample_XENON10 : public VDetector {
     coinWind = 100;  // S1 coincidence window in ns
     coinLevel = 2;   // how many PMTs have to fire for an S1 to count
     numPMTs = 89;    // For coincidence calculation
-
+    
+    //"Linear noise" terms as defined in Dahl thesis and by D. McK
+    noise[2] = 3e-2; // S1 -> S1 Gaussian-smeared with noise[2]*S1
+    noise[3] = 3e-2; // S2 -> S2 Gaussian-smeared with noise[3]*S2
+    
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.06;  // phd per S2 photon in gas, used to get SE size
+    g1_gas =.0655;  // phd per S2 photon in gas, used to get SE size
     s2Fano = 3.61;  // Fano-like fudge factor for SE width
     s2_thr = 300.;  // the S2 threshold in phe or PE, *not* phd. Affects NR most
     E_gas = 12.;    // field in kV/cm between liquid/gas border and anode

@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   }
 
   vector<double> signal1, signal2, signalE, vTable,
-      NuisParam = {1., 1.};  // scaling factors, for now just for NR Ly & Qy.
+    NuisParam = {0.3, 2., 0.3, 2.};  // scaling factors, for now just for NR Ly & Qy.
                              // But must initialize!
   string position, delimiter, token;
   size_t loc;

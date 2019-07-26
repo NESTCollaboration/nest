@@ -117,9 +117,18 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
   int Nq_actual, Ne, Nph, Ni, Nex;
 
   double NexONi = yields.ExcitonRatio, Fano = 1.;
-  double alf = 1. / (1. + NexONi);
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
-
+  
+  double elecFrac = yields.ElectronYield / Nq_mean;
+  if (elecFrac > 1.) elecFrac = 1.;
+  if (elecFrac < 0.) elecFrac = 0.;
+  
+  if ( NexONi < 0. ) NexONi = 0.;
+  double alf = 1./(1. + NexONi);
+  double recombProb = 1.-(NexONi+1.)*elecFrac;
+  if ( recombProb < 0. )
+    NexONi = 1./elecFrac - 1.;
+  
   if (yields.Lindhard == 1.) {
     Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
            0.0057042 *
@@ -167,12 +176,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
 
   result.ions = Ni;
   result.excitons = Nex;
-
-  double elecFrac = yields.ElectronYield / Nq_mean;
-  if (elecFrac > 1.) elecFrac = 1.;
-  if (elecFrac < 0.) elecFrac = 0.;
-
-  double recombProb = 1. - (NexONi + 1.) * elecFrac;
+  
+  if ( Nex <= 0 ) recombProb = yields.PhotonYield / double(Ni);
   if (recombProb < 0.) recombProb = 0.;
   if (recombProb > 1.) recombProb = 1.;
   if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
@@ -193,8 +198,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
   double aa = cc / pow(1. - bb, 2.);
   double omega = -aa * pow(recombProb - bb, 2.) + cc;
   if (omega < 0.0) omega = 0.0;
-
-  if (yields.Lindhard < 1.) omega = 0.04 * exp(-pow(elecFrac - 0.5, 2.) / 0.17);
+  
+  if (yields.Lindhard < 1.) omega = 0.1 * exp(-pow(elecFrac - 0.5, 2.) / 0.07);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   Ne = int(floor(
@@ -209,7 +214,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
 
   if ((Nph + Ne) != (Nex + Ni)) {
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
-    exit(0);
+    exit(1);
   }
 
   result.photons = Nph;
@@ -249,15 +254,23 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
         massNumber = RandomGen::rndm()->SelectRanXeAtom();
       ScaleFactor[0] = sqrt(MOLAR_MASS / (double)massNumber);
       ScaleFactor[1] = ScaleFactor[0];
-      double Nq = 12.6 * pow(energy, 1.05);
+      double Nq = 11. * pow(energy, 1.1);
       double ThomasImel =
-          0.0522 * pow(dfield, -0.0694) * pow(density / DENSITY, 0.3);
-      double Qy = 1. / (ThomasImel * sqrt(energy + 9.75));
+          0.0480 * pow(dfield, -0.0533) * pow(density / DENSITY, 0.3);
+      double Qy = 1. / (ThomasImel * sqrt(energy + 12.6));
+      Qy *= (1.-1./(1.+pow((energy/NuisParam[0]),NuisParam[1])));
       double Ly = Nq / energy - Qy;
-      Ne = Qy * energy * ScaleFactor[1] * NuisParam[1];   // use for PLR
-      Nph = Ly * energy * ScaleFactor[0] * NuisParam[0];  // use for PLR
-      NexONi = 1.00 * erf(0.01 * energy);
+      if(Qy<0.0)Qy=0.0;if(Ly<0.0)Ly=0.0;
+      Ne = Qy * energy * ScaleFactor[1];
+      Nph= Ly * energy * ScaleFactor[0]*(1.-1./(1.+pow((energy/NuisParam[2]),NuisParam[3])));
       Nq = Nph + Ne;
+      double Ni = (4./ThomasImel)*(exp(Ne*ThomasImel/4.)-1.);
+      double Nex=(-1./ThomasImel)*(4.*exp(Ne*ThomasImel/4.)-(Ne+Nph)*ThomasImel-4.);
+      if ( Nex != ( Nq - Ni ) || Ni != ( Nq - Nex ) ) {
+	cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
+	exit(1);
+      }
+      NexONi = Nex/Ni; if(NexONi<0.) NexONi=0.;
       L = (Nq / energy) * Wq_eV * 1e-3;
     } break;
     case ion: {
@@ -595,7 +608,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       // TimeTable[0][ii], TimeTable[1][ii] ); pulseFile << line << endl;
     }
   }
-
+  
+  pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noise()[2]*pulseArea);
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
   if (spike < 0) spike = 0;
   double pulseAreaC = pulseArea / posDepSm;
@@ -907,7 +921,8 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
     pulseArea = RandomGen::rndm()->rand_gauss(
         Nphe, fdetector->get_sPEres() * sqrt(Nphe));
   }
-
+  
+  pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noise()[3]*pulseArea);
   double pulseAreaC =
       pulseArea / exp(-dt / fdetector->get_eLife_us()) / posDepSm;
   double Nphd = pulseArea / (1. + fdetector->get_P_dphe());
@@ -991,7 +1006,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
           ->get_TopDrift();  // EL gap in mm -> cm, affecting S2 size linearly
   if (gasGap <= 0. && E_liq > 0.) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
-    exit(0);
+    exit(1);
   }
 
   // Calculate EL yield based on gas gap, extraction field, and pressure
@@ -1153,7 +1168,7 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density,
     i = 9;
   else {
     cerr << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
-    exit(0);
+    exit(1);
   }
 
   j = i + 1;
@@ -1185,11 +1200,11 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density,
   if (speed <= 0.) {
     if (eField < 1e2 && eField >= FIELD_MIN) {
       cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n";
-      exit(0);
+      exit(1);
     }
     if (eField > 1e4) {
       cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO HIGH\n";
-      exit(0);
+      exit(1);
     }
   }
   return speed;

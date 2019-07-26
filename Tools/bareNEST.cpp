@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
   // INTERACTION_TYPE type_num = Kr83m;
   // INTERACTION_TYPE type_num = CH3T;
   // INTERACTION_TYPE type_num = C14;
-  // INTERACTION_TYPE type_num = beta;
+  // INTERACTION_TYPE type_num = NEST::beta;
 
   // Do checks for special-case source spectra
   if (type_num == Kr83m) {
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
       cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV "
               "please."
            << endl;
-      return 0;
+      return 1;
     }
   } else if (type_num == gammaRay) {
     if (eMin < 10. || eMax < 10.) {
@@ -300,5 +300,5 @@ int main(int argc, char** argv) {
                         // all 8 scint2 vector elements. Change as you desire
   }
 
-  return 1;
+  return 0;
 }

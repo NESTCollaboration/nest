@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
             "into NR band."
          << endl
          << endl;
-    return 0;
+    return 1;
   } else if (argc == 2)
     leak = false;
   else
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 
   if (argc < 3) {
     cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
-    return 0;
+    return 1;
   }
 
   FILE* ifp = fopen(argv[1], "r");
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
          << "Input error. Make sure all inputs were numbers (most also "
             "positive or at least 0)"
          << endl;
-    return 0;
+    return 1;
   }
 
   double Ul,
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
   printf("%.1f %e", mass[iMax - 1], xSect[iMax - 1]);  // last bin special
   printf("]}\n");
 
-  return 1;
+  return 0;
 
 #endif
 
@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
 
   if (numBins == 1) {
     GetFile(argv[1]);
-    return 1;
+    return 0;
   }
 
   int freeParam;
@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
     }
     if (!loop) break;
   }  // double curly bracket goes with g1x and g2x loops above
-  return 1;
+  return 0;
 
 #endif
 
@@ -387,7 +387,7 @@ int main(int argc, char** argv) {
       if (chi2 > 2.) {
         cerr << "ERROR: Even the backup plan to use sigmoid failed as well!"
              << endl;
-        return 0;
+        return 1;
       }
     }
     long below[NUMBINS_MAX] = {0};
@@ -452,7 +452,7 @@ int main(int argc, char** argv) {
     delete fitf;
   }
 
-  return 1;
+  return 0;
 }
 
 void GetFile(char* fileName) {
@@ -917,7 +917,7 @@ double WIMP_dRate(double ER, double mWimp) {
       break;
     default:
       cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
-      exit(0);
+      exit(1);
   }
 
   double a = 0.52;                           // in fm

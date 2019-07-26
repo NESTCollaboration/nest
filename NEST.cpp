@@ -266,7 +266,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       Nq = Nph + Ne;
       double Ni = (4./ThomasImel)*(exp(Ne*ThomasImel/4.)-1.);
       double Nex=(-1./ThomasImel)*(4.*exp(Ne*ThomasImel/4.)-(Ne+Nph)*ThomasImel-4.);
-      if ( Nex != ( Nq - Ni ) || Ni != ( Nq - Nex ) ) {
+      if ( fabs(Nex-(Nq-Ni))>PHE_MIN || fabs(Ni-(Nq-Nex))>PHE_MIN ) {
 	cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
 	exit(1);
       }
@@ -630,6 +630,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   scintillation[5] = NphdC;   // same as Nphd, but XYZ-corrected
   scintillation[6] = spike;   // floating real# spike count, NO XYZ correction
   scintillation[7] = spikeC;  // floating real# spike count, WITH XYZ correction
+  scintillation[8] = spike;
 
   if (spike < fdetector->get_coinLevel())  // no chance of meeting coincidence
                                            // requirement. Here, spike is still
@@ -696,8 +697,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
     scintillation[7] *= -1.;
   }
 
-  scintillation[8] =
-      fdetector->get_g1();  // g1 (light collection efficiency in liquid)
+  //scintillation[8] =
+  //  fdetector->get_g1();  // g1 (light collection efficiency in liquid)
 
   return scintillation;
 }

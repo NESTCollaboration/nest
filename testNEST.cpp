@@ -587,8 +587,7 @@ int main(int argc, char** argv) {
     // scint[5] = NphdC; // same as Nphd, but XYZ-corrected
     // scint[6] = spike; // floating real# spike count, NO XYZ correction
     // scint[7] = spikeC; // floating real# spike count, WITH XYZ correction
-    // scint[8] = fdetector->get_g1(); // g1 (light collection efficiency in
-    // liquid)
+    // scint[8] = nHits post coincidence window and N-fold coincidence cuts
 
     // Possible outputs from "scint2" vector
     // scint2[0] = Nee; // integer number of electrons unabsorbed in liquid then

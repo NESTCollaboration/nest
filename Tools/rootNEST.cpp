@@ -459,22 +459,21 @@ void GetFile(char* fileName) {
   FILE* ifp = fopen(fileName, "r");
   double a, b, c, d, e, f, g, h, i, j, k, l, m, n;
   double eMin = 1e100, eMax = -1e100;
-  int o;
-  char line[256];
+  int ch, nLines = 0, o;
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne,
       S1cor_phe, S2cor_phe, S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr,
       S2raw_phe, S2cor_phd;
-
-  rewind(ifp);
-  while (fgets(line, sizeof(line), ifp)) {
-    sscanf(line,
+  
+  while ( EOF != ( ch = getc ( ifp ) ) ) {
+    if ( '\n' == ch && nLines ) break;
+    else nLines = 0;
+    if ( ']' == ch && nLines == 0 ) nLines++;
+  }
+  
+  while ( 1 ) {
+    fscanf(ifp,
            "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
            &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n);
-    if (a < DBL_MIN && b < DBL_MIN && c < DBL_MIN && d < DBL_MIN &&
-        e < DBL_MIN && f < DBL_MIN && g < DBL_MIN && h < DBL_MIN &&
-        i < DBL_MIN && j < DBL_MIN && k < DBL_MIN && l < DBL_MIN &&
-        m < DBL_MIN && n < DBL_MIN)
-      continue;
     if (feof(ifp)) break;
     // fprintf(stderr,"%.6f\t%.6f\t%.6f\t%.6f,%.6f,%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n",a,b,c,d,e,f,g,h,i,j,k,l,m,n);
     E_keV.push_back(a);

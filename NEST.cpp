@@ -113,7 +113,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 }
 
 QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
-  QuantaResult result;
+  QuantaResult result; bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
 
   double NexONi = yields.ExcitonRatio, Fano = 1.;
@@ -123,7 +123,10 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
   if (elecFrac > 1.) elecFrac = 1.;
   if (elecFrac < 0.) elecFrac = 0.;
   
-  if ( NexONi < 0. ) NexONi = 0.;
+  if ( NexONi < 0. ) { 
+    NexONi = 0.;
+    HighE = true;
+  } else HighE = false;
   double alf = 1./(1. + NexONi);
   double recombProb = 1.-(NexONi+1.)*elecFrac;
   if ( recombProb < 0. )
@@ -177,7 +180,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
   result.ions = Ni;
   result.excitons = Nex;
   
-  if ( Nex <= 0 ) recombProb = yields.PhotonYield / double(Ni);
+  if ( Nex <= 0 && HighE )
+    recombProb = yields.PhotonYield / double(Ni);
   if (recombProb < 0.) recombProb = 0.;
   if (recombProb > 1.) recombProb = 1.;
   if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
@@ -270,7 +274,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
 	cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
 	exit(1);
       }
-      NexONi = Nex/Ni; if(NexONi<0.) NexONi=0.;
+      NexONi = Nex / Ni;
       L = (Nq / energy) * Wq_eV * 1e-3;
     } break;
     case ion: {
@@ -392,7 +396,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
   if (Ne > energy / W_SCINT) Ne = energy / W_SCINT;
   if (Nph < 0.) Nph = 0.;
   if (Ne < 0.) Ne = 0.;
-  if (NexONi < 0.) NexONi = 0.;
+  //if (NexONi < 0.) NexONi = 0.;
   if (L < 0.) L = 0.;
   if (L > 1.) L = 1.;  // Lindhard Factor
   if (energy < 0.001 * Wq_eV / L) {

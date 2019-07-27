@@ -123,6 +123,9 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       double etot =
           std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
                           [](double a, Hit b) { return a + b.E; });
+      if(etot==0){
+        continue;
+      }
       G4ThreeVector maxHit_xyz = std::max_element(lineage.hits.begin(),lineage.hits.end(),
                                                   [](Hit a, Hit b){return a.E < b.E;})->xyz;
       double efield_here = fDetector->FitEF(maxHit_xyz.x(),maxHit_xyz.y(),maxHit_xyz.z());

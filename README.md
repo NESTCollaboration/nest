@@ -127,15 +127,24 @@ make clean; make; make install
 <a name="linknest"></a>
 ### Linking NEST in a Separate CMake Project
 
-CMake configuration files are present in the install directory. You may use these to include NEST in cmake-configured
-projects by including in your project's CMakeLists.txt:
+CMake configuration files are present in the install directory. 
+You may use these to include NEST in cmake-configured projects.  
+
+As an example, if you would like to link NEST in a project which generates an executable called "MyApp"
+from the script "MyApp.cc", add the following lines to your CMakeLists.txt:
 
 ```
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+set (CMAKE_CXX_STANDARD 11)
+
 find_package(NEST REQUIRED)
 include_directories(${NEST_INCLUDE_DIRS})
+
+add_executable(MyApp MyApp.cc)
+target_link_libraries(MyApp NEST)
 ```
 
-Then, run CMake on your projects with the flag:
+Then, include the following flag when running CMake on your project:
 
 ```
 -DNEST_DIR=[path to NEST install directory]

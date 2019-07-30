@@ -24,7 +24,7 @@
 #include <string.h>
 #include <vector>
 
-#include "../analysis.hh"
+#include "../include/analysis.hh"
 #include "../include/TestSpectra.hh"  // contains the WIMP, earth, and escape velocities
 
 // Set the compile mode:

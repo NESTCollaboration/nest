@@ -55,6 +55,7 @@ int main(int argc, char** argv) {
   double eMax = atof(argv[4]);
   double inField = atof(argv[5]);
   string position = argv[6];
+  string posiMuon = argv[4];
   double fPos = atof(argv[6]);
 
   int seed;
@@ -66,12 +67,12 @@ int main(int argc, char** argv) {
     no_seed = true;
   }
 
-  return testNEST(detector, numEvts, type, eMin, eMax, inField, position, fPos,
+  return testNEST(detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos,
                   seed, no_seed);
 }
 
 int testNEST(VDetector* detector, unsigned long int numEvts, string type,
-             double eMin, double eMax, double inField, string position,
+             double eMin, double eMax, double inField, string position, string posiMuon,
              double fPos, int seed, bool no_seed) {
   // Construct NEST class using detector object
   NESTcalc n(detector);
@@ -118,18 +119,18 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   if (type == "NR" || type == "neutron" || type == "-1")
     type_num = NR;  //-1: default particle type is also NR
   else if (type == "WIMP") {
-    if (eMin < 0.44) {
+    if (eMin < 0.44) { //here eMin is WIMP mass
       cerr << "WIMP mass too low, you're crazy!" << endl;
       return 1;
     }
     type_num = WIMP;
     spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(eMin, E_step);
-    numEvts = RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral *
-                                              1.0 * numEvts * eMax / 1e-36);
+    numEvts = RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral * //here eMax is cross-section
+                                              1.0 * double(numEvts) * eMax / 1e-36);
   } else if (type == "B8" || type == "Boron8" || type == "8Boron" ||
              type == "8B" || type == "Boron-8") {
     type_num = B8;
-    numEvts = RandomGen::rndm()->poisson_draw(0.0026 * numEvts);
+    numEvts = RandomGen::rndm()->poisson_draw(0.0026 * double(numEvts));
   } else if (type == "DD" || type == "D-D")
     type_num = DD;
   else if (type == "AmBe")
@@ -433,7 +434,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         xi = r * cos(phi);
         yi = r * sin(phi);
       } else {
-        position = eMax;  // ?
+        position = posiMuon;
         delimiter = ",";
         loc = 0;
         int ii = 0;

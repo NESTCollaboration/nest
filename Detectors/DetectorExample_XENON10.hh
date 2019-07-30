@@ -45,14 +45,14 @@ class DetectorExample_XENON10 : public VDetector {
     coinWind = 100;  // S1 coincidence window in ns
     coinLevel = 2;   // how many PMTs have to fire for an S1 to count
     numPMTs = 89;    // For coincidence calculation
-    
+
     //"Linear noise" terms as defined in Dahl thesis and by D. McK
-    noise[2] = 3e-2; // S1 -> S1 Gaussian-smeared with noise[2]*S1
-    noise[3] = 3e-2; // S2 -> S2 Gaussian-smeared with noise[3]*S2
-    
+    noise[2] = 3e-2;  // S1 -> S1 Gaussian-smeared with noise[2]*S1
+    noise[3] = 3e-2;  // S2 -> S2 Gaussian-smeared with noise[3]*S2
+
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas =.0655;  // phd per S2 photon in gas, used to get SE size
-    s2Fano = 3.61;  // Fano-like fudge factor for SE width
+    g1_gas = .0655;  // phd per S2 photon in gas, used to get SE size
+    s2Fano = 3.61;   // Fano-like fudge factor for SE width
     s2_thr = 300.;  // the S2 threshold in phe or PE, *not* phd. Affects NR most
     E_gas = 12.;    // field in kV/cm between liquid/gas border and anode
     eLife_us = 2200.;  // the drift electron mean lifetime in micro-seconds
@@ -141,8 +141,8 @@ class DetectorExample_XENON10 : public VDetector {
     if (RandomGen::rndm()->rand_uniform() < A)
       phoTravT = 0.;  // direct travel time to PMTs (low)
     else {            // using P0(t) =
-            // A*delta(t)+(1-A)*[(B_a/tau_a)e^(-t/tau_a)+(B_b/tau_b)e^(-t/tau_b)]
-            // LUX PSD paper, but should apply to all detectors w/ diff #'s
+      // A*delta(t)+(1-A)*[(B_a/tau_a)e^(-t/tau_a)+(B_b/tau_b)e^(-t/tau_b)]
+      // LUX PSD paper, but should apply to all detectors w/ diff #'s
       if (RandomGen::rndm()->rand_uniform() < B_a)
         phoTravT = -tau_a * log(RandomGen::rndm()->rand_uniform());
       else

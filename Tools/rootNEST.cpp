@@ -29,7 +29,7 @@
 
 // Set the compile mode:
 //#define FIT //outputs the goodness of fit for one band (Gaussian centroids of
-//histogram in S1 slices)
+// histogram in S1 slices)
 //#define LIMIT //outputs wimp masses and cross-sections for given efficiency
 // default if neither is selected is to provide the ER BG discrimination &
 // leakage frac
@@ -78,18 +78,17 @@ int main(int argc, char** argv) {
   int i = 0;
 
   if (argc < 2) {
-    cout << endl << "This program takes 1 (or 2) inputs." << endl << endl;
+    cout << endl
+         << "This program takes 1 (or 2) inputs." << endl
+         << endl;
     cout << "One input means you are just doing a band of Gaussians." << endl
          << endl;
     cout << "Two inputs means you're doing both ER and NR and calculating "
-            "leakage and discrimination."
-         << endl;
+            "leakage and discrimination." << endl;
     cout << "If you write NR first, you're seeking characterization of the "
-            "non-Gaussian asymmetry of NR band."
-         << endl;
+            "non-Gaussian asymmetry of NR band." << endl;
     cout << "If you write ER first, you're finding non-Gaussian leakage of ER "
-            "into NR band."
-         << endl
+            "into NR band." << endl
          << endl;
     return 1;
   } else if (argc == 2)
@@ -160,8 +159,7 @@ int main(int argc, char** argv) {
       loE < 0. || hiE <= 0. || numBGeventsExp < 0. || numBGeventsObs < 0.) {
     cerr << endl
          << "Input error. Make sure all inputs were numbers (most also "
-            "positive or at least 0)"
-         << endl;
+            "positive or at least 0)" << endl;
     return 1;
   }
 
@@ -463,14 +461,16 @@ void GetFile(char* fileName) {
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne,
       S1cor_phe, S2cor_phe, S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr,
       S2raw_phe, S2cor_phd;
-  
-  while ( EOF != ( ch = getc ( ifp ) ) ) {
-    if ( '\n' == ch && nLines ) break;
-    else nLines = 0;
-    if ( ']' == ch && nLines == 0 ) nLines++;
+
+  while (EOF != (ch = getc(ifp))) {
+    if ('\n' == ch && nLines)
+      break;
+    else
+      nLines = 0;
+    if (']' == ch && nLines == 0) nLines++;
   }
-  
-  while ( 1 ) {
+
+  while (1) {
     fscanf(ifp,
            "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
            &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n);
@@ -726,18 +726,21 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
             if (useS2 == 0) {
               if (S1s[i] && S2s[i] && log10(S2s[i] / S1s[i]) > logMin &&
                   log10(S2s[i] / S1s[i]) < logMax)
-              signals[j].push_back(log10(S2s[i] / S1s[i]));
-              else signals[j].push_back(0.);
+                signals[j].push_back(log10(S2s[i] / S1s[i]));
+              else
+                signals[j].push_back(0.);
             } else if (useS2 == 1) {
               if (S1s[i] && S2s[i] && log10(S2s[i]) > logMin &&
                   log10(S2s[i]) < logMax)
-              signals[j].push_back(log10(S2s[i]));
-              else signals[j].push_back(0.);
+                signals[j].push_back(log10(S2s[i]));
+              else
+                signals[j].push_back(0.);
             } else {
               if (S1s[i] && S2s[i] && log10(S1s[i] / S2s[i]) > logMin &&
                   log10(S1s[i] / S2s[i]) < logMax)
-              signals[j].push_back(log10(S1s[i] / S2s[i]));
-              else signals[j].push_back(0.);
+                signals[j].push_back(log10(S1s[i] / S2s[i]));
+              else
+                signals[j].push_back(0.);
             }
           }
           band[j][2] += signals[j].back();
@@ -924,10 +927,10 @@ double WIMP_dRate(double ER, double mWimp) {
   double s = 0.9;  // skin depth of nucleus in fm. Originally used by Karen
                    // Gibson; XENON100 1fm; 2.30 acc. to Lewin and Smith maybe?
   double rn = sqrt(C * C + (7. / 3.) * M_PI * M_PI * a * a -
-                   5. * s * s);  // alternatives: 1.14*A^1/3 given in L&S, or
-                                 // rv=1.2*A^1/3 then rn =
-                                 // sqrt(pow(rv,2.)-5.*pow(s,2.)); used by
-                                 // XENON100 (fm)
+                   5. * s * s);    // alternatives: 1.14*A^1/3 given in L&S, or
+                                   // rv=1.2*A^1/3 then rn =
+                                   // sqrt(pow(rv,2.)-5.*pow(s,2.)); used by
+                                   // XENON100 (fm)
   double q = 6.92 * sqrt(A * ER);  // in units of 1 over distance or length
   double FormFactor;
   if (q * rn > 0.)

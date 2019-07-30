@@ -5,6 +5,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 [![Build Status](https://travis-ci.com/NESTCollaboration/nest.svg?token=8i3psWNJAskpVjC6qe3w&branch=master)](https://travis-ci.com/NESTCollaboration/nest)
 [![DOI](https://zenodo.org/badge/96344242.svg)](https://zenodo.org/badge/latestdoi/96344242)
 
+(For Python bindings, see the related [nestpy project](https://github.com/NESTCollaboration/nestpy))
 
 ### Table of Contents
 
@@ -30,6 +31,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 9. [ Contact (Authors) ](#contact)
 10. [ Citation ](#citation)
 11. [ License ](#license)
+12. [ Python ](#python)
 
 
 <a name="get"></a>
@@ -481,10 +483,21 @@ See also the list of [contributors](https://github.com/orgs/NESTCollaboration/pe
 <a name="citation"></a>
 ## Citation
 
-TBD
+For now, please cite the version of the code that you are using by using the [Zenodo DOI](https://doi.org/10.5281/zenodo.2535713), where at the link you can get various bibliography styles including BibTeX.
 
 
 <a name="license"></a>
 ## License
 
+This code is licensed under the Open Source [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) License. It is available within the repository as the LICENSE file.
 
+<a name="python"></a>
+## Python
+
+Python bindings are provided using pybind11 and distributed through the Python Package Index:
+
+```
+pip install nestpy
+```
+
+For more information, please see [the bindings project](https://github.com/NESTCollaboration/nestpy).

@@ -734,6 +734,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       }
     }
   }
+  return 0;
 }
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,

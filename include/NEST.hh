@@ -108,8 +108,8 @@ typedef enum {
   Cf = 5,
   ion = 6,  // includes alphas, Pb-206
   // electron recoil
-  gammaRay = 7, //only photoelectric
-  beta = 8, //includes comptons
+  gammaRay = 7,  // only photoelectric
+  beta = 8,  // includes comptons
   CH3T = 9,
   C14 = 10,
   Kr83m = 11,
@@ -161,7 +161,8 @@ class NESTcalc {
   // non-binomial fluctuations
   NESTresult FullCalculation(INTERACTION_TYPE species, double energy,
                              double density, double dfield, double A, double Z,
-                             std::vector<double> NuisParam = {1, 1}, bool do_times=true);
+                             std::vector<double> NuisParam = {1, 1},
+                             bool do_times = true);
   // the so-called full NEST calculation puts together all the individual
   // functions/calculations below
   double PhotonTime(INTERACTION_TYPE species, bool exciton, double dfield,

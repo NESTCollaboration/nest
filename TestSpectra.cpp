@@ -304,10 +304,10 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp) {
   double s = 0.9;  // skin depth of nucleus in fm. Originally used by Karen
                    // Gibson; XENON100 1fm; 2.30 acc. to Lewin and Smith maybe?
   double rn = sqrt(C * C + (7. / 3.) * M_PI * M_PI * a * a -
-                   5. * s * s);  // alternatives: 1.14*A^1/3 given in L&S, or
-                                 // rv=1.2*A^1/3 then rn =
-                                 // sqrt(pow(rv,2.)-5.*pow(s,2.)); used by
-                                 // XENON100 (fm)
+                   5. * s * s);    // alternatives: 1.14*A^1/3 given in L&S, or
+                                   // rv=1.2*A^1/3 then rn =
+                                   // sqrt(pow(rv,2.)-5.*pow(s,2.)); used by
+                                   // XENON100 (fm)
   double q = 6.92 * sqrt(A * ER);  // in units of 1 over distance or length
   double FormFactor;
   if (q * rn > 0.)
@@ -371,8 +371,7 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass,
       spectrum.xMax = double(i - 1) / divisor;
       if (spectrum.xMax <= 0.0) {
         cerr << "ERROR: The maximum possible WIMP recoil is negative, which "
-                "usually means your E_step is too small."
-             << endl;
+                "usually means your E_step is too small." << endl;
         exit(1);
       }
       break;

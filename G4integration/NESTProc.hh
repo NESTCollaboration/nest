@@ -19,7 +19,6 @@
 #include "G4ProductionCuts.hh"
 #include "NEST.hh"
 
-
 namespace NEST {
 
 struct Hit {
@@ -43,32 +42,28 @@ struct Lineage {
   bool result_calculated = false;
 };
 
-class NoTimeParticleChange : public G4ParticleChange{
-public:
-    NoTimeParticleChange():G4ParticleChange() {debugFlag=false;}
-
+class NoTimeParticleChange : public G4ParticleChange {
+ public:
+  NoTimeParticleChange() : G4ParticleChange() { debugFlag = false; }
 };
 
-class NESTThermalElectron : public G4ParticleDefinition
-{
+class NESTThermalElectron : public G4ParticleDefinition {
  private:
-   static NESTThermalElectron* theInstance;
-   NESTThermalElectron(){}
-   ~NESTThermalElectron(){}
+  static NESTThermalElectron* theInstance;
+  NESTThermalElectron() {}
+  ~NESTThermalElectron() {}
 
  public:
-   static NESTThermalElectron* Definition();
-   static NESTThermalElectron* ThermalElectronDefinition();
-   static NESTThermalElectron* ThermalElectron();
+  static NESTThermalElectron* Definition();
+  static NESTThermalElectron* ThermalElectronDefinition();
+  static NESTThermalElectron* ThermalElectron();
 };
-
 
 class NESTProc : public G4VRestDiscreteProcess {
  public:  // constructor and destructor
   NESTProc(const G4String& processName = "S1",
            G4ProcessType type = fElectromagnetic, double efield = 0,
-           VDetector* detector =
-               new VDetector());
+           VDetector* detector = new VDetector());
   ~NESTProc();
 
  public:  // methods, with descriptions
@@ -89,7 +84,7 @@ class NESTProc : public G4VRestDiscreteProcess {
   // For in-flight particles losing energy (or those stopped)
   G4VParticleChange* PostStepDoIt(const G4Track& aTrack, const G4Step& aStep);
   G4VParticleChange* AtRestDoIt(const G4Track& aTrack, const G4Step& aStep);
-  
+
   // These are the methods implementing the scintillation process.
 
   void SetTrackSecondariesFirst(const G4bool state);
@@ -113,10 +108,17 @@ class NESTProc : public G4VRestDiscreteProcess {
   Lineage GetChildType(const G4Track* aTrack, const G4Track* sec) const;
   double efield = 0;
   G4Track* MakePhoton(G4ThreeVector xyz, double t);
-  G4Track* MakeElectron(G4ThreeVector xyz, double density,double t);
-  std::vector<NEST::Lineage> getLastLineages() const{ return lineages_prevEvent;}
-  void SetDetailedSecondaries(bool detailed) { detailed_secondaries=detailed;}
-  void SetAnalysisTrigger(std::function<void(std::vector<NEST::Lineage>) > _analysisTrigger) {this->analysisTrigger=_analysisTrigger; }
+  G4Track* MakeElectron(G4ThreeVector xyz, double density, double t);
+  std::vector<NEST::Lineage> getLastLineages() const {
+    return lineages_prevEvent;
+  }
+  void SetDetailedSecondaries(bool detailed) {
+    detailed_secondaries = detailed;
+  }
+  void SetAnalysisTrigger(
+      std::function<void(std::vector<NEST::Lineage>)> _analysisTrigger) {
+    this->analysisTrigger = _analysisTrigger;
+  }
 
  protected:
   G4bool fTrackSecondariesFirst;  // see above
@@ -126,16 +128,15 @@ class NESTProc : public G4VRestDiscreteProcess {
   std::vector<NEST::Lineage> lineages;
   std::vector<NEST::Lineage> lineages_prevEvent;
   std::map<std::tuple<int, CLHEP::Hep3Vector, CLHEP::Hep3Vector>,
-           long unsigned int>
-      track_lins;
+           long unsigned int> track_lins;
   std::unique_ptr<VDetector> fDetector;
   NoTimeParticleChange fParticleChange;
 
   G4double YieldFactor;  // turns scint. on/off
-  bool detailed_secondaries=true;
-  
-  int verbose=0;
-  
+  bool detailed_secondaries = true;
+
+  int verbose = 0;
+
   std::function<void(std::vector<NEST::Lineage>)> analysisTrigger;
 };
 
@@ -160,10 +161,8 @@ inline G4double NESTProc::GetScintillationYieldFactor() const {
   return YieldFactor;
 }
 
-inline 
-void NESTProc::SetTrackSecondariesFirst(const G4bool state) 
-{ 
-	fTrackSecondariesFirst = state;
+inline void NESTProc::SetTrackSecondariesFirst(const G4bool state) {
+  fTrackSecondariesFirst = state;
 }
 }
 

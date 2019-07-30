@@ -27,8 +27,7 @@ using namespace NEST;
 int main(int argc, char** argv) {
   // Give a message establishing the use of this code
   cerr << "NOTE: This is a skeleton code meant to be a starting point for "
-          "custom uses of NEST."
-       << endl
+          "custom uses of NEST." << endl
        << endl;
 
   // Instantiate your own VDetector class here, then load into NEST class
@@ -82,18 +81,15 @@ int main(int argc, char** argv) {
     } else if (eMin == 32.1 && eMax == 32.1) {
     } else {
       cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV "
-              "please."
-           << endl;
+              "please." << endl;
       return 1;
     }
   } else if (type_num == gammaRay) {
     if (eMin < 10. || eMax < 10.) {
       cerr << "WARNING: Typically beta model works better for ER BG at low "
-              "energies as in a WS."
-           << endl;
+              "energies as in a WS." << endl;
       cerr << "ER data is often best matched by a weighted average of the beta "
-              "& gamma models."
-           << endl;
+              "& gamma models." << endl;
     }
   }
 

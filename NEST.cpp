@@ -29,13 +29,16 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
-                                     vector<double> NuisParam /*={1,1}*/, bool do_times /*=true*/) {
+                                     vector<double> NuisParam /*={1,1}*/,
+                                     bool do_times /*=true*/) {
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
   result.quanta = GetQuanta(result.yields, density);
-  if(do_times) result.photon_times = GetPhotonTimes(species, result.quanta.photons,
-                                       result.quanta.excitons, dfield, energy);
-  else result.photon_times = photonstream(result.quanta.photons,0.0); 
+  if (do_times)
+    result.photon_times = GetPhotonTimes(
+        species, result.quanta.photons, result.quanta.excitons, dfield, energy);
+  else
+    result.photon_times = photonstream(result.quanta.photons, 0.0);
   return result;
 }
 
@@ -113,25 +116,26 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 }
 
 QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
-  QuantaResult result; bool HighE;
+  QuantaResult result;
+  bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
 
   double NexONi = yields.ExcitonRatio, Fano = 1.;
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
-  
+
   double elecFrac = yields.ElectronYield / Nq_mean;
   if (elecFrac > 1.) elecFrac = 1.;
   if (elecFrac < 0.) elecFrac = 0.;
-  
-  if ( NexONi < 0. ) { 
+
+  if (NexONi < 0.) {
     NexONi = 0.;
     HighE = true;
-  } else HighE = false;
-  double alf = 1./(1. + NexONi);
-  double recombProb = 1.-(NexONi+1.)*elecFrac;
-  if ( recombProb < 0. )
-    NexONi = 1./elecFrac - 1.;
-  
+  } else
+    HighE = false;
+  double alf = 1. / (1. + NexONi);
+  double recombProb = 1. - (NexONi + 1.) * elecFrac;
+  if (recombProb < 0.) NexONi = 1. / elecFrac - 1.;
+
   if (yields.Lindhard == 1.) {
     Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
            0.0057042 *
@@ -179,9 +183,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
 
   result.ions = Ni;
   result.excitons = Nex;
-  
-  if ( Nex <= 0 && HighE )
-    recombProb = yields.PhotonYield / double(Ni);
+
+  if (Nex <= 0 && HighE) recombProb = yields.PhotonYield / double(Ni);
   if (recombProb < 0.) recombProb = 0.;
   if (recombProb > 1.) recombProb = 1.;
   if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
@@ -202,7 +205,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
   double aa = cc / pow(1. - bb, 2.);
   double omega = -aa * pow(recombProb - bb, 2.) + cc;
   if (omega < 0.0) omega = 0.0;
-  
+
   if (yields.Lindhard < 1.) omega = 0.1 * exp(-pow(elecFrac - 0.5, 2.) / 0.07);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
@@ -249,34 +252,39 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
     case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
               // statement. Same intrinsic yields, but different energy spectra
               // (TestSpectra)
-    {
-      int massNumber;
-      double ScaleFactor[2] = {1., 1.};
-      if (massNum != 0.)
-        massNumber = int(massNum);
-      else
-        massNumber = RandomGen::rndm()->SelectRanXeAtom();
-      ScaleFactor[0] = sqrt(MOLAR_MASS / (double)massNumber);
-      ScaleFactor[1] = ScaleFactor[0];
-      double Nq = 11. * pow(energy, 1.1);
-      double ThomasImel =
-          0.0480 * pow(dfield, -0.0533) * pow(density / DENSITY, 0.3);
-      double Qy = 1. / (ThomasImel * sqrt(energy + 12.6));
-      Qy *= (1.-1./(1.+pow((energy/NuisParam[0]),NuisParam[1])));
-      double Ly = Nq / energy - Qy;
-      if(Qy<0.0)Qy=0.0;if(Ly<0.0)Ly=0.0;
-      Ne = Qy * energy * ScaleFactor[1];
-      Nph= Ly * energy * ScaleFactor[0]*(1.-1./(1.+pow((energy/NuisParam[2]),NuisParam[3])));
-      Nq = Nph + Ne;
-      double Ni = (4./ThomasImel)*(exp(Ne*ThomasImel/4.)-1.);
-      double Nex=(-1./ThomasImel)*(4.*exp(Ne*ThomasImel/4.)-(Ne+Nph)*ThomasImel-4.);
-      if ( fabs(Nex-(Nq-Ni))>PHE_MIN || fabs(Ni-(Nq-Nex))>PHE_MIN ) {
-	cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
-	exit(1);
+      {
+        int massNumber;
+        double ScaleFactor[2] = {1., 1.};
+        if (massNum != 0.)
+          massNumber = int(massNum);
+        else
+          massNumber = RandomGen::rndm()->SelectRanXeAtom();
+        ScaleFactor[0] = sqrt(MOLAR_MASS / (double)massNumber);
+        ScaleFactor[1] = ScaleFactor[0];
+        double Nq = 11. * pow(energy, 1.1);
+        double ThomasImel =
+            0.0480 * pow(dfield, -0.0533) * pow(density / DENSITY, 0.3);
+        double Qy = 1. / (ThomasImel * sqrt(energy + 12.6));
+        Qy *= (1. - 1. / (1. + pow((energy / NuisParam[0]), NuisParam[1])));
+        double Ly = Nq / energy - Qy;
+        if (Qy < 0.0) Qy = 0.0;
+        if (Ly < 0.0) Ly = 0.0;
+        Ne = Qy * energy * ScaleFactor[1];
+        Nph = Ly * energy * ScaleFactor[0] *
+              (1. - 1. / (1. + pow((energy / NuisParam[2]), NuisParam[3])));
+        Nq = Nph + Ne;
+        double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
+        double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
+                                           (Ne + Nph) * ThomasImel - 4.);
+        if (fabs(Nex - (Nq - Ni)) > PHE_MIN ||
+            fabs(Ni - (Nq - Nex)) > PHE_MIN) {
+          cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
+          exit(1);
+        }
+        NexONi = Nex / Ni;
+        L = (Nq / energy) * Wq_eV * 1e-3;
       }
-      NexONi = Nex / Ni;
-      L = (Nq / energy) * Wq_eV * 1e-3;
-    } break;
+      break;
     case ion: {
       double A1 = massNum, A2 = RandomGen::rndm()->SelectRanXeAtom();
       double Z1 = atomNum, Z2 = ATOM_NUM;
@@ -377,7 +385,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       double LET_power = -2.;
       if (fdetector->get_inGas()) LET_power = 2.;
       double QyLvlhighE = 28.;
-//      if (density > 3.) QyLvlhighE = 49.; Solid Xe effect from Yoo. But, beware of enabling this line: enriched liquid Xe for neutrinoless double beta decay has density higher than 3g/cc;
+      //      if (density > 3.) QyLvlhighE = 49.; Solid Xe effect from Yoo. But,
+      //      beware of enabling this line: enriched liquid Xe for neutrinoless
+      //      double beta decay has density higher than 3g/cc;
       double Qy = QyLvlmedE +
                   (QyLvllowE - QyLvlmedE) /
                       pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) +
@@ -396,7 +406,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
   if (Ne > energy / W_SCINT) Ne = energy / W_SCINT;
   if (Nph < 0.) Nph = 0.;
   if (Ne < 0.) Ne = 0.;
-  //if (NexONi < 0.) NexONi = 0.;
+  // if (NexONi < 0.) NexONi = 0.;
   if (L < 0.) L = 0.;
   if (L > 1.) L = 1.;  // Lindhard Factor
   if (energy < 0.001 * Wq_eV / L) {
@@ -612,8 +622,9 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       // TimeTable[0][ii], TimeTable[1][ii] ); pulseFile << line << endl;
     }
   }
-  
-  pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noise()[2]*pulseArea);
+
+  pulseArea = RandomGen::rndm()->rand_gauss(
+      pulseArea, fdetector->get_noise()[2] * pulseArea);
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
   if (spike < 0) spike = 0;
   double pulseAreaC = pulseArea / posDepSm;
@@ -701,7 +712,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
     scintillation[7] *= -1.;
   }
 
-  //scintillation[8] =
+  // scintillation[8] =
   //  fdetector->get_g1();  // g1 (light collection efficiency in liquid)
 
   return scintillation;
@@ -926,8 +937,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
     pulseArea = RandomGen::rndm()->rand_gauss(
         Nphe, fdetector->get_sPEres() * sqrt(Nphe));
   }
-  
-  pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noise()[3]*pulseArea);
+
+  pulseArea = RandomGen::rndm()->rand_gauss(
+      pulseArea, fdetector->get_noise()[3] * pulseArea);
   double pulseAreaC =
       pulseArea / exp(-dt / fdetector->get_eLife_us()) / posDepSm;
   double Nphd = pulseArea / (1. + fdetector->get_P_dphe());

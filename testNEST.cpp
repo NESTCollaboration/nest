@@ -14,20 +14,12 @@
 #include "NEST.hh"
 #include "TestSpectra.hh"
 #include "analysis.hh"
+#include "testNEST.hh"
 
 #include "DetectorExample_XENON10.hh"
 
 using namespace std;
 using namespace NEST;
-
-/*
- *
- */
-
-double band[NUMBINS_MAX][6], energies[3];
-vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
-                               bool resol);
-void GetEnergyRes(vector<double> Es);
 
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
@@ -37,6 +29,50 @@ int main(int argc, char** argv) {
   // Custom parameter modification functions
   // detector->ExampleFunction();
 
+  if (argc < 7) {
+    cout << "This program takes 6 (or 7) inputs, with Z position in mm from "
+            "bottom of detector:" << endl;
+    cout << "\t./testNEST numEvts type_interaction E_min[keV] E_max[keV] "
+            "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl
+         << endl;
+    cout << "For 8B, numEvts is kg-days of exposure with everything else same. "
+            "For WIMPs:" << endl;
+    cout << "\t./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] "
+            "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl
+         << endl;
+    cout << "For cosmic-ray muons or other similar particles with elongated "
+            "track lengths:" << endl;
+    cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] "
+            "x,y-position[mm](Initial) field_drift[V/cm] "
+            "x,y,z-position[mm](Final) {optional:seed}" << endl
+         << endl;
+    return 1;
+  }
+
+  unsigned long int numEvts = atoi(argv[1]);
+  string type = argv[2];
+  double eMin = atof(argv[3]);
+  double eMax = atof(argv[4]);
+  double inField = atof(argv[5]);
+  string position = argv[6];
+  double fPos = atof(argv[6]);
+
+  int seed;
+  bool no_seed;
+  if (argc == 8) {
+    seed = atoi(argv[7]);
+  } else {
+    seed = 0;
+    no_seed = true;
+  }
+
+  return testNEST(detector, numEvts, type, eMin, eMax, inField, position, fPos,
+                  seed, no_seed);
+}
+
+int testNEST(VDetector* detector, unsigned long int numEvts, string type,
+             double eMin, double eMax, double inField, string position,
+             double fPos, int seed, bool no_seed) {
   // Construct NEST class using detector object
   NESTcalc n(detector);
 
@@ -48,61 +84,33 @@ int main(int argc, char** argv) {
   }
 
   vector<double> signal1, signal2, signalE, vTable,
-    NuisParam = {0.3, 2., 0.3, 2.};  // scaling factors, for now just for NR Ly & Qy.
-                             // But must initialize!
-  string position, delimiter, token;
+      NuisParam = {0.3, 2., 0.3,
+                   2.};  // scaling factors, for now just for NR Ly & Qy.
+  // But must initialize!
+  string delimiter, token;
   size_t loc;
   int index;
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD,
       vD_middle = 0., atomNum = 0, massNum = 0, keVee = 0.0;
   YieldResult yieldsMax;
 
-  if (argc < 7) {
-    cout << "This program takes 6 (or 7) inputs, with Z position in mm from "
-            "bottom of detector:"
-         << endl;
-    cout << "\t./testNEST numEvts type_interaction E_min[keV] E_max[keV] "
-            "field_drift[V/cm] x,y,z-position[mm] {optional:seed}"
-         << endl
-         << endl;
-    cout << "For 8B, numEvts is kg-days of exposure with everything else same. "
-            "For WIMPs:"
-         << endl;
-    cout << "\t./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] "
-            "field_drift[V/cm] x,y,z-position[mm] {optional:seed}"
-         << endl
-         << endl;
-    cout << "For cosmic-ray muons or other similar particles with elongated "
-            "track lengths:"
-         << endl;
-    cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] "
-            "x,y-position[mm](Initial) field_drift[V/cm] "
-            "x,y,z-position[mm](Final) {optional:seed}"
-         << endl
-         << endl;
-    return 1;
+  if (no_seed != true) {
+    if (seed == -1) {
+      RandomGen::rndm()->SetSeed(time(NULL));
+    }
+
+    else {
+      RandomGen::rndm()->SetSeed(seed);
+    }
   }
 
-  unsigned long int numEvts = atoi(argv[1]);
-  string type = argv[2];
-  double eMin = atof(argv[3]);
   if (eMin == -1.) eMin = 0.;
-  double eMax = atof(argv[4]);
+
   if (eMax == -1. && eMin == 0.)
     eMax = 1e2;  // the default energy max is 100 keV
   if (eMax == 0.) {
     cerr << "ERROR: The maximum energy cannot be 0 keV!" << endl;
     return 1;
-  }
-  double inField = atof(argv[5]);
-  position = argv[6];
-  double fPos = atof(argv[6]);
-
-  if (argc == 8) {
-    if (atoi(argv[7]) == -1)
-      RandomGen::rndm()->SetSeed(time(NULL));
-    else
-      RandomGen::rndm()->SetSeed(atoi(argv[7]));
   }
 
   INTERACTION_TYPE type_num;
@@ -110,19 +118,18 @@ int main(int argc, char** argv) {
   if (type == "NR" || type == "neutron" || type == "-1")
     type_num = NR;  //-1: default particle type is also NR
   else if (type == "WIMP") {
-    if (atof(argv[3]) < 0.44) {
+    if (eMin < 0.44) {
       cerr << "WIMP mass too low, you're crazy!" << endl;
       return 1;
     }
     type_num = WIMP;
-    spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(atof(argv[3]), E_step);
-    numEvts =
-        RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral * 1.0 *
-                                        atof(argv[1]) * atof(argv[4]) / 1e-36);
+    spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(eMin, E_step);
+    numEvts = RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral *
+                                              1.0 * numEvts * eMax / 1e-36);
   } else if (type == "B8" || type == "Boron8" || type == "8Boron" ||
              type == "8B" || type == "Boron-8") {
     type_num = B8;
-    numEvts = RandomGen::rndm()->poisson_draw(0.0026 * atof(argv[1]));
+    numEvts = RandomGen::rndm()->poisson_draw(0.0026 * numEvts);
   } else if (type == "DD" || type == "D-D")
     type_num = DD;
   else if (type == "AmBe")
@@ -182,19 +189,16 @@ int main(int argc, char** argv) {
     } else if (eMin == 32.1 && eMax == 32.1) {
     } else {
       cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV "
-              "please."
-           << endl;
+              "please." << endl;
       return 1;
     }
   }
 
   if ((eMin < 10. || eMax < 10.) && type_num == gammaRay) {
     cerr << "WARNING: Typically beta model works better for ER BG at low "
-            "energies as in a WS."
-         << endl;
+            "energies as in a WS." << endl;
     cerr << "ER data is often best matched by a weighted average of the beta & "
-            "gamma models."
-         << endl;
+            "gamma models." << endl;
   }
 
   double rho = n.SetDensity(detector->get_T_Kelvin(), detector->get_p_bar());
@@ -218,7 +222,7 @@ int main(int argc, char** argv) {
   double centralZ =
       (detector->get_gate() - 100. + detector->get_cathode() + 1.5) /
       2.;  // fid vol def usually shave more off the top, because of gas
-           // interactions (100->10cm)
+  // interactions (100->10cm)
   double centralField = detector->FitEF(0.0, 0.0, centralZ);
 
   if (type_num == WIMP) {
@@ -237,8 +241,8 @@ int main(int argc, char** argv) {
       yieldsMax = n.GetYields(NEST::beta, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum),
                               NuisParam);  // the reason for this: don't do the
-                                           // special Kr stuff when just
-                                           // checking max
+    // special Kr stuff when just
+    // checking max
     else
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum), NuisParam);
@@ -260,7 +264,7 @@ int main(int argc, char** argv) {
           keV = spec.C14_spectrum(eMin, eMax);
           break;
         case B8:  // normalize this to ~3500 / 10-ton / year, for E-threshold of
-                  // 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
+          // 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
           keV = spec.B8_spectrum(eMin, eMax);
           break;
         case AmBe:  // for ZEPLIN-III FSR from HA (Pal '98)
@@ -273,17 +277,17 @@ int main(int argc, char** argv) {
           keV = spec.DD_spectrum(eMin, eMax);
           break;
         case WIMP: {
-          keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, atof(argv[3]));
+          keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, eMin);
         } break;
         default:
           if (eMin < 0.) return 1;
           if (eMax > 0.)
             keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
           else {  // negative eMax signals to NEST that you want to use an
-                  // exponential energy spectrum profile
+            // exponential energy spectrum profile
             if (eMin == 0.) return 1;
             keV = 1e100;  // eMin will be used in place of eMax as the maximum
-                          // energy in exponential scenario
+            // energy in exponential scenario
             while (keV > eMin)
               keV = eMax * log(RandomGen::rndm()->rand_uniform());
           }
@@ -408,15 +412,13 @@ int main(int argc, char** argv) {
     // code-block dealing with user error
     if (pos_z <= 0.) {
       cerr << "ERROR: unphysically low Z coordinate (vertical axis of "
-              "detector) of "
-           << pos_z << " mm" << endl;
+              "detector) of " << pos_z << " mm" << endl;
       return 1;
     }
     if ((pos_z > (detector->get_TopDrift() + z_step) || driftTime < 0.0) &&
         field >= FIELD_MIN) {
       cerr << "ERROR: unphysically big Z coordinate (vertical axis of "
-              "detector) of "
-           << pos_z << " mm" << endl;
+              "detector) of " << pos_z << " mm" << endl;
       return 1;
     }
 
@@ -425,13 +427,13 @@ int main(int argc, char** argv) {
     if (type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
         type == "mu-") {
       double xi = -999., yi = -999.;
-      if (atof(argv[4]) == -1.) {
+      if (eMax == -1.) {
         r = detector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());
         phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
         xi = r * cos(phi);
         yi = r * sin(phi);
       } else {
-        position = argv[4];
+        position = eMax;  // ?
         delimiter = ",";
         loc = 0;
         int ii = 0;
@@ -459,13 +461,14 @@ int main(int argc, char** argv) {
       norm[1] = (yf - yi) / distance;
       norm[2] = -detector->get_TopDrift() /
                 distance;  // have not yet tested muons which leave before
-                           // hitting Z=0, would have to modify code here
+      // hitting Z=0, would have to modify code here
       while (zz > 0. &&
              sqrt(pow(xx, 2.) + pow(yy, 2.)) <
                  detector->get_radmax()) {  // stop making S1 and S2 if particle
-                                            // exits Xe vol
-        yields = n.GetYields(NEST::beta, refEnergy, rho, detector->FitEF(xx, yy, zz),
-                             double(massNum), double(atomNum), NuisParam);
+        // exits Xe vol
+        yields =
+            n.GetYields(NEST::beta, refEnergy, rho, detector->FitEF(xx, yy, zz),
+                        double(massNum), double(atomNum), NuisParam);
         quanta = n.GetQuanta(yields, rho);
         Nph += quanta.photons * (eStep / refEnergy);
         index = int(floor(zz / z_step + 0.5));
@@ -485,7 +488,7 @@ int main(int argc, char** argv) {
       quanta.electrons = Ne;
       driftTime = 0.00;
       vD = vD_middle;  // approximate things not already done right in loop as
-                       // middle of detector since muon traverses whole length
+      // middle of detector since muon traverses whole length
       pos_x = .5 * (xi + xf);
       pos_y = .5 * (yi + yf);
       field = detector->FitEF(pos_x, pos_y, centralZ);
@@ -621,8 +624,8 @@ int main(int argc, char** argv) {
     // gas gap (from CalculateG2)
 
     if (1) {  // fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if
-              // you want to skip specific sub-threshold events, comment in this
-              // if statement (save screen/disk space)
+      // you want to skip specific sub-threshold events, comment in this
+      // if statement (save screen/disk space)
       // other suggestions: minS1, minS2 (or s2_thr) for tighter cuts depending
       // on analysis.hh settings (think of as analysis v. trigger thresholds)
       // and using max's too, pinching both ends
@@ -645,8 +648,8 @@ int main(int argc, char** argv) {
       } else {
         printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5],
                scint[7]);  // see GetS1 inside of NEST.cpp for full explanation
-                           // of all 8 scint return vector elements. Sample 3
-                           // most common
+        // of all 8 scint return vector elements. Sample 3
+        // most common
         printf("%i\t%.6f\t%.6f\n", (int)scint2[0], scint2[4],
                scint2[7]);  // see GetS2 inside of NEST.cpp for full explanation
                             // of all 8 scint2 vector elements. Change as you
@@ -700,7 +703,7 @@ int main(int argc, char** argv) {
         fprintf(stderr,
                 "S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc "
                 "Res[%%]\tEff[%%>thr]\n");  // the C here refers to the combined
-                                            // (S1+S2) energy scale
+      // (S1+S2) energy scale
       for (int j = 0; j < numBins; j++) {
         fprintf(stderr, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t", band[j][0],
                 band[j][1] / band[j][0] * 100., band[j][2],
@@ -725,14 +728,12 @@ int main(int argc, char** argv) {
                     energies[1] <= 0.0) &&
                    field >= FIELD_MIN)
           cerr << "If your energy resolution is 0% then you probably still "
-                  "have MC truth energy on."
-               << endl;
+                  "have MC truth energy on." << endl;
         else
           ;
       }
     }
   }
-
   return 0;
 }
 
@@ -770,18 +771,21 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
             if (useS2 == 0) {
               if (S1s[i] && S2s[i] && log10(S2s[i] / S1s[i]) > logMin &&
                   log10(S2s[i] / S1s[i]) < logMax)
-              signals[j].push_back(log10(S2s[i] / S1s[i]));
-              else signals[j].push_back(0.);
+                signals[j].push_back(log10(S2s[i] / S1s[i]));
+              else
+                signals[j].push_back(0.);
             } else if (useS2 == 1) {
               if (S1s[i] && S2s[i] && log10(S2s[i]) > logMin &&
                   log10(S2s[i]) < logMax)
-              signals[j].push_back(log10(S2s[i]));
-              else signals[j].push_back(0.);
+                signals[j].push_back(log10(S2s[i]));
+              else
+                signals[j].push_back(0.);
             } else {
               if (S1s[i] && S2s[i] && log10(S1s[i] / S2s[i]) > logMin &&
                   log10(S1s[i] / S2s[i]) < logMax)
-              signals[j].push_back(log10(S1s[i] / S2s[i]));
-              else signals[j].push_back(0.);
+                signals[j].push_back(log10(S1s[i] / S2s[i]));
+              else
+                signals[j].push_back(0.);
             }
           }
           band[j][2] += signals[j].back();

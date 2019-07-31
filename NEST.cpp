@@ -29,11 +29,12 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
-                                     vector<double> NuisParam /*={1,1}*/,
+                                     vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.}*/,
+				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.07}*/,
                                      bool do_times /*=true*/) {
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
-  result.quanta = GetQuanta(result.yields, density);
+  result.quanta = GetQuanta(result.yields, density, FreeParam);
   if (do_times)
     result.photon_times = GetPhotonTimes(
         species, result.quanta.photons, result.quanta.excitons, dfield, energy);
@@ -115,7 +116,8 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
   return return_photons;
 }
 
-QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
+QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
+				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/) {
   QuantaResult result;
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -156,10 +158,12 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
   }
 
   else {
+    Fano = FreeParam[0];
     Ni = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean * alf,
                                                  sqrt(Fano * Nq_mean * alf)) +
                    0.5));
     if (Ni < 0) Ni = 0;
+    Fano = FreeParam[1];
     Nex = int(
         floor(RandomGen::rndm()->rand_gauss(
                   Nq_mean * NexONi * alf, sqrt(Fano * Nq_mean * NexONi * alf)) +
@@ -206,7 +210,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
   double omega = -aa * pow(recombProb - bb, 2.) + cc;
   if (omega < 0.0) omega = 0.0;
 
-  if (yields.Lindhard < 1.) omega = 0.1 * exp(-pow(elecFrac - 0.5, 2.) / 0.07);
+  if (yields.Lindhard < 1.)
+    omega = FreeParam[2] * exp(-pow(elecFrac - FreeParam[3], 2.) / FreeParam[4]);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   Ne = int(floor(
@@ -232,7 +237,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density) {
 
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
                                 double density, double dfield, double massNum,
-                                double atomNum, vector<double> NuisParam) {
+                                double atomNum, vector<double> NuisParam
+				/*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.}*/) {
   // For temporary variables for storing results
   double Ne = -999;
   double Nph = -999;
@@ -261,17 +267,17 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
           massNumber = RandomGen::rndm()->SelectRanXeAtom();
         ScaleFactor[0] = sqrt(MOLAR_MASS / (double)massNumber);
         ScaleFactor[1] = ScaleFactor[0];
-        double Nq = 11. * pow(energy, 1.1);
+        double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
         double ThomasImel =
-            0.0480 * pow(dfield, -0.0533) * pow(density / DENSITY, 0.3);
-        double Qy = 1. / (ThomasImel * sqrt(energy + 12.6));
-        Qy *= (1. - 1. / (1. + pow((energy / NuisParam[0]), NuisParam[1])));
+            NuisParam[2] * pow(dfield, NuisParam[3]) * pow(density / DENSITY, 0.3);
+        double Qy = 1. / (ThomasImel*pow(energy+NuisParam[4],NuisParam[9]));
+        Qy *= 1. - 1. / pow(1. + pow((energy / NuisParam[5]), NuisParam[6]),NuisParam[10]);
         double Ly = Nq / energy - Qy;
         if (Qy < 0.0) Qy = 0.0;
         if (Ly < 0.0) Ly = 0.0;
         Ne = Qy * energy * ScaleFactor[1];
         Nph = Ly * energy * ScaleFactor[0] *
-              (1. - 1. / (1. + pow((energy / NuisParam[2]), NuisParam[3])));
+              (1. - 1. / (1. + pow((energy / NuisParam[7]), NuisParam[8])));
         Nq = Nph + Ne;
         double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
         double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -

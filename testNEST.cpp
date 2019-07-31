@@ -85,9 +85,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   }
 
   vector<double> signal1, signal2, signalE, vTable,
-      NuisParam = {0.3, 2., 0.3,
-                   2.};  // scaling factors, for now just for NR Ly & Qy.
-  // But must initialize!
+    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.},
+    // alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota for NR model
+    // last 2 are the secret extra parameters for additional flexibility
+    FreeParam = {1.,1.,0.1,0.5,0.07};
+    // Fi, Fex, and 3 non-binomial recombination fluctuation parameters
   string delimiter, token;
   size_t loc;
   int index;
@@ -470,7 +472,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         yields =
             n.GetYields(NEST::beta, refEnergy, rho, detector->FitEF(xx, yy, zz),
                         double(massNum), double(atomNum), NuisParam);
-        quanta = n.GetQuanta(yields, rho);
+        quanta = n.GetQuanta(yields, rho, FreeParam);
         Nph += quanta.photons * (eStep / refEnergy);
         index = int(floor(zz / z_step + 0.5));
         if (index >= vTable.size()) index = vTable.size() - 1;
@@ -497,7 +499,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       if (keV > .001 * Wq_eV) {
         yields = n.GetYields(type_num, keV, rho, field, double(massNum),
                              double(atomNum), NuisParam);
-        quanta = n.GetQuanta(yields, rho);
+        quanta = n.GetQuanta(yields, rho, FreeParam);
       } else {
         yields.PhotonYield = 0.;
         yields.ElectronYield = 0.;

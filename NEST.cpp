@@ -4,6 +4,9 @@
 using namespace std;
 using namespace NEST;
 
+const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.};
+const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.07};
+
 long NESTcalc::BinomFluct(long N0, double prob) {
   double mean = N0 * prob;
   double sigma = sqrt(N0 * prob * (1. - prob));

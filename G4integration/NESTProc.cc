@@ -131,7 +131,7 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                                   [](Hit a, Hit b){return a.E < b.E;})->xyz;
       double efield_here = fDetector->FitEF(maxHit_xyz.x(),maxHit_xyz.y(),maxHit_xyz.z());
       lineage.result = fNESTcalc->FullCalculation(
-          lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z,{1.,1.},detailed_secondaries);
+          lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z,NESTcalc::default_NuisParam, NESTcalc::default_FreeParam,detailed_secondaries);
       lineage.result_calculated = true;
       if (lineage.result.quanta.photons) {
         auto photontimes = lineage.result.photon_times.begin();

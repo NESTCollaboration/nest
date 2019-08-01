@@ -497,8 +497,23 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       field = detector->FitEF(pos_x, pos_y, centralZ);
     } else {
       if (keV > .001 * Wq_eV) {
-        yields = n.GetYields(type_num, keV, rho, field, double(massNum),
-                             double(atomNum), NuisParam);
+	if ( type == "ER" ) {
+	  YieldResult yieldsB = n.GetYields(INTERACTION_TYPE::beta, keV, rho, field,
+					    double(massNum), double(atomNum), NuisParam);
+	  YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
+					    double(massNum), double(atomNum), NuisParam);
+	  double weightG = 0.5 + 0.5 * erf ( 1.0 * ( log ( keV ) - 5.0 ) );
+	  double weightB = 1. - weightG;
+	  yields.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
+	  yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;
+	  yields.ExcitonRatio = weightG * yieldsG.ExcitonRatio + weightB * yieldsB.ExcitonRatio;
+	  yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
+	  yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
+	  yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
+	}
+	else
+	  yields = n.GetYields(type_num, keV, rho, field, double(massNum),
+			       double(atomNum), NuisParam);
         quanta = n.GetQuanta(yields, rho, FreeParam);
       } else {
         yields.PhotonYield = 0.;

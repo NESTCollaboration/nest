@@ -27,7 +27,7 @@
 #define V_WIMP 220.
 #define V_ESCAPE 544.
 
-#define NUMBINS_MAX 200
+#define NUMBINS_MAX 1000
 
 class TestSpectra {
  public:

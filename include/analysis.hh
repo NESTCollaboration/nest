@@ -32,3 +32,6 @@ double logMin = 0.6;
 // some numbers for fine-tuning the speed vs. the accuracy
 double z_step = 0.1;  // mm, for integrating non-uniform field
 double E_step = 2.0;  // keV, for integrating WIMP spectrum
+
+// Number of free parameters, for calculating DOF, for chi^2
+int freeParam = 2;

@@ -223,7 +223,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   double g1 = detector->get_g1();
 
   double centralZ =
-      (detector->get_gate() - 100. + detector->get_cathode() + 1.5) /
+      (detector->get_gate() * 0.8 + detector->get_cathode() * 1.03) /
       2.;  // fid vol def usually shave more off the top, because of gas
   // interactions (100->10cm)
   double centralField = detector->FitEF(0.0, 0.0, centralZ);
@@ -652,8 +652,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field,
              driftTime, smearPos[0], smearPos[1], smearPos[2], quanta.photons,
              quanta.electrons);  // comment this out when below line in
-      // printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f,
-      // %.0f\t%lf\t%lf\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],yields.PhotonYield,yields.ElectronYield);
+      // printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f,%.0f\t%lf\t%lf\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],yields.PhotonYield,yields.ElectronYield);
       // //for when you want means
       if (truthPos[2] < detector->get_cathode() && verbosity) printf("g-X ");
       if (keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||

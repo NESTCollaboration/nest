@@ -264,10 +264,7 @@ int main(int argc, char** argv) {
     GetFile(argv[1]);
     return 0;
   }
-
-  int freeParam;
-  cout << "Number of free parameters, for calculating DOF, for chi^2: ";
-  cin >> freeParam;
+  
   int DoF = numBins - freeParam;
   FILE* ifp = fopen(argv[2], "r");
   for (i = 0; i < numBins; i++) {
@@ -296,7 +293,9 @@ int main(int argc, char** argv) {
       }
       chi2[0] /= double(DoF - 1);
       chi2[1] /= double(DoF - 1);
-      cout.precision(3);
+      //cout.precision(3);
+      if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
+      if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
       cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1]
            << " for width" << endl;
       if (!loop) break;
@@ -724,20 +723,17 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
             continue;
           } else {
             if (useS2 == 0) {
-              if (S1s[i] && S2s[i] && log10(S2s[i] / S1s[i]) > logMin &&
-                  log10(S2s[i] / S1s[i]) < logMax)
+              if (S1s[i] && S2s[i])
                 signals[j].push_back(log10(S2s[i] / S1s[i]));
               else
                 signals[j].push_back(0.);
             } else if (useS2 == 1) {
-              if (S1s[i] && S2s[i] && log10(S2s[i]) > logMin &&
-                  log10(S2s[i]) < logMax)
+              if (S1s[i] && S2s[i])
                 signals[j].push_back(log10(S2s[i]));
               else
                 signals[j].push_back(0.);
             } else {
-              if (S1s[i] && S2s[i] && log10(S1s[i] / S2s[i]) > logMin &&
-                  log10(S1s[i] / S2s[i]) < logMax)
+              if (S1s[i] && S2s[i])
                 signals[j].push_back(log10(S1s[i] / S2s[i]));
               else
                 signals[j].push_back(0.);

@@ -85,23 +85,25 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
 
 G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t) {
   // Determine polarization of new photon
-  G4ParticleMomentum photonMomentum(G4RandomDirection());
-  G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
-  G4ThreeVector photonPolarization = perp.unit();
+
 
   double efield_here = fDetector->FitEF(xyz.x(),xyz.y(),xyz.z());
   
   if(efield_here>0)
   {
-    G4ParticleMomentum electronMomentum(0, 0, -1);
+    G4ParticleMomentum electronMomentum(0, 0, 1);
     G4DynamicParticle* aQuantum = new G4DynamicParticle(NESTThermalElectron::ThermalElectron(), electronMomentum);
     if(detailed_secondaries){
       double speed = fNESTcalc->SetDriftVelocity(fDetector->get_T_Kelvin(),density,efield_here);
       double kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(speed*mm/us,2);
       aQuantum->SetKineticEnergy(kin_E);
     }
+    else{
+      aQuantum->SetKineticEnergy(0);
+    }
     return new G4Track(aQuantum, t, xyz);
   } else {
+    return nullptr;   
   }
   // calculate time
 }
@@ -129,7 +131,7 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                                   [](Hit a, Hit b){return a.E < b.E;})->xyz;
       double efield_here = fDetector->FitEF(maxHit_xyz.x(),maxHit_xyz.y(),maxHit_xyz.z());
       lineage.result = fNESTcalc->FullCalculation(
-          lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z,{1.,1.},detailed_secondaries);
+          lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z,NESTcalc::default_NuisParam, NESTcalc::default_FreeParam,detailed_secondaries);
       lineage.result_calculated = true;
       if (lineage.result.quanta.photons) {
         auto photontimes = lineage.result.photon_times.begin();
@@ -160,7 +162,7 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
           for(int i = 0 ; i<hit.result.electrons; i++){
             if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
               G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t);
-              pParticleChange->AddSecondary(oneElectron);          
+              if(oneElectron) pParticleChange->AddSecondary(oneElectron);          
             }
 
           }

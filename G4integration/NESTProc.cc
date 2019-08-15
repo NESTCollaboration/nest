@@ -149,7 +149,6 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
             photontimes++;
           }
         }
-        assert(ecum == etot);
       }
       if (lineage.result.quanta.electrons) {
         double ecum = 0;
@@ -167,7 +166,6 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
 
           }
         }
-        assert(ecum == etot);
       }
 
       lineages_prevEvent.push_back(lineage);
@@ -287,7 +285,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
           }   
         }
       }
-    }
+    } 
 
     for (const G4Track* sec : secondaries) {
       // Each secondary has a type (including the possible NoneType)

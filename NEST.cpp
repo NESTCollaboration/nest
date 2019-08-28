@@ -213,8 +213,9 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   double omega = -aa * pow(recombProb - bb, 2.) + cc;
   if (omega < 0.0) omega = 0.0;
 
-  if (yields.Lindhard < 1.)
+  if (yields.Lindhard < 1.){
     omega = FreeParam[2] * exp(-pow(elecFrac - FreeParam[3], 2.) / FreeParam[4]);
+  }
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   Ne = int(floor(

@@ -85,9 +85,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   }
 
   vector<double> signal1, signal2, signalE, vTable,
-    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.},
+    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.},
     // alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota for NR model
-    // last 2 are the secret extra parameters for additional flexibility
+    // last 3 are the secret extra parameters for additional flexibility
     FreeParam = {1.,1.,0.1,0.5,0.07};
     // Fi, Fex, and 3 non-binomial recombination fluctuation parameters
   string delimiter, token;

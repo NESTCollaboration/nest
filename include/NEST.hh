@@ -157,14 +157,14 @@ class NESTcalc {
 
   long BinomFluct(long, double);
   
-  static const std::vector<double> default_NuisParam; /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.}*/
+  static const std::vector<double> default_NuisParam; /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
   static const std::vector<double> default_FreeParam; /* = {1.,1.,0.1,0.5,0.07} */
   // basic binomial fluctuation, which switches to Gaussian for large numbers of
   // quanta, this is called repeatedly, and built upon to produce greater,
   // non-binomial fluctuations
   NESTresult FullCalculation(INTERACTION_TYPE species, double energy,
                              double density, double dfield, double A, double Z,
-                             std::vector<double> NuisParam = default_NuisParam, /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.}*/
+                             std::vector<double> NuisParam = default_NuisParam, /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
 			     std::vector<double> FreeParam = default_FreeParam, /* = {1.,1.,0.1,0.5,0.07} */
                              bool do_times = true);
   // the so-called full NEST calculation puts together all the individual
@@ -184,7 +184,7 @@ class NESTcalc {
   // photons in a loop
   YieldResult GetYields(INTERACTION_TYPE species, double energy, double density,
                         double dfield, double A, double Z,
-                        std::vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.});
+                        std::vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   // the innermost heart of NEST, this provides floating-point average values
   // for photons and electrons per keV. Nuis(ance)Param included for varying the
   // NR Ly & Qy up and down

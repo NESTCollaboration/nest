@@ -4,7 +4,7 @@
 using namespace std;
 using namespace NEST;
 
-const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.};
+const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
 const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.07};
 
 long NESTcalc::BinomFluct(long N0, double prob) {
@@ -32,7 +32,7 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
-                                     vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.}*/,
+                                     vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
 				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.07}*/,
                                      bool do_times /*=true*/) {
   NESTresult result;
@@ -124,7 +124,12 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   QuantaResult result;
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
-
+  
+  if ( FreeParam.size() < 5 ) {
+    cerr << "\nERROR: You need a minimum of 5 free parameters for the resolution model.\n";
+    exit(1);
+  }
+  
   double NexONi = yields.ExcitonRatio, Fano = 1.;
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
 
@@ -242,7 +247,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
                                 double density, double dfield, double massNum,
                                 double atomNum, vector<double> NuisParam
-				/*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.}*/) {
+				/*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
   // For temporary variables for storing results
   double Ne = -999;
   double Nph = -999;
@@ -263,6 +268,10 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
               // statement. Same intrinsic yields, but different energy spectra
               // (TestSpectra)
       {
+	if ( NuisParam.size() < 12 ) {
+	  cerr << "\nERROR: You need a minimum of 12 nuisance parameters for the mean yields.\n";
+          exit(1);
+	}
         int massNumber;
         double ScaleFactor[2] = {1., 1.};
         if (massNum != 0.)
@@ -281,7 +290,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
         if (Ly < 0.0) Ly = 0.0;
         Ne = Qy * energy * ScaleFactor[1];
         Nph = Ly * energy * ScaleFactor[0] *
-              (1. - 1. / (1. + pow((energy / NuisParam[7]), NuisParam[8])));
+	     (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]),NuisParam[11]));
         Nq = Nph + Ne;
         double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
         double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -

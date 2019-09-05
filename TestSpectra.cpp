@@ -296,7 +296,7 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp) {
       break;
     default:
       cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
-      exit(1);
+      EXIT_FAILURE;
   }
 
   double a = 0.52;                           // in fm
@@ -358,7 +358,10 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass,
   for (long i = 0; i < 1000000; i++) {
     spectrum.integral += WIMP_dRate(double(i) / 1e4, mass) / 1e4;
   }
-  for (int i = 0; i < (int) EnergySpec.size() - 2; i++) {
+  spectrum.xMax = ( (double) EnergySpec.size() - 1. )/divisor;
+                //defualt value -- will be overwritten if 
+                //xMax is acutally smaller
+  for (int i = 0; i < (int) EnergySpec.size() - 1; i++) {
     x1 = double(i) / divisor;
     x2 = double(i + 1) / divisor;
     spectrum.base[i] = EnergySpec[i + 1] *
@@ -368,16 +371,16 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass,
         spectrum.exponent[i] > 0. && spectrum.exponent[i] < DBL_MAX )
       ;  // spectrum.integral+=spectrum.base[i]/spectrum.exponent[i]*(exp(-spectrum.exponent[i]*x1)-exp(-spectrum.exponent[i]*x2));
     else {
-      if ( EnergySpec[i+2] > 10. ) { //i.e. the calculation stopped before event rate was low
+      if ( EnergySpec[i+1] > 10. ) { //i.e. the calculation stopped before event rate was low
         cerr << "ERROR: WIMP E_step is too small! Increase it slightly to avoid noise in the calculation." << endl;
-        exit(0.);
+        EXIT_FAILURE; 
       }
       spectrum.xMax = double(i - 1) / divisor;
       if (spectrum.xMax <= 0.0) {
         cerr << "ERROR: The maximum possible WIMP recoil is negative, which "
                 "usually means your E_step is too small."
              << endl;
-        exit(0);
+        EXIT_FAILURE;
       }
       break;
     }

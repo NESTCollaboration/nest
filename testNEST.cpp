@@ -211,12 +211,8 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     return 1;
   }
   if (rho < 1.75) detector->set_inGas(true);
-  double Wq_eV =
-      1.9896 +
-      (20.8 - 1.9896) /
-          (1. + pow(rho / 4.0434,
-                    1.4407));  // out-of-sync danger: copied from NEST.cpp
-
+  double Wq_eV = n.WorkFunction(rho)[0];
+  
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
   g2 = fabs(g2_params[3]);
@@ -502,7 +498,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 					    double(massNum), double(atomNum), NuisParam);
 	  YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
 					    double(massNum), double(atomNum), NuisParam);
-	  double weightG = 0.5 + 0.5 * erf ( 1.0 * ( log ( keV ) - 5.0 ) );
+	  double weightG = 0.82 + 0.43 * erf ( -2.7 * ( log ( keV ) - 1.3 ) );
 	  double weightB = 1. - weightG;
 	  yields.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
 	  yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;
@@ -510,6 +506,8 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
 	  yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
 	  yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
+	  yields.PhotonYield *= 1.02; yields.ElectronYield *= 1.05;
+	  detector->set_noise(detector->get_noise()[0],detector->get_noise()[1], 5.5e-2, 2.2e-2);
 	}
 	else
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum),

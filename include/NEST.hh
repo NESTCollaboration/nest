@@ -74,7 +74,7 @@
 #include <random>
 #include <vector>
 
-#define W_DEFAULT 13.7  // default work function, in eV
+#define W_DEFAULT 13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35
 #define W_SCINT 8.5e-3  // the *max* possible energy of 1 scint phot, keV
 #define NEST_AVO 6.0221409e+23
 #define ATOM_NUM 54.         // period to make float
@@ -250,6 +250,8 @@ class NESTcalc {
   // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with
   // density can provide the dE/dx, as a function of energy in keV. Will be more
   // useful in the future
+  std::vector<double> WorkFunction(double rho);
+  //the W-value as a func of density in g/cm^3
   VDetector* GetDetector() { return fdetector; }
 };
 }

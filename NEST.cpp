@@ -127,7 +127,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   
   if ( FreeParam.size() < 5 ) {
     cerr << "\nERROR: You need a minimum of 5 free parameters for the resolution model.\n";
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   double NexONi = yields.ExcitonRatio, Fano = 1.;
@@ -235,7 +235,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
 
   if ((Nph + Ne) != (Nex + Ni)) {
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   result.photons = Nph;
@@ -254,10 +254,11 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
   double NexONi = -999, deltaT_ns = -999;
   double m8 = 2., L = 1.;
   const double deltaT_ns_halflife = 154.4;
-
-  double Wq_eV =
-      1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
-  double alpha = 0.067366 + density * 0.039693;
+  
+  vector<double> Wvalue = WorkFunction(density);
+  double Wq_eV = Wvalue[0];
+  double alpha = Wvalue[1];
+  
   switch (species) {
     case NR:
     case WIMP:
@@ -270,7 +271,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       {
 	if ( NuisParam.size() < 12 ) {
 	  cerr << "\nERROR: You need a minimum of 12 nuisance parameters for the mean yields.\n";
-          exit(1);
+          exit(EXIT_FAILURE);
 	}
         int massNumber;
         double ScaleFactor[2] = {1., 1.};
@@ -298,7 +299,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
         if (fabs(Nex - (Nq - Ni)) > PHE_MIN ||
             fabs(Ni - (Nq - Nex)) > PHE_MIN) {
           cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
-          exit(1);
+          exit(EXIT_FAILURE);
         }
         NexONi = Nex / Ni;
         L = (Nq / energy) * Wq_eV * 1e-3;
@@ -1042,7 +1043,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
           ->get_TopDrift();  // EL gap in mm -> cm, affecting S2 size linearly
   if (gasGap <= 0. && E_liq > 0.) {
     cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   // Calculate EL yield based on gas gap, extraction field, and pressure
@@ -1204,7 +1205,7 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density,
     i = 9;
   else {
     cerr << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   j = i + 1;
@@ -1236,11 +1237,11 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density,
   if (speed <= 0.) {
     if (eField < 1e2 && eField >= FIELD_MIN) {
       cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n";
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     if (eField > 1e4) {
       cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO HIGH\n";
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
   return speed;
@@ -1379,4 +1380,20 @@ double NESTcalc::CalcElectronLET(double E) {
     LET = 0.;
 
   return LET;
+}
+
+vector<double> NESTcalc::WorkFunction(double density) {
+  
+  vector<double> Wvalue(2);
+  
+  double xi_se = 9./(1.+pow(density/2.,2.));
+  double alpha = 0.067366 + density * 0.039693;
+  double I_ion = 9.+(12.13-9.)/(1.+pow(density/2.953,65.));
+  double I_exc = I_ion / 1.46;
+  double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
+    +xi_se/(1.+alpha);
+  Wvalue[0] = Wq_eV;
+  Wvalue[1] = alpha;
+  
+  return Wvalue; //W and Nex/Ni together
 }

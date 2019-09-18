@@ -494,7 +494,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     } else {
       if (keV > .001 * Wq_eV) {
 	if ( type == "ER" ) {
-	  YieldResult yieldsB = n.GetYields(INTERACTION_TYPE::beta, keV, rho, field,
+	  YieldResult yieldsB = n.GetYields(NEST::beta, keV, rho, field,
 					    double(massNum), double(atomNum), NuisParam);
 	  YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
 					    double(massNum), double(atomNum), NuisParam);

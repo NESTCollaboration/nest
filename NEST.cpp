@@ -855,8 +855,8 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
       quanta.electrons = 0;
       quanta.ions = 0;
       quanta.excitons = int(floor(0.0566 * SE + 0.5));
-      photonstream photon_emission_times = GetPhotonTimes(
-          INTERACTION_TYPE::beta, quanta.photons, quanta.excitons, dfield, KE);
+      photonstream photon_emission_times = GetPhotonTimes(NEST::beta, quanta.photons, 
+							  quanta.excitons, dfield, KE);
       photonstream photon_times =
           AddPhotonTransportTime(photon_emission_times, newX, newY, origin);
       SE += (double)BinomFluct(long(SE), fdetector->get_P_dphe());

@@ -405,7 +405,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       double LET_power = -2.;
       if (fdetector->get_inGas()) LET_power = 2.;
       double QyLvlhighE = 28.;
-      //      if (density > 3.) QyLvlhighE = 49.; Solid Xe effect from Yoo. But,
+      //      if (density > 3.100) QyLvlhighE = 49.; SXe effect from Yoo. But,
       //      beware of enabling this line: enriched liquid Xe for neutrinoless
       //      double beta decay has density higher than 3g/cc;
       double Qy = QyLvlmedE +
@@ -1123,7 +1123,7 @@ double NESTcalc::SetDensity(double Kelvin,
   if (Kelvin < 161.40) {  // solid Xenon
     cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
     return 3.41;  // from Yoo at 157K
-    // other sources say 3.100 (Wikipedia, 'maximum') and 3.64g/mL at an unknown
+    // other sources say 3.1 (Wikipedia, 'minimum') and 3.64g/mL at an unknown
     // temperature
   }
 

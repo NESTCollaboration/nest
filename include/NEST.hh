@@ -225,7 +225,15 @@ class NESTcalc {
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below
-  double SetDriftVelocity_MagBoltz(double D, double F);
+  static double GetDriftVelocity(double T, double D, double F, bool inGas);
+  // Gives one the drift velocity as a function of temperature and electric
+  // field in liquid or solid. If density implies gas, kicks calculation down to
+  // the next function below
+  static double GetDriftVelocity_Liquid(double T, double D, double F);
+  // Gives one the drift velocity as a function of temperature and electric
+  // field in liquid or solid. If density implies gas, kicks calculation down to
+  // the next function below
+  static double GetDriftVelocity_MagBoltz(double D, double F);
   // Gas electron drift speed for S2 gas gap in 2-phase TPCs or the whole
   // detector for all gas. Based on simple fits to complicated MagBoltz software
   // output.
@@ -235,6 +243,9 @@ class NESTcalc {
   // this integrates over position to find the correct total drift time from any
   // starting point
   double SetDensity(double T, double P);
+  // A simple, approximate but good, density is returned for solid, liquid, or
+  // gaseous xenon, as a function of temperature and pressure
+  static double GetDensity(double T, double P, bool &inGas);
   // A simple, approximate but good, density is returned for solid, liquid, or
   // gaseous xenon, as a function of temperature and pressure
   std::vector<double> xyResolution(double xPos_mm, double yPos_mm,

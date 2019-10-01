@@ -814,7 +814,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
     double rho = fdetector->get_p_bar() * 1e5 /
                  (fdetector->get_T_Kelvin() * 8.314) * MOLAR_MASS * 1e-6;
     double driftVelocity_gas =
-        SetDriftVelocity_MagBoltz(rho, fdetector->get_E_gas() * 1000.);
+        GetDriftVelocity_MagBoltz(rho, fdetector->get_E_gas() * 1000.);
     double dt_gas = gasGap / driftVelocity_gas;
     double sigmaDLg = 10. * sqrt(2. * Diff_Long_Gas * dt_gas * 1e-6);
     double sigmaDTg = 10. * sqrt(2. * Diff_Tran_Gas * dt_gas * 1e-6);
@@ -1116,7 +1116,16 @@ vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
 }
 
 double NESTcalc::SetDensity(double Kelvin,
-                            double bara) {  // currently only for fixed pressure
+                            double bara) {
+  bool inGas = false;
+  double density = GetDensity(Kelvin, bara, inGas);
+  fdetector->set_inGas(inGas);
+
+  return density;
+}
+
+double NESTcalc::GetDensity(double Kelvin,
+                            double bara, bool &inGas) {  // currently only for fixed pressure
                                             // (saturated vapor pressure); will
                                             // add pressure dependence later
 
@@ -1137,7 +1146,7 @@ double NESTcalc::SetDensity(double Kelvin,
         bara * 1e5 / (Kelvin * 8.314);  // ideal gas law approximation, mol/m^3
     density *= MOLAR_MASS * 1e-6;
     cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
-    fdetector->set_inGas(true);
+    inGas = true;
     return density;  // in g/cm^3
   }
 
@@ -1155,11 +1164,18 @@ double NESTcalc::SetDensity(double Kelvin,
                                   // zunzun fit to NIST data; will add gas later
 }
 
-double NESTcalc::SetDriftVelocity(double Kelvin, double Density,
+double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField){
+  return GetDriftVelocity(Kelvin, Density, eField, fdetector->get_inGas());
+}
+
+double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas){
+  if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
+  else return GetDriftVelocity_Liquid(Kelvin, Density, eField);
+}
+
+double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
                                   double eField) {  // for liquid and solid only
-
-  if (fdetector->get_inGas()) return SetDriftVelocity_MagBoltz(Density, eField);
-
+  
   double speed =
       0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j;
@@ -1247,7 +1263,7 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density,
   return speed;
 }
 
-double NESTcalc::SetDriftVelocity_MagBoltz(
+double NESTcalc::GetDriftVelocity_MagBoltz(
     double density, double efieldinput)  // Nichole Barry UCD 2011
 {
   density *= NEST_AVO / MOLAR_MASS;
@@ -1292,7 +1308,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
                                                 fdetector->get_E_gas() /
                                                     (EPS_LIQ / EPS_GAS) * 1e3);
         else  // if gate == TopDrift properly set, shouldn't happen
-          driftTime += zStep / SetDriftVelocity_MagBoltz(
+          driftTime += zStep / GetDriftVelocity_MagBoltz(
                                    rho, fdetector->get_E_gas() * 1e3);
       } else
         driftTime +=

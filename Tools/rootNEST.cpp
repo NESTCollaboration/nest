@@ -162,7 +162,13 @@ int main(int argc, char** argv) {
             "positive or at least 0)" << endl;
     return 1;
   }
-
+  if ( xEff > 1. || NRacc > 1. ) {
+    cerr << endl
+	 << "You entered an efficiency or acceptance for NR greater than 100%"
+	 << endl;
+  return 1;
+  }
+  
   double Ul,
       v;  // Start of code block to evaluate upper limit on # of events to use
   if (numBGeventsExp == 0.) {

@@ -1,0 +1,85 @@
+{
+    "language": "eng", 
+    "license": "Apache-2.0", 
+    "title": "Noble Element Simulation Technique", 
+    "keywords": [
+        "dark matter", 
+        "microphysics", 
+        "xenon", 
+        "argon"
+    ], 
+    "publication_date": "2018-07-18", 
+    "creators": [
+        {
+            "affiliation": "University at Albany", 
+            "name": "Szydagis, M."
+        }, 
+        {
+            "affiliation": "University of California, Davis", 
+            "name": "Balajthy, J."
+        }, 
+        {
+            "affiliation": "Lawrence Livermore National Laboratory", 
+            "name": "Brodsky, J."
+        }, 
+        {
+            "affiliation": "University of California, Davis", 
+            "name": "Cutter, J."
+        }, 
+        {
+            "affiliation": "University of California, Davis", 
+            "name": "Huang, J."
+        }, 
+        {
+            "affiliation": "NRNU MEPhI and ITEP", 
+            "name": "Kozlova, E."
+        }, 
+        {
+            "affiliation": "Stanford University", 
+            "name": "Lenardo, B."
+        }, 
+        {
+            "affiliation": "University of California, Davis", 
+            "name": "Manalaysay, A."
+        }, 
+        {
+            "affiliation": "University of California, Berkeley", 
+            "name": "McKinsey, D."
+        }, 
+        {
+            "affiliation": "Colorado State University", 
+            "name": "Mooney, M."
+        }, 
+        {
+            "affiliation": "Colorado State University", 
+            "name": "Mueller, J."
+        }, 
+        {
+            "affiliation": "University of California, San Diego", 
+            "name": "Ni, K."
+        }, 
+        {
+            "affiliation": "University at Albany", 
+            "name": "Rischbieter, G."
+        }, 
+        {
+            "affiliation": "University of California, Davis", 
+            "name": "Tripathi, M."
+        }, 
+        {
+            "orcid": "0000-0001-8158-7795", 
+            "affiliation": "Rice University", 
+            "name": "Tunnell, C."
+        }, 
+        {
+            "affiliation": "University of California, Berkeley", 
+            "name": "Velan, V."
+        }, 
+        {
+            "affiliation": "University of California, San Diego", 
+            "name": "Zhao, Z."
+        }
+    ], 
+    "access_right": "open", 
+    "description": "<p>Fast C++ simulation of different particle types in liquid, gaseous, and solid xenon</p>\n\n<ul>\n\t<li>Mean scintillation light and ionization charge yields</li>\n\t<li>Variation in total quanta, and recombination fluctuations</li>\n\t<li>Dependencies on energy, electric field strength, and density</li>\n\t<li>Pulse shape models for both S1 and S2, including e-trains</li>\n\t<li>Additional tools, for calculating leakage and limits</li>\n</ul>\n\n<p>Not a complete list, please see the exhaustive README file included.</p>"
+}

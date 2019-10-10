@@ -32,13 +32,8 @@ foreach(p LIB INCLUDE CMAKE)
 endforeach()
 
 # Check that the specified compiler has C++11 support
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-if(COMPILER_SUPPORTS_CXX11)
-    add_compile_options(-std=c++11)
-else()
-    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Include all directories which contain needed header files
 include_directories("${PROJECT_SOURCE_DIR}")

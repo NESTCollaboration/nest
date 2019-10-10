@@ -188,11 +188,21 @@ class NESTcalc {
   // the innermost heart of NEST, this provides floating-point average values
   // for photons and electrons per keV. Nuis(ance)Param included for varying the
   // NR Ly & Qy up and down
+  virtual YieldResult GetYieldGamma(double energy, double density, double dfield);
+  // Called by GetYields in the Gamma case
+  virtual YieldResult GetYieldNR(double energy, double density, double dfield, double massNum,
+                  std::vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
+  // Called by GetYields in the NR (and related) cases
+  virtual YieldResult GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum, vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.07});
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
   // photons and electrons
   // Namely, the recombination fluctuations
+  virtual double RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/);
+  //Calculates the Omega parameter governing non-binomial recombination fluctuations for nuclear recoils and ions (Lindhard<1)
+  virtual double RecombOmegaER(double efield, double recombProb);
+  //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
   std::vector<double> GetS1(QuantaResult quanta, double truthPos[3],
                             double smearPos[3], double driftSpeed,
                             double dS_mid, INTERACTION_TYPE species,
@@ -261,7 +271,8 @@ class NESTcalc {
   // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with
   // density can provide the dE/dx, as a function of energy in keV. Will be more
   // useful in the future
-  std::vector<double> WorkFunction(double rho);
+  struct Wvalue {double Wq_eV; double alpha;};
+  Wvalue WorkFunction(double rho);
   //the W-value as a func of density in g/cm^3
   VDetector* GetDetector() { return fdetector; }
 };

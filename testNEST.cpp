@@ -211,7 +211,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     return 1;
   }
   if (rho < 1.75) detector->set_inGas(true);
-  double Wq_eV = n.WorkFunction(rho)[0];
+  double Wq_eV = n.WorkFunction(rho).Wq_eV;
   
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);

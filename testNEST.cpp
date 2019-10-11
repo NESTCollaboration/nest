@@ -211,7 +211,10 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     return 1;
   }
   if (rho < 1.75) detector->set_inGas(true);
+
   double Wq_eV = n.WorkFunction(rho).Wq_eV;
+  if ( MOLAR_MASS == 136. ) Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO
+
   
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
@@ -580,6 +583,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       if (signal1.back() <= 0.) Nph = 0.;
       if (signal2.back() <= 0.) Ne = 0.;
       if (yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
+	if ( rho > 3. ) yields.Lindhard = 1.;
         keV = (Nph + Ne) * Wq_eV * 1e-3 / yields.Lindhard;
         keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
                                              // both places, but won't account

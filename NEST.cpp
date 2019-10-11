@@ -245,7 +245,13 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
     exit(EXIT_FAILURE);
   }
-
+  
+  if ( density > 3. ) { //solid OR enriched. Units of g/mL
+    if ( yields.Lindhard != 1. )
+      Nph = int(floor(double(Nph)*7.00+0.5)); //IR photons for NR
+    else
+      Nph = int(floor(double(Nph)*1.35+0.5));
+  }
   result.photons = Nph;
   result.electrons = Ne;
 
@@ -1215,7 +1221,10 @@ double NESTcalc::GetDensity(double Kelvin,
                             double bara, bool &inGas) {  // currently only for fixed pressure
                                             // (saturated vapor pressure); will
                                             // add pressure dependence later
-
+  
+  if (MOLAR_MASS == 136.) //enriched Xe for 0vBB experiment (136)
+    return 3.0305; // ±0.0077 g/cm^3, EXO-200 @167K: arXiv:1908.04128
+  
   if (Kelvin < 161.40) {  // solid Xenon
     cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
     return 3.41;  // from Yoo at 157K
@@ -1499,6 +1508,9 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density) {
   double I_exc = I_ion / 1.46;
   double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
     +xi_se/(1.+alpha);
+  double eDensity = (density/MOLAR_MASS)*NEST_AVO*ATOM_NUM;
+  Wq_eV = 20.7 - 1.01e-23 * eDensity;
+
   
   
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together

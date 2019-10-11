@@ -282,7 +282,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
   result.Lindhard = 1;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
-  return result;  // everything needed to calculate fluctuations
+  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
 }
 
 YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, double massNum, vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
@@ -334,7 +334,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   result.Lindhard = L;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
-  return result;  // everything needed to calculate fluctuations
+  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
 }
 
 YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum, vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
@@ -384,25 +384,104 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   result.Lindhard = L;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
-  return result;  // everything needed to calculate fluctuations
+  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
 }
+
+YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield)
+{
+  double Nq = -999;
+  double Nph = -999;
+  
+  Wvalue wvalue = WorkFunction(density);
+  double Wq_eV = wvalue.Wq_eV;
+  double alpha = wvalue.alpha;
+  double deltaT_ns = -999;
+  constexpr double deltaT_ns_halflife = 154.4;
+  if (energy == 9.4)
+  {
+    deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+    Nq = energy * (1e3 / Wq_eV + 6.5);
+    double medTlevel =
+            47.8 + (69.201 - 47.8) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
+    double highTrise =
+            1.15 + (1. - 1.15) / (1. + pow(deltaT_ns / 1200., 18.));
+    double lowTdrop = 14. * pow(dfield, 0.19277);
+    Nph = energy * highTrise *
+            (5.1e4 * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
+            (1. + pow(deltaT_ns / lowTdrop, -3.));
+    alpha = 0.;
+  } else
+  {
+    Nq = energy * 1000. / Wq_eV;
+    Nph =
+            energy *
+            (6. + (69.742 - 6.) / pow(1. + pow(dfield / 9.515, 1.9), 0.063032));
+  }
+  double Ne = Nq - Nph;
+  double NexONi = alpha * erf(0.05 * energy);
+  
+  YieldResult result;
+  result.PhotonYield = Nph;
+  result.ElectronYield = Ne;
+  result.ExcitonRatio = NexONi;
+  result.Lindhard = 1;
+  result.ElectricField = dfield;
+  result.DeltaT_Scint = deltaT_ns;
+  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
+}
+
+YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
+{
+  Wvalue wvalue = WorkFunction(density);
+  double Wq_eV = wvalue.Wq_eV;
+  double alpha = wvalue.alpha;
+  
+  double QyLvllowE =
+          1e3 / Wq_eV + 6.5 * (1. - 1. / (1. + pow(dfield / 47.408, 1.9851)));
+  double HiFieldQy =
+          1. + 0.4607 / pow(1. + pow(dfield / 621.74, -2.2717), 53.502);
+  double QyLvlmedE =
+          32.988 -
+          32.988 /
+          (1. + pow(dfield / (0.026715 * exp(density / 0.33926)), 0.6705));
+  QyLvlmedE *= HiFieldQy;
+  double DokeBirks =
+          1652.264 +
+          (1.415935e10 - 1652.264) / (1. + pow(dfield / 0.02673144, 1.564691));
+  double Nq = energy * 1e3 /
+          Wq_eV;  //( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
+  double LET_power = -2.;
+  if (fdetector->get_inGas()) LET_power = 2.;
+  double QyLvlhighE = 28.;
+  //      if (density > 3.100) QyLvlhighE = 49.; SXe effect from Yoo. But,
+  //      beware of enabling this line: enriched liquid Xe for neutrinoless
+  //      double beta decay has density higher than 3g/cc;
+  double Qy = QyLvlmedE +
+          (QyLvllowE - QyLvlmedE) /
+          pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) +
+          QyLvlhighE / (1. + DokeBirks * pow(energy, LET_power));
+  if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
+  double Ly = Nq / energy - Qy;
+  double Ne = Qy * energy;
+  double Nph = Ly * energy;
+  double NexONi = alpha * erf(0.05 * energy);
+  
+  YieldResult result;
+  result.PhotonYield = Nph;
+  result.ElectronYield = Ne;
+  result.ExcitonRatio = NexONi;
+  result.Lindhard = 1;
+  result.ElectricField = dfield;
+  result.DeltaT_Scint = -999;
+  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations;
+}
+
 
 
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
                                 double density, double dfield, double massNum,
                                 double atomNum, vector<double> NuisParam
 				/*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
-  // For temporary variables for storing results
-  double Ne = -999;
-  double Nph = -999;
-  double NexONi = -999, deltaT_ns = -999;
-  double L = 1.;
-  const double deltaT_ns_halflife = 154.4;
-  
-  Wvalue wvalue = WorkFunction(density);
-  double Wq_eV = wvalue.Wq_eV;
-  double alpha = wvalue.alpha;
-  
   switch (species) {
     case NR:
     case WIMP:
@@ -423,84 +502,33 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       return GetYieldGamma(energy,density,dfield);
     } break;
     case Kr83m: {
-      double Nq = 0.;
-      if (energy == 9.4) {
-        deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
-        Nq = energy * (1e3 / Wq_eV + 6.5);
-        double medTlevel =
-            47.8 + (69.201 - 47.8) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-        double highTrise =
-            1.15 + (1. - 1.15) / (1. + pow(deltaT_ns / 1200., 18.));
-        double lowTdrop = 14. * pow(dfield, 0.19277);
-        Nph = energy * highTrise *
-              (5.1e4 * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-              (1. + pow(deltaT_ns / lowTdrop, -3.));
-        alpha = 0.;
-      } else {
-        Nq = energy * 1000. / Wq_eV;
-        Nph =
-            energy *
-            (6. + (69.742 - 6.) / pow(1. + pow(dfield / 9.515, 1.9), 0.063032));
-      }
-      Ne = Nq - Nph;
-      NexONi = alpha * erf(0.05 * energy);
+      return GetYieldKr83m(energy,density,dfield);
     } break;
     default:  // beta, CH3T
     {
-      double QyLvllowE =
-          1e3 / Wq_eV + 6.5 * (1. - 1. / (1. + pow(dfield / 47.408, 1.9851)));
-      double HiFieldQy =
-          1. + 0.4607 / pow(1. + pow(dfield / 621.74, -2.2717), 53.502);
-      double QyLvlmedE =
-          32.988 -
-          32.988 /
-              (1. + pow(dfield / (0.026715 * exp(density / 0.33926)), 0.6705));
-      QyLvlmedE *= HiFieldQy;
-      double DokeBirks =
-          1652.264 +
-          (1.415935e10 - 1652.264) / (1. + pow(dfield / 0.02673144, 1.564691));
-      double Nq = energy * 1e3 /
-                  Wq_eV;  //( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
-      double LET_power = -2.;
-      if (fdetector->get_inGas()) LET_power = 2.;
-      double QyLvlhighE = 28.;
-      //      if (density > 3.100) QyLvlhighE = 49.; SXe effect from Yoo. But,
-      //      beware of enabling this line: enriched liquid Xe for neutrinoless
-      //      double beta decay has density higher than 3g/cc;
-      double Qy = QyLvlmedE +
-                  (QyLvllowE - QyLvlmedE) /
-                      pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) +
-                  QyLvlhighE / (1. + DokeBirks * pow(energy, LET_power));
-      if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
-      double Ly = Nq / energy - Qy;
-      Ne = Qy * energy;
-      Nph = Ly * energy;
-      NexONi = alpha * erf(0.05 * energy);
+      return GetYieldBeta(energy,density,dfield);
     } break;
   }
 
-  assert(Ne != -999 && Nph != -999 && NexONi != -999);
-  if (Nph > energy / W_SCINT)
-    Nph = energy / W_SCINT;  // yields can never exceed 1 / [ W ~ few eV ]
-  if (Ne > energy / W_SCINT) Ne = energy / W_SCINT;
-  if (Nph < 0.) Nph = 0.;
-  if (Ne < 0.) Ne = 0.;
-  // if (NexONi < 0.) NexONi = 0.;
-  if (L < 0.) L = 0.;
-  if (L > 1.) L = 1.;  // Lindhard Factor
-  if (energy < 0.001 * Wq_eV / L) {
-    Nph = 0.;
-    Ne = 0.;
-  }
 
-  YieldResult result;
-  result.PhotonYield = Nph;
-  result.ElectronYield = Ne;
-  result.ExcitonRatio = NexONi;
-  result.Lindhard = L;
-  result.ElectricField = dfield;
-  result.DeltaT_Scint = deltaT_ns;
-  return result;  // everything needed to calculate fluctuations
+}
+
+YieldResult NESTcalc::YieldResultValidity(YieldResult& res, const double energy, const double Wq_eV)
+{
+  assert(res.ElectronYield != -999 && res.PhotonYield != -999 && res.ExcitonRatio != -999);
+  if (res.PhotonYield > energy / W_SCINT)
+    res.PhotonYield = energy / W_SCINT;  // yields can never exceed 1 / [ W ~ few eV ]
+  if (res.ElectronYield > energy / W_SCINT) res.ElectronYield = energy / W_SCINT;
+  if (res.PhotonYield < 0.) res.PhotonYield = 0.;
+  if (res.ElectronYield < 0.) res.ElectronYield = 0.;
+  if (res.Lindhard < 0.) res.Lindhard = 0.;
+  if (res.Lindhard > 1.) res.Lindhard = 1.;  // Lindhard Factor
+  if (energy < 0.001 * Wq_eV / res.Lindhard)
+  {
+    res.PhotonYield = 0.;
+    res.ElectronYield = 0.;
+  }
+  return res;
 }
 
 NESTcalc::NESTcalc() { fdetector = NULL; }

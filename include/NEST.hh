@@ -194,6 +194,13 @@ class NESTcalc {
                   std::vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   // Called by GetYields in the NR (and related) cases
   virtual YieldResult GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum, vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
+  // Called by GetYields in the ion case
+  virtual YieldResult GetYieldKr83m(double energy, double density, double dfield);
+  // Called by GetYields in the K383m case
+  virtual YieldResult GetYieldBeta(double energy, double density, double dfield);
+  // Called by GetYields in the Beta/Photoelectric case
+  YieldResult YieldResultValidity(YieldResult& res, const double energy, const double Wq_eV);
+  // Confirms and sometimes adjusts YieldResult to make physical sense
   QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.07});
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between

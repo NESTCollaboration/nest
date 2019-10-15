@@ -199,9 +199,9 @@ class NESTcalc {
   // Called by GetYields in the K383m case
   virtual YieldResult GetYieldBeta(double energy, double density, double dfield);
   // Called by GetYields in the Beta/Photoelectric case
-  YieldResult YieldResultValidity(YieldResult& res, const double energy, const double Wq_eV);
+  virtual YieldResult YieldResultValidity(YieldResult& res, const double energy, const double Wq_eV);
   // Confirms and sometimes adjusts YieldResult to make physical sense
-  QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.07});
+  virtual QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.07});
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
   // photons and electrons
@@ -270,7 +270,7 @@ class NESTcalc {
   // Utilizing a dependence on radius and the size of the S2 signal, takes MC
   // truth X and Y and outputs smeared values as if you did position
   // reconstruction like in real data
-  double PhotonEnergy(bool s2Flag, bool state, double tempK);
+  virtual double PhotonEnergy(bool s2Flag, bool state, double tempK);
   // Determines the birth energies in electron-Volts of scintillation photons,
   // for either S1 or S2, including fluctuations in them, so that you can apply
   // proper QE in G4 for ex.
@@ -279,8 +279,10 @@ class NESTcalc {
   // density can provide the dE/dx, as a function of energy in keV. Will be more
   // useful in the future
   struct Wvalue {double Wq_eV; double alpha;};
-  Wvalue WorkFunction(double rho);
+  virtual Wvalue WorkFunction(double rho);
   //the W-value as a func of density in g/cm^3
+  virtual double NexONi(double energy, double density);
+  //calculate exciton/ion 
   VDetector* GetDetector() { return fdetector; }
 };
 }

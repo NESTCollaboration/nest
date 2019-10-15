@@ -284,7 +284,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
   YieldResult result;
   result.PhotonYield = Ly * energy;
   result.ElectronYield = Qy * energy;
-  result.ExcitonRatio = alpha * erf(0.05 * energy);
+  result.ExcitonRatio = NexONi(energy,density);
   result.Lindhard = 1;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
@@ -424,12 +424,12 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
             (6. + (69.742 - 6.) / pow(1. + pow(dfield / 9.515, 1.9), 0.063032));
   }
   double Ne = Nq - Nph;
-  double NexONi = alpha * erf(0.05 * energy);
+ 
   
   YieldResult result;
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
-  result.ExcitonRatio = NexONi;
+  result.ExcitonRatio = NexONi(energy,density);
   result.Lindhard = 1;
   result.ElectricField = dfield;
   result.DeltaT_Scint = deltaT_ns;
@@ -470,12 +470,12 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   double Ly = Nq / energy - Qy;
   double Ne = Qy * energy;
   double Nph = Ly * energy;
-  double NexONi = alpha * erf(0.05 * energy);
+
   
   YieldResult result;
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
-  result.ExcitonRatio = NexONi;
+  result.ExcitonRatio = NexONi(energy,density);
   result.Lindhard = 1;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
@@ -1514,4 +1514,11 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density) {
   
   
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together
+}
+
+double NESTcalc::NexONi(double energy, double density)
+{
+  Wvalue wvalue = WorkFunction(density);
+  double alpha = wvalue.alpha;
+  return alpha * erf(0.05 * energy);
 }

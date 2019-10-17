@@ -862,11 +862,10 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
   posDep /= fdetector->FitS2(0., 0.);
   posDepSm /= fdetector->FitS2(0., 0.);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
-
-  int Nee = BinomFluct(
-      Ne, ExtEff * exp(-dt / fdetector->get_eLife_us()));  // MAKE this 1 for
-                                                           // SINGLE e-
-                                                           // DEBUGGING
+  
+  int Nee = BinomFluct(Ne, ExtEff * exp(-dt / fdetector->get_eLife_us()));
+  //MAKE this 1 for SINGLE e- DEBUG
+  
   long Nph = 0, nHits = 0, Nphe = 0;
   double pulseArea = 0.;
 
@@ -1158,10 +1157,24 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   if (fdetector->get_s2_thr() < 0)
     SE *= fdetector->FitTBA(0., 0., fdetector->get_TopDrift() / 2.)[1];
   double g2 = ExtEff * SE;
-  double StdDev = sqrt((1. - fdetector->get_g1_gas()) * SE +
-                       fdetector->get_s2Fano() * fdetector->get_s2Fano() +
-                       fdetector->get_sPEres());
-
+  double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r,x,y; int Nph, nHits;
+  
+  for ( int i = 0; i < 10000; i++ ) { // calculate properly the width (1-sigma std dev) in the SE size
+    Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
+    phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
+    r = fdetector->get_radius()*sqrt(RandomGen::rndm()->rand_uniform());
+    x = r * cos(phi);
+    y = r * sin(phi);
+    posDep = fdetector->FitS2(x,y) / fdetector->FitS2(0.,0.); //future upgrade: smeared pos
+    nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
+    Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
+    pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
+    pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noise()[3]*pulseArea);
+    pulseAreaC = pulseArea / posDep;
+    NphdC = pulseAreaC/(1.+fdetector->get_P_dphe());
+    StdDev += (SE-NphdC)*(SE-NphdC);
+  } StdDev = sqrt(StdDev)/sqrt(9999.); // N-1 from above (10,000)
+  
   if (verbosity) {
     cout << endl
          << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2

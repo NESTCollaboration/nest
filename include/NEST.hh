@@ -189,7 +189,7 @@ class NESTcalc {
   // for photons and electrons per keV. Nuis(ance)Param included for varying the
   // NR Ly & Qy up and down
   virtual YieldResult GetYieldGamma(double energy, double density, double dfield);
-  // Called by GetYields in the Gamma case
+  // Called by GetYields in the Gamma/x-ray/Photoabsorption Case
   virtual YieldResult GetYieldNR(double energy, double density, double dfield, double massNum,
                   std::vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   // Called by GetYields in the NR (and related) cases
@@ -198,7 +198,7 @@ class NESTcalc {
   virtual YieldResult GetYieldKr83m(double energy, double density, double dfield);
   // Called by GetYields in the K383m case
   virtual YieldResult GetYieldBeta(double energy, double density, double dfield);
-  // Called by GetYields in the Beta/Photoelectric case
+  // Called by GetYields in the Beta/Compton/etc.(IC,Auger,EC) Case
   virtual YieldResult YieldResultValidity(YieldResult& res, const double energy, const double Wq_eV);
   // Confirms and sometimes adjusts YieldResult to make physical sense
   virtual QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.07});

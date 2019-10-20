@@ -584,11 +584,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
 
   // If single photo-electron efficiency is under 1 and the threshold is above 0
   // (some phe will be below threshold)
-  if (useTiming ||
-      (fdetector->get_sPEthr() > 0. &&
-       nHits < fdetector->get_numPMTs())) {  // digital nHits eventually becomes
-                                             // spikes (spike++) based upon
-                                             // threshold
+  if ( useTiming != -1 ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
+    
     // Step through the pmt hits
     for (int i = 0; i < nHits; i++) {
       // generate photo electron, integer count and area
@@ -623,7 +620,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       }
       // Save the phe area and increment the spike count (very perfect spike
       // count) if area is above threshold
-      if (useTiming) {
+      if ( useTiming >= 1 ) {
         if ((phe1 + phe2) > fdetector->get_sPEthr()) {
           pulseArea += phe1 + phe2;
           spike++;
@@ -645,14 +642,16 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
             // threshold
     Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
     double eff = fdetector->get_sPEeff();
-    if (nHits >= fdetector->get_numPMTs()) eff = 1.;
+    //eff += ((1.-eff)/double(fdetector->get_numPMTs()))*double(nHits);
+    if ( eff > 1. ) eff = 1.;
+    if ( eff < 0. ) eff = 0.;
     pulseArea = RandomGen::rndm()->rand_gauss(
         BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())),
         fdetector->get_sPEres() * sqrt(Nphe));
     spike = (double)nHits;
   }
-
-  if (useTiming) {
+  
+  if ( useTiming >= 1 ) {
     vector<double> PEperBin, AreaTable[2], TimeTable[2];
     int numPts = 1100 - 100 * SAMPLE_SIZE;
     AreaTable[0].resize(numPts, 0.);
@@ -868,8 +867,8 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
   
   long Nph = 0, nHits = 0, Nphe = 0;
   double pulseArea = 0.;
-
-  if (useTiming) {
+  
+  if ( useTiming >= 1 ) {
     long k;
     int stopPoint;
     double tau1, tau2, E_liq, amp2;

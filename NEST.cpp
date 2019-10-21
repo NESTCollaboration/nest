@@ -578,7 +578,12 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   // generate a number of PMT hits drawn from a binomial distribution.
   // Initialize number of photo-electrons
   int nHits = BinomFluct(Nph, fdetector->get_g1() * posDep), Nphe = 0;
-
+  
+  double eff = fdetector->get_sPEeff();
+  eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits);
+  if ( eff > 1. ) eff = 1.;
+  if ( eff < 0. ) eff = 0.;
+  
   // Initialize the pulse area and spike count variables
   double pulseArea = 0., spike = 0., prob;
 
@@ -597,7 +602,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       if (phe1 < -DBL_MAX) phe1 = 0.;
       prob = RandomGen::rndm()->rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
-      if (prob > fdetector->get_sPEeff()) {
+      if (prob > eff) {
         phe1 = 0.;
       }  // add an else with Nphe++ if not doing mc truth
       // Generate a double photo electron if random draw allows it
@@ -611,8 +616,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
         if (phe2 > DBL_MAX) phe2 = 1.;
         if (phe2 < -DBL_MAX) phe2 = 0.;
         // zero the area if phe wouldn't have been observed
-        if (RandomGen::rndm()->rand_uniform() > fdetector->get_sPEeff() &&
-            prob > fdetector->get_sPEeff()) {
+        if (RandomGen::rndm()->rand_uniform() > eff &&
+            prob > eff) {
           phe2 = 0.;
         }  // add an else with Nphe++ if not doing mc truth
         // The dphe occurs simultaneously to the first one from the same source
@@ -641,10 +646,6 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   } else {  // apply just an empirical efficiency by itself, without direct area
             // threshold
     Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
-    double eff = fdetector->get_sPEeff();
-    //eff += ((1.-eff)/double(fdetector->get_numPMTs()))*double(nHits);
-    if ( eff > 1. ) eff = 1.;
-    if ( eff < 0. ) eff = 0.;
     pulseArea = RandomGen::rndm()->rand_gauss(
         BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())),
         fdetector->get_sPEres() * sqrt(Nphe));

@@ -556,7 +556,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       signal1.push_back(scint[7]);
     else
       signal1.push_back(-999.);
-
+    
     if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
     vector<double> scint2 =
         n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, j, field,
@@ -567,7 +567,14 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       signal2.push_back(scint2[7]);  // no spike option for S2
     else
       signal2.push_back(-999.);
-
+    
+    if ( eMin == eMax ) {
+      if ( scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1 )
+	cerr << "WARNING: Some S1 pulse areas are greater than maxS1" << endl;
+      if ( scint2[5] > maxS2 || scint2[7] > maxS2 )
+	cerr << "WARNING: Some S2 pulse areas are greater than maxS2" << endl;
+    }
+    
     if (!MCtruthE) {
       double Nph, Ne;
       if (usePD == 0)
@@ -713,7 +720,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     } else {
       GetBand(signal1, signal2, true);
       GetEnergyRes(signalE);
-      if (type_num == NR) {
+      if (type_num == NR || type_num == WIMP || type_num == B8 || type_num == DD || type_num == AmBe || type_num == Cf || type_num == ion) {
         fprintf(stderr,
                 "S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc "
                 "[keVnr]\tEc Res[%%]\tEff[%%>thr]\tEc [keVee]\n");
@@ -728,7 +735,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
                 band[j][1] / band[j][0] * 100., band[j][2],
                 band[j][3] / band[j][2] * 100., energies[0],
                 energies[1] / energies[0] * 100., energies[2] * 100.);
-        if (type_num == NR)
+        if (type_num < 7) //0-6=NR/related (WIMPs,etc.)
           fprintf(stderr, "%lf\n", keVee / energies[2]);
         else
           fprintf(stderr, "\n");

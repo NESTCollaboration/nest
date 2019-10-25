@@ -459,9 +459,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   double LET_power = -2.;
   if (fdetector->get_inGas()) LET_power = 2.;
   double QyLvlhighE = 28.;
-  //      if (density > 3.100) QyLvlhighE = 49.; SXe effect from Yoo. But,
-  //      beware of enabling this line: enriched liquid Xe for neutrinoless
-  //      double beta decay has density higher than 3g/cc;
+  if (density > 3.100) QyLvlhighE = 49.; //SXe effect from Yoo.
   double Qy = QyLvlmedE +
           (QyLvllowE - QyLvlmedE) /
           pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) +
@@ -580,7 +578,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   int nHits = BinomFluct(Nph, fdetector->get_g1() * posDep), Nphe = 0;
   
   double eff = fdetector->get_sPEeff();
-  eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits);
+  if ( eff < 1. )
+    eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits);
   if ( eff > 1. ) eff = 1.;
   if ( eff < 0. ) eff = 0.;
   
@@ -1142,6 +1141,10 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   double elYield = (alpha * fdetector->get_E_gas() * 1e3 -
                     beta * fdetector->get_p_bar() - gamma) *
                    gasGap * 0.1;  // arXiv:1207.2292 (HA, Vitaly C.)
+  double rho = fdetector->get_p_bar() * 1e5 /
+    (fdetector->get_T_Kelvin() * 8.314) * MOLAR_MASS * 1e-6;
+  elYield = (0.137*fdetector->get_E_gas()*1e3-4.70e-18*(NEST_AVO*rho/MOLAR_MASS)) * gasGap * 0.1;
+  // replaced with more accurate version also from 1207.2292, but works for room temperature gas
   if (elYield <= 0.0 && E_liq != 0.) {
     cerr << "\tWARNING, the field in gas must be at least "
          << 1e-3 * (beta * fdetector->get_p_bar() + gamma) / alpha
@@ -1241,7 +1244,7 @@ double NESTcalc::GetDensity(double Kelvin,
   if (Kelvin < 161.40) {  // solid Xenon
     cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
     return 3.41;  // from Yoo at 157K
-    // other sources say 3.1 (Wikipedia, 'minimum') and 3.64g/mL at an unknown
+    // other sources say 3.1 (Wikipedia, 'minimum') and 3.640g/mL at an unknown
     // temperature
   }
 

@@ -94,7 +94,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   size_t loc;
   int index;
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD,
-      vD_middle = 0., atomNum = 0, massNum = 0, keVee = 0.0;
+      vD_middle = 0., atomNum = 0, massNum = MOLAR_MASS, keVee = 0.0;
   YieldResult yieldsMax;
 
   if (no_seed != true) {
@@ -181,12 +181,12 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     cerr << "x-ray or xray or xRay or X-ray or Xray or XRay," << endl;
     cerr << "Kr83m or 83mKr or Kr83," << endl;
     cerr << "CH3T or tritium," << endl;
-    cerr << "Carbon14 or 14C or C14," << endl;
+    cerr << "Carbon14 or 14C or C14 or C-14," << endl;
     cerr << "beta or ER or Compton or compton or electron or e-, and" << endl;
     cerr << "muon or MIP or LIP or mu or mu-" << endl;
     return 1;
   }
-
+  
   if (type_num == Kr83m) {
     if (eMin == 9.4 && eMax == 9.4) {
     } else if (eMin == 32.1 && eMax == 32.1) {
@@ -228,10 +228,10 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   double centralField = detector->FitEF(0.0, 0.0, centralZ);
 
   if (type_num == WIMP) {
-    yieldsMax = n.GetYields(NR, 25.0, rho, centralField, double(massNum),
+    yieldsMax = n.GetYields(NR, 25.0, rho, centralField, MOLAR_MASS,
                             double(atomNum), NuisParam);
   } else if (type_num == B8) {
-    yieldsMax = n.GetYields(NR, 4.00, rho, centralField, double(massNum),
+    yieldsMax = n.GetYields(NR, 4.00, rho, centralField, MOLAR_MASS,
                             double(atomNum), NuisParam);
   } else {
     double energyMaximum;
@@ -252,7 +252,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   if ((g1 * yieldsMax.PhotonYield) > (2. * maxS1) && eMin != eMax)
     cerr
         << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
-
+  
+  if ( type_num < 6 ) massNum = 0;
+  
   double keV = -999.;
   for (unsigned long int j = 0; j < numEvts; j++) {
     if (eMin == eMax && eMin >= 0. && eMax > 0.) {
@@ -301,7 +303,16 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       if (keV > eMax) keV = eMax;
       if (keV < eMin) keV = eMin;
     }
-
+    
+    if ( keV < 0. ) {
+      cerr << "ERROR: Get ready for time travel or FTL--negative energy!" << endl;
+      return 1;
+    }
+    if( keV == 0. ) {
+      cerr << "WARNING: Zero energy has occurred, and this is not normal" << endl;
+    }
+    
+    double FudgeFactor[2] = { 1., 1. };
   Z_NEW:
     if (fPos == -1.) {  // -1 means default, random location mode
       pos_z = 0. +
@@ -509,7 +520,10 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
 	  yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
 	  yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
-	  yields.PhotonYield *= 1.02; yields.ElectronYield *= 1.05;
+	  FudgeFactor[0] = 1.02;
+	  FudgeFactor[1] = 1.05;
+	  yields.PhotonYield *= FudgeFactor[0];
+	  yields.ElectronYield*=FudgeFactor[1];
 	  detector->set_noise(detector->get_noise()[0],detector->get_noise()[1], 5.5e-2, 2.2e-2);
 	}
 	else
@@ -591,7 +605,8 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       if (signal2.back() <= 0.) Ne = 0.;
       if (yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
 	if ( rho > 3. ) yields.Lindhard = 1.;
-        keV = (Nph + Ne) * Wq_eV * 1e-3 / yields.Lindhard;
+        keV = (Nph/FudgeFactor[0] + Ne/FudgeFactor[1]) *
+	  Wq_eV * 1e-3 / yields.Lindhard;
         keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
                                              // both places, but won't account
                                              // for density dependence
@@ -662,8 +677,8 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
              driftTime, smearPos[0], smearPos[1], smearPos[2], quanta.photons,
              quanta.electrons);  // comment this out when below line in
       // printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f,%.0f\t%lf\t%lf\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],yields.PhotonYield,yields.ElectronYield);
-      // //for when you want means
-      //if (truthPos[2] < detector->get_cathode() && verbosity) printf("g-X ");
+      //for when you want means
+      // if (truthPos[2] < detector->get_cathode() && verbosity) printf("g-X ");
       if (keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||
           // switch to exponential notation to make output more readable, if
           // energy is too high (>1 MeV)
@@ -765,6 +780,12 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
                                bool resol) {
+  
+  if ( numBins > NUMBINS_MAX ) {
+    cerr << "ERROR: Too many bins. Decrease numBins (analysis.hh) or increase NUMBINS_MAX (TestSpectra.hh)" << endl;
+    exit ( EXIT_FAILURE );
+  }
+  
   vector<vector<double>> signals;
   signals.resize(numBins, vector<double>(1, -999.));
   double binWidth, border;

@@ -301,10 +301,10 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   }
   int massNumber;
   double ScaleFactor[2] ={1., 1.};
-  if (massNum != 0.)
-    massNumber = int(massNum);
-  else
+  if ( massNum == 0. )
     massNumber = RandomGen::rndm()->SelectRanXeAtom();
+  else
+    massNumber = int(massNum);
   ScaleFactor[0] = sqrt(MOLAR_MASS / (double) massNumber);
   ScaleFactor[1] = ScaleFactor[0];
   double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
@@ -344,7 +344,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
 }
 
 YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum, vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
-{
+{ //simply uses the original Lindhard model, but as cited by Hitachi in: https://indico.cern.ch/event/573069/sessions/230063/attachments/1439101/2214448/Hitachi_XeSAT2017_DM.pdf
   double A1 = massNum, A2 = RandomGen::rndm()->SelectRanXeAtom();
   double Z1 = atomNum, Z2 = ATOM_NUM;
   double Z_mean = pow(pow(Z1, (2. / 3.)) + pow(Z2, (2. / 3.)), 1.5);

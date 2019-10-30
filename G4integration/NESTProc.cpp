@@ -120,7 +120,7 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       aStep.GetSecondary()->empty()) {
     lineages_prevEvent.clear();
 
-    for (auto lineage : lineages) {
+    for (auto &lineage : lineages) {
       double etot =
           std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
                           [](double a, Hit b) { return a + b.E; });
@@ -137,7 +137,7 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
         auto photontimes = lineage.result.photon_times.begin();
         double ecum = 0;
         int phot_cum = 0;
-        for (auto hit : lineage.hits) {
+        for (auto &hit : lineage.hits) {
           hit.result.photons = round((lineage.result.quanta.photons - phot_cum)*hit.E/(etot-ecum));
           ecum += hit.E;
           phot_cum += hit.result.photons;
@@ -154,7 +154,7 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
         double ecum = 0;
         double el_cum = 0;
 
-        for (auto hit : lineage.hits) {
+        for (auto &hit : lineage.hits) {
           hit.result.electrons = round((lineage.result.quanta.electrons - el_cum)*hit.E/(etot-ecum));
           ecum += hit.E;
           el_cum+= hit.result.electrons;
@@ -248,7 +248,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                sec->GetMomentumDirection()),
                     myLinID->second));
       if(verbose>2){
-              std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<std::endl;
+              std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<" type "<<lineages[myLinID->second].type <<" parent "<<aTrack.GetDefinition()->GetParticleName() <<std::endl;
       }
     }
   }
@@ -298,10 +298,10 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
              step_type == NoneType || step_type == ion || sec_type == ion);
       // if this is the first secondary to have a non-None type, we've started a
       // new lineage
-      if (sec_type != NoneType && (step_type == NoneType || sec_type == ion)) {
+      if (sec_type != NoneType && (step_type == NoneType || step_type == ion || sec_type == ion)) {
         if (verbose > 1)
-          cout << "Made new lineage from secondary of particle "
-               << aTrack.GetTrackID() << " of type " << sec_type << endl;
+          cout << "Made new lineage "<<lineages.size()<<" from secondary of particle "
+               << aTrack.GetTrackID()<<"("<<aTrack.GetDefinition()->GetParticleName()<<" -> "<<sec->GetDefinition()->GetParticleName()<<")" << " of type " << sec_type <<sec->GetCreatorProcess()->GetProcessName() << endl;
         lineages.push_back(sec_lin);
       }
       step_type = sec_type;
@@ -337,7 +337,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   if (aStep.GetTotalEnergyDeposit() <= 0) {
     return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
   }
-
+  
   //... in a noble element...
   const G4Material* preMaterial = aStep.GetPreStepPoint()->GetMaterial();
   const G4Material* postMaterial = aStep.GetPostStepPoint()->GetMaterial();

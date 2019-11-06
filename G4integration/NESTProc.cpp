@@ -240,20 +240,29 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
 
   // If the current track is already in a lineage, its secondaries inherit that
   // lineage.
-  if (myLinID != track_lins.end() && lineages[myLinID->second].type != ion) {
-    for (const G4Track* sec : secondaries) {
-      if(sec->GetDefinition() == G4OpticalPhoton::Definition() || sec->GetCreatorProcess()->GetProcessName().contains("annihil")) continue;
-      track_lins.insert(
-          make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
-                               sec->GetMomentumDirection()),
-                    myLinID->second));
-      if(verbose>2){
-              std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<" type "<<lineages[myLinID->second].type <<" parent "<<aTrack.GetDefinition()->GetParticleName() <<std::endl;
+  bool break_lineage = true;
+  if (myLinID != track_lins.end()) {
+    break_lineage=false;
+    break_lineage | (lineages[myLinID->second].type == ion); //ions do not pass on their lineage to their secondaries, since those secondaries are radioactive decay
+    if(aTrack.GetDefinition()==G4Gamma::Definition()){
+      G4ThreeVector dist_from_vertex = aTrack.GetVertexPosition() - aStep.GetPostStepPoint()->GetPosition();
+      break_lineage | (dist_from_vertex.mag() < gamma_break); //long-travelling gammas break the lineage, since they are excluded from the single-site experimental results infomring the NEST model
+    }
+    if(!break_lineage){ 
+      for (const G4Track* sec : secondaries) {
+        if(sec->GetDefinition() == G4OpticalPhoton::Definition() || sec->GetCreatorProcess()->GetProcessName().contains("annihil")) continue;
+        track_lins.insert(
+            make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
+                                 sec->GetMomentumDirection()),
+                      myLinID->second));
+        if(verbose>2){
+                std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<" type "<<lineages[myLinID->second].type <<" parent "<<aTrack.GetDefinition()->GetParticleName() <<std::endl;
+        }
       }
     }
   }
   // otherwise, we may need to start a new lineage
-  else {
+  if(break_lineage) {
     // What if the parent is a primary? Give it a lineage just as if it were one
     // of its own secondaries
     if (aTrack.GetParentID() == 0 && myLinID == track_lins.end()) {

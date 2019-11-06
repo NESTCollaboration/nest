@@ -18,6 +18,7 @@
 //#include "G4ThermalElectron.hh"
 #include "G4MaterialCutsCouple.hh"
 #include "G4ProductionCuts.hh"
+#include "G4SystemOfUnits.hh"
 #include "NEST.hh"
 
 namespace NEST {
@@ -120,6 +121,14 @@ class NESTProc : public G4VRestDiscreteProcess {
     this->analysisTrigger = _analysisTrigger;
   }
 
+  void SetGamma_break(double _gamma_break) {
+      this->gamma_break = _gamma_break;
+  }
+
+  double GetGamma_break() const {
+      return gamma_break;
+  }
+
  protected:
   // bools for tracking some special particle cases
 
@@ -133,6 +142,7 @@ class NESTProc : public G4VRestDiscreteProcess {
   
   G4double YieldFactor;  // turns scint. on/off
   bool detailed_secondaries=true;
+  double gamma_break = 9*mm; //Gammas will not pass on their lineage (if they have one, e.g. bremsstrahlung) if they are this far from their origin.
   int verbose=0;
   
   std::function<void(std::vector<NEST::Lineage>)> analysisTrigger;

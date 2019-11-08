@@ -246,7 +246,9 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
     break_lineage |= (lineages[myLinID->second].type == ion); //ions do not pass on their lineage to their secondaries, since those secondaries are radioactive decay
     if(aTrack.GetDefinition()==G4Gamma::Definition()){
       G4ThreeVector dist_from_vertex = aTrack.GetVertexPosition() - aStep.GetPostStepPoint()->GetPosition();
-      break_lineage |= (dist_from_vertex.mag() < gamma_break); //long-travelling gammas break the lineage, since they are excluded from the single-site experimental results infomring the NEST model
+      if(dist_from_vertex.mag() > gamma_break){
+        break_lineage = true; //long-travelling gammas break the lineage, since they are excluded from the single-site experimental results infomring the NEST model
+      }
     }
     if(!break_lineage){ 
       for (const G4Track* sec : secondaries) {

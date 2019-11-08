@@ -18,6 +18,7 @@
 //#include "G4ThermalElectron.hh"
 #include "G4MaterialCutsCouple.hh"
 #include "G4ProductionCuts.hh"
+#include "G4SystemOfUnits.hh"
 #include "NEST.hh"
 
 namespace NEST {
@@ -118,6 +119,14 @@ class NESTProc : public G4VRestDiscreteProcess {
   void SetAnalysisTrigger(
       std::function<void(std::vector<NEST::Lineage>)> _analysisTrigger) {
     this->analysisTrigger = _analysisTrigger;
+  }
+
+  void SetGamma_break(double _gamma_break) {
+      this->gamma_break = _gamma_break;
+  }
+
+  double GetGamma_break() const {
+      return gamma_break;
   }
 
  protected:

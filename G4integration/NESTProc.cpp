@@ -386,3 +386,86 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   G4ThreeVector x0 = pPreStepPoint->GetPosition();
   G4double evtStrt = pPreStepPoint->GetGlobalTime();
   G4double t0 = pPreStepPoint->GetGlobalTime();
+
+  G4double Density = preMaterial->GetDensity() / (g / cm3);
+  if (myLineage->density == -1) myLineage->density = Density;
+  double step_E = aStep.GetTotalEnergyDeposit() / keV;
+
+  // add this hit to the appropriate lineage
+  Hit stepHit(step_E, t0, x1);
+  myLineage->hits.push_back(stepHit);
+
+  // the end (exiting)
+  return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+}
+
+// GetMeanFreePath
+// ---------------
+
+G4double NESTProc::GetMeanFreePath(const G4Track&, G4double,
+                                   G4ForceCondition* condition) {
+  *condition = StronglyForced;
+  // what this does is enforce the G4S1Light physics process as always
+  // happening, so in effect scintillation is a meta-process on top of
+  // any and all other energy depositions which may occur, just like the
+  // original G4Scintillation (disregard DBL_MAX, this function makes the
+  // mean free path zero really, not infinite)
+
+  return DBL_MAX;  // a C-defined constant
+}
+
+// GetMeanLifeTime
+// ---------------
+
+G4double NESTProc::GetMeanLifeTime(const G4Track&,
+                                   G4ForceCondition* condition) {
+  *condition = Forced;
+  // this function and this condition has the same effect as the above
+  return DBL_MAX;
+}
+
+#include "G4ParticleTable.hh"
+// ######################################################################
+// ###                    THERMAL (DRIFT) ELECTRON                    ###
+// ######################################################################
+NESTThermalElectron* NESTThermalElectron::theInstance = 0;
+
+NESTThermalElectron* NESTThermalElectron::Definition() {
+  if (theInstance != 0) return theInstance;
+  const G4String name = "thermalelectron";
+  // search in particle table]
+  G4ParticleTable* pTable = G4ParticleTable::GetParticleTable();
+  G4ParticleDefinition* anInstance = pTable->FindParticle(name);
+  if (anInstance == 0) {
+    // create particle
+    //
+    //    Arguments for constructor are as follows
+    //               name             mass          width         charge
+    //             2*spin           parity  C-conjugation
+    //          2*Isospin       2*Isospin3       G-parity
+    //               type    lepton number  baryon number   PDG encoding
+    //             stable         lifetime    decay table
+    //             shortlived      subType    anti_encoding
+
+    // use constants in CLHEP
+    //  static const double electron_mass_c2 = 0.51099906 * MeV;
+
+    anInstance = new G4ParticleDefinition(
+        name, electron_mass_c2, 0.0 * MeV, -1. * eplus, 1, 0, 0, 0, 0, 0,
+        "lepton", 1, 0, 11, true, -1.0, NULL, false, "e");
+    // Bohr Magnetron
+    G4double muB = -0.5 * eplus * hbar_Planck / (electron_mass_c2 / c_squared);
+
+    anInstance->SetPDGMagneticMoment(muB * 2. * 1.0011596521859);
+  }
+  theInstance = reinterpret_cast<NESTThermalElectron*>(anInstance);
+  return theInstance;
+}
+
+NESTThermalElectron* NESTThermalElectron::ThermalElectronDefinition() {
+  return Definition();
+}
+
+NESTThermalElectron* NESTThermalElectron::ThermalElectron() {
+  return Definition();
+}

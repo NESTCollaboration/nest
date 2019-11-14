@@ -82,7 +82,7 @@ The following are optional, depending on intended use of NEST:
 	paths are already specified, one can simply do:
 
 	```
-	cmake -DCMAKE_INSTALL_PREFIX=${PWD}/../install/ ../relative/path/nest
+	cmake -DCMAKE_INSTALL_PREFIX=[path to install directory] ../relative/path/nest
 	```
 
 	To compile with GEANT4 integration, you will have to include an extra argument:
@@ -159,7 +159,7 @@ Then, include the following flag when running CMake on your project:
 <a name="detector"></a>
 ### Creating a Custom Detector
 
-The "Detectors/" folder contains a number of header files:
+The "include/Detectors/" folder contains a number of header files:
 
 * VDetector.hh
 * DetectorExample_XENON10.hh
@@ -170,7 +170,7 @@ The VDetector files (.cpp, .hh) which serve as the base detector class **should 
 "DetectorExample_XENON10.hh" is an example of a custom detector file, and is currently set as the default in testNEST.
 It serves as a template for users to create their own detector. Follow the steps below (where "MyDetector" is an example).
 
-1. Within the "Detectors/" folder, create your own header using the template:
+1. Within the "include/Detectors/" folder, create your own header using the template:
 
 	```	
 	cp DetectorExample_XENON10.hh MyDetector.hh
@@ -194,12 +194,12 @@ It serves as a template for users to create their own detector. Follow the steps
 	Note that you can add your own custom functions (within constraints) to this detector class, 
 	which can be accessed through the detector object within testNEST.
 
-3. Once your header file is done, one should edit "testNEST.cpp" in the following way:
+3. Once your header file is done, one should edit "src/testNEST.cpp" in the following way:
 
 	```cpp
-	#include "Detectors/DetectorExample_XENON10.hh" 
+	#include "DetectorExample_XENON10.hh" 
 	
-	--> #include "Detectors/MyDetector.hh"
+	--> #include "MyDetector.hh"
 	```
 
 	```cpp
@@ -226,7 +226,7 @@ WARNING: Whenever the detector headers or testNEST is modified, **make sure to d
 <a name="analysis"></a>
 ### Modifying the testNEST Output (Analysis Settings)
 
-The file "analysis.hh" is for specifying the output style and setting various analysis parameters.
+The file "include/NEST/analysis.hh" is for specifying the output style and setting various analysis parameters.
 
 An explanation of the various parameters:
 
@@ -299,9 +299,9 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 
 
 <a name="tools"></a>
-## Useful Tools
+## Useful Tools and Examples
 
-The "Tools/" folder contains two very useful codes: bareNEST and rootNEST.
+The "examples/" folder contains two very useful codes: bareNEST and rootNEST.
 
 <a name="barenest"></a>
 ### Using bareNEST

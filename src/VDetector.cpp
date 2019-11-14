@@ -10,7 +10,7 @@
 
 #include <math.h>
 
-#include "Detectors/VDetector.hh"
+#include "VDetector.hh"
 
 VDetector::VDetector() { Initialization(); }
 

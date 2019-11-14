@@ -38,21 +38,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Include all directories which contain needed header files
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/include")
-include_directories("${PROJECT_SOURCE_DIR}/Detectors")
+include_directories("${PROJECT_SOURCE_DIR}/include/NEST")
+include_directories("${PROJECT_SOURCE_DIR}/include/Detectors")
 
 # Gather implementation and header files
-file(GLOB core ${PROJECT_SOURCE_DIR}/*.cpp)
-file(GLOB headers ${PROJECT_SOURCE_DIR}/*.hh ${PROJECT_SOURCE_DIR}/include/*.hh ${PROJECT_SOURCE_DIR}/Detectors/*.hh)
+file(GLOB core ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB headers ${PROJECT_SOURCE_DIR}/include/NEST/*.hh ${PROJECT_SOURCE_DIR}/include/Detectors/*.hh)
 
 # Create NEST as a static library with specified headers
 add_library(NEST_core STATIC ${core} ${headers} )
 
 # Add a testNEST executable and link to NEST library
-add_executable(testNEST testNEST.cpp)
+add_executable(testNEST ${PROJECT_SOURCE_DIR}/src/testNEST.cpp)
 target_link_libraries(testNEST NEST_core)
 
 # Add a bareNEST executable and link to NEST library
-add_executable(bareNEST ${PROJECT_SOURCE_DIR}/Tools/bareNEST.cpp)
+add_executable(bareNEST ${PROJECT_SOURCE_DIR}/examples/bareNEST.cpp)
 target_link_libraries(bareNEST NEST_core)
 
 # If doing GEANT4 integration, link GEANT4 package to the NEST library
@@ -76,7 +77,7 @@ if(BUILD_ROOT)
 	find_package(ROOT REQUIRED)
 	include_directories(${ROOT_INCLUDE_DIR})
 	include_directories(${ROOT_INCLUDE_DIRS})
-	add_executable(rootNEST ${PROJECT_SOURCE_DIR}/Tools/rootNEST.cpp)
+	add_executable(rootNEST ${PROJECT_SOURCE_DIR}/examples/rootNEST.cpp)
 	target_link_libraries(rootNEST NEST_core ${ROOT_LIBRARIES})
 	install(TARGETS NEST testNEST bareNEST rootNEST
 		# IMPORTANT: Add the library to the "export-set"

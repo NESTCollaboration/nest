@@ -24,8 +24,8 @@
 #include <string.h>
 #include <vector>
 
-#include "../include/analysis.hh"
-#include "../include/TestSpectra.hh"  // contains the WIMP, earth, and escape velocities
+#include "analysis.hh"
+#include "TestSpectra.hh"  // contains the WIMP, earth, and escape velocities
 
 // Set the compile mode:
 //#define FIT //outputs the goodness of fit for one band (Gaussian centroids of

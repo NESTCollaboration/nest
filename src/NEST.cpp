@@ -15,7 +15,8 @@ long NESTcalc::BinomFluct(long N0, double prob) {
   if (prob <= 0.00) return N1;
   if (prob >= 1.00) return N0;
 
-  if (N0 < 10) {
+  if ( N0 < 5 || fabs(1.-2.*prob)/sqrt(N0*prob*(1.-prob)) > (1./3.) ) {
+    //https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation
     for (int i = 0; i < N0; i++) {
       if (RandomGen::rndm()->rand_uniform() < prob) N1++;
     }
@@ -246,11 +247,11 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     exit(EXIT_FAILURE);
   }
   
-  if ( density > 3. ) { //solid OR enriched. Units of g/mL
+  if ( fdetector->get_extraPhot() ) {
     if ( yields.Lindhard != 1. )
       Nph = int(floor(double(Nph)*7.00+0.5)); //IR photons for NR
     else
-      Nph = int(floor(double(Nph)*1.35+0.5));
+      Nph = int(floor(double(Nph)*1.35+0.5)); //EXO
   }
   result.photons = Nph;
   result.electrons = Ne;
@@ -1238,7 +1239,7 @@ double NESTcalc::GetDensity(double Kelvin,
                                             // (saturated vapor pressure); will
                                             // add pressure dependence later
   
-  if (MOLAR_MASS == 136.) //enriched Xe for 0vBB experiment (136)
+  if (MOLAR_MASS > 134.5) //enrichment for 0vBB expt (~0.8 Xe-136)
     return 3.0305; // ±0.0077 g/cm^3, EXO-200 @167K: arXiv:1908.04128
   
   if (Kelvin < 161.40) {  // solid Xenon

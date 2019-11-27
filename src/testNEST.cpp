@@ -213,7 +213,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   if (rho < 1.75) detector->set_inGas(true);
 
   double Wq_eV = n.WorkFunction(rho).Wq_eV;
-  if ( MOLAR_MASS == 136. ) Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO
+  //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
+  if ( detector->get_extraPhot() )
+    Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO
 
   
   // Calculate and print g1, g2 parameters (once per detector)
@@ -604,7 +606,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       if (signal1.back() <= 0.) Nph = 0.;
       if (signal2.back() <= 0.) Ne = 0.;
       if (yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
-	if ( rho > 3. ) yields.Lindhard = 1.;
+	if ( detector->get_extraPhot() ) yields.Lindhard = 1.;
         keV = (Nph/FudgeFactor[0] + Ne/FudgeFactor[1]) *
 	  Wq_eV * 1e-3 / yields.Lindhard;
         keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
@@ -658,9 +660,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     // including bottom PMTs, NO XYZ correction
     // scint2[5] = S2bc; // floating real# smeared pulse areas in phe ONLY
     // including bottom PMTs, WITH XYZ correction
-    // scint2[6] = S2b / (1.+fdetector->get_P_dphe()); // same as S2b, but
+    // scint2[6] = S2b / (1.+detector->get_P_dphe()); // same as S2b, but
     // adjusted for 2-PE effect (LUX phd units)
-    // scint2[7] = S2bc / (1.+fdetector->get_P_dphe()); // same as S2bc, but
+    // scint2[7] = S2bc / (1.+detector->get_P_dphe()); // same as S2bc, but
     // adjusted for 2-PE effect (LUX phd units)
     // scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in
     // gas gap (from CalculateG2)

@@ -27,7 +27,8 @@ class VDetector {
   double get_sPEeff() { return sPEeff; }
   double* get_noise() { return &noise[0]; }
   double get_P_dphe() { return P_dphe; }
-
+  
+  bool get_extraPhot(){ return extraPhot; }
   double get_coinWind() { return coinWind; }
   int get_coinLevel() { return coinLevel; }
   int get_numPMTs() { return numPMTs; }
@@ -73,6 +74,7 @@ class VDetector {
   }
   void set_P_dphe(double param) { P_dphe = param; }
 
+  void set_extraPhot(bool param){ extraPhot = param;}
   void set_coinWind(double param) { coinWind = param; }
   void set_coinLevel(int param) { coinLevel = param; }
   void set_numPMTs(int param) { numPMTs = param; }
@@ -144,7 +146,7 @@ class VDetector {
   double g1_gas, s2Fano, s2_thr, E_gas, eLife_us;
 
   // Thermodynamic Properties
-  bool inGas;
+  bool inGas, extraPhot;
   double T_Kelvin, p_bar;
 
   // Data Analysis Parameters and Geometry

@@ -47,6 +47,7 @@ class DetectorExample_XENON10 : public VDetector {
     numPMTs = 89;    // For coincidence calculation
 
     //"Linear noise" terms as defined in Dahl thesis and by D. McK
+    extraPhot=false;  // for matching EXO-200's W measurement
     noise[2] = 3e-2;  // S1 -> S1 Gaussian-smeared with noise[2]*S1
     noise[3] = 3e-2;  // S2 -> S2 Gaussian-smeared with noise[3]*S2
 

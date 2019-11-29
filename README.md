@@ -359,7 +359,7 @@ NOTE: While rootNEST can be built using NEST's built-in CMake (see setup instruc
 yourself by doing:
 
 ```
-g++ -g -Wno-c++11-extensions -Wno-deprecated-declarations -Ofast -o rootNEST `root-config --cflags --libs` rootNEST.cpp
+g++ -g -Wno-c++11-extensions -Wno-deprecated-declarations -Ofast `root-config --cflags` -o rootNEST rootNEST.cpp `root-config --libs`
 ```
 
 The argument "-Ofast" may be "-O3" on your machine (optimization flag). 

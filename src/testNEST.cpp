@@ -160,7 +160,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     type_num = Kr83m;
   else if (type == "CH3T" || type == "tritium")
     type_num = CH3T;
-  else if (type == "C14" || type == "Carbon14" || type == "14C")
+  else if (type == "C14" || type == "Carbon14" || type == "14C" || type == "C-14" || type == "Carbon-14")
     type_num = C14;
   else if (type == "beta" || type == "ER" || type == "Compton" ||
            type == "compton" || type == "electron" || type == "e-" ||
@@ -181,7 +181,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     cerr << "x-ray or xray or xRay or X-ray or Xray or XRay," << endl;
     cerr << "Kr83m or 83mKr or Kr83," << endl;
     cerr << "CH3T or tritium," << endl;
-    cerr << "Carbon14 or 14C or C14 or C-14," << endl;
+    cerr << "Carbon14 or 14C or C14 or C-14 or Carbon-14," << endl;
     cerr << "beta or ER or Compton or compton or electron or e-, and" << endl;
     cerr << "muon or MIP or LIP or mu or mu-" << endl;
     return 1;
@@ -424,17 +424,18 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     }
 
     // The following should never happen: this is simply a just-in-case
-    // code-block dealing with user error
+    // code-block dealing with user error (rounding another possible culprit)
     if (pos_z <= 0.) {
-      cerr << "ERROR: unphysically low Z coordinate (vertical axis of "
-              "detector) of " << pos_z << " mm" << endl;
-      return 1;
+      cerr << "WARNING: unphysically low Z coordinate (vertical axis of "
+	"detector) of " << pos_z << " mm" << endl; //warn user on screen
+      pos_z = z_step;
     }
     if ((pos_z > (detector->get_TopDrift() + z_step) || driftTime < 0.0) &&
         field >= FIELD_MIN) {
-      cerr << "ERROR: unphysically big Z coordinate (vertical axis of "
-              "detector) of " << pos_z << " mm" << endl;
-      return 1;
+      cerr << "WARNING: unphysically big Z coordinate (vertical axis of "
+	"detector) of " << pos_z << " mm" << endl; // give the specifics
+      driftTime = 0.0;
+      pos_z = detector->get_TopDrift() - z_step; //just fix it and move on
     }
 
     YieldResult yields;

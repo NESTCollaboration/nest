@@ -110,8 +110,13 @@ int main(int argc, char** argv) {
   }
   double energy[nLines], efficiency[nLines];
   rewind(ifp);
-  for (i = 0; i < nLines; i++)
+  for (i = 0; i < nLines; i++) {
     fscanf(ifp, "%lf %lf", &energy[i], &efficiency[i]);
+    if ( efficiency[i] > 1.02 ) //2% margin of error is allowed
+      { cerr << "eff should be frac not %" << endl; return 1; }
+    if ( efficiency[i] < -.02 ) //allowing for digitization err
+      { cerr << "eff must not be negative" << endl; return 1; }
+  }
   fclose(ifp);
   TGraph* gr1 = new TGraph(nLines, energy, efficiency);
   TF1* fitf =
@@ -225,6 +230,8 @@ int main(int argc, char** argv) {
       double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) -
                                 dd * exp(-ee * pow(j, ff))) /
                    100.;
+      if ( eff > 1. || err < 0. )
+	{ cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
       if (j > loE)
         sigAboveThr[i] += VSTEP * WIMP_dRate(j, mass[i]) * eff * xEff *
                           NRacc;  // integrating (Riemann, left sum)

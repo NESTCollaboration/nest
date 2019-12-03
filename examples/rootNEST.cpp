@@ -27,17 +27,9 @@
 #include "analysis.hh"
 #include "TestSpectra.hh"  // contains the WIMP, earth, and escape velocities
 
-// Set the compile mode:
-//#define FIT //outputs the goodness of fit for one band (Gaussian centroids of
-// histogram in S1 slices)
-//#define LIMIT //outputs wimp masses and cross-sections for given efficiency
-// default if neither is selected is to provide the ER BG discrimination &
-// leakage frac
-
 // non-input parameters hardcoded in
 #define CL 0.90  // confidence level
-#define VSTEP \
-  1e-3  // step size in keV for convolving WIMP recoil energy with efficiency
+#define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
 
 using namespace std;
 
@@ -49,9 +41,7 @@ double band[NUMBINS_MAX][7];
 void GetFile(char* fileName);
 vector<vector<double> > outputs, inputs;
 
-double WIMP_dRate(double ER, double mWimp);
-int SelectRanXeAtom();  // to determine the isotope of Xe
-long double Factorial(double x);
+TestSpectra myTestSpectra;
 double expectedUlFc(double mub, TFeldmanCousins fc);
 
 int modPoisRnd(double poisMean, double preFactor);  // not used currently, but
@@ -61,11 +51,6 @@ int modPoisRnd(double poisMean, double preFactor);  // not used currently, but
                                                     // Poissons
 int modBinom(int nTot, double prob,
              double preFactor);  // just like above, but for binomial
-
-// Convert all velocities from km/s into cm/s
-const double v_0 = V_WIMP * 1e5;      // peak WIMP velocity
-const double v_esc = V_ESCAPE * 1e5;  // escape velocity
-const double v_e = V_EARTH * 1e5;     // the Earth's velocity
 
 bool loop = false;
 double g1x = 1.0, g2x = 1.0;  // for looping over small changes in g1 and g2
@@ -96,7 +81,7 @@ int main(int argc, char** argv) {
   else
     leak = true;
 
-#ifdef LIMIT
+if ( mode == 2 ) {
 
   if (argc < 3) {
     cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
@@ -180,7 +165,7 @@ int main(int argc, char** argv) {
     for (v = 0.; v < 1e3; v += VSTEP) {
       double sum = 0.0;
       for (i = 0; i < (numBGeventsObs + 1.); i++)
-        sum += exp(-v) * pow(v, i) / Factorial(double(i));  // using Poisson
+        sum += exp(-v) * pow(v, i) / TMath::Factorial(i);   // using Poisson
                                                             // statistics as the
                                                             // probability
                                                             // distribution
@@ -230,10 +215,10 @@ int main(int argc, char** argv) {
       double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) -
                                 dd * exp(-ee * pow(j, ff))) /
                    100.;
-      if ( eff > 1. || err < 0. )
+      if ( eff > 1. || eff < 0. )
 	{ cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
       if (j > loE)
-        sigAboveThr[i] += VSTEP * WIMP_dRate(j, mass[i]) * eff * xEff *
+        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i]) * eff * xEff *
                           NRacc;  // integrating (Riemann, left sum)
                                   // mass-dependent differential rate with
                                   // effxacc and step size
@@ -269,9 +254,9 @@ int main(int argc, char** argv) {
 
   return 0;
 
-#endif
+}
 
-#ifdef FIT
+if ( mode == 1 ) {
 
   if (numBins == 1) {
     GetFile(argv[1]);
@@ -309,6 +294,7 @@ int main(int argc, char** argv) {
       //cout.precision(3);
       if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
       if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
+      //cout << chi2[0] << "\t" << chi2[1] << endl; //abbreviated #only version
       cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1]
            << " for width" << endl;
       if (!loop) break;
@@ -317,7 +303,7 @@ int main(int argc, char** argv) {
   }  // double curly bracket goes with g1x and g2x loops above
   return 0;
 
-#endif
+}
 
   if (leak) {
     GetFile(argv[2]);
@@ -826,169 +812,6 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
   delete[] HistogramArray;
   return signals;
 }
-
-// The following was copied wholesale from TestSpectra.cpp on 06-27-2018.
-// Find a way to just compile or link against this
-//------++++++------++++++------++++++------++++++------++++++------++++++------
-// dR() //generator written by Vic Gehman originally
-//------++++++------++++++------++++++------++++++------++++++------++++++------
-
-// This spectrum comes from Phys. Rev. D 82 (2010) 023530 (McCabe)
-double WIMP_dRate(double ER, double mWimp) {
-  // We are going to hard code in the astrophysical halo for now.  This may be
-  // something that we make an argument later, but this is good enough to start.
-  // Some constants:
-  double M_N = 0.9395654;                  // Nucleon mass [GeV]
-  double N_A = NEST_AVO;                   // Avogadro's number [atoms/mol]
-  double c = 2.99792458e10;                // Speed of light [cm/s]
-  double GeVperAMU = 0.9315;               // Conversion factor
-  double SecondsPerDay = 60. * 60. * 24.;  // Conversion factor
-  double KiloGramsPerGram = 0.001;         // Conversion factor
-  double keVperGeV = 1.e6;                 // Conversion factor
-  double SqrtPi = pow(M_PI, 0.5);
-  double root2 = sqrt(2.);
-
-  // Define the detector Z and A and the mass of the target nucleus
-  double Z = ATOM_NUM;
-  double A = (double)SelectRanXeAtom();
-  double M_T = A * GeVperAMU;
-
-  // Calculate the number of target nuclei per kg
-  double N_T = N_A / (A * KiloGramsPerGram);
-
-  // Rescale the recoil energy and the inelastic scattering parameter into GeV
-  ER /= keVperGeV;
-  double delta = 0. / keVperGeV;  // Setting this to a nonzero value will allow
-  // for inelastic dark matter...
-  // Set up your dummy WIMP model (this is just to make sure that the numbers
-  // came out correctly for definite values of these parameters, the overall
-  // normalization of this spectrum doesn't matter since we generate a definite
-  // number of events from the macro).
-  double m_d = mWimp;       // [GeV]
-  double sigma_n = 1.e-36;  //[cm^2] 1 pb reference
-  // Calculate the other factors in this expression
-  double mu_ND = mWimp * M_N / (mWimp + M_N);  // WIMP-nucleON reduced mass
-  double mu_TD = mWimp * M_T / (mWimp + M_T);  // WIMP-nucleUS reduced mass
-  double fp =
-      1.;  // Neutron and proton coupling constants for WIMP interactions.
-  double fn = 1.;
-
-  // Calculate the minimum velocity required to give a WIMP with energy ER
-  double v_min = 0.;
-  if (ER != 0.) {
-    v_min = c * (((M_T * ER) / mu_TD) + delta) / (root2 * sqrt(M_T * ER));
-  }
-  double bet = 1.;
-
-  // Start calculating the differential rate for this energy bin, starting
-  // with the velocity integral:
-  double x_min = v_min / v_0;  // Use v_0 to rescale the other velocities
-  double x_e = v_e / v_0;
-  double x_esc = v_esc / v_0;
-  // Calculate overall normalization to the velocity integral
-  double N = SqrtPi * SqrtPi * SqrtPi * v_0 * v_0 * v_0 *
-             (erf(x_esc) -
-              (4. / SqrtPi) * exp(-x_esc * x_esc) *
-                  (x_esc / 2. + bet * x_esc * x_esc * x_esc / 3.));
-  // Calculate the part of the velocity integral that isn't a constant
-  double zeta = 0.;
-  int thisCase = -1;
-  if ((x_e + x_min) < x_esc) {
-    thisCase = 1;
-  }
-  if ((x_min > fabs(x_esc - x_e)) && ((x_e + x_esc) > x_min)) {
-    thisCase = 2;
-  }
-  if (x_e > (x_min + x_esc)) {
-    thisCase = 3;
-  }
-  if ((x_e + x_esc) < x_min) {
-    thisCase = 4;
-  }
-  switch (thisCase) {
-    case 1:
-      zeta = ((SqrtPi * SqrtPi * SqrtPi * v_0 * v_0) / (2. * N * x_e)) *
-             (erf(x_min + x_e) - erf(x_min - x_e) -
-              ((4. * x_e) / SqrtPi) * exp(-x_esc * x_esc) *
-                  (1 + bet * (x_esc * x_esc - x_e * x_e / 3. - x_min * x_min)));
-      break;
-    case 2:
-      zeta = ((SqrtPi * SqrtPi * SqrtPi * v_0 * v_0) / (2. * N * x_e)) *
-             (erf(x_esc) + erf(x_e - x_min) -
-              (2. / SqrtPi) * exp(-x_esc * x_esc) *
-                  (x_esc + x_e - x_min -
-                   (bet / 3.) * (x_e - 2. * x_esc - x_min) *
-                       (x_esc + x_e - x_min) * (x_esc + x_e - x_min)));
-      break;
-    case 3:
-      zeta = 1. / (x_e * v_0);
-      break;
-    case 4:
-      zeta = 0.;
-      break;
-    default:
-      cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
-      exit(EXIT_FAILURE);
-  }
-
-  double a = 0.52;                           // in fm
-  double C = 1.23 * pow(A, 1. / 3.) - 0.60;  // fm
-  double s = 0.9;  // skin depth of nucleus in fm. Originally used by Karen
-                   // Gibson; XENON100 1fm; 2.30 acc. to Lewin and Smith maybe?
-  double rn = sqrt(C * C + (7. / 3.) * M_PI * M_PI * a * a -
-                   5. * s * s);    // alternatives: 1.14*A^1/3 given in L&S, or
-                                   // rv=1.2*A^1/3 then rn =
-                                   // sqrt(pow(rv,2.)-5.*pow(s,2.)); used by
-                                   // XENON100 (fm)
-  double q = 6.92 * sqrt(A * ER);  // in units of 1 over distance or length
-  double FormFactor;
-  if (q * rn > 0.)
-    FormFactor =
-        3. * exp(-0.5 * q * q * s * s) * (sin(q * rn) - q * rn * cos(q * rn)) /
-        (q * rn * q * rn * q * rn);  // qr and qs unitless inside Bessel
-                                     // function, which is dimensionless too
-  else
-    FormFactor = 1.;
-
-  // Now, the differential spectrum for this bin!
-  double dSpec = 0.5 * (c * c) * N_T * (RHO_NAUGHT / m_d) *
-                 (M_T * sigma_n / (mu_ND * mu_ND));
-  // zeta=1.069-1.4198*ER+.81058*pow(ER,2.)-.2521*pow(ER,3.)+.044466*pow(ER,4.)-0.0041148*pow(ER,5.)+0.00013957*pow(ER,6.)+2.103e-6*pow(ER,7.);
-  // if ( ER > 4.36 ) squiggle = 0.; //parameterization for 7 GeV WIMP using
-  // microMegas
-  dSpec *= (((Z * fp) + ((A - Z) * fn)) / fn) *
-           (((Z * fp) + ((A - Z) * fn)) / fn) * zeta * FormFactor * FormFactor *
-           SecondsPerDay / keVperGeV;
-
-  return dSpec;
-}
-
-int SelectRanXeAtom() {
-  int A;
-  double isotope = r.Uniform() * 100.;
-
-  if (isotope > 0.000 && isotope <= 0.090)
-    A = 124;
-  else if (isotope > 0.090 && isotope <= 0.180)
-    A = 126;
-  else if (isotope > 0.180 && isotope <= 2.100)
-    A = 128;
-  else if (isotope > 2.100 && isotope <= 28.54)
-    A = 129;
-  else if (isotope > 28.54 && isotope <= 32.62)
-    A = 130;
-  else if (isotope > 32.62 && isotope <= 53.80)
-    A = 131;
-  else if (isotope > 53.80 && isotope <= 80.69)
-    A = 132;
-  else if (isotope > 80.69 && isotope <= 91.13)
-    A = 134;
-  else
-    A = 136;
-  return A;
-}
-
-long double Factorial(double x) { return tgammal(x + 1.); }
 
 double expectedUlFc(double mub, TFeldmanCousins fc)
 

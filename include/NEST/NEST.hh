@@ -93,7 +93,7 @@
 #define PULSE_WIDTH 10  // nano-seconds
 #define PULSEHEIGHT \
   0.005                 // threshold height, in PE, for writing to photon_times
-#define SPIKES_MAXM 70  // above this switch to pulse area
+#define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
 
 namespace NEST {
 

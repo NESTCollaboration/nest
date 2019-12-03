@@ -69,7 +69,7 @@ vector<double> RandomGen::VonNeumann(double xMin, double xMax, double yMin,
                  // time
 }
 
-int RandomGen::SelectRanXeAtom() {
+int RandomGen::SelectRanXeAtom() { // to determine the isotope of Xe
   int A;
   double isotope = rand_uniform() * 100.;
 

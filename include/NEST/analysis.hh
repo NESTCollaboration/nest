@@ -2,9 +2,9 @@
 // Verbosity flag (for limiting output to yields; no timing)
 bool verbosity = true;
 
-// General parameters of importance changing global behavior
+// General parameters of importance changing the global behavior
 bool MCtruthE = false;    // false means reconstructed energy
-bool MCtruthPos = true;  // false means reconstructed position
+bool MCtruthPos = false;  // false means reconstructed position
 
 int useTiming = 0;  // photon arrival times + pulse shapes (2=eTrains)
 // if 1 or 2 but verb off, then timing only saved as vectors
@@ -34,5 +34,9 @@ double logMin = 0.6;
 double z_step = 0.1;  // mm, for integrating non-uniform field
 double E_step = 5.0;  // keV, for integrating WIMP spectrum
 
-// Number of free parameters, for calculating DOF, for chi^2
-int freeParam = 2;
+// Set the rootNEST options
+int freeParam = 2; // #free param for calculating DoF in X^2
+int mode = 0;
+//0 default is to provide the ER BG discrimination & leakage frac
+//1 outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)
+//2 outputs wimp masses and cross-sections for given efficiency

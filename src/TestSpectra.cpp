@@ -212,9 +212,9 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp) {
   double SqrtPi = pow(M_PI, 0.5);
   double root2 = sqrt(2.);
   // Convert all velocities from km/s into cm/s
-  double v_0 = V_WIMP * cmPerkm;
-  double v_esc = V_ESCAPE * cmPerkm;
-  double v_e = V_EARTH * cmPerkm;
+  double v_0 = V_WIMP * cmPerkm;     // peak WIMP velocity
+  double v_esc = V_ESCAPE * cmPerkm; // escape velocity
+  double v_e = V_EARTH * cmPerkm;    // the Earth's velocity
 
   // Define the detector Z and A and the mass of the target nucleus
   double Z = ATOM_NUM;

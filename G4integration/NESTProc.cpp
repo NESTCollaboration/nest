@@ -83,7 +83,7 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
   return new G4Track(aQuantum, t, xyz);
 }
 
-G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t) {
+G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t,double kin_E) {
   // Determine polarization of new photon
 
 
@@ -93,14 +93,7 @@ G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t) {
   {
     G4ParticleMomentum electronMomentum(0, 0, 1);
     G4DynamicParticle* aQuantum = new G4DynamicParticle(NESTThermalElectron::ThermalElectron(), electronMomentum);
-    if(detailed_secondaries){
-      double speed = fNESTcalc->SetDriftVelocity(fDetector->get_T_Kelvin(),density,efield_here);
-      double kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(speed*mm/us,2);
-      aQuantum->SetKineticEnergy(kin_E);
-    }
-    else{
-      aQuantum->SetKineticEnergy(0);
-    }
+    aQuantum->SetKineticEnergy(kin_E);
     return new G4Track(aQuantum, t, xyz);
   } else {
     return nullptr;   
@@ -153,14 +146,15 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       if (lineage.result.quanta.electrons) {
         double ecum = 0;
         double el_cum = 0;
-
+        double electron_speed = fNESTcalc->SetDriftVelocity(fDetector->get_T_Kelvin(),lineage.density, efield_here);
+        double electron_kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(electron_speed*mm/us,2);
         for (auto &hit : lineage.hits) {
           hit.result.electrons = round((lineage.result.quanta.electrons - el_cum)*hit.E/(etot-ecum));
           ecum += hit.E;
           el_cum+= hit.result.electrons;
           for(int i = 0 ; i<hit.result.electrons; i++){
             if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
-              G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t);
+              G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t,electron_kin_E);
               if(oneElectron) pParticleChange->AddSecondary(oneElectron);          
             }
 

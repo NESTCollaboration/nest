@@ -109,7 +109,7 @@ class NESTProc : public G4VRestDiscreteProcess {
 
   Lineage GetChildType(const G4Track* aTrack, const G4Track* sec) const;
   G4Track* MakePhoton(G4ThreeVector xyz, double t);
-  G4Track* MakeElectron(G4ThreeVector xyz, double density, double t);
+  G4Track* MakeElectron(G4ThreeVector xyz, double density, double t,double kin_E);
   std::vector<NEST::Lineage> getLastLineages() const {
     return lineages_prevEvent;
   }
@@ -140,7 +140,7 @@ class NESTProc : public G4VRestDiscreteProcess {
   std::unique_ptr<VDetector> fDetector;
   NoTimeParticleChange fParticleChange;
   
-  G4double YieldFactor;  // turns scint. on/off
+  G4double YieldFactor=1;  // turns scint. on/off
   bool detailed_secondaries=true;
   double gamma_break = 9*mm; //Gammas will not pass on their lineage (if they have one, e.g. bremsstrahlung) if they are this far from their origin.
   int verbose=0;

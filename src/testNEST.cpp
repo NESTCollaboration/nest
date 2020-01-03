@@ -21,6 +21,9 @@
 using namespace std;
 using namespace NEST;
 
+double band[NUMBINS_MAX][6];
+double energies[3];
+
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor

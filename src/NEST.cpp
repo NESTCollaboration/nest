@@ -150,24 +150,24 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     exit(EXIT_FAILURE);
   }
   
-  double NexONi = yields.ExcitonRatio, Fano = 1.;
+  double excitonRatio = yields.ExcitonRatio;
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
 
   double elecFrac = yields.ElectronYield / Nq_mean;
   if (elecFrac > 1.) elecFrac = 1.;
   if (elecFrac < 0.) elecFrac = 0.;
 
-  if (NexONi < 0.) {
-    NexONi = 0.;
+  if (excitonRatio < 0.) {
+    excitonRatio = 0.;
     HighE = true;
   } else
     HighE = false;
-  double alf = 1. / (1. + NexONi);
-  double recombProb = 1. - (NexONi + 1.) * elecFrac;
-  if (recombProb < 0.) NexONi = 1. / elecFrac - 1.;
+  double alf = 1. / (1. + excitonRatio);
+  double recombProb = 1. - (excitonRatio + 1.) * elecFrac;
+  if (recombProb < 0.) excitonRatio = 1. / elecFrac - 1.;
 
   if (yields.Lindhard == 1.) {
-    Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
+    double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
            0.0057042 *
                pow(density,
                    2.) +  //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
@@ -186,7 +186,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   }
 
   else {
-    Fano = FreeParam[0];
+    double Fano = FreeParam[0];
     Ni = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean * alf,
                                                  sqrt(Fano * Nq_mean * alf)) +
                    0.5));
@@ -194,7 +194,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     Fano = FreeParam[1];
     Nex = int(
         floor(RandomGen::rndm()->rand_gauss(
-                  Nq_mean * NexONi * alf, sqrt(Fano * Nq_mean * NexONi * alf)) +
+                  Nq_mean * excitonRatio * alf, sqrt(Fano * Nq_mean * excitonRatio * alf)) +
               0.5));
     if (Nex < 0) Nex = 0;
     Nq_actual = Nex + Ni;

@@ -78,7 +78,7 @@
 #define W_SCINT 8.5e-3  // the *max* possible energy of 1 scint phot, keV
 #define NEST_AVO 6.0221409e+23
 #define ATOM_NUM 54.         // period to make float
-#define MOLAR_MASS 131.293   // grams per mole
+
 #define PHE_MIN 1e-6         // area
 #define ELEC_MASS 9.109e-31  // kg
 #define FIELD_MIN 1.         // min elec field to make S2 (in V/cm)
@@ -131,6 +131,8 @@ struct QuantaResult {
   int electrons;
   int ions;
   int excitons;
+  double recombProb;
+  double Variance;
 };
 
 typedef std::vector<double> photonstream;
@@ -151,7 +153,6 @@ class NESTcalc {
   double nCr(double n, double r);
 
  public:
-  NESTcalc();
   NESTcalc(VDetector* detector);
   ~NESTcalc();
 
@@ -250,7 +251,7 @@ class NESTcalc {
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below
-  static double GetDriftVelocity_MagBoltz(double D, double F);
+  static double GetDriftVelocity_MagBoltz(double D, double F, double molarMass=131.293);
   // Gas electron drift speed for S2 gas gap in 2-phase TPCs or the whole
   // detector for all gas. Based on simple fits to complicated MagBoltz software
   // output.
@@ -262,7 +263,7 @@ class NESTcalc {
   double SetDensity(double T, double P);
   // A simple, approximate but good, density is returned for solid, liquid, or
   // gaseous xenon, as a function of temperature and pressure
-  static double GetDensity(double T, double P, bool &inGas);
+  static double GetDensity(double T, double P, bool &inGas, double molarMass=131.293);
   // A simple, approximate but good, density is returned for solid, liquid, or
   // gaseous xenon, as a function of temperature and pressure
   std::vector<double> xyResolution(double xPos_mm, double yPos_mm,

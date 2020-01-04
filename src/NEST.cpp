@@ -132,7 +132,7 @@ double NESTcalc::RecombOmegaER(double efield, double recombProb){
           0.075351 +
           (0.050461 - 0.075351) / pow(1. + pow(efield / 30057., 3.0008), 2.9832e5);
   if (cc < 0.) cc = 0.;
-  double bb = 0.56;
+  double bb = 0.54;
   double aa = cc / pow(1. - bb, 2.);
   double omega = -aa * pow(recombProb - bb, 2.) + cc;
   if (omega < 0.0) omega = 0.0;

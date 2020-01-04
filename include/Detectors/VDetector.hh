@@ -59,9 +59,6 @@ class VDetector {
   // 2-D (X & Y) Position Reconstruction
   double get_PosResExp() { return PosResExp; }
   double get_PosResBase() { return PosResBase; }
-  
-  // Xenon properties
-  double get_molarMass() {return molarMass;}
 
   // "Set Functions"
   // Primary Scintillation (S1) parameters
@@ -108,9 +105,6 @@ class VDetector {
   // 2-D (X & Y) Position Reconstruction
   void set_PosResExp(double param) { PosResExp = param; }
   void set_PosResBase(double param) { PosResBase = param; }
-  
-  //Xenon properties
-  void set_molarMass(double param) {molarMass = param;}
 
   // S1 PDE custom fit for function of z
   // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
@@ -160,9 +154,6 @@ class VDetector {
 
   // 2-D (X & Y) Position Reconstruction
   double PosResExp, PosResBase;
-  
-  //Xenon properties
-  double molarMass;
 };
 
 #endif

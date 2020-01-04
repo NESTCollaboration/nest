@@ -150,28 +150,24 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     exit(EXIT_FAILURE);
   }
   
-  double excitonRatio = yields.ExcitonRatio;
+  double NexONi = yields.ExcitonRatio, Fano = 1.;
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
 
   double elecFrac = yields.ElectronYield / Nq_mean;
-  assert(elecFrac >0);
-  assert(elecFrac<1);
+  if (elecFrac > 1.) elecFrac = 1.;
+  if (elecFrac < 0.) elecFrac = 0.;
 
-  if (excitonRatio < 0.) {
-    excitonRatio = 0.;
+  if (NexONi < 0.) {
+    NexONi = 0.;
     HighE = true;
-  } else{
+  } else
     HighE = false;
-  }
-    
-  double alf = 1. / (1. + excitonRatio);
-  double recombProb = 1. - (excitonRatio + 1.) * elecFrac;
-  if (recombProb < 0.){
-    excitonRatio = 1. / elecFrac - 1.;
-  }
+  double alf = 1. / (1. + NexONi);
+  double recombProb = 1. - (NexONi + 1.) * elecFrac;
+  if (recombProb < 0.) NexONi = 1. / elecFrac - 1.;
 
   if (yields.Lindhard == 1.) {
-    double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
+    Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
            0.0057042 *
                pow(density,
                    2.) +  //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
@@ -190,7 +186,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   }
 
   else {
-    double Fano = FreeParam[0];
+    Fano = FreeParam[0];
     Ni = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean * alf,
                                                  sqrt(Fano * Nq_mean * alf)) +
                    0.5));
@@ -198,7 +194,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     Fano = FreeParam[1];
     Nex = int(
         floor(RandomGen::rndm()->rand_gauss(
-                  Nq_mean * excitonRatio * alf, sqrt(Fano * Nq_mean * excitonRatio * alf)) +
+                  Nq_mean * NexONi * alf, sqrt(Fano * Nq_mean * NexONi * alf)) +
               0.5));
     if (Nex < 0) Nex = 0;
     Nq_actual = Nex + Ni;
@@ -209,8 +205,6 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     result.excitons = 0;
     result.photons = 0;
     result.electrons = 0;
-    result.Variance=0;
-    result.recombProb=0;
     return result;
   }
 
@@ -227,10 +221,10 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   if (recombProb > 1.) recombProb = 1.;
   if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
       recombProb == 0.0) {
+    recombProb = 0.0;
+    elecFrac = 1.0;
     result.photons = Nex;
     result.electrons = Ni;
-    result.recombProb=0;
-    result.Variance=0;
     return result;
   }
 
@@ -259,8 +253,6 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     else
       Nph = int(floor(double(Nph)*1.35+0.5)); //EXO
   }
-  result.Variance=Variance;
-  result.recombProb=recombProb;
   result.photons = Nph;
   result.electrons = Ne;
 
@@ -314,7 +306,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     massNumber = RandomGen::rndm()->SelectRanXeAtom();
   else
     massNumber = int(massNum);
-  ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double) massNumber);
+  ScaleFactor[0] = sqrt(MOLAR_MASS / (double) massNumber);
   ScaleFactor[1] = ScaleFactor[0];
   double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
   double ThomasImel =
@@ -544,8 +536,10 @@ YieldResult NESTcalc::YieldResultValidity(YieldResult& res, const double energy,
   return res;
 }
 
+NESTcalc::NESTcalc() { fdetector = NULL; }
 
 NESTcalc::NESTcalc(VDetector* detector) {
+  NESTcalc();
   fdetector = detector;
 }
 
@@ -910,7 +904,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
                    1e-6);  // sqrt of cm^2/s * s = cm; times 10 for mm.
     double sigmaDT = 10. * sqrt(2. * Diff_Tran * dt * 1e-6);
     double rho = fdetector->get_p_bar() * 1e5 /
-                 (fdetector->get_T_Kelvin() * 8.314) * fdetector->get_molarMass() * 1e-6;
+                 (fdetector->get_T_Kelvin() * 8.314) * MOLAR_MASS * 1e-6;
     double driftVelocity_gas =
         GetDriftVelocity_MagBoltz(rho, fdetector->get_E_gas() * 1000.);
     double dt_gas = gasGap / driftVelocity_gas;
@@ -1149,8 +1143,8 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
                     beta * fdetector->get_p_bar() - gamma) *
                    gasGap * 0.1;  // arXiv:1207.2292 (HA, Vitaly C.)
   double rho = fdetector->get_p_bar() * 1e5 /
-    (fdetector->get_T_Kelvin() * 8.314) * fdetector->get_molarMass() * 1e-6;
-  elYield = (0.137*fdetector->get_E_gas()*1e3-4.70e-18*(NEST_AVO*rho/fdetector->get_molarMass())) * gasGap * 0.1;
+    (fdetector->get_T_Kelvin() * 8.314) * MOLAR_MASS * 1e-6;
+  elYield = (0.137*fdetector->get_E_gas()*1e3-4.70e-18*(NEST_AVO*rho/MOLAR_MASS)) * gasGap * 0.1;
   // replaced with more accurate version also from 1207.2292, but works for room temperature gas
   if (elYield <= 0.0 && E_liq != 0.) {
     cerr << "\tWARNING, the field in gas must be at least "
@@ -1241,11 +1235,12 @@ double NESTcalc::SetDensity(double Kelvin,
 }
 
 double NESTcalc::GetDensity(double Kelvin,
-                            double bara, bool &inGas, double molarMass) {  // currently only for fixed pressure
+                            double bara, bool &inGas) {  // currently only for fixed pressure
                                             // (saturated vapor pressure); will
                                             // add pressure dependence later
   
-  
+  if (MOLAR_MASS > 134.5) //enrichment for 0vBB expt (~0.8 Xe-136)
+    return 3.0305; // ±0.0077 g/cm^3, EXO-200 @167K: arXiv:1908.04128
   
   if (Kelvin < 161.40) {  // solid Xenon
     cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
@@ -1262,7 +1257,7 @@ double NESTcalc::GetDensity(double Kelvin,
   if (bara < VaporP_bar) {
     double density =
         bara * 1e5 / (Kelvin * 8.314);  // ideal gas law approximation, mol/m^3
-    density *= molarMass * 1e-6;
+    density *= MOLAR_MASS * 1e-6;
     cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
     inGas = true;
     return density;  // in g/cm^3
@@ -1389,9 +1384,9 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
 }
 
 double NESTcalc::GetDriftVelocity_MagBoltz(
-    double density, double efieldinput, double molarMass)  // Nichole Barry UCD 2011
+    double density, double efieldinput)  // Nichole Barry UCD 2011
 {
-  density *= NEST_AVO / molarMass;
+  density *= NEST_AVO / MOLAR_MASS;
   // Gas equation one coefficients (E/N of 1.2E-19 to 3.5E-19)
   double gas1a = 395.50266631436, gas1b = -357384143.004642,
          gas1c = 0.518110447340587;
@@ -1530,7 +1525,7 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density) {
   double I_exc = I_ion / 1.46;
   double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
     +xi_se/(1.+alpha);
-  double eDensity = (density/fdetector->get_molarMass())*NEST_AVO*ATOM_NUM;
+  double eDensity = (density/MOLAR_MASS)*NEST_AVO*ATOM_NUM;
   Wq_eV = 20.7 - 1.01e-23 * eDensity;
 
   

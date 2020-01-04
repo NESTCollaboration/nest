@@ -154,8 +154,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
 
   double elecFrac = yields.ElectronYield / Nq_mean;
-  assert(elecFrac >0);
-  assert(elecFrac<1);
+  if (elecFrac > 1.) elecFrac = 1.;
+  if (elecFrac < 0.) elecFrac = 0.;
 
   if (excitonRatio < 0.) {
     excitonRatio = 0.;

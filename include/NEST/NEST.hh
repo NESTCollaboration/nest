@@ -153,6 +153,8 @@ class NESTcalc {
   double nCr(double n, double r);
 
  public:
+  NESTcalc(const NESTcalc&) = delete;
+  NESTcalc& operator=(const NESTcalc&) = delete;
   NESTcalc(VDetector* detector);
   ~NESTcalc();
 

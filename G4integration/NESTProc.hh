@@ -66,6 +66,9 @@ class NESTProc : public G4VRestDiscreteProcess {
   NESTProc(const G4String& processName ,
            G4ProcessType type ,
            VDetector* detector );
+  NESTProc(const G4String& processName ,
+           G4ProcessType type , NESTcalc* customcalc,
+           VDetector* detector );
   ~NESTProc();
 
  public:  // methods, with descriptions
@@ -127,6 +130,11 @@ class NESTProc : public G4VRestDiscreteProcess {
 
   double GetGamma_break() const {
       return gamma_break;
+  }
+  
+  void SetNESTcalc(std::unique_ptr<NEST::NESTcalc> newcalc){
+    fNESTcalc.reset(newcalc.release());
+    fDetector.reset(newcalc->GetDetector());
   }
 
  protected:

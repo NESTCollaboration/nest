@@ -47,9 +47,12 @@
 using namespace NEST;
 
 NESTProc::NESTProc(const G4String& processName, G4ProcessType type, VDetector* detector)
-    : G4VRestDiscreteProcess(processName, type), fDetector(detector) {
-  fNESTcalc =
-      std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc(fDetector.get()));
+    : NESTProc(processName,type,new NEST::NESTcalc(fDetector.get()),detector)  {
+  
+}
+
+NESTProc::NESTProc(const G4String& processName, G4ProcessType type, NESTcalc* customcalc, VDetector* detector): G4VRestDiscreteProcess(processName, type), fNESTcalc(customcalc), fDetector(detector)
+{
   pParticleChange = &fParticleChange;
   SetProcessSubType(fScintillation);
 
@@ -57,6 +60,7 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type, VDetector* d
     G4cout << GetProcessName() << " is created " << G4endl;
   }
 }
+
 
 NESTProc::~NESTProc() {}  // destructor needed to avoid linker error
 

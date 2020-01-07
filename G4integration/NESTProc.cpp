@@ -161,7 +161,6 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
               G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t,electron_kin_E);
               if(oneElectron) pParticleChange->AddSecondary(oneElectron);          
             }
-
           }
         }
       }

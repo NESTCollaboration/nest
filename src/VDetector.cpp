@@ -71,4 +71,6 @@ void VDetector::Initialization() {
   // 2-D (X & Y) Position Reconstruction
   PosResExp = 0.015;     // exp increase in pos recon res at hi r, 1/mm
   PosResBase = 70.8364;  // baseline unc in mm, see NEST.cpp for usage
+  
+  molarMass = 131.293; //molar mass, g/mol
 }

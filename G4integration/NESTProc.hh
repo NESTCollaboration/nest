@@ -25,7 +25,7 @@ namespace NEST {
 
 struct Hit {
  public:
-  Hit(double _E, double _t, G4ThreeVector _xyz) : E(_E), t(_t), xyz(_xyz), result{0,0,0,0}{};
+  Hit(double _E, double _t, G4ThreeVector _xyz) : E(_E), t(_t), xyz(_xyz), result{0,0,0,0,0,0}{};
   double E;
   double t;
   G4ThreeVector xyz;

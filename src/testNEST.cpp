@@ -21,6 +21,9 @@
 using namespace std;
 using namespace NEST;
 
+double band[NUMBINS_MAX][6];
+double energies[3];
+
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
@@ -94,7 +97,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   size_t loc;
   int index;
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD,
-      vD_middle = 0., atomNum = 0, massNum = MOLAR_MASS, keVee = 0.0;
+      vD_middle = 0., atomNum = 0, keVee = 0.0;
+  double MOLAR_MASS=detector->get_molarMass();
+  double massNum = MOLAR_MASS;
   YieldResult yieldsMax;
 
   if (no_seed != true) {

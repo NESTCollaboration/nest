@@ -25,7 +25,7 @@ namespace NEST {
 
 struct Hit {
  public:
-  Hit(double _E, double _t, G4ThreeVector _xyz) : E(_E), t(_t), xyz(_xyz), result{0,0,0,0}{};
+  Hit(double _E, double _t, G4ThreeVector _xyz) : E(_E), t(_t), xyz(_xyz), result{0,0,0,0,0,0}{};
   double E;
   double t;
   G4ThreeVector xyz;
@@ -65,6 +65,9 @@ class NESTProc : public G4VRestDiscreteProcess {
  public:  // constructor and destructor
   NESTProc(const G4String& processName ,
            G4ProcessType type ,
+           VDetector* detector );
+  NESTProc(const G4String& processName ,
+           G4ProcessType type , NESTcalc* customcalc,
            VDetector* detector );
   ~NESTProc();
 
@@ -127,6 +130,11 @@ class NESTProc : public G4VRestDiscreteProcess {
 
   double GetGamma_break() const {
       return gamma_break;
+  }
+  
+  void SetNESTcalc(std::unique_ptr<NEST::NESTcalc> newcalc){
+    fNESTcalc.reset(newcalc.release());
+    fDetector.reset(newcalc->GetDetector());
   }
 
  protected:

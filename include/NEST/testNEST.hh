@@ -1,3 +1,6 @@
+#ifndef __TESTNEST_H__
+#define __TESTNEST_H__ 1
+
 using namespace std;
 using namespace NEST;
 
@@ -10,5 +13,5 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
              double eMin, double eMax, double inField, string position, string posiMuon,
              double fPos, int seed, bool no_seed);
 
-double band[NUMBINS_MAX][6];
-double energies[3];
+
+#endif

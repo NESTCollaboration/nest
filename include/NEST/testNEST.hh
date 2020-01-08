@@ -1,7 +1,6 @@
 #ifndef __TESTNEST_H__
 #define __TESTNEST_H__ 1
 
-#include "TestSpectra.hh"
 using namespace std;
 using namespace NEST;
 

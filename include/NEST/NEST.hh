@@ -214,6 +214,7 @@ class NESTcalc {
   virtual double RecombOmegaER(double efield, double recombProb);
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
   virtual double FanoER(double density, double Nq_mean,double efield);
+  //Fano-factor (and Fano-like additional energy resolution model) for gammas and betas (Lindhard==1)
   std::vector<double> GetS1(QuantaResult quanta, double truthPos[3],
                             double smearPos[3], double driftSpeed,
                             double dS_mid, INTERACTION_TYPE species,

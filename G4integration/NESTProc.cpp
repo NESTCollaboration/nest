@@ -62,6 +62,7 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type, NESTcalc* cu
 }
 
 
+
 NESTProc::~NESTProc() {}  // destructor needed to avoid linker error
 
 G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {

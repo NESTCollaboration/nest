@@ -139,6 +139,21 @@ double NESTcalc::RecombOmegaER(double efield, double recombProb){
   return omega;
 }
 
+double NESTcalc::FanoER(double density, double Nq_mean,double efield)
+{
+  double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
+           0.0057042 *
+               pow(density,
+                   2.) +  //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
+           0.0015957 *
+               pow(density,
+                   3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
+    if (!fdetector->get_inGas())
+      Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
+  return Fano;
+}
+
+
 QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
 				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/) {
   QuantaResult result;
@@ -171,15 +186,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   }
 
   if (yields.Lindhard == 1.) {
-    double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
-           0.0057042 *
-               pow(density,
-                   2.) +  //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
-           0.0015957 *
-               pow(density,
-                   3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
-    if (!fdetector->get_inGas())
-      Fano += 0.0015 * sqrt(Nq_mean) * pow(yields.ElectricField, 0.5);
+    double Fano = FanoER(density,Nq_mean,yields.ElectricField);
     Nq_actual = int(floor(
         RandomGen::rndm()->rand_gauss(Nq_mean, sqrt(Fano * Nq_mean)) + 0.5));
     if (Nq_actual < 0 || Nq_mean == 0.) Nq_actual = 0;

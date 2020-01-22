@@ -211,7 +211,7 @@ class NESTcalc {
   // Namely, the recombination fluctuations
   virtual double RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/);
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for nuclear recoils and ions (Lindhard<1)
-  virtual double RecombOmegaER(double efield, double recombProb);
+  virtual double RecombOmegaER(double efield, double elecFrac);
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
   virtual double FanoER(double density, double Nq_mean,double efield);
   //Fano-factor (and Fano-like additional energy resolution model) for gammas and betas (Lindhard==1)

@@ -123,19 +123,17 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/)
 {
   double omega = FreeParam[2] * exp(-pow(elecFrac - FreeParam[3], 2.) / FreeParam[4]);
-  assert(omega>=0);
+  if ( omega < 0. )
+    omega = 0;
   return omega;
 } 
 
-double NESTcalc::RecombOmegaER(double efield, double recombProb){
-  double cc =
-          0.075351 +
-          (0.050461 - 0.075351) / pow(1. + pow(efield / 30057., 3.0008), 2.9832e5);
-  if (cc < 0.) cc = 0.;
-  double bb = 0.54;
-  double aa = cc / pow(1. - bb, 2.);
-  double omega = -aa * pow(recombProb - bb, 2.) + cc;
-  if (omega < 0.0) omega = 0.0;
+double NESTcalc::RecombOmegaER(double efield, double elecFrac)
+{
+  double cc = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25));
+  double omega = cc*0.988*exp(-0.5*pow(elecFrac-0.41,2.)/(0.205*0.205))*(1.+erf(-0.2*(elecFrac-0.41)/(0.205*sqrt(2.))));
+  if ( omega < 0. )
+    omega = 0;
   return omega;
 }
 
@@ -229,20 +227,22 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   result.ions = Ni;
   result.excitons = Nex;
 
-  if (Nex <= 0 && HighE) recombProb = yields.PhotonYield / double(Ni);
+  if (Nex <= 0 && HighE)
+    recombProb = yields.PhotonYield / double(Ni);
   if (recombProb < 0.) recombProb = 0.;
   if (recombProb > 1.) recombProb = 1.;
   if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
       recombProb == 0.0) {
     result.photons = Nex;
-    result.electrons = Ni;
-    result.recombProb=0;
-    result.Variance=0;
+    result.electrons =Ni;
+    elecFrac= 1.0;
+    result.recombProb=0.;
+    result.Variance = 0.;
     return result;
   }
 
   //set omega (non-binomial recombination fluctuations parameter) according to whether the Lindhard <1, i.e. this is an NR.
-  double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, recombProb);
+  double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   Ne = int(floor(
@@ -1252,7 +1252,8 @@ double NESTcalc::GetDensity(double Kelvin,
                                             // (saturated vapor pressure); will
                                             // add pressure dependence later
   
-  
+  //if (MOLAR_MASS > 134.5) //enrichment for 0vBB expt (~0.8 Xe-136)
+  //return 3.0305; // ±0.0077 g/cm^3, EXO-200 @167K: arXiv:1908.04128
   
   if (Kelvin < 161.40) {  // solid Xenon
     cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";

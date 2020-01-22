@@ -211,6 +211,7 @@ class DetectorExample_XENON10 : public VDetector {
   }
   // Vary VDetector parameters through custom functions
   virtual void ExampleFunction() { set_g1(0.0760); }
+  virtual void ExampleFunction2() { set_molarMass(131.); }
 };
 
 #endif

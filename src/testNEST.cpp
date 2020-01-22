@@ -97,10 +97,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   size_t loc;
   int index;
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD,
-      vD_middle = 0., atomNum = 0, keVee = 0.0;
-  double MOLAR_MASS=detector->get_molarMass();
-  double massNum = MOLAR_MASS;
-  YieldResult yieldsMax;
+    vD_middle = 0., atomNum = 0, keVee = 0.0;
+  double massNum = detector->get_molarMass();
+  YieldResult yieldsMax; //for warnings about S1 range
 
   if (no_seed != true) {
     if (seed == -1) {
@@ -235,10 +234,10 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   double centralField = detector->FitEF(0.0, 0.0, centralZ);
 
   if (type_num == WIMP) {
-    yieldsMax = n.GetYields(NR, 25.0, rho, centralField, MOLAR_MASS,
+    yieldsMax = n.GetYields(NR, 25.0, rho, centralField, detector->get_molarMass(),
                             double(atomNum), NuisParam);
   } else if (type_num == B8) {
-    yieldsMax = n.GetYields(NR, 4.00, rho, centralField, MOLAR_MASS,
+    yieldsMax = n.GetYields(NR, 4.00, rho, centralField, detector->get_molarMass(),
                             double(atomNum), NuisParam);
   } else {
     double energyMaximum;
@@ -535,8 +534,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  detector->set_noise(detector->get_noise()[0],detector->get_noise()[1], 5.5e-2, 2.2e-2);
 	}
 	else
-	  yields = n.GetYields(type_num, keV, rho, field, double(massNum),
-			       double(atomNum), NuisParam);
+	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
         quanta = n.GetQuanta(yields, rho, FreeParam);
       } else {
         yields.PhotonYield = 0.;

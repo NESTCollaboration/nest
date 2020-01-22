@@ -13,7 +13,4 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
              double eMin, double eMax, double inField, string position, string posiMuon,
              double fPos, int seed, bool no_seed);
 
-
-
 #endif
-

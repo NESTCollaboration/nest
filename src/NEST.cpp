@@ -131,7 +131,11 @@ double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.
 double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 {
   double cc = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25));
-  double omega = cc*0.988*exp(-0.5*pow(elecFrac-0.41,2.)/(0.205*0.205))*(1.+erf(-0.2*(elecFrac-0.41)/(0.205*sqrt(2.))));
+  if ( cc < 0. )
+    cc = 0.;
+  double aa = 0.205;
+  double bb = 0.41;
+  double omega = cc*0.988*exp(-0.5*pow(elecFrac-bb,2.)/(aa*aa))*(1.+erf(-0.2*(elecFrac-bb)/(aa*sqrt(2.))));
   if ( omega < 0. )
     omega = 0;
   return omega;

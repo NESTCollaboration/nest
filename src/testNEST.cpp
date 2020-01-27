@@ -61,12 +61,12 @@ int main(int argc, char** argv) {
   string posiMuon = argv[4];
   double fPos = atof(argv[6]);
 
-  int seed;
+  int seed = 0; //if not given->0
   bool no_seed;
   if (argc == 8) {
     seed = atoi(argv[7]);
   } else {
-    seed = 0;
+    RandomGen::rndm()->SetSeed(0);
     no_seed = true;
   }
 

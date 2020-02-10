@@ -50,7 +50,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
 double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
                             double dfield, double energy) {
   double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97,
-         tau1 = 3.27;  // arXiv:1802.06162
+    tau1 = 3.27; //arXiv:1802.06162
   if (fdetector->get_inGas() ||
       energy < W_DEFAULT * 0.001) {  // from G4S1Light.cc in old NEST
     tau1 = 5.18;                     // uncertainty of 1.55 ns from G4S2Light
@@ -60,7 +60,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   // Here assuming same as in liquid
 
   if (species <= Cf)                           // NR
-    SingTripRatio = 0.15 * pow(energy, 0.15);  // arXiv:1802.06162
+    SingTripRatio = (0.21-0.0001*dfield) * pow(energy, 0.21-0.0001*dfield ); //arXiv:1803.07935
   else if (species == ion)                     // e.g., alphas
     SingTripRatio =
         0.065 *
@@ -68,15 +68,13 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
             0.416);  // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
   else {             // ER
     if (!exciton) {
-      tauR = 0.5 * exp(-0.00900 * dfield) *
-             (7.3138 + 3.8431 * log10(energy));    // arXiv:1310.1117
-      SingTripRatio = 0.069 * pow(energy, -0.12);  // see comment below
+      tauR = exp(-0.00900 * dfield) *
+	(7.3138 + 3.8431 * log10(energy));    // arXiv:1310.1117
+      SingTripRatio = 1.00 * pow(energy, -0.45+0.0005*dfield );  // see comment below
     } else
-      SingTripRatio =
-          0.015 *
-          pow(energy, -0.12);  // mixing arXiv:1802.06162 with Kubota 1979
+      SingTripRatio = 0.20 * pow(energy, -0.45+0.0005*dfield );  // mixing arXiv:1807.07121 with Kubota 1979
   }
-
+  
   if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) {
     SingTripRatio = 0.1;
     tauR = 0.;
@@ -723,6 +721,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       // TimeTable[0].push_back(-999.);
       // TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
+    double tRandOffset = -16.+20.*RandomGen::rndm()->rand_uniform();
     for (ii = 0; ii < numPts; ++ii) {
       if ((AreaTable[0][ii] + AreaTable[1][ii]) <= PULSEHEIGHT) continue;
 
@@ -731,8 +730,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
 
       if (outputTiming) {
         char line[80];
-        sprintf(line, "%lu\t%ld\t%.2f\t%.2f", evtNum, wf_time.back(),
-                AreaTable[0][ii], AreaTable[1][ii]);
+        sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back() + (long)tRandOffset,
+		AreaTable[0][ii], AreaTable[1][ii]);
         pulseFile << line << flush;
       }
 
@@ -749,7 +748,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
           nHits <= fdetector->get_coinLevel())
         --spike;
       // char line[80]; sprintf ( line, "%lu\t%.1f\t%.2f", evtNum,
-      // TimeTable[0][ii], TimeTable[1][ii] ); pulseFile << line << endl;
+      // TimeTable[0][ii]+24., TimeTable[1][ii] ); pulseFile << line << endl;
     }
   }
 
@@ -1051,8 +1050,8 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
 
       if (outputTiming) {
         char line[80];
-        sprintf(line, "%lu\t%ld\t%.2f\t%.2f", evtNum, wf_time.back(),
-                AreaTableBot[1][k], AreaTableTop[1][k]);
+        sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back(),
+		AreaTableBot[1][k], AreaTableTop[1][k]);
         pulseFile << line << endl;
       }
     }

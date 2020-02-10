@@ -161,31 +161,15 @@ double TestSpectra::Cf_spectrum(double xMin, double xMax) {
 double TestSpectra::DD_spectrum(
     double xMin, double xMax) {  // JV LUX, most closely like JENDL-4. See
                                  // arXiv:1608.05381. Lower than G4/LUXSim
-
+  
   if (xMax > 80.) xMax = 80.;
   if (xMin < 0.000) xMin = 0.000;
-  double yMax = 1.1694e+6;
+  double yMax = 1.1;
   vector<double> xyTry = {
-      xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
-      yMax * RandomGen::rndm()->rand_uniform(), 1.};
+    xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
+    yMax * RandomGen::rndm()->rand_uniform(), 1.};
   while (xyTry[2] > 0.) {
-    double FuncValue =  // 1.*exp(-0.15*xyTry[0])+2e-3*exp(0.05*xyTry[0]);
-                        // //LUXSim version (Carmen)
-        1.1694e+6 * pow(xyTry[0], 0.) - 1.4733e+5 * pow(xyTry[0], 1.) +
-        8507.0 * pow(xyTry[0], 2.) - 273.59 * pow(xyTry[0], 3.) +
-        4.3216 * pow(xyTry[0], 4.) + 0.0097428 * pow(xyTry[0], 5.) -
-        0.0017966 * pow(xyTry[0], 6.) + 3.4069e-5 * pow(xyTry[0], 7.) -
-        2.918e-7 * pow(xyTry[0], 8.) + 9.973e-10 * pow(xyTry[0], 9.);
-    FuncValue /= 1. +
-                 0.85 * (-.016698 / pow(xyTry[0] - 75., 1.) +
-                         8.04540 / pow(xyTry[0] - 75., 2.) +
-                         105.000 / pow(xyTry[0] - 75., 3.) +
-                         582.400 / pow(xyTry[0] - 75., 4.) +
-                         1218.50 / pow(xyTry[0] - 75., 5.) +
-                         1250.90 / pow(xyTry[0] - 75., 6.) +
-                         659.680 / pow(xyTry[0] - 75., 7.) +
-                         161.110 / pow(xyTry[0] - 75., 8.) +
-                         11.7710 / pow(xyTry[0] - 75., 9.));
+    double FuncValue = exp(-xyTry[0]/10.) + 0.1*exp(-pow((xyTry[0]-60.)/25.,2.));
     xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0],
                                           xyTry[1], FuncValue);
   }

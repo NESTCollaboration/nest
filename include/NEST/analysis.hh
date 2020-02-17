@@ -17,7 +17,7 @@ int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
 
 double minS1 = 0.;  // units are controlled by the usePE flag
 // this is separate from S1 thresholds controlled by detector
-double maxS1 = 165.;
+double maxS1 = 100000;
 int numBins = 33;
 
 // for efficiency calculation

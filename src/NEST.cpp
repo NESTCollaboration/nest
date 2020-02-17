@@ -555,6 +555,7 @@ YieldResult NESTcalc::YieldResultValidity(YieldResult& res, const double energy,
 
 
 NESTcalc::NESTcalc(VDetector* detector) {
+  assert(detector);
   fdetector = detector;
 }
 

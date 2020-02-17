@@ -142,8 +142,7 @@ class VDetector {
     return PEperBin;
   }
 
- protected:
-   
+protected:
   // Primary Scintillation (S1) parameters
   double g1 = 0.0760;    // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
   double sPEres = 0.58;  // single phe resolution (Gaussian assumed)
@@ -203,7 +202,5 @@ class VDetector {
   double PosResBase = 70.8364;  // baseline unc in mm, see NEST.cpp for usage
   
   double molarMass = 131.293; //molar mass, g/mol
-
 };
-
 #endif

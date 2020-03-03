@@ -1,10 +1,11 @@
 
 # Set minimum CMake version required and prevent building in source
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_MACOSX_RPATH 1)
-project(NEST)
+cmake_policy(SET CMP0048 NEW)
+project(NEST2 VERSION 2.0.1)
 
 # Optional GEANT4 integration and ROOT compilation
 option(G4 "Build integration with Geant4" OFF)
@@ -36,17 +37,17 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Include all directories which contain needed header files
-include_directories("${PROJECT_SOURCE_DIR}")
-include_directories("${PROJECT_SOURCE_DIR}/include")
-include_directories("${PROJECT_SOURCE_DIR}/include/NEST")
-include_directories("${PROJECT_SOURCE_DIR}/include/Detectors")
+#target_include_directories("${PROJECT_SOURCE_DIR}/include")
+#
+#target_include_directories("${PROJECT_SOURCE_DIR}/include/Detectors")
 
 # Gather implementation and header files
 file(GLOB core ${PROJECT_SOURCE_DIR}/src/*.cpp)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/NEST/*.hh ${PROJECT_SOURCE_DIR}/include/Detectors/*.hh)
 
 # Create NEST as a static library with specified headers
-add_library(NEST_core STATIC ${core} ${headers} )
+add_library(NEST_core STATIC ${core} )
+target_include_directories(NEST_core PUBLIC ${PROJECT_SOURCE_DIR}/include/NEST/ ${PROJECT_SOURCE_DIR}/include/Detectors/)
 
 # Add a testNEST executable and link to NEST library
 add_executable(testNEST ${PROJECT_SOURCE_DIR}/src/testNEST.cpp)
@@ -61,14 +62,19 @@ if(G4)
     find_package(Geant4 REQUIRED)
     include_directories(${Geant4_INCLUDE_DIR})
     file(GLOB g4src ${PROJECT_SOURCE_DIR}/G4integration/*.cpp)
-    file(GLOB g4headers ${PROJECT_SOURCE_DIR}/G4integration/*.hh)
-    add_library(NEST SHARED ${core} ${g4src} ${headers} ${g4headers})
+    add_library(NEST SHARED ${core} ${g4src})
     target_link_libraries(NEST ${Geant4_LIBRARIES})
-    set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers};${g4headers}")
+    target_include_directories(NEST PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/G4integration/>
+                                           $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>)
+    file(GLOB g4headers ${PROJECT_SOURCE_DIR}/G4integration/*.hh)
+    list(APPEND headers ${g4headers})
 else(G4)
-    add_library(NEST SHARED ${core} ${headers})
-    set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers}")
+    add_library(NEST SHARED ${core})
 endif()
+target_include_directories(NEST PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/NEST/;${PROJECT_SOURCE_DIR}/include/Detectors/>"
+                                       $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>                 )
+set_target_properties(NEST PROPERTIES PUBLIC_HEADER "${headers}")
+
 
 # If doing ROOT compilation, add a rootNEST executable (install the various executables either way)
 if(BUILD_ROOT)
@@ -79,49 +85,35 @@ if(BUILD_ROOT)
 	include_directories(${ROOT_INCLUDE_DIRS})
 	add_executable(rootNEST ${PROJECT_SOURCE_DIR}/examples/rootNEST.cpp)
 	target_link_libraries(rootNEST NEST_core ${ROOT_LIBRARIES})
-	install(TARGETS NEST testNEST bareNEST rootNEST
-		# IMPORTANT: Add the library to the "export-set"
-		EXPORT NESTTargets
-					RUNTIME DESTINATION "${INSTALL_CMAKE_DIR}"
-		LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-		PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
-else(BUILD_ROOT)
-	install(TARGETS NEST testNEST bareNEST
-		# IMPORTANT: Add the library to the "export-set"
-		EXPORT NESTTargets
-					RUNTIME DESTINATION "${INSTALL_CMAKE_DIR}"
+	install(TARGETS rootNEST
+		RUNTIME DESTINATION "${INSTALL_CMAKE_DIR}"
 		LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
 		PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
 endif()
+install(TARGETS NEST testNEST bareNEST
+        # IMPORTANT: Add the library to the "export-set"
+        EXPORT NESTConfig
+        RUNTIME DESTINATION "${INSTALL_CMAKE_DIR}"
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+        PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}")
+
+
 
 
 
 # Define the NEST package and populate CMake files
 export(PACKAGE NEST)
 export(TARGETS NEST
-  FILE "${PROJECT_BINARY_DIR}/NESTTargets.cmake")
+  FILE "${PROJECT_BINARY_DIR}/NESTConfig.cmake")
 
 
-file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
-   "${INSTALL_INCLUDE_DIR}")
-# ... for the build tree
-set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
-configure_file(NESTConfig.cmake.in
-  "${PROJECT_BINARY_DIR}/NESTConfig.cmake" @ONLY)
-# ... for the install tree
-set(CONF_INCLUDE_DIRS "\${NEST_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-configure_file(NESTConfig.cmake.in
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/NESTConfig.cmake" @ONLY)
-# ... for both
-configure_file(NESTConfigVersion.cmake.in
-  "${PROJECT_BINARY_DIR}/NESTConfigVersion.cmake" @ONLY)
+include(CMakePackageConfigHelpers)
 
-# Install the NESTConfig.cmake and NESTConfigVersion.cmake
-install(FILES
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/NESTConfig.cmake"
-  "${PROJECT_BINARY_DIR}/NESTConfigVersion.cmake"
-  DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+write_basic_package_version_file("${PROJECT_BINARY_DIR}/NESTConfigVersion.cmake"
+                                 COMPATIBILITY ExactVersion )
+install(FILES "${PROJECT_BINARY_DIR}/NESTConfigVersion.cmake"
+  DESTINATION "${INSTALL_CMAKE_DIR}" )
 
 # Install the export set for use with the install-tree
-install(EXPORT NESTTargets DESTINATION
-  "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+install(EXPORT NESTConfig DESTINATION
+  "${INSTALL_CMAKE_DIR}")

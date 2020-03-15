@@ -47,7 +47,7 @@
 using namespace NEST;
 
 NESTProc::NESTProc(const G4String& processName, G4ProcessType type, VDetector* detector)
-    : NESTProc(processName,type,new NEST::NESTcalc(fDetector.get()),detector)  {
+    : NESTProc(processName,type,new NEST::NESTcalc(detector),detector)  {
   
 }
 
@@ -55,7 +55,7 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type, NESTcalc* cu
 {
   pParticleChange = &fParticleChange;
   SetProcessSubType(fScintillation);
-
+  
   if (verboseLevel > 0) {
     G4cout << GetProcessName() << " is created " << G4endl;
   }
@@ -141,8 +141,10 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
           phot_cum += hit.result.photons;
           for (int i=0; i<hit.result.photons; ++i) {
             if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
-              G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
-              pParticleChange->AddSecondary(onePhoton);
+              if(stack_photons){
+                G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
+                pParticleChange->AddSecondary(onePhoton);
+              }
             }
             photontimes++;
           }
@@ -159,8 +161,10 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
           el_cum+= hit.result.electrons;
           for(int i = 0 ; i<hit.result.electrons; i++){
             if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
-              G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t,electron_kin_E);
-              if(oneElectron) pParticleChange->AddSecondary(oneElectron);          
+              if(stack_electrons){
+                G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t,electron_kin_E);
+                if(oneElectron) pParticleChange->AddSecondary(oneElectron);          
+              }
             }
           }
         }

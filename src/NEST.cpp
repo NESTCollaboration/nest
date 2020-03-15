@@ -138,21 +138,21 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac)
   double omega = cc*0.988*exp(-0.5*pow(elecFrac-bb,2.)/(aa*aa))*(1.+erf(-0.2*(elecFrac-bb)/(aa*sqrt(2.))));
   if ( omega < 0. )
     omega = 0;
-  return omega;
+    return omega;
 }
 
 double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 {
   double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
-           0.0057042 *
-               pow(density,
+            0.0057042 *
+            pow(density,
                    2.) +  //~0.1 for GXe w/ formula from Bolotnikov et al. 1995
-           0.0015957 *
-               pow(density,
+            0.0015957 *
+            pow(density,
                    3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
     if (!fdetector->get_inGas())
       Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
-  return Fano;
+    return Fano;
 }
 
 
@@ -557,6 +557,7 @@ YieldResult NESTcalc::YieldResultValidity(YieldResult& res, const double energy,
 
 
 NESTcalc::NESTcalc(VDetector* detector) {
+  assert(detector);
   fdetector = detector;
 }
 

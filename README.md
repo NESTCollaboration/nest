@@ -413,6 +413,11 @@ The argument "-Ofast" may be "-O3" on your machine (optimization flag).
 	}
 	```
 
+6. In your physics list's ConstructParticle() method, you must call: 
+        ```cpp
+        NEST::NESTThermalElectron::Definition();
+        ```
+
 
 <a name="params"></a>
 ## Need Help with Detector Parameters?

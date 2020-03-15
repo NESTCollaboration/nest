@@ -232,6 +232,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       2.;  // fid vol def usually shave more off the top, because of gas
   // interactions (100->10cm)
   double centralField = detector->FitEF(0.0, 0.0, centralZ);
+  if ( inField != -1. ) centralField = inField;
 
   if (type_num == WIMP) {
     yieldsMax = n.GetYields(NR, 25.0, rho, centralField, detector->get_molarMass(),
@@ -255,6 +256,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum), NuisParam);
   }
+ NEW_RANGES:
   if ((g1 * yieldsMax.PhotonYield) > (2. * maxS1) && eMin != eMax)
     cerr
         << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
@@ -756,6 +758,15 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
                 band[j][1] / band[j][0] * 100., band[j][2],
                 band[j][3] / band[j][2] * 100., energies[0],
                 energies[1] / energies[0] * 100., energies[2] * 100.);
+	if ( energies[2] == 0.00 ) { //efficiency is zero
+	  minS1 = -999.;
+	  minS2 = -999.;
+	  maxS1 = 1e9;
+	  maxS2 = 1e11;
+	  cerr << "CAUTION: Efficiency was zero, so trying again with full S1 and S2 ranges." << endl;
+	  numBins = 1;
+	  goto NEW_RANGES;
+	}
         if (type_num < 7) //0-6=NR/related (WIMPs,etc.)
           fprintf(stderr, "%lf\n", keVee / energies[2]);
         else

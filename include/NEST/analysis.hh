@@ -23,8 +23,8 @@ int numBins = 33;
 // for efficiency calculation
 // minS2 need not match S2 threshold in detector.hh
 // you can treat as trigger vs. analysis thresholds
-double minS2 = 0.0;
-double maxS2 = 1e9;
+double minS2 = 0.00;
+double maxS2 = 1e10;
 
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
 double logMax = 3.6;

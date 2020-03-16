@@ -256,7 +256,6 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum), NuisParam);
   }
- NEW_RANGES:
   if ((g1 * yieldsMax.PhotonYield) > (2. * maxS1) && eMin != eMax)
     cerr
         << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
@@ -570,6 +569,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     vector<double> scint =
         n.GetS1(quanta, truthPos, smearPos, vD, vD_middle, type_num, j, field,
                 keV, useTiming, verbosity, wf_time, wf_amp);
+    if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
+    vector<double> scint2 =
+      n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, j, field,
+	      useTiming, verbosity, wf_time, wf_amp, g2_params);
+  NEW_RANGES:
     if (usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1)
       signal1.push_back(scint[3]);
     else if (usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1)
@@ -579,10 +583,6 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     else
       signal1.push_back(-999.);
     
-    if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
-    vector<double> scint2 =
-        n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, j, field,
-                useTiming, verbosity, wf_time, wf_amp, g2_params);
     if (usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2)
       signal2.push_back(scint2[5]);
     else if (usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2)
@@ -596,7 +596,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       if ( scint2[5] > maxS2 || scint2[7] > maxS2 )
 	cerr << "WARNING: Some S2 pulse areas are greater than maxS2" << endl;
     }
-    
+
     if (!MCtruthE) {
       double Nph, Ne;
       if (usePD == 0)
@@ -625,7 +625,21 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       signalE.push_back(0.);
     else
       signalE.push_back(keV);
-
+    
+    if ( keVee == 0.00 && eMin == eMax ) { //efficiency is zero
+      minS1 = -999.;
+      minS2 = -999.;
+      maxS1 = 1e9;
+      maxS2 = 1e11;
+      cerr << endl << "CAUTION: Efficiency was zero, so trying again with full S1 and S2 ranges." << endl;
+      numBins = 1;
+      MCtruthE = false;
+      signal1.clear();
+      signal2.clear();
+      signalE.clear();
+      goto NEW_RANGES;
+    }
+    
     // Possible outputs from "scint" vector
     // scint[0] = nHits; // MC-true integer hits in same OR different PMTs, NO
     // double phe effect
@@ -758,15 +772,6 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
                 band[j][1] / band[j][0] * 100., band[j][2],
                 band[j][3] / band[j][2] * 100., energies[0],
                 energies[1] / energies[0] * 100., energies[2] * 100.);
-	if ( energies[2] == 0.00 ) { //efficiency is zero
-	  minS1 = -999.;
-	  minS2 = -999.;
-	  maxS1 = 1e9;
-	  maxS2 = 1e11;
-	  cerr << "CAUTION: Efficiency was zero, so trying again with full S1 and S2 ranges." << endl;
-	  numBins = 1;
-	  goto NEW_RANGES;
-	}
         if (type_num < 7) //0-6=NR/related (WIMPs,etc.)
           fprintf(stderr, "%lf\n", keVee / energies[2]);
         else

@@ -38,18 +38,20 @@ class DetectorExample_XENON10 : public VDetector {
     sPEres = 0.58;   // single phe resolution (Gaussian assumed)
     sPEthr = 0.35;   // POD threshold in phe, usually used IN PLACE of sPEeff
     sPEeff = 1.00;   // actual efficiency, can be used in lieu of POD threshold
-    noise[0] = 0.0;  // baseline noise mean and width in PE (Gaussian)
-    noise[1] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+    noiseB[0] = 0.0;  // baseline noise mean in PE (Gaussian)
+    noiseB[1] = 0.0;  // baseline noise width in PE (Gaussian)
+    noiseB[2] = 0.0;  // baseline noise mean in e- (for grid wires)
+    noiseB[3] = 0.0;  // baseline noise width in e- (for grid wires)
     P_dphe = 0.2;  // chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
 
     coinWind = 100;  // S1 coincidence window in ns
     coinLevel = 2;   // how many PMTs have to fire for an S1 to count
     numPMTs = 89;    // For coincidence calculation
 
-    //"Linear noise" terms as defined in Dahl thesis and by D. McK
     extraPhot=false;  // for matching EXO-200's W measurement
-    noise[2] = 3e-2;  // S1 -> S1 Gaussian-smeared with noise[2]*S1
-    noise[3] = 3e-2;  // S2 -> S2 Gaussian-smeared with noise[3]*S2
+    //the "Linear noise" terms as defined in Dahl thesis and by Dan McK
+    noiseL[0] = 3e-2;  // S1->S1 Gaussian-smeared with noiseL[0]*S1
+    noiseL[1] = 3e-2;  // S2->S2 Gaussian-smeared with noiseL[1]*S2
 
     // Ionization and Secondary Scintillation (S2) parameters
     g1_gas = .0655;  // phd per S2 photon in gas, used to get SE size

@@ -25,7 +25,8 @@ class VDetector {
   double get_sPEres() { return sPEres; }
   double get_sPEthr() { return sPEthr; }
   double get_sPEeff() { return sPEeff; }
-  double* get_noise() { return &noise[0]; }
+  double* get_noiseB() { return &noiseB[0]; }
+  double* get_noiseL() { return &noiseL[0]; }
   double get_P_dphe() { return P_dphe; }
   
   bool get_extraPhot(){ return extraPhot; }
@@ -69,11 +70,15 @@ class VDetector {
   void set_sPEres(double param) { sPEres = param; }
   void set_sPEthr(double param) { sPEthr = param; }
   void set_sPEeff(double param) { sPEeff = param; }
-  void set_noise(double p1, double p2, double p3, double p4) {
-    noise[0] = p1;
-    noise[1] = p2;
-    noise[2] = p3;
-    noise[3] = p4;
+  void set_noiseB(double p1, double p2, double p3, double p4) {
+    noiseB[0] = p1;
+    noiseB[1] = p2;
+    noiseB[2] = p3;
+    noiseB[3] = p4;
+  }
+  void set_noiseL(double p1, double p2) {
+    noiseL[0] = p1;
+    noiseL[1] = p2;
   }
   void set_P_dphe(double param) { P_dphe = param; }
 
@@ -148,10 +153,10 @@ protected:
   double sPEres = 0.58;  // single phe resolution (Gaussian assumed)
   double sPEthr = 0.35;  // POD threshold in phe, usually used IN PLACE of sPEeff
   double sPEeff = 1.00;  // actual efficiency, can be used in lieu of POD threshold
-  double noise[4] = {0.0,  // baseline noise mean and width in PE (Gaussian)
+  double noiseB[4] = {0.0,  // baseline noise mean and width in PE (Gaussian)
                   0.0,  // baseline noise mean and width in PE (Gaussian)
-                  3e-2, // S1 -> S1 Gaussian-smeared with noise[2]*S1
-                  3e-2, // S2 -> S2 Gaussian-smeared with noise[3]*S2
+                  0.0,   //EXO noise mean
+                  0.0    //EXO noise width
                   };
  
   double P_dphe = 0.2;    // chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
@@ -160,9 +165,9 @@ protected:
   int coinLevel = 2;   // how many PMTs have to fire for an S1 to count
   int numPMTs = 89;    // For coincidence calculation
 
-  //"Linear noise" terms as defined in Dahl thesis and by D. McK
   bool extraPhot=false;  // for matching EXO-200's W measurement
-
+  //"Linear noise" terms as defined in Dahl thesis and by D. McK
+  double noiseL[2] = {3e-2,3e-2}; // S1->S1 Gaussian-smeared w/ noiseL[0]*S1. Ditto S2
 
   // Ionization and Secondary Scintillation (S2) parameters
   double g1_gas = 0.06;  // phd per S2 photon in gas, used to get SE size

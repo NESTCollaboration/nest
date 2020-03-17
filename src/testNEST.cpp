@@ -532,7 +532,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  FudgeFactor[1] = 1.05;
 	  yields.PhotonYield *= FudgeFactor[0];
 	  yields.ElectronYield*=FudgeFactor[1];
-	  detector->set_noise(detector->get_noise()[0],detector->get_noise()[1], 5.5e-2, 2.2e-2);
+	  detector->set_noiseL(5.5e-2, 2.2e-2);
 	}
 	else
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);

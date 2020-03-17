@@ -385,6 +385,8 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   double fieldDep = pow(1. + pow(dfield / 95., 8.7), 0.0592);
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
   double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
+  if ( A1 == 206. && Z1 == 82. )
+    ThomasImel = 40. * pow ( dfield, -0.75 );
   const double logden = log10(density);
   double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
           123.73 * pow(logden, 3.) - 136.47 * pow(logden, 4.) -
@@ -613,8 +615,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
     for (int i = 0; i < nHits; i++) {
       // generate photo electron, integer count and area
       double phe1 = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres()) +
-                    RandomGen::rndm()->rand_gauss(fdetector->get_noise()[0],
-                                                  fdetector->get_noise()[1]);
+                    RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
+                                                  fdetector->get_noiseB()[1]);
       Nphe++;
       if (phe1 > DBL_MAX) phe1 = 1.;
       if (phe1 < -DBL_MAX) phe1 = 0.;
@@ -628,8 +630,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       if (RandomGen::rndm()->rand_uniform() < fdetector->get_P_dphe()) {
         // generate area and increment the photo-electron counter
         phe2 = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres()) +
-               RandomGen::rndm()->rand_gauss(fdetector->get_noise()[0],
-                                             fdetector->get_noise()[1]);
+               RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
+                                             fdetector->get_noiseB()[1]);
         Nphe++;
         if (phe2 > DBL_MAX) phe2 = 1.;
         if (phe2 < -DBL_MAX) phe2 = 0.;
@@ -756,7 +758,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   }
 
   pulseArea = RandomGen::rndm()->rand_gauss(
-      pulseArea, fdetector->get_noise()[2] * pulseArea);
+      pulseArea, fdetector->get_noiseL()[0] * pulseArea);
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
   if (spike < 0) spike = 0;
   double pulseAreaC = pulseArea / posDepSm;
@@ -882,6 +884,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
   posDepSm /= fdetector->FitS2(0., 0.);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
+  if ( fdetector->get_noiseB()[2] != 0. || fdetector->get_noiseB()[3] != 0. )
+    Ne += int(floor(RandomGen::rndm()->rand_gauss(
+	    fdetector->get_noiseB()[2],fdetector->get_noiseB()[3])+0.5));
   int Nee = BinomFluct(Ne, ExtEff * exp(-dt / fdetector->get_eLife_us()));
   //MAKE this 1 for SINGLE e- DEBUG
   
@@ -1070,7 +1075,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
   }
 
   pulseArea = RandomGen::rndm()->rand_gauss(
-      pulseArea, fdetector->get_noise()[3] * pulseArea);
+      pulseArea, fdetector->get_noiseL()[1] * pulseArea);
   double pulseAreaC =
       pulseArea / exp(-dt / fdetector->get_eLife_us()) / posDepSm;
   double Nphd = pulseArea / (1. + fdetector->get_P_dphe());
@@ -1192,7 +1197,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
     Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
     pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
-    pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noise()[3]*pulseArea);
+    pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noiseL()[1]*pulseArea);
     pulseAreaC = pulseArea / posDep;
     NphdC = pulseAreaC/(1.+fdetector->get_P_dphe());
     StdDev += (SE-NphdC)*(SE-NphdC);

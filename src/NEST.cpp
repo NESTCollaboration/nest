@@ -70,7 +70,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     if (!exciton) {
       tauR = exp(-0.00900 * dfield) *
 	(7.3138 + 3.8431 * log10(energy));    // arXiv:1310.1117
-      if ( tauR < 3.5 ) tauR = 3.5; //might be for gammas only
+      if ( tauR < 3.5 && species == gammaRay ) tauR = 3.5;
       if ( dfield > 8e2 ) dfield = 8e2; //to match Kubota's 4,000 V/cm
       SingTripRatio = 1.00 * pow(energy, -0.45+0.0005*dfield);  // see comment below; also, dfield may need to be fixed at ~100-200 V/cm (for NR too)
     } else
@@ -607,7 +607,6 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
 
   // If single photo-electron efficiency is under 1 and the threshold is above 0
   // (some phe will be below threshold)
-  
   if ( useTiming != -1 ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
     
     // Step through the pmt hits
@@ -725,7 +724,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       // TimeTable[0].push_back(-999.);
       // TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
-    double tRandOffset = -(SAMPLE_SIZE/2.)+(PULSE_WIDTH/2.)*RandomGen::rndm()->rand_uniform(); //-16,20 was good for LUX, but made weird skew in fP
+    double tRandOffset = (PULSE_WIDTH/2.)*(2.*RandomGen::rndm()->rand_uniform()-1.); //-16,20 was good for LUX, but made weird skew in fP
     for (ii = 0; ii < numPts; ++ii) {
       if ((AreaTable[0][ii] + AreaTable[1][ii]) <= PULSEHEIGHT) continue;
 

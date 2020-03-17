@@ -17,7 +17,7 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
   
   double MaxPossibleTime = DBL_MAX, S1LimPE[2]={atof(argv[1]),atof(argv[2])}; //avoid Seg Fault!
   default_random_engine generator;
-  uniform_real_distribution<double> distribution(0.,15.); //ns for random offsets
+  uniform_real_distribution<double> distribution(0.,15.); //ns for ran offset. 1.5 bin default
   vector<long> num, win; char line[60];
   vector<double> tns, bot, top;
   FILE* ifp = fopen ( "photon_times.txt", "r" );
@@ -61,8 +61,8 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
   
   double area[2] = {0.0,0.0}; double range[4] = {-14.,134.,-8.,32.}; double rRange[4]={range[0],range[1],range[2],range[3]};
   for ( i = 0; i < num.size(); i++ ) {
-    //if ( T05[num[i]] < MaxPossibleTime ) tns[i] -= T05[num[i]];
-    if ( tns[i] < S2BORD && win[i] == 1 ) {
+    if ( T05[num[i]] < MaxPossibleTime ) tns[i] -= T05[num[i]];
+    if ( tns[i] < (S2BORD-T05[num[i]]) && win[i] == 1 ) {
       if ( tns[i] > rRange[0] && tns[i] < rRange[1] ) {
 	area[0] += top[i] + bot[i];
 	if ( tns[i] > rRange[2] && tns[i] < rRange[3] )

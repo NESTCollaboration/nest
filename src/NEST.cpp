@@ -884,9 +884,6 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
   posDepSm /= fdetector->FitS2(0., 0.);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
-  if ( fdetector->get_noiseB()[2] != 0. || fdetector->get_noiseB()[3] != 0. )
-    Ne += int(floor(RandomGen::rndm()->rand_gauss(
-	    fdetector->get_noiseB()[2],fdetector->get_noiseB()[3])+0.5));
   int Nee = BinomFluct(Ne, ExtEff * exp(-dt / fdetector->get_eLife_us()));
   //MAKE this 1 for SINGLE e- DEBUG
   

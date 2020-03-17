@@ -21,7 +21,7 @@
 using namespace std;
 using namespace NEST;
 
-double band[NUMBINS_MAX][6];
+double band[NUMBINS_MAX][7];
 double energies[3];
 
 int main(int argc, char** argv) {
@@ -550,7 +550,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         quanta.excitons = 0;
       }
     }
-
+    
+    if ( detector->get_noiseB()[2] != 0. || detector->get_noiseB()[3] != 0. )
+      quanta.electrons += int(floor(RandomGen::rndm()->rand_gauss(
+		   detector->get_noiseB()[2],detector->get_noiseB()[3])+0.5));
+    
     // If we want the smeared positions (non-MC truth), then implement
     // resolution function
     double truthPos[3] = {pos_x, pos_y, pos_z};
@@ -730,10 +734,10 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         GetBand(signal1, signal2, false);
       fprintf(stderr,
               "Bin Center\tBin Actual\tHist Mean\tMean Error\tHist "
-              "Sigma\t\tEff[%%>thr]\n");
+              "Sigma\tSkewness\t\tEff[%%>thr]\n");
       for (int j = 0; j < numBins; j++) {
-        fprintf(stderr, "%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n", band[j][0],
-                band[j][1], band[j][2], band[j][4], band[j][3],
+        fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n", band[j][0],
+                band[j][1], band[j][2], band[j][4], band[j][3], band[j][6],
                 band[j][5] * 100.);
         if (band[j][0] <= 0.0 || band[j][1] <= 0.0 || band[j][2] <= 0.0 ||
             band[j][3] <= 0.0 || band[j][4] <= 0.0 || band[j][5] <= 0.0 ||
@@ -897,6 +901,11 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
     }
     band[j][4] = band[j][3] / sqrt(numPts);
     band[j][5] = numPts / (numPts + double(reject[j]));
+    for ( i = 0; i < (int)numPts; i++ ) {
+      if ( signals[j][i] != -999. )
+	band[j][6] += pow ( ( signals[j][i] - band[j][2] ) / band[j][3], 3. ); // skew calc
+    }
+    band[j][6] /= ( numPts - 1. );
   }
 
   return signals;

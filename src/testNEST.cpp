@@ -16,7 +16,7 @@
 #include "analysis.hh"
 #include "testNEST.hh"
 
-#include "DetectorExample_XENON10.hh"
+#include "LUX_Run03.hh"
 
 using namespace std;
 using namespace NEST;
@@ -27,7 +27,7 @@ double energies[3];
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  DetectorExample_XENON10* detector = new DetectorExample_XENON10();
+  DetectorExample_LUX_RUN03* detector = new DetectorExample_LUX_RUN03();
 
   // Custom parameter modification functions
   // detector->ExampleFunction();

@@ -236,7 +236,14 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   if (recombProb < 0.) recombProb = 0.;
   if (recombProb > 1.) recombProb = 1.;
   if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
-      recombProb == 0.0) {
+      recombProb == 0.0)  {
+    if ( fdetector->get_extraPhot() )
+    {
+      if ( yields.Lindhard != 1. )
+        Nph = int(floor(double(Nph)*7.00 + 0.5)); //IR photons for NR
+      else
+        Nph = int(floor(double(Nph)*1.35 + 0.5)); //EXO
+    }
     result.photons = Nex;
     result.electrons =Ni;
     elecFrac= 1.0;

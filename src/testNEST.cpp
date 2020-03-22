@@ -51,8 +51,12 @@ int main(int argc, char** argv) {
          << endl;
     return 1;
   }
-
-  unsigned long int numEvts = atoi(argv[1]);
+  
+  unsigned long int numEvts = (unsigned long)atof(argv[1]);
+  if ( numEvts <= 0 ) {
+    cerr << "ERROR, you must simulate at least 1 event" << endl;
+    return 1;
+  }
   string type = argv[2];
   double eMin = atof(argv[3]);
   double eMax = atof(argv[4]);

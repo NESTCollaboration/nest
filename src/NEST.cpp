@@ -1,6 +1,9 @@
 
 #include "NEST.hh"
 
+#define InfraredER 1.35
+#define InfraredNR 7.00
+
 using namespace std;
 using namespace NEST;
 
@@ -240,9 +243,9 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     if ( fdetector->get_extraPhot() )
     {
       if ( yields.Lindhard != 1. )
-        Nph = int(floor(double(Nph)*7.00 + 0.5)); //IR photons for NR
+        Nph = int(floor(double(Nph)*InfraredNR + 0.5)); //IR photons for NR
       else
-        Nph = int(floor(double(Nph)*1.35 + 0.5)); //EXO
+        Nph = int(floor(double(Nph)*InfraredER + 0.5)); //EXO
     }
     result.photons = Nex;
     result.electrons =Ni;
@@ -273,9 +276,9 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   
   if ( fdetector->get_extraPhot() ) {
     if ( yields.Lindhard != 1. )
-      Nph = int(floor(double(Nph)*7.00+0.5)); //IR photons for NR
+      Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR
     else
-      Nph = int(floor(double(Nph)*1.35+0.5)); //EXO
+      Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
   }
   result.Variance=Variance;
   result.recombProb=recombProb;

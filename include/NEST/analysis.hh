@@ -17,8 +17,8 @@ int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
 
 double minS1 = 1.7; //units are controlled by the usePE flag
 // this is separate from S1 thresholds controlled by detector
-double maxS1 = 160.1;
-int numBins = 144;
+double maxS1 = 110.6;
+int numBins = 99;
 
 // for efficiency calculation
 // minS2 need not match S2 threshold in detector.hh
@@ -36,7 +36,7 @@ double E_step = 5.0;  // keV, for integrating WIMP spectrum
 
 // Set the rootNEST options
 int freeParam = 2; // #free param for calculating DoF in X^2
-int mode = 0;
+int mode = 1;
 //0 default is to provide the ER BG discrimination & leakage frac
 //1 outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)
 //2 outputs wimp masses and cross-sections for given efficiency

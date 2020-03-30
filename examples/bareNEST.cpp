@@ -46,9 +46,7 @@ int main(int argc, char** argv) {
 
   // Declare needed temporary variables
   vector<double> vTable,
-      NuisParam = {
-          1.,
-          1.};  // NuisParam are scaling factors, for now just for NR Ly & Qy
+    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
   int index;    // index for Z step (for getting pre-calculated drift field)
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD, vD_middle;
   // Energy min and max for source spectrum

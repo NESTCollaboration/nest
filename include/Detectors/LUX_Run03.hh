@@ -5,6 +5,9 @@
 #include "VDetector.hh"
 using namespace std;
 
+//NOTES: best g1 for DD 0.118, but for tritium 0.1145; S1 noise 1.3, 1.0%; g1_gas 0.1022, 0.1014
+//s2fano 3.4, 3.5; eField in gas 6.25, 6.2; e- life 650, 750 us; fid vol 80-130, 38-305 us; gasGap 4.25, 4.5 mm
+
 class DetectorExample_LUX_RUN03: public VDetector {
   
 public:
@@ -22,7 +25,7 @@ public:
   virtual void Initialization() {
     
     // Primary Scintillation (S1) parameters
-    g1 = 0.1180; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim
+    g1 = 0.116; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim
     sPEres = 0.37; //arXiv:1910.04211
     sPEthr = (0.3*1.173)/0.915; //arXiv:1910.04211
     sPEeff = 1.00; //arXiv:1910.04211
@@ -37,15 +40,15 @@ public:
     numPMTs = 119;// 122 minus 3 off
     
     extraPhot =false; //default
-    noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
-    noiseL[1]=1.3e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[0]=1.6e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[1]=1.2e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.1022; //0.1 in 1910.04211
+    g1_gas = 0.102; //0.1 in 1910.04211
     s2Fano = 3.4; //3.7 in 1910.04211; this matches 1608.05381 better
     s2_thr = 128.;//(150.*1.173)/0.915; //65-194 pe in 1608.05381
-    E_gas = 6.25; //6.55 in 1910.04211
-    eLife_us = 650.; //p.44 of James Verbus PhD thesis Brown
+    E_gas = 6.2; //6.55 in 1910.04211
+    eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown
     
     // Thermodynamic Properties
     inGas = false; //duh
@@ -54,13 +57,13 @@ public:
     
     // Data Analysis Parameters and Geometry
     dtCntr = 160.; //p.61 Dobi thesis UMD, 159 in 1708.02566
-    dt_min = 80.; //1608.05381
-    dt_max = 130.; //1608.05381
+    dt_min = 38.; //1608.05381
+    dt_max = 305.; //1608.05381
     
     radius = 200.; //1512.03506
     radmax = 235.; //1910.04211
     
-    TopDrift = 544.95; //544.95 in 1910.04211
+    TopDrift = 544.8; //544.95 in 1910.04211
     anode = 549.2; //1910.04211 and 549 in 1708.02566
     gate = 539.2; //1910.04211 and 539 in 1708.02566
     cathode = 55.90; //55.9-56 in 1910.04211,1708.02566
@@ -135,7 +138,7 @@ public:
     double tau_b = 4.5093 + 0.03437 * relativeZ -0.00018406 * pow ( relativeZ, 2. ) - 1.6383e-6 * pow ( relativeZ, 3. );
     if ( tau_b < 0. ) tau_b = 0.; //cannot have negative time
     
-    A = 0.0574; B_a = 1.062; tau_a = 11.1; tau_b = 2.70; B_b = 1.0 - B_a; //LUX D-D conditions
+    //A = 0.0574; B_a = 1.062; tau_a = 11.1; tau_b = 2.70; B_b = 1.0 - B_a; //LUX D-D conditions
     
     if ( RandomGen::rndm()->rand_uniform() < A )
       phoTravT = 0.; //direct travel time to PMTs (low)

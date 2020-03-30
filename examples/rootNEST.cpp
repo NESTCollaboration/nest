@@ -292,11 +292,11 @@ if ( mode == 1 ) {
       chi2[0] /= double(DoF - 1);
       chi2[1] /= double(DoF - 1);
       //cout.precision(3);
-      if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
-      if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
-      //cout << chi2[0] << "\t" << chi2[1] << endl; //abbreviated #only version
-      cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1]
-           << " for width" << endl;
+      //if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
+      //if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
+      //cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << endl; //abbreviated #only version
+      cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width" << endl;
+      cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width, mean*width)" << endl;
       if (!loop) break;
     }
     if (!loop) break;

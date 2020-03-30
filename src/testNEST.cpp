@@ -95,7 +95,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.},
     // alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota for NR model
     // last 3 are the secret extra parameters for additional flexibility
-    FreeParam = {1.,1.,0.1,0.5,0.07};
+    FreeParam = {1.,1.,0.10,0.5,0.19};
     // Fi, Fex, and 3 non-binomial recombination fluctuation parameters
   string delimiter, token;
   size_t loc;
@@ -909,7 +909,7 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
       if ( signals[j][i] != -999. )
 	band[j][6] += pow ( ( signals[j][i] - band[j][2] ) / band[j][3], 3. ); // skew calc
     }
-    band[j][6] /= ( numPts - 1. );
+    band[j][6] /= ( numPts - 2. );
   }
 
   return signals;

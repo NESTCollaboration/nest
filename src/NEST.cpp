@@ -125,20 +125,22 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 
 double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/)
 {
-  double omega = FreeParam[2] * exp(-pow(elecFrac - FreeParam[3], 2.) / FreeParam[4]);
+  double omega = FreeParam[2]*exp(-0.5*pow(elecFrac-FreeParam[3],2.)/(FreeParam[4]*FreeParam[4]));
   if ( omega < 0. )
     omega = 0;
   return omega;
-} 
+}
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 {
-  double cc = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25));
+  double cc = 0.15+(0.05-0.15)/(1.+pow(efield/2e3,1.15));
   if ( cc < 0. )
     cc = 0.;
-  double aa = 0.205;
-  double bb = 0.41;
-  double omega = cc*0.988*exp(-0.5*pow(elecFrac-bb,2.)/(aa*aa))*(1.+erf(-0.2*(elecFrac-bb)/(aa*sqrt(2.))));
+  double aa = 0.34;
+  double bb = 0.5;
+  if ( elecFrac > bb )
+    aa = 0.12;
+  double omega = cc*exp(-0.5*pow(elecFrac-bb,2.)/(aa*aa));
   if ( omega < 0. )
     omega = 0;
     return omega;
@@ -396,7 +398,7 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
   double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
   if ( A1 == 206. && Z1 == 82. )
-    ThomasImel = 40. * pow ( dfield, -0.75 );
+    ThomasImel = 80. * pow ( dfield, -0.87 );
   const double logden = log10(density);
   double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
           123.73 * pow(logden, 3.) - 136.47 * pow(logden, 4.) -
@@ -736,7 +738,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       // TimeTable[0].push_back(-999.);
       // TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
-    double tRandOffset = (PULSE_WIDTH/2.)*(2.*RandomGen::rndm()->rand_uniform()-1.); //-16,20 was good for LUX, but made weird skew in fP
+    double tRandOffset = (SAMPLE_SIZE/2.)*(2.*RandomGen::rndm()->rand_uniform()-1.); //-16,20 was good for LUX, but made weird skew in fP
     for (ii = 0; ii < numPts; ++ii) {
       if ((AreaTable[0][ii] + AreaTable[1][ii]) <= PULSEHEIGHT) continue;
 

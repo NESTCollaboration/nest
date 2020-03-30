@@ -15,16 +15,16 @@ int usePD = 2;
 // band style: log(S2) with 1, while 0 means log(S2/S1)
 int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
 
-double minS1 = 1.7; //units are controlled by the usePE flag
+double minS1 = 1.5; //units are controlled by the usePE flag
 // this is separate from S1 thresholds controlled by detector
-double maxS1 = 110.6;
-int numBins = 99;
+double maxS1 = 99.5;
+int numBins = 98;
 
 // for efficiency calculation
 // minS2 need not match S2 threshold in detector.hh
 // you can treat as trigger vs. analysis thresholds
 double minS2 = 42.;
-double maxS2 = 5e3;
+double maxS2 = 5e6;
 
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
 double logMax = 3.6;

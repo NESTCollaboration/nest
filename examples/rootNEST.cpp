@@ -284,6 +284,10 @@ if ( mode == 1 ) {
       GetFile(argv[1]);
       double error, chi2[2] = {0., 0.};
       for (i = 0; i < numBins; i++) {
+	if ( band[i][0] != band2[i][0] ) {
+	  cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
+	  return 1;
+	}
         error = sqrt(pow(band[i][4], 2.) + pow(band2[i][4], 2.));
         chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
         error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));

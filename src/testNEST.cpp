@@ -399,16 +399,14 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 
         if (type_num == Kr83m && eMin == 9.4 && eMax == 9.4)
           fprintf(stdout,
-                  "t [ns]\t\tE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z "
-                  "[mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor "
-                  "[phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr "
-                  "[phd]\n");
-        else
-          fprintf(stdout,
-                  "E [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z "
-                  "[mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor "
-                  "[phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr "
-                  "[phd]\n");
+                  "t [ns]\t\t");
+	if ( MCtruthE && eMax != eMin ) fprintf(stdout,"E_truth [keV]");
+	else fprintf(stdout,"E_recon [keV]");
+	fprintf(stdout,
+		"\tfield [V/cm]\ttDrift [us]\tX,Y,Z "
+		"[mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor "
+		"[phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr "
+		"[phd]\n");
       }
     }
     if (inField == -1.) {
@@ -606,7 +604,19 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     }
 
     if (!MCtruthE) {
-      double Nph, Ne;
+      double Nph, Ne, MultFact = 1., eff = detector->get_sPEeff();
+      if ( useTiming >= 0 ) {
+	if ( detector->get_sPEthr() > 0. && detector->get_sPEres() > 0. && eff > 0. ) {
+	  MultFact = 0.5*(1.+erf((detector->get_sPEthr()-1.)/(detector->get_sPEres()*sqrt(2.)))) / (detector->get_sPEres()*sqrt(2.*M_PI));
+          MultFact = 1./(1.-MultFact); MultFact = 1.02+(MultFact-1.02)/(1.+pow(g1*Nph/detector->get_numPMTs(),2.)); //2% from Emily Mangus
+	  if ( eff < 1. )
+	    eff += ((1.-eff)/(2.*double(detector->get_numPMTs())))*(g1*Nph);
+	  if ( eff > 1. ) eff = 1.;
+	  if ( eff < 0. ) eff = 0.;
+	  MultFact /= eff;
+	}
+	else MultFact = 1.;
+      }
       if (usePD == 0)
         Nph = fabs(scint[3]) / (g1 * (1. + detector->get_P_dphe()));
       else if (usePD == 1)
@@ -617,14 +627,22 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         Ne = fabs(scint2[5]) / (g2 * (1. + detector->get_P_dphe()));
       else
         Ne = fabs(scint2[7]) / g2;
+      Nph *= MultFact;
       if (signal1.back() <= 0.) Nph = 0.;
       if (signal2.back() <= 0.) Ne = 0.;
       if (yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
 	if ( detector->get_extraPhot() ) yields.Lindhard = 1.;
-        keV = (Nph/FudgeFactor[0] + Ne/FudgeFactor[1]) *
-	  Wq_eV * 1e-3 / yields.Lindhard;
+	if ( yields.Lindhard == 1. )
+	  keV = (Nph/FudgeFactor[0] + Ne/FudgeFactor[1]) * Wq_eV * 1e-3;
+	else {
+	  keV = pow((Ne+Nph)/NuisParam[0],1./NuisParam[1]);
+	  Ne *= 1. - 1. / pow(1. + pow((keV / NuisParam[5]), NuisParam[6]), NuisParam[10]);
+	  Nph *=1. - 1. / pow(1. + pow((keV / NuisParam[7]), NuisParam[8]), NuisParam[11]);
+	  keV = pow((Ne+Nph)/NuisParam[0],1./NuisParam[1]);
+	  //keV= (Nph + Ne) * Wq_eV * 1e-3 / yields.Lindhard; // cheating :-)
+	}
         keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
-                                             // both places, but won't account
+                                             // both places, but will not account
                                              // for density dependence
       } else
         keV = 0.;
@@ -634,12 +652,13 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     else
       signalE.push_back(keV);
     
-    if ( keVee == 0.00 && eMin == eMax ) { //efficiency is zero
+    if ( (keVee == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1. ) { //efficiency is zero
       minS1 = -999.;
       minS2 = -999.;
       maxS1 = 1e9;
       maxS2 = 1e11;
       cerr << endl << "CAUTION: Efficiency was zero, so trying again with full S1 and S2 ranges." << endl;
+      cerr << "OR, you tried to simulate a mono-energetic peak with MC truth E turned on. Silly!" << endl;
       numBins = 1;
       MCtruthE = false;
       signal1.clear();

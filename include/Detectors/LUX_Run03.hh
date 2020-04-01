@@ -7,6 +7,7 @@ using namespace std;
 
 //NOTES: best g1 for DD 0.118, but for tritium 0.1145; S1 noise 1.3, 1.0%; g1_gas 0.1022, 0.1014
 //s2fano 3.4, 3.5; eField in gas 6.25, 6.2; e- life 650, 750 us; fid vol 80-130, 38-305 us; gasGap 4.25, 4.5 mm
+//DISCLAIMER: Slight differences from official published values due to private LUX algorithms
 
 class DetectorExample_LUX_RUN03: public VDetector {
   

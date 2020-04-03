@@ -606,11 +606,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     if (!MCtruthE) {
       double Nph, Ne, MultFact = 1., eff = detector->get_sPEeff();
       if ( useTiming >= 0 ) {
-	if ( detector->get_sPEthr() > 0. && detector->get_sPEres() > 0. && eff > 0. ) {
+	if ( detector->get_sPEthr() >= 0. && detector->get_sPEres() > 0. && eff > 0. ) {
 	  MultFact = 0.5*(1.+erf((detector->get_sPEthr()-1.)/(detector->get_sPEres()*sqrt(2.)))) / (detector->get_sPEres()*sqrt(2.*M_PI));
           MultFact = 1./(1.-MultFact); MultFact = 1.02+(MultFact-1.02)/(1.+pow(g1*Nph/detector->get_numPMTs(),2.)); //2% from Emily Mangus
 	  if ( eff < 1. )
-	    eff += ((1.-eff)/(2.*double(detector->get_numPMTs())))*(g1*Nph);
+	    eff += ((1.-eff)/(1.*double(detector->get_numPMTs())))*(g1*Nph);
 	  if ( eff > 1. ) eff = 1.;
 	  if ( eff < 0. ) eff = 0.;
 	  MultFact /= eff;
@@ -652,9 +652,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     else
       signalE.push_back(keV);
     
-    if ( (keVee == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1. ) { //efficiency is zero
+    if ( (keVee == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1E2 ) { //efficiency is zero
       minS1 = -999.;
       minS2 = -999.;
+      detector->set_coinLevel(0);
+      detector->set_s2_thr(0.0);
       maxS1 = 1e9;
       maxS2 = 1e11;
       cerr << endl << "CAUTION: Efficiency was zero, so trying again with full S1 and S2 ranges." << endl;
@@ -748,7 +750,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     }  // always execute statement, if(1) above, because if is just place-holder
        // in case you want to drop all sub-threshold data
   }
-
+  
   if (verbosity) {
     if (eMin != eMax) {
       if (useS2 == 2)

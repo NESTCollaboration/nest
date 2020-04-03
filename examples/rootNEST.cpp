@@ -284,7 +284,7 @@ if ( mode == 1 ) {
       GetFile(argv[1]);
       double error, chi2[2] = {0., 0.};
       for (i = 0; i < numBins; i++) {
-	if ( band[i][0] != band2[i][0] ) {
+	if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
 	  cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
 	  return 1;
 	}

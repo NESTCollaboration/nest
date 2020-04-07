@@ -523,7 +523,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 					    double(massNum), double(atomNum), NuisParam);
 	  YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
 					    double(massNum), double(atomNum), NuisParam);
-	  double weightG = 0.82 + 0.43 * erf ( -2.7 * ( log ( keV ) - 1.3 ) );
+	  double weightG = .5 + .5 * erf ( 1.1 * ( log ( keV ) - 5. ) ); // Xe10:.82,.43,-2.7,-1.3
 	  double weightB = 1. - weightG;
 	  yields.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
 	  yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;
@@ -531,11 +531,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
 	  yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
 	  yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
-	  FudgeFactor[0] = 1.02;
-	  FudgeFactor[1] = 1.05;
+	  FudgeFactor[0] = 1.;//1.02;
+	  FudgeFactor[1] = 1.;//1.05;
 	  yields.PhotonYield *= FudgeFactor[0];
 	  yields.ElectronYield*=FudgeFactor[1];
-	  detector->set_noiseL(5.5e-2, 2.2e-2);
+	  detector->set_noiseL(1.4e-2, 1.4e-2); // XENON10: 5.5, 2.2
 	}
 	else
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);

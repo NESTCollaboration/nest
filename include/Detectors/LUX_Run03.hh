@@ -5,7 +5,7 @@
 #include "VDetector.hh"
 using namespace std;
 
-//NOTES: best g1 for DD 0.118, but for tritium 0.1144; S1 noise 1.3, 6.6%; g1_gas 0.1022, 0.1013
+//NOTES: best g1 for DD 0.118, but for tritium 0.1144; S2 noise 1.3, 6.6%; g1_gas 0.1022, 0.1013
 //s2fano 3.4, 1.8; eField in gas 6.25, 6.2; e- life 650, 750 us; fid vol 80-130, 38-305 us; gasGap 4.25, 4.5 mm
 //DISCLAIMER: Slight differences from official published values due to private LUX algorithms
 

@@ -296,7 +296,7 @@ if ( mode == 1 ) {
 	chi2[3] += 100. * ( band2[i][3] - band[i][3] ) / band2[i][3];
       }
       chi2[0] /= double(DoF - 1); chi2[2] /= numBins;
-      chi2[1] /= double(DoF - 1); chi2[3] /= numBins; 
+      chi2[1] /= double(DoF - 1); chi2[3] /= numBins;
       //cout.precision(3);
       //if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
       //if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;

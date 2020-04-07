@@ -139,7 +139,7 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac)
   double wide = 0.205;
   double cntr = 0.5; //0.41 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E)
   double skew = -0.2;
-  double norm = 0.988;
+  double norm = 0.988; //makes sure omega never exceeds ampl
   double omega = norm*ampl*exp(-0.5*pow(elecFrac-cntr,2.)/(wide*wide))*(1.+erf(skew*(elecFrac-cntr)/(wide*sqrt(2.))));
   if ( omega < 0. )
     omega = 0;

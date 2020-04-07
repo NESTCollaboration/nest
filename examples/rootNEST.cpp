@@ -282,7 +282,7 @@ if ( mode == 1 ) {
         g2x = 1.;
       }
       GetFile(argv[1]);
-      double error, chi2[2] = {0., 0.};
+      double error, chi2[4] = {0., 0., 0., 0.};
       for (i = 0; i < numBins; i++) {
 	if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
 	  cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
@@ -292,15 +292,18 @@ if ( mode == 1 ) {
         chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
         error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
         chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
+	chi2[2] += 100. * ( band2[i][2] - band[i][2] ) / band2[i][2];
+	chi2[3] += 100. * ( band2[i][3] - band[i][3] ) / band2[i][3];
       }
-      chi2[0] /= double(DoF - 1);
-      chi2[1] /= double(DoF - 1);
+      chi2[0] /= double(DoF - 1); chi2[2] /= numBins;
+      chi2[1] /= double(DoF - 1); chi2[3] /= numBins; 
       //cout.precision(3);
       //if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
       //if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
       //cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << endl; //abbreviated #only version
-      cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width" << endl;
+      cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width. ";
       cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width, mean*width)" << endl;
+      cout << "%-errors of the form (1/N)*sum{(data-NEST)/data} for mean and width are " << chi2[2] << " and " << chi2[3] << " (averages)" << endl;
       if (!loop) break;
     }
     if (!loop) break;

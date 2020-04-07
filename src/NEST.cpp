@@ -133,17 +133,17 @@ double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 {
-  double cc = 0.15+(0.05-0.15)/(1.+pow(efield/2e3,1.15));
-  if ( cc < 0. )
-    cc = 0.;
-  double aa = 0.34;
-  double bb = 0.5;
-  if ( elecFrac > bb )
-    aa = 0.12;
-  double omega = cc*exp(-0.5*pow(elecFrac-bb,2.)/(aa*aa));
+  double ampl = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25));
+  if ( ampl < 0. )
+    ampl = 0.;
+  double wide = 0.205;
+  double cntr = 0.5; //0.41 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E)
+  double skew = -0.2;
+  double norm = 0.988;
+  double omega = norm*ampl*exp(-0.5*pow(elecFrac-cntr,2.)/(wide*wide))*(1.+erf(skew*(elecFrac-cntr)/(wide*sqrt(2.))));
   if ( omega < 0. )
     omega = 0;
-    return omega;
+  return omega;
 }
 
 double NESTcalc::FanoER(double density, double Nq_mean,double efield)

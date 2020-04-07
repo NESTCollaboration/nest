@@ -23,6 +23,7 @@ using namespace NEST;
 
 double band[NUMBINS_MAX][7];
 double energies[3];
+bool BeenHere = false;
 
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
@@ -444,7 +445,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       driftTime = 0.0;
       pos_z = detector->get_TopDrift() - z_step; //just fix it and move on
     }
-
+    
     YieldResult yields;
     QuantaResult quanta;
     if (type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
@@ -569,11 +570,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       smearPos[0] = xySmeared[0];
       smearPos[1] = xySmeared[1];
     }
-
+    
     vector<long int> wf_time;
     vector<double> wf_amp;
     vector<double> scint =
-        n.GetS1(quanta, truthPos, smearPos, vD, vD_middle, type_num, j, field,
+      n.GetS1(quanta, truthPos, smearPos, vD, vD_middle, type_num, j, field,
                 keV, useTiming, verbosity, wf_time, wf_amp);
     if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
     vector<double> scint2 =
@@ -652,20 +653,21 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     else
       signalE.push_back(keV);
     
-    if ( (keVee == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1E2 ) { //efficiency is zero
+    if ( (keVee == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1E+2 && !BeenHere ) { //efficiency is zero?
       minS1 = -999.;
       minS2 = -999.;
-      detector->set_coinLevel(0);
-      detector->set_s2_thr(0.0);
+      detector->set_s2_thr(0.0); //since needs GetS2() re-run, only "catches" after the first caught event
+      if ( maxS2 > 1e10 )
+	BeenHere = true;
       maxS1 = 1e9;
       maxS2 = 1e11;
-      cerr << endl << "CAUTION: Efficiency was zero, so trying again with full S1 and S2 ranges." << endl;
-      cerr << "OR, you tried to simulate a mono-energetic peak with MC truth E turned on. Silly!" << endl;
       numBins = 1;
       MCtruthE = false;
-      signal1.clear();
-      signal2.clear();
-      signalE.clear();
+      signal1.pop_back();
+      signal2.pop_back();
+      signalE.pop_back();
+      cerr << endl << "CAUTION: Efficiency seems to have been zero, so trying again with full S1 and S2 ranges." << endl;
+      cerr << "OR, you tried to simulate a mono-energetic peak with MC truth E turned on. Silly!" << endl;
       goto NEW_RANGES;
     }
     

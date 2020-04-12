@@ -531,11 +531,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
 	  yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
 	  yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
-	  FudgeFactor[0] = 1.;//1.02;
-	  FudgeFactor[1] = 1.;//1.05;
+	  FudgeFactor[0] = 1.01;//1.02;
+	  FudgeFactor[1] = 0.95;//1.05;
 	  yields.PhotonYield *= FudgeFactor[0];
 	  yields.ElectronYield*=FudgeFactor[1];
-	  detector->set_noiseL(1.4e-2, 1.4e-2); // XENON10: 5.5, 2.2
+	  detector->set_noiseL(1.4e-2, 1.8e-2); // XENON10: 5.5, 2.2
 	}
 	else
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
@@ -603,15 +603,16 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       if ( scint2[5] > maxS2 || scint2[7] > maxS2 )
 	cerr << "WARNING: Some S2 pulse areas are greater than maxS2" << endl;
     }
-
+    
+    double Nph = 0.0, Ne = 0.0;
     if (!MCtruthE) {
-      double Nph, Ne, MultFact = 1., eff = detector->get_sPEeff();
+      double MultFact = 1., eff = detector->get_sPEeff();
       if ( useTiming >= 0 ) {
 	if ( detector->get_sPEthr() >= 0. && detector->get_sPEres() > 0. && eff > 0. ) {
 	  MultFact = 0.5*(1.+erf((detector->get_sPEthr()-1.)/(detector->get_sPEres()*sqrt(2.)))) / (detector->get_sPEres()*sqrt(2.*M_PI));
-          MultFact = 1./(1.-MultFact); MultFact = 1.02+(MultFact-1.02)/(1.+pow(g1*Nph/detector->get_numPMTs(),2.)); //2% from Emily Mangus
+          MultFact = 1./(1.-MultFact); MultFact = 1.02+(MultFact-1.02)/(1.+pow(scint[0]/detector->get_numPMTs(),2.)); //2% by Emily Mangus
 	  if ( eff < 1. )
-	    eff += ((1.-eff)/(1.*double(detector->get_numPMTs())))*(g1*Nph);
+	    eff += ((1.-eff)/(1.*double(detector->get_numPMTs())))*scint[0];
 	  if ( eff > 1. ) eff = 1.;
 	  if ( eff < 0. ) eff = 0.;
 	  MultFact /= eff;
@@ -653,7 +654,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     else
       signalE.push_back(keV);
     
-    if ( (keVee == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1E+2 && !BeenHere ) { //efficiency is zero?
+    if ( (Ne+Nph == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1E+2 && !BeenHere ) { //efficiency is zero?
       minS1 = -999.;
       minS2 = -999.;
       detector->set_s2_thr(0.0); //since needs GetS2() re-run, only "catches" after the first caught event

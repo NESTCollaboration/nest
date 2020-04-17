@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
   double band2[numBins][7], NRbandX[numBins], NRbandY[numBins],
       numSigma[numBins], leakage[numBins], discrim[numBins],
       errorBars[numBins][2];
-  int i = 0;
+  int i = 0; if ( loopNEST ) verbosity = false;
 
   if (argc < 2) {
     cout << endl
@@ -300,10 +300,15 @@ if ( mode == 1 ) {
       //cout.precision(3);
       //if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
       //if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
-      //cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << endl; //abbreviated #only version
-      cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width. ";
-      cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width, mean*width)" << endl;
-      cout << "%-errors of the form (1/N)*sum{(data-NEST)/data} for mean and width are " << chi2[2] << " and " << chi2[3] << " (averages)" << endl;
+      if ( loopNEST ) { //abbreviated #only version
+	cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << "\t" << chi2[2] << "\t" << chi2[3] << "\t"
+	     << band[0][2] << "\t" << band[0][3] << endl;
+      }
+      else {
+	cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width. ";
+	cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width, mean*width)" << endl;
+	cout << "%-errors of the form (1/N)*sum{(data-NEST)/data} for mean and width are " << chi2[2] << " and " << chi2[3] << " (averages)" << endl;
+      }
       if (!loop) break;
     }
     if (!loop) break;
@@ -466,15 +471,16 @@ void GetFile(char* fileName) {
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne,
       S1cor_phe, S2cor_phe, S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr,
       S2raw_phe, S2cor_phd;
-
-  while (EOF != (ch = getc(ifp))) {
-    if ('\n' == ch && nLines)
-      break;
-    else
-      nLines = 0;
-    if (']' == ch && nLines == 0) nLines++;
+  
+  if ( verbosity ) {
+    while (EOF != (ch = getc(ifp))) {
+      if ('\n' == ch && nLines)
+	break;
+      else
+	nLines = 0;
+      if (']' == ch && nLines == 0) nLines++; }
   }
-
+  
   while (1) {
     fscanf(ifp,
            "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
@@ -675,14 +681,15 @@ void GetFile(char* fileName) {
   if (!loop) {
     // fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist
     // Sigma\t\tEff[%%>thr]\n");
-    fprintf(stdout,
-            "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig "
-            "Error\tX^2/DOF\n");
-    for (o = 0; o < numBins; o++) {
-      // fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
-      fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0],
-              band[o][1], band[o][2], band[o][4], band[o][3], band[o][5],
-              band[o][6]);
+    if ( verbosity ) {
+      fprintf(stdout,
+	      "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig "
+	      "Error\tX^2/DOF\n");
+      for (o = 0; o < numBins; o++) {
+	// fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
+	fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0],
+		band[o][1], band[o][2], band[o][4], band[o][3], band[o][5],
+		band[o][6]); }
     }
   }
   return;

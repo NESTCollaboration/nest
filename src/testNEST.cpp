@@ -21,6 +21,7 @@
 using namespace std;
 using namespace NEST;
 
+vector<double> FreeParam;
 double band[NUMBINS_MAX][7];
 double energies[3];
 bool BeenHere = false;
@@ -53,28 +54,81 @@ int main(int argc, char** argv) {
     return 1;
   }
   
-  unsigned long int numEvts = (unsigned long)atof(argv[1]);
-  if ( numEvts <= 0 ) {
-    cerr << "ERROR, you must simulate at least 1 event" << endl;
-    return 1;
+  unsigned long int numEvts;
+  string type, position, posiMuon;
+  double eMin, eMax, inField, fPos;
+  int seed; bool no_seed = false;
+  if ( loopNEST ) {
+    
+    numEvts = 100000; //10,000 faster but of course less precise
+    type = "ER";
+    eMin = 0.00;
+    eMax = 156.; //Carbon-14
+    inField = -1.;
+    position = "-1";
+    posiMuon = "-1";
+    fPos = -1.;
+    seed = 0;
+    no_seed = false;
+    FreeParam.clear();
+    verbosity = false;
+    useTiming = 0; //-1 for faster (less accurate)
+    
+    FreeParam.push_back(atof(argv[1])); //0.00 for LUX C-14 ~200V/cm
+    FreeParam.push_back(atof(argv[2])); //0.5
+    FreeParam.push_back(atof(argv[3])); //0.05
+    FreeParam.push_back(atof(argv[4])); //-0.5
+    FreeParam.push_back(atof(argv[5])); //1.10
+    FreeParam.push_back(atof(argv[6])); //0.96
+    FreeParam.push_back(atof(argv[7])); //8e-2
+    FreeParam.push_back(atof(argv[7])); //repeat
+    
   }
-  string type = argv[2];
-  double eMin = atof(argv[3]);
-  double eMax = atof(argv[4]);
-  double inField = atof(argv[5]);
-  string position = argv[6];
-  string posiMuon = argv[4];
-  double fPos = atof(argv[6]);
-
-  int seed = 0; //if not given->0
-  bool no_seed;
-  if (argc == 8) {
-    seed = atoi(argv[7]);
-  } else {
-    RandomGen::rndm()->SetSeed(0);
-    no_seed = true;
+  else {
+    
+    numEvts = (unsigned long)atof(argv[1]);
+    if ( numEvts <= 0 ) {
+      cerr << "ERROR, you must simulate at least 1 event" << endl;
+      return 1;
+    }
+    type = argv[2];
+    eMin = atof(argv[3]);
+    eMax = atof(argv[4]);
+    inField = atof(argv[5]);
+    position = argv[6];
+    posiMuon = argv[4];
+    fPos = atof(argv[6]);
+    
+    seed = 0; //if not given make 0
+    if (argc == 8) {
+      seed = atoi(argv[7]);
+    }
+    else {
+      RandomGen::rndm()->SetSeed(0);
+      no_seed = true;
+    }
+    
+    FreeParam.clear();
+    if ( type == "ER" ) {
+      FreeParam.push_back(0.500);//LUX Run03
+      FreeParam.push_back(0.5);
+      FreeParam.push_back(1.1);
+      FreeParam.push_back(-5.);
+      FreeParam.push_back(1.01);
+      FreeParam.push_back(0.95);
+      FreeParam.push_back(1.4e-2);
+      FreeParam.push_back(1.8e-2);
+    }
+    else {
+      FreeParam.push_back(1.00); // Fi (Fano factor for ionization)
+      FreeParam.push_back(1.00); // Fex
+      FreeParam.push_back(0.10); // amplitude for non-binomial recombination fluctuations
+      FreeParam.push_back(0.50); // center in e-Frac
+      FreeParam.push_back(0.19); // width parameter (Gaussian 1-sigma)
+    }
+    
   }
-
+  
   return testNEST(detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos,
                   seed, no_seed);
 }
@@ -93,11 +147,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   }
 
   vector<double> signal1, signal2, signalE, vTable,
-    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.},
+    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
     // alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota for NR model
     // last 3 are the secret extra parameters for additional flexibility
-    FreeParam = {1.,1.,0.10,0.5,0.19};
-    // Fi, Fex, and 3 non-binomial recombination fluctuation parameters
   string delimiter, token;
   size_t loc;
   int index;
@@ -523,7 +575,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 					    double(massNum), double(atomNum), NuisParam);
 	  YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
 					    double(massNum), double(atomNum), NuisParam);
-	  double weightG = .5 + .5 * erf ( 1.1 * ( log ( keV ) - 5. ) ); // Xe10:.82,.43,-2.7,-1.3
+	  double weightG = FreeParam[0] + FreeParam[1] * erf ( FreeParam[2] * ( log ( keV ) + FreeParam[3] ) ); // Xe10:.82,.43,-2.7,-1.3
 	  double weightB = 1. - weightG;
 	  yields.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
 	  yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;
@@ -531,16 +583,20 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
 	  yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
 	  yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
-	  FudgeFactor[0] = 1.01;//1.02;
-	  FudgeFactor[1] = 0.95;//1.05;
+	  FudgeFactor[0] = FreeParam[4];//1.02;
+	  FudgeFactor[1] = FreeParam[5];//1.05;
 	  yields.PhotonYield *= FudgeFactor[0];
 	  yields.ElectronYield*=FudgeFactor[1];
-	  detector->set_noiseL(1.4e-2, 1.8e-2); // XENON10: 5.5, 2.2
+	  detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 5.5, 2.2
 	}
-	else
+	else {
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
+	}
+	//FreeParam.clear();
+	//FreeParam = { 1.00, 1.00, 0.100, 0.50, 0.19 };
         quanta = n.GetQuanta(yields, rho, FreeParam);
-      } else {
+      }
+      else {
         yields.PhotonYield = 0.;
         yields.ElectronYield = 0.;
         yields.ExcitonRatio = 0.;

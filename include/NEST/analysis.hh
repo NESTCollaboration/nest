@@ -1,6 +1,8 @@
 
 // Verbosity flag (for limiting output to yields; no timing)
 bool verbosity = true;
+// Loop for testNEST and rootNEST to find the best-fit model parameters
+unsigned loopNEST = 0;
 
 // General parameters of importance changing the global behavior
 bool MCtruthE = false;    // false means reconstructed energy
@@ -24,7 +26,7 @@ int numBins = 98; //for DD, change these to 1.7,110.6,99
 // minS2 need not match S2 threshold in detector.hh
 // you can treat as trigger vs. analysis thresholds
 double minS2 = 42.;
-double maxS2 = 1e4; //5e3 for DD
+double maxS2 = 1e4; //5e3 for DD. At least 2e5 for post-Run04 14C
 
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
 double logMax = 3.6;

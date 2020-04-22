@@ -20,6 +20,7 @@ class RandomGen {
   double rand_uniform();
   double rand_gauss(double mean, double sigma);
   double rand_exponential(double half_life);
+  double rand_skewGauss( double xi, double omega, double alpha);
   int poisson_draw(double mean);
   int integer_range(int min, int max);
   vector<double> VonNeumann(double xMin, double xMax, double yMin, double yMax,

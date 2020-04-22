@@ -261,9 +261,14 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
+  double skewness = 2.25;
+
+  double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
+  double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
   Ne = int(floor(
-      RandomGen::rndm()->rand_gauss((1. - recombProb) * Ni, sqrt(Variance)) +
-      0.5));
+       RandomGen::rndm()->rand_skewGauss((1. - recombProb) * Ni - muCorrection, sqrt(Variance) / widthCorrection, skewness) +
+       0.5));
+
   if (Ne < 0) Ne = 0;
   if (Ne > Ni) Ne = Ni;
 

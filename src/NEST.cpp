@@ -8,7 +8,7 @@ using namespace std;
 using namespace NEST;
 
 const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
-const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.07};
+const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19};
 
 long NESTcalc::BinomFluct(long N0, double prob) {
   double mean = N0 * prob;
@@ -37,7 +37,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
                                      vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.07}*/,
+				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.19}*/,
                                      bool do_times /*=true*/) {
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
@@ -123,7 +123,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
   return return_photons;
 }
 
-double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/)
+double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19}*/)
 {
   double omega = FreeParam[2]*exp(-0.5*pow(elecFrac-FreeParam[3],2.)/(FreeParam[4]*FreeParam[4]));
   if ( omega < 0. )
@@ -162,7 +162,7 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 
 
 QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
-				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/) {
+				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.019}*/) {
   QuantaResult result;
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -261,9 +261,14 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
+  double skewness = 2.25;
+
+  double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
+  double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
   Ne = int(floor(
-      RandomGen::rndm()->rand_gauss((1. - recombProb) * Ni, sqrt(Variance)) +
-      0.5));
+       RandomGen::rndm()->rand_skewGauss((1. - recombProb) * Ni - muCorrection, sqrt(Variance) / widthCorrection, skewness) +
+       0.5));
+
   if (Ne < 0) Ne = 0;
   if (Ne > Ni) Ne = Ni;
 

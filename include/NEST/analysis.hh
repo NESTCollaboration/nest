@@ -35,6 +35,7 @@ double logMin = 0.6;
 // some numbers for fine-tuning the speed vs. the accuracy
 double z_step = 0.1;  // mm, for integrating non-uniform field
 double E_step = 5.0;  // keV, for integrating WIMP spectrum
+// Rec >~20GeV 6keV, <~5GeV 0.5keV
 
 // Set the rootNEST options
 int freeParam = 2; // #free param for calculating DoF in X^2

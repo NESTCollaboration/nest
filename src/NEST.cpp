@@ -162,7 +162,7 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 
 
 QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
-				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.019}*/) {
+				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19}*/) {
   QuantaResult result;
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -402,15 +402,16 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   double fieldDep = pow(1. + pow(dfield / 95., 8.7), 0.0592);
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
   double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
-  if ( A1 == 206. && Z1 == 82. )
-    ThomasImel = 80. * pow ( dfield, -0.87 );
+  if ( A1 == 206. && Z1 == 82. ) {
+    ThomasImel = 79.9 * pow ( dfield, -0.868 ); //Nishat Parveen
+  }
   const double logden = log10(density);
   double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
           123.73 * pow(logden, 3.) - 136.47 * pow(logden, 4.) -
           74.194 * pow(logden, 5.) - 20.276 * pow(logden, 6.) -
           2.2352 * pow(logden, 7.);
   double alpha = 0.64 / pow(1. + pow(density / 10., 2.), 449.61);
-  double NexONi = alpha + 0.00178 * pow(atomNum, 1.587);
+  double NexONi = alpha + 0.00178 * pow(atomNum, 1.587); //Wq_eV=13.7;ThomasImel=0.05;NexONi=0.05;
   double Nq = 1e3 * L * energy / Wq_eV;
   double Ni = Nq / (1. + NexONi);
   double recombProb;

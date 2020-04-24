@@ -5,8 +5,8 @@
 #include "VDetector.hh"
 using namespace std;
 
-//NOTES: best g1 for DD 0.118, but for tritium 0.1144; S2 noise 1.3, 6.6%; g1_gas 0.1022, 0.1013
-//s2fano 3.4, 1.8; eField in gas 6.25, 6.2; e- life 650, 750 us; fid vol 80-130, 38-305 us; gasGap 4.25, 4.5 mm
+//NOTES: best g1 for DD 0.1193, but for tritium 0.1146; S2 noise 1.9, 7.5%; g1_gas 0.1019, 0.1012
+//s2fano 3.6, 0.9; eField in gas 6.25, 6.2; e- life 650, 750 us; fid vol 80-130, 38-305 us; gasGap 4.25, 4.5 mm
 //DISCLAIMER: Slight differences from official published values due to private LUX algorithms
 
 class DetectorExample_LUX_RUN03: public VDetector {
@@ -26,7 +26,7 @@ public:
   virtual void Initialization() {
     
     // Primary Scintillation (S1) parameters
-    g1 = 0.116; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim
+    g1 = 0.1170; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim
     sPEres = 0.37; //arXiv:1910.04211
     sPEthr = (0.3*1.173)/0.915; //arXiv:1910.04211
     sPEeff = 1.00; //arXiv:1910.04211
@@ -42,13 +42,13 @@ public:
     
     extraPhot =false; //default
     noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
-    noiseL[1]=4.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[1]=5.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.102; //0.1 in 1910.04211
-    s2Fano = 2.6; //3.7 in 1910.04211; this matches 1608.05381 better
-    s2_thr = 128.;//(150.*1.173)/0.915; //65-194 pe in 1608.05381
-    E_gas = 6.21; //6.55 in 1910.04211
+    g1_gas = 0.1016; //0.1 in 1910.04211
+    s2Fano = 2.2; //3.7 in 1910.04211; this matches 1608.05381 better
+    s2_thr = 165.;//(150.*1.173)/0.915; //65-194 pe in 1608.05381
+    E_gas = 6.23; //6.55 in 1910.04211
     eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown
     
     // Thermodynamic Properties
@@ -202,7 +202,7 @@ public:
   
   // Vary VDetector parameters through custom functions
   virtual void ExampleFunction() { set_g1(0.1167); }
-  virtual void ExampleFunction2() { set_molarMass(131.); }
+  virtual void ExampleFunction2() { set_molarMass(132.); }
 };
 
 #endif

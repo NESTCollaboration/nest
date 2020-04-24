@@ -27,7 +27,7 @@ using namespace NEST;
 int main(int argc, char** argv) {
   // Give a message establishing the use of this code
   cerr << "NOTE: This is a skeleton code meant to be a starting point for "
-          "custom uses of NEST." << endl
+          "custom uses of NEST. But you should really look at testNEST." << endl
        << endl;
 
   // Instantiate your own VDetector class here, then load into NEST class

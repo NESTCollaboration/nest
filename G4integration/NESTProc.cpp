@@ -73,7 +73,7 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
   VDetector* detector = fNESTcalc->GetDetector();
   G4double sampledEnergy = 7.08 * eV;  // default if non-detailed secondaries
   if (detailed_secondaries)
-    G4double sampledEnergy =
+    sampledEnergy =
         fNESTcalc->PhotonEnergy(false /*i.e. S1*/, detector->get_inGas(),
                                 detector->get_T_Kelvin()) *
         eV;

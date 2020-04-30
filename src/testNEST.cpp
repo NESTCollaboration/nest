@@ -74,12 +74,12 @@ int main(int argc, char** argv) {
     verbosity = false;
     useTiming = 0; //-1 for faster (less accurate)
     
-    FreeParam.push_back(atof(argv[1])); //0.00 for LUX C-14 ~200V/cm
+    FreeParam.push_back(atof(argv[1])); //-0.1 for LUX C-14 ~200V/cm
     FreeParam.push_back(atof(argv[2])); //0.5
-    FreeParam.push_back(atof(argv[3])); //0.05
-    FreeParam.push_back(atof(argv[4])); //-0.5
-    FreeParam.push_back(atof(argv[5])); //1.10
-    FreeParam.push_back(atof(argv[6])); //0.96
+    FreeParam.push_back(atof(argv[3])); //0.06
+    FreeParam.push_back(atof(argv[4])); //-0.6
+    FreeParam.push_back(atof(argv[5])); //1.11
+    FreeParam.push_back(atof(argv[6])); //0.95
     FreeParam.push_back(atof(argv[7])); //8e-2
     FreeParam.push_back(atof(argv[7])); //repeat
     
@@ -575,7 +575,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 					    double(massNum), double(atomNum), NuisParam);
 	  YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
 					    double(massNum), double(atomNum), NuisParam);
-	  double weightG = FreeParam[0] + FreeParam[1] * erf ( FreeParam[2] * ( log ( keV ) + FreeParam[3] ) ); // Xe10:.82,.43,-2.7,-1.3
+	  double weightG = FreeParam[0] + FreeParam[1] * erf ( FreeParam[2] * ( log ( keV ) + FreeParam[3] ) ); // Xe10:1,.55,-1.6,-1.0
 	  double weightB = 1. - weightG;
 	  yields.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
 	  yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;
@@ -583,11 +583,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
 	  yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
 	  yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
-	  FudgeFactor[0] = FreeParam[4];//1.02;
-	  FudgeFactor[1] = FreeParam[5];//1.05;
+	  FudgeFactor[0] = FreeParam[4];//0.99;
+	  FudgeFactor[1] = FreeParam[5];//1.04;
 	  yields.PhotonYield *= FudgeFactor[0];
 	  yields.ElectronYield*=FudgeFactor[1];
-	  detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 5.5, 2.2
+	  detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
 	}
 	else {
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
@@ -671,7 +671,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	    eff += ((1.-eff)/(1.*double(detector->get_numPMTs())))*scint[0];
 	  if ( eff > 1. ) eff = 1.;
 	  if ( eff < 0. ) eff = 0.;
-	  MultFact /= eff;
+	  MultFact /= eff; //for smaller detectors leave it as 1.00
 	}
 	else MultFact = 1.;
       }

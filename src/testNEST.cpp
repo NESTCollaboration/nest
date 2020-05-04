@@ -21,7 +21,7 @@
 using namespace std;
 using namespace NEST;
 
-vector<double> FreeParam;
+vector<double> FreeParam,  NuisParam;
 double band[NUMBINS_MAX][7];
 double energies[3];
 bool BeenHere = false;
@@ -61,7 +61,10 @@ int main(int argc, char** argv) {
   if ( loopNEST ) {
     
     numEvts = 100000; //10,000 faster but of course less precise
-    type = "ER";
+    if ( loopNEST == 1 )
+      type = "ER";
+    else
+      type = "NR";
     eMin = 0.00;
     eMax = 156.; //Carbon-14
     inField = -1.;
@@ -70,18 +73,60 @@ int main(int argc, char** argv) {
     fPos = -1.;
     seed = 0;
     no_seed = false;
-    FreeParam.clear();
+    FreeParam.clear(); NuisParam.clear();
     verbosity = false;
     useTiming = 0; //-1 for faster (less accurate)
     
-    FreeParam.push_back(atof(argv[1])); //-0.1 for LUX C-14 ~200V/cm
-    FreeParam.push_back(atof(argv[2])); //0.5
-    FreeParam.push_back(atof(argv[3])); //0.06
-    FreeParam.push_back(atof(argv[4])); //-0.6
-    FreeParam.push_back(atof(argv[5])); //1.11
-    FreeParam.push_back(atof(argv[6])); //0.95
-    FreeParam.push_back(atof(argv[7])); //8e-2
-    FreeParam.push_back(atof(argv[7])); //repeat
+    if ( type == "ER" ) {
+      
+      FreeParam.push_back(atof(argv[1])); //-0.1 for LUX C-14 ~200V/cm
+      FreeParam.push_back(atof(argv[2])); //0.5
+      FreeParam.push_back(atof(argv[3])); //0.06
+      FreeParam.push_back(atof(argv[4])); //-0.6
+      FreeParam.push_back(atof(argv[5])); //1.11
+      FreeParam.push_back(atof(argv[6])); //0.95
+      FreeParam.push_back(atof(argv[7])); //8e-2
+      FreeParam.push_back(atof(argv[7])); //repeat
+      
+      NuisParam.push_back(11.);
+      NuisParam.push_back(1.1);
+      NuisParam.push_back(0.0480);  
+      NuisParam.push_back(-0.0533);
+      NuisParam.push_back(12.6);
+      NuisParam.push_back(0.3);
+      NuisParam.push_back(2.);
+      NuisParam.push_back(0.3);
+      NuisParam.push_back(2.);
+      NuisParam.push_back(0.5);  
+      NuisParam.push_back(1.0);
+      NuisParam.push_back(1.0);
+      
+    }
+    
+    else {
+      
+      NuisParam.push_back(atof(argv[1])); //11.0 XENON10
+      NuisParam.push_back(atof(argv[2])); //1.09
+      NuisParam.push_back(0.0480);
+      NuisParam.push_back(-0.0533);
+      NuisParam.push_back(12.6);
+      NuisParam.push_back(0.3);
+      NuisParam.push_back(2.);
+      NuisParam.push_back(0.3);
+      NuisParam.push_back(atof(argv[3])); //2.00
+      NuisParam.push_back(0.5);
+      NuisParam.push_back(1.0);
+      NuisParam.push_back(1.0);
+      detector->set_g1(atof(argv[5])); //0.0725
+      detector->set_g1_gas(atof(argv[6])); //0.0622
+      detector->set_noiseL(atof(argv[7]),atof(argv[7])); //0,0
+      FreeParam.push_back(1.00);
+      FreeParam.push_back(1.00);
+      FreeParam.push_back(atof(argv[4])); //0.070
+      FreeParam.push_back(0.50);
+      FreeParam.push_back(0.19);
+      
+    }
     
   }
   else {
@@ -109,6 +154,7 @@ int main(int argc, char** argv) {
     }
     
     FreeParam.clear();
+    NuisParam.clear();
     if ( type == "ER" ) {
       FreeParam.push_back(0.500);//LUX Run03
       FreeParam.push_back(0.5);
@@ -126,6 +172,19 @@ int main(int argc, char** argv) {
       FreeParam.push_back(0.50); // center in e-Frac
       FreeParam.push_back(0.19); // width parameter (Gaussian 1-sigma)
     }
+    NuisParam.push_back(11.); //alpha, for NR model. See http://nest.physics.ucdavis.edu
+    NuisParam.push_back(1.1); //beta
+    NuisParam.push_back(0.0480); //gamma
+    NuisParam.push_back(-0.0533); //delta
+    NuisParam.push_back(12.6); //epsilon
+    NuisParam.push_back(0.3); //zeta
+    NuisParam.push_back(2.); //eta
+    NuisParam.push_back(0.3); //theta
+    NuisParam.push_back(2.); //iota
+    // last 3 are the secret extra parameters for additional flexibility
+    NuisParam.push_back(0.5); //changes sqrt in Qy equation
+    NuisParam.push_back(1.0); //makes low-E sigmoid an asymmetric one, for charge
+    NuisParam.push_back(1.0); //makes low-E sigmoid an asymmetric one, for light
     
   }
   
@@ -146,10 +205,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     return 1;
   }
 
-  vector<double> signal1, signal2, signalE, vTable,
-    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
-    // alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota for NR model
-    // last 3 are the secret extra parameters for additional flexibility
+  vector<double> signal1, signal2, signalE, vTable;
   string delimiter, token;
   size_t loc;
   int index;

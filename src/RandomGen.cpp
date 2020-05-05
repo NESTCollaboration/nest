@@ -55,7 +55,7 @@ double RandomGen::rand_skewGauss(double xi, double omega, double alpha) {
   //the height should be the value of the PDF at the mode
   double height = exp( -0.5*( pow((mode - xi)/omega, 2.) ) ) / ( sqrt( 2.*M_PI ) * omega ) * erfc( -1.*alpha*(mode - xi)/omega/sqrt(2.) );
   bool gotValue = false;
-  double minX = xi - 6.*omega; double maxX = xi + 6.*omega;  // +/- 6sigma should be essentially +/- inifinity
+  double minX = xi - 6.*omega; double maxX = xi + 6.*omega;  // +/- 6sigma should be essentially +/- infinity
                                                              //  can increase these for even better accuracy, at the cost of speed
   double testX, testY, testProb;
   while ( gotValue == false ){

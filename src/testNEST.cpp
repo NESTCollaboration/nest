@@ -90,14 +90,14 @@ int main(int argc, char** argv) {
       
       NuisParam.push_back(11.);
       NuisParam.push_back(1.1);
-      NuisParam.push_back(0.0480);  
+      NuisParam.push_back(0.0480);
       NuisParam.push_back(-0.0533);
       NuisParam.push_back(12.6);
       NuisParam.push_back(0.3);
       NuisParam.push_back(2.);
       NuisParam.push_back(0.3);
       NuisParam.push_back(2.);
-      NuisParam.push_back(0.5);  
+      NuisParam.push_back(0.5);
       NuisParam.push_back(1.0);
       NuisParam.push_back(1.0);
       

@@ -3,6 +3,7 @@
 bool verbosity = true;
 // Loop for testNEST and rootNEST to find the best-fit model parameters
 unsigned loopNEST = 0;
+//0 for no or off, 1 for ER, 2 for NR
 
 // General parameters of importance changing the global behavior
 bool MCtruthE = false;    // false means reconstructed energy
@@ -31,6 +32,7 @@ double maxS2 = 1e4; //5e3 for DD. At least 2e5 for post-Run04 14C
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
 double logMax = 3.6;
 double logMin = 0.6;
+int logBins = 50; //#bins in between logMin & logMax for fits
 
 // some numbers for fine-tuning the speed vs. the accuracy
 double z_step = 0.1;  // mm, for integrating non-uniform field
@@ -39,6 +41,7 @@ double E_step = 5.0;  // keV, for integrating WIMP spectrum
 
 // Set the rootNEST options
 int freeParam = 2; // #free param for calculating DoF in X^2
+bool skewness = false; // true means skew-Gaussian fits
 int mode = 1;
 //0 default is to provide the ER BG discrimination & leakage frac
 //1 outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)

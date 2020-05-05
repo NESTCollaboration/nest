@@ -838,7 +838,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       delete f;
     }
     else {
-      TF1* f = new TF1("band", "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-0.5*(x-[1])^2/[2]^2)*(1.+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))");
+      TF1* f = new TF1("band", "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-0.5*(x-[1])^2/[2]^2)*(1.+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))", logMin, logMax);
       //equation inspired by Vetri Velan
       double amplEstimate = signals[j].size();
       double alphaEstimate = EstimateSkew(band[j][2],band[j][3],signals[j]);
@@ -850,7 +850,10 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       HistogramArray[j].Fit(f, "Q");
       deltaEstimate = f->GetParameter(3) / sqrt ( 1. + f->GetParameter(3) * f->GetParameter(3) );
       band[j][2] =f->GetParameter(1) + f->GetParameter(2) * deltaEstimate * sqrt(2./TMath::Pi());
-      band[j][3] =f->GetParameter(2) * sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi() );
+      if ( mode == 0 )
+	band[j][3]=0.5*f->GetParameter(2)*(1.+sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi()));
+      else
+	band[j][3] =f->GetParameter(2) * sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi() );
       band[j][4]= f->GetParameter(3);
       band[j][5] = f->GetParError(1);
       band[j][6] = f->GetParError(2);
@@ -864,7 +867,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 	chiSq += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom; //combined Pearson-Neyman chi-squared (Matthew Sz.)
       }
       chiSq /= ( double(logBins) - 4. - 1. ); band[j][8] = chiSq;
-      if ( chiSq > 5. || band[j][2] > 7. || band[j][5] > 1. || fabs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
+      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 1. || fabs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
 	   band[j][2] <= 0. || band[j][3] <= 0. )
 	{ xiEstimate = f->GetParameter(1); omegaEstimate = f->GetParameter(2); alphaEstimate = 0.0; cerr << "Re-fitting...\n"; goto RETRY; }
       delete f;

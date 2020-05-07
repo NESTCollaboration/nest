@@ -20,6 +20,9 @@
 #include "TH1F.h"
 #include "TMath.h"
 #include "TRandom3.h"
+#include "TFitResult.h"
+#include "TFitResultPtr.h"
+#include "TMatrixDSym.h"
 
 #include <string.h>
 #include <vector>
@@ -37,7 +40,28 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals);
 vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
                                 bool resol);
 TRandom3 r;  // r.SetSeed(10);
-double band[NUMBINS_MAX][9], band2[NUMBINS_MAX][9];
+
+double band[NUMBINS_MAX][17], band2[NUMBINS_MAX][17];
+/* 
+band[bin][0] = s1c_center
+band[bin][1] = s1c_actual_mean
+band[bin][2] = log(S2/S1) mean
+band[bin][3] = log(S2/S1) stddev
+band[bin][4] = log(S2/S1) alpha
+band[bin][5] = log(S2/S1) mean error
+band[bin][6] = log(S2/S1) stddev error
+band[bin][7] = log(S2/S1) alpha error
+band[bin][8] = log(S2/S1) chi2/ndf (NEST)
+band[bin][9] = log(S2/S1) xi
+band[bin][10] = log(S2/S1) xi error
+band[bin][11] = log(S2/S1) omega
+band[bin][12] = log(S2/S1) omega error
+band[bin][13] = log(S2/S1) covariance xi-omega
+band[bin][14] = log(S2/S1) covariance xi-alpha
+band[bin][15] = log(S2/S1) covariance omega-alpha
+band[bin][16] = log(S2/S1) chi2/ndf (ROOT)
+*/
+
 void GetFile(char* fileName);
 vector<vector<double> > outputs, inputs;
 
@@ -52,6 +76,7 @@ int modPoisRnd(double poisMean, double preFactor);  // not used currently, but
 int modBinom(int nTot, double prob,
              double preFactor);  // just like above, but for binomial
 double EstimateSkew ( double mean, double sigma, vector<double> data );
+double owens_t(double h, double a);
 
 bool loop = false;
 double g1x = 1.0, g2x = 1.0;  // for looping over small changes in g1 and g2
@@ -319,6 +344,7 @@ if ( mode == 1 ) {
 }
 
   if (leak) {
+    cout << endl << "Calculating band for second dataset" << endl;
     GetFile(argv[2]);
     for (i = 0; i < numBins; i++) {
       band2[i][0] = band[i][0];
@@ -332,6 +358,8 @@ if ( mode == 1 ) {
       band2[i][8] = band[i][8];
     }
   }
+
+  cout << endl << "Calculating band for first dataset" << endl;
   GetFile(argv[1]);
   if (leak) {
     double finalSums[3] = {0., 0., 0.};
@@ -351,30 +379,76 @@ if ( mode == 1 ) {
               "error\tDiscrim[%%]\tReal-Gaus Leak\n");
     }
     for (i = 0; i < numBins; i++) {
-      if (ERis2nd) {
-        numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
-        errorBars[i][0] =
+
+      if (!skewness) {
+        if (ERis2nd) {
+          numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
+          errorBars[i][0] =
             (band2[i][2] - band2[i][5] - band[i][2] - band[i][5]) /
             (band2[i][3] + band2[i][6]);  // upper (more leakage)
-        errorBars[i][1] =
+          errorBars[i][1] =
             (band2[i][2] + band2[i][5] - band[i][2] + band[i][5]) /
             (band2[i][3] - band2[i][6]);  // lower (less leakage)
-        NRbandX[i] = band[i][0];
-        NRbandY[i] = band[i][2];
-      } else {
-        numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
-        errorBars[i][0] =
+          NRbandX[i] = band[i][0];
+          NRbandY[i] = band[i][2];
+        }
+        else {
+          numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
+          errorBars[i][0] =
             (band[i][2] - band[i][5] - band2[i][2] - band2[i][5]) /
             (band[i][3] + band[i][6]);  // upper (more leakage)
-        errorBars[i][1] =
+          errorBars[i][1] =
             (band[i][2] + band[i][5] - band2[i][2] + band2[i][5]) /
             (band[i][3] - band[i][6]);  // lower (less leakage)
-        NRbandX[i] = band2[i][0];
-        NRbandY[i] = band2[i][2];
+          NRbandX[i] = band2[i][0];
+          NRbandY[i] = band2[i][2];
+        }
+        leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
+        errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
+        errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
       }
-      leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
-      errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
-      errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
+
+      if (skewness) {
+        if (ERis2nd) {
+          leakage[i] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
+            2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11], band2[i][4]);
+
+          double pdf_at_NR = (1./(band2[i][11]*sqrt(2.*TMath::Pi()))) * exp(-0.5*pow(band[i][2]-band2[i][9],2.)/pow(band2[i][11],2.)) *
+            (1.+erf(band2[i][4]*(band[i][2]-band2[i][9])/(band2[i][11]*sqrt(2.))));
+          double dlkg_dx = pdf_at_NR;
+          double dlkg_dxi = -1. * pdf_at_NR;
+          double dlkg_domega = -1. * (band[i][2] - band2[i][9]) / band2[i][11] * pdf_at_NR;
+          double dlkg_dalpha = -1. / TMath::Pi() / (1. + pow(band2[i][4],2.)) * 
+            exp(-1. * (1. + pow(band2[i][4],2.)) * pow((band[i][2] - band2[i][9]),2.) / 2. / pow(band2[i][11],2.));
+
+          errorBars[i][0] = sqrt(0. +
+            pow(dlkg_dx,2.) * pow(band[i][5],2.) + pow(dlkg_dxi,2.) * pow(band2[i][10],2.) +
+            pow(dlkg_domega,2.) * pow(band2[i][12],2.) + pow(dlkg_dalpha,2.) * pow(band2[i][7],2.) + 
+            2 * dlkg_dxi * dlkg_domega * band2[i][13] + 2 * dlkg_domega * dlkg_dalpha * band2[i][15] +
+            2 * dlkg_dxi * dlkg_dalpha * band2[i][14]);
+          errorBars[i][1] = errorBars[i][0];
+        }
+        else {
+          leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
+            2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
+
+          double pdf_at_NR = (1./(band[i][11]*sqrt(2.*TMath::Pi()))) * exp(-0.5*pow(band2[i][2]-band[i][9],2.)/pow(band[i][11],2.)) *
+            (1.+erf(band[i][4]*(band2[i][2]-band[i][9])/(band[i][11]*sqrt(2.))));
+          double dlkg_dx = pdf_at_NR;
+          double dlkg_dxi = -1. * pdf_at_NR;
+          double dlkg_domega = -1. * (band2[i][2] - band[i][9]) / band[i][11] * pdf_at_NR;
+          double dlkg_dalpha = -1. / TMath::Pi() / (1. + pow(band[i][4],2.)) * 
+            exp(-1. * (1. + pow(band[i][4],2.)) * pow((band2[i][2] - band[i][9]),2.) / 2. / pow(band[i][11],2.));
+
+          errorBars[i][0] = sqrt(0. +
+            pow(dlkg_dx,2.) * pow(band2[i][5],2.) + pow(dlkg_dxi,2.) * pow(band[i][10],2.) +
+            pow(dlkg_domega,2.) * pow(band[i][12],2.) + pow(dlkg_dalpha,2.) * pow(band[i][7],2.) +               
+            2 * dlkg_dxi * dlkg_domega * band[i][13] + 2 * dlkg_domega * dlkg_dalpha * band[i][15] +
+            2 * dlkg_dxi * dlkg_dalpha * band[i][14]);
+          errorBars[i][1] = errorBars[i][0];
+        }
+      }
+
       finalSums[2] += leakage[i];
       discrim[i] = 1. - leakage[i];
     }
@@ -688,16 +762,14 @@ void GetFile(char* fileName) {
     outputs = GetBand_Gaussian(GetBand(S1cor_spike, S2cor_phd, false));
   }
   if (!loop) {
-    // fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist
-    // Sigma\t\tEff[%%>thr]\n");
     if ( verbosity ) {
       fprintf(stdout,
-	      "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig "
-	      "Error\tGaus Skew\tSkew Error\tX^2/DOF\n");
+	      "Bin Center\tBin Actual\tBand Mean\tBand Stddev\tBand Skew\tBand Mean Err\tBand Stddev Err\tBand Skew Err\tX^2 NEST\tX^2 ROOT\n");
       for (o = 0; o < numBins; o++) {
-	// fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
-	fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0], band[o][1], band[o][2], band[o][5], band[o][3], band[o][6],
-		band[o][4], band[o][7], band[o][8]); }
+        fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+          band[o][0], band[o][9], band[o][10], band[o][11], band[o][12], band[o][4], band[o][7], band[o][13], band[o][14], band[o][15],
+          band[o][2], band[o][5], band[o][3], band[o][6]);
+      }
     }
   }
   return;
@@ -838,7 +910,10 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       delete f;
     }
     else {
-      TF1* f = new TF1("band", "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-0.5*(x-[1])^2/[2]^2)*(1.+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))", logMin, logMax);
+
+      TF1* f = new TF1("skewband",
+          "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-0.5*(x-[1])^2/[2]^2)*(1.+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))",
+          logMin - 0.5, logMax + 0.5);
       //equation inspired by Vetri Velan
       double amplEstimate = signals[j].size();
       double alphaEstimate = EstimateSkew(band[j][2],band[j][3],signals[j]);
@@ -846,30 +921,71 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       double omegaEstimate = band[j][3] / sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi() );
       double xiEstimate = band[j][2] - omegaEstimate * deltaEstimate * sqrt(2./TMath::Pi());
     RETRY:
-      f->SetParameters(amplEstimate,xiEstimate,omegaEstimate,alphaEstimate);
-      HistogramArray[j].Fit(f, "Q");
-      deltaEstimate = f->GetParameter(3) / sqrt ( 1. + f->GetParameter(3) * f->GetParameter(3) );
-      band[j][2] =f->GetParameter(1) + f->GetParameter(2) * deltaEstimate * sqrt(2./TMath::Pi());
-      if ( mode == 0 )
-	band[j][3]=0.5*f->GetParameter(2)*(1.+sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi()));
-      else
-	band[j][3] =f->GetParameter(2) * sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi() );
-      band[j][4]= f->GetParameter(3);
-      band[j][5] = f->GetParError(1);
-      band[j][6] = f->GetParError(2);
-      band[j][7] = f->GetParError(3);
+      f->SetParameters(amplEstimate, xiEstimate, omegaEstimate, alphaEstimate);
+      TFitResultPtr res = HistogramArray[j].Fit(f, "QS");
+      double fit_xi = res->Value(1);      double fit_xi_err = res->ParError(1);
+      double fit_omega = res->Value(2);   double fit_omega_err = res->ParError(2);
+      double fit_alpha = res->Value(3);   double fit_alpha_err = res->ParError(3);
+      double fit_delta = fit_alpha / sqrt(1 + fit_alpha * fit_alpha);
+      TMatrixDSym fit_cov = res->GetCovarianceMatrix();
+      double fit_cov_xo = fit_cov[1][2];
+      double fit_cov_xa = fit_cov[1][3];
+      double fit_cov_oa = fit_cov[2][3];
+
+      // Calculate band mean, std dev, and skewness
+      band[j][2] = fit_xi + fit_omega * fit_delta * sqrt(2. / TMath::Pi());
+      band[j][3] = fit_omega * sqrt(1 - 2 * fit_delta * fit_delta / TMath::Pi());
+      band[j][4] = fit_alpha;
+
+      // Calculate error on mean
+      double dmudxi = fit_omega * sqrt(2. / TMath::Pi()) * fit_delta;
+      double dmudomega = sqrt(2. / TMath::Pi()) * fit_delta;
+      double dmudalpha = fit_omega * sqrt(2. / TMath::Pi()) * pow(1 + fit_alpha * fit_alpha, -1.5);
+      band[j][5] = sqrt(dmudxi * dmudxi * fit_xi_err * fit_xi_err + dmudomega * dmudomega * fit_omega_err * fit_omega_err +
+        dmudalpha * dmudalpha * fit_alpha_err * fit_alpha_err + 2 * dmudxi * dmudomega * fit_cov_xo +
+        2 * dmudomega * dmudalpha * fit_cov_oa + 2 * dmudxi * dmudalpha * fit_cov_xa);
+
+      // Calculate error on standard deviation
+      double dvardomega = 2 * fit_omega * (1. - 2. / TMath::Pi() * fit_delta * fit_delta);
+      double dvardalpha = -4. / TMath::Pi() * fit_omega * fit_omega * fit_alpha / (1. + fit_alpha * fit_alpha) / (1. + fit_alpha * fit_alpha);
+      double var_err = sqrt(dvardomega * dvardomega * fit_omega_err * fit_omega_err + 
+        dvardalpha * dvardalpha * fit_alpha_err * fit_alpha_err + 2. * dvardomega * dvardalpha * fit_cov_oa);
+      band[j][6] = 0.5 / band[j][3] * var_err;
+
+      // Store other parameters directly from the fit
+      band[j][7] = fit_alpha_err;
+      band[j][9] = fit_xi;
+      band[j][10] = fit_xi_err;
+      band[j][11] = fit_omega;
+      band[j][12] = fit_omega_err;
+      band[j][13] = fit_cov_xo;
+      band[j][14] = fit_cov_xa;
+      band[j][15] = fit_cov_oa;
+
+      // Store reduced chi2
+      band[j][16] = res->Chi2() / res->Ndf();
+
+      // Calculate reduced chi2 manually
       double chiSq = 0.00, modelValue, xValue, denom;
       for ( int k = 0; k < logBins; k++ ) {
-	xValue = logMin + k * ( logMax - logMin ) / logBins;
-	modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
-	  (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
-	double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);
-	chiSq += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom; //combined Pearson-Neyman chi-squared (Matthew Sz.)
+        xValue = logMin + k * ( logMax - logMin ) / logBins;
+        modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
+          (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
+        double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);
+        chiSq += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom; //combined Pearson-Neyman chi-squared (Matthew Sz.)
       }
-      chiSq /= ( double(logBins) - 4. - 1. ); band[j][8] = chiSq;
-      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 1. || fabs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
-	   band[j][2] <= 0. || band[j][3] <= 0. )
-	{ xiEstimate = f->GetParameter(1); omegaEstimate = f->GetParameter(2); alphaEstimate = 0.0; cerr << "Re-fitting...\n"; goto RETRY; }
+      chiSq /= ( double(logBins) - 4. - 1. );
+      band[j][8] = chiSq;
+
+      // Retry fit if it does not converge.
+      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 2. || band[j][7] > 10. || band[j][3] > 1. || band[j][6] > 0.5 || band[j][2] <= 0.) {
+          xiEstimate = fit_xi;
+          omegaEstimate = fit_omega;
+          alphaEstimate = 0.0;
+          cerr << "Re-fitting...\n";
+          goto RETRY;
+      }
+
       delete f;
     }
   }
@@ -944,4 +1060,22 @@ double EstimateSkew ( double mean, double sigma, vector<double> data ) {
   double alpha = delta / sqrt ( 1. - delta * delta );
   return alpha;
   
+}
+
+double owens_t (double h, double a) {
+
+  int nIntSteps = 2500;
+  double T = 0;
+  double dx = a / nIntSteps;
+  double x = 0;
+  double integrand = 0;
+
+  for (int k = 0; k < nIntSteps; k++) {
+    x = (k + 0.5) * dx;
+    integrand = exp(-0.5 * h * h * (1 + x * x)) / (1 + x * x);
+    T += (integrand * dx);
+  }
+
+  T /= (2. * TMath::Pi());
+  return T;
 }

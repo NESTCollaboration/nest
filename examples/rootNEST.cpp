@@ -45,7 +45,7 @@ double band[NUMBINS_MAX][17], band2[NUMBINS_MAX][17];
 /* 
 band[bin][0] = s1c_center
 band[bin][1] = s1c_actual_mean
-band[bin][2] = log(S2/S1) mean
+band[bin][2] = log(S2/S1) mean, OR log(S2) depending on "useS2." Ditto below
 band[bin][3] = log(S2/S1) stddev
 band[bin][4] = log(S2/S1) alpha
 band[bin][5] = log(S2/S1) mean error
@@ -344,7 +344,7 @@ if ( mode == 1 ) {
 }
 
   if (leak) {
-    cout << endl << "Calculating band for second dataset" << endl;
+    cout << endl << "Calculating band for first dataset" << endl;
     GetFile(argv[2]);
     for (i = 0; i < numBins; i++) {
       band2[i][0] = band[i][0];
@@ -359,14 +359,14 @@ if ( mode == 1 ) {
     }
   }
 
-  cout << endl << "Calculating band for first dataset" << endl;
+  cout << endl << "Calculating band for second dataset" << endl;
   GetFile(argv[1]);
   if (leak) {
     double finalSums[3] = {0., 0., 0.};
     if (band2[0][2] > band[0][2]) {
       ERis2nd = true;
       fprintf(stderr,
-              "Bin Center\tBin Actual\t#StdDev's\tLeak Frac Gaus\t+ error  - "
+              "\nBin Center\tBin Actual\t#StdDev's\tLeak Frac Gaus\t+ error  - "
               "error\tDiscrim[%%]\tLower ''Half''\t+ error  - "
               "error\tUpperHf[%%]\tignore column!\n");
     } else {
@@ -764,12 +764,11 @@ void GetFile(char* fileName) {
   if (!loop) {
     if ( verbosity ) {
       fprintf(stdout,
-	      "Bin Center\tBin Actual\tBand Mean\tBand Stddev\tBand Skew\tBand Mean Err\tBand Stddev Err\tBand Skew Err\tX^2 NEST\tX^2 ROOT\n");
+	      "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig "
+	      "Error\tGaus Skew\tSkew Error\tX^2/DOF\n");
       for (o = 0; o < numBins; o++) {
-        fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-          band[o][0], band[o][9], band[o][10], band[o][11], band[o][12], band[o][4], band[o][7], band[o][13], band[o][14], band[o][15],
-          band[o][2], band[o][5], band[o][3], band[o][6]);
-      }
+	fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0], band[o][1], band[o][2], band[o][5], band[o][3], band[o][6],
+		band[o][4], band[o][7], band[o][8]); }
     }
   }
   return;
@@ -913,45 +912,79 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 
       TF1* f = new TF1("skewband",
           "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-0.5*(x-[1])^2/[2]^2)*(1.+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))",
-          logMin - 0.5, logMax + 0.5);
+		       logMin, logMax); //minimum and maximum in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
       //equation inspired by Vetri Velan
       double amplEstimate = signals[j].size();
       double alphaEstimate = EstimateSkew(band[j][2],band[j][3],signals[j]);
       double deltaEstimate = alphaEstimate / sqrt ( 1. + alphaEstimate * alphaEstimate );
       double omegaEstimate = band[j][3] / sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi() );
       double xiEstimate = band[j][2] - omegaEstimate * deltaEstimate * sqrt(2./TMath::Pi());
+      TFitResultPtr res;
     RETRY:
       f->SetParameters(amplEstimate, xiEstimate, omegaEstimate, alphaEstimate);
-      TFitResultPtr res = HistogramArray[j].Fit(f, "QS");
-      double fit_xi = res->Value(1);      double fit_xi_err = res->ParError(1);
-      double fit_omega = res->Value(2);   double fit_omega_err = res->ParError(2);
-      double fit_alpha = res->Value(3);   double fit_alpha_err = res->ParError(3);
-      double fit_delta = fit_alpha / sqrt(1 + fit_alpha * fit_alpha);
-      TMatrixDSym fit_cov = res->GetCovarianceMatrix();
-      double fit_cov_xo = fit_cov[1][2];
-      double fit_cov_xa = fit_cov[1][3];
-      double fit_cov_oa = fit_cov[2][3];
-
+      if ( skewness == 2 )
+	res = HistogramArray[j].Fit(f, "QS");
+      else
+	HistogramArray[j].Fit(f, "QS");
+      double fit_xi, fit_xi_err, fit_omega, fit_omega_err, fit_alpha, fit_alpha_err;
+      if ( skewness == 2 ) {
+	fit_xi = res->Value(1);
+	fit_xi_err = res->ParError(1);
+	fit_omega = res->Value(2);
+	fit_omega_err = res->ParError(2);
+	fit_alpha = res->Value(3);
+	fit_alpha_err = res->ParError(3);
+      }
+      else {
+	fit_xi = f->GetParameter(1);
+	fit_xi_err = f->GetParError(1);
+	fit_omega = f->GetParameter(2);
+	fit_omega_err = f->GetParError(2);
+	fit_alpha = f->GetParameter(3);
+	fit_alpha_err = f->GetParError(3);
+      }
+      double fit_delta = fit_alpha / sqrt(1. + fit_alpha * fit_alpha);
+      double fit_cov_xo, fit_cov_xa, fit_cov_oa;
+      if ( skewness == 2 ) {
+	TMatrixDSym fit_cov = res->GetCovarianceMatrix();
+	fit_cov_xo = fit_cov[1][2];
+	fit_cov_xa = fit_cov[1][3];
+	fit_cov_oa = fit_cov[2][3];
+      }
+      else {
+	fit_cov_xo = 0.;
+        fit_cov_xa = 0.;
+        fit_cov_oa = 0.;
+      }
+      
       // Calculate band mean, std dev, and skewness
       band[j][2] = fit_xi + fit_omega * fit_delta * sqrt(2. / TMath::Pi());
-      band[j][3] = fit_omega * sqrt(1 - 2 * fit_delta * fit_delta / TMath::Pi());
+      band[j][3] = fit_omega * sqrt(1. - 2. * fit_delta * fit_delta / TMath::Pi());
       band[j][4] = fit_alpha;
 
       // Calculate error on mean
-      double dmudxi = fit_omega * sqrt(2. / TMath::Pi()) * fit_delta;
-      double dmudomega = sqrt(2. / TMath::Pi()) * fit_delta;
-      double dmudalpha = fit_omega * sqrt(2. / TMath::Pi()) * pow(1 + fit_alpha * fit_alpha, -1.5);
-      band[j][5] = sqrt(dmudxi * dmudxi * fit_xi_err * fit_xi_err + dmudomega * dmudomega * fit_omega_err * fit_omega_err +
-        dmudalpha * dmudalpha * fit_alpha_err * fit_alpha_err + 2 * dmudxi * dmudomega * fit_cov_xo +
-        2 * dmudomega * dmudalpha * fit_cov_oa + 2 * dmudxi * dmudalpha * fit_cov_xa);
-
+      if ( skewness == 2 ) {
+	double dmudxi = fit_omega * sqrt(2. / TMath::Pi()) * fit_delta;
+	double dmudomega = sqrt(2. / TMath::Pi()) * fit_delta;
+	double dmudalpha = fit_omega * sqrt(2. / TMath::Pi()) * pow(1. + fit_alpha * fit_alpha, -1.5);
+	band[j][5] = sqrt(dmudxi * dmudxi * fit_xi_err * fit_xi_err + dmudomega * dmudomega * fit_omega_err * fit_omega_err +
+			  dmudalpha * dmudalpha * fit_alpha_err * fit_alpha_err + 2. * dmudxi * dmudomega * fit_cov_xo + 2. * dmudomega * dmudalpha * fit_cov_oa +
+			  2. * dmudxi * dmudalpha * fit_cov_xa);
+      }
+      else
+	band[j][5] = f->GetParError(1);
+      
       // Calculate error on standard deviation
-      double dvardomega = 2 * fit_omega * (1. - 2. / TMath::Pi() * fit_delta * fit_delta);
-      double dvardalpha = -4. / TMath::Pi() * fit_omega * fit_omega * fit_alpha / (1. + fit_alpha * fit_alpha) / (1. + fit_alpha * fit_alpha);
-      double var_err = sqrt(dvardomega * dvardomega * fit_omega_err * fit_omega_err + 
-        dvardalpha * dvardalpha * fit_alpha_err * fit_alpha_err + 2. * dvardomega * dvardalpha * fit_cov_oa);
-      band[j][6] = 0.5 / band[j][3] * var_err;
-
+      if ( skewness == 2 ) {
+	double dvardomega = 2. * fit_omega * (1. - 2. / TMath::Pi() * fit_delta * fit_delta);
+	double dvardalpha = -4. / TMath::Pi() * fit_omega * fit_omega * fit_alpha / (1. + fit_alpha * fit_alpha) / (1. + fit_alpha * fit_alpha);
+	double var_err = sqrt(dvardomega * dvardomega * fit_omega_err * fit_omega_err +
+			      dvardalpha * dvardalpha * fit_alpha_err * fit_alpha_err + 2. * dvardomega * dvardalpha * fit_cov_oa);
+	band[j][6] = 0.5 / band[j][3] * var_err;
+      }
+      else
+	band[j][6] = f->GetParError(2);
+      
       // Store other parameters directly from the fit
       band[j][7] = fit_alpha_err;
       band[j][9] = fit_xi;
@@ -961,9 +994,12 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       band[j][13] = fit_cov_xo;
       band[j][14] = fit_cov_xa;
       band[j][15] = fit_cov_oa;
-
+      
       // Store reduced chi2
-      band[j][16] = res->Chi2() / res->Ndf();
+      if ( skewness == 2 )
+	band[j][16] = res->Chi2() / double(res->Ndf());
+      else
+	band[j][16] = f->GetChisquare() / (double)f->GetNDF();
 
       // Calculate reduced chi2 manually
       double chiSq = 0.00, modelValue, xValue, denom;
@@ -978,15 +1014,17 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       band[j][8] = chiSq;
 
       // Retry fit if it does not converge.
-      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 2. || band[j][7] > 10. || band[j][3] > 1. || band[j][6] > 0.5 || band[j][2] <= 0.) {
-          xiEstimate = fit_xi;
-          omegaEstimate = fit_omega;
-          alphaEstimate = 0.0;
-          cerr << "Re-fitting...\n";
-          goto RETRY;
+      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 1. || fabs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
+	   band[j][2] <= 0. || band[j][3] <= 0. ) {
+	xiEstimate = fit_xi;
+	omegaEstimate = fit_omega;
+	alphaEstimate = 0.0;
+	cerr << "Re-fitting...\n";
+	goto RETRY;
       }
-
+      
       delete f;
+      
     }
   }
   
@@ -1048,7 +1086,7 @@ int modBinom(int nTot, double prob, double preFactor) {
 }
 
 double EstimateSkew ( double mean, double sigma, vector<double> data ) {
-  
+
   double xi = mean;
   double omega = sigma;
   double skew = 0.0;
@@ -1059,7 +1097,7 @@ double EstimateSkew ( double mean, double sigma, vector<double> data ) {
   double delta = skew / fabs(skew) * sqrt(TMath::Pi() / 2. * pow(fabs(skew),(2./3.)) / (pow(fabs(skew),(2./3.)) + pow(((4. - TMath::Pi()) / 2.),(2./3.))));
   double alpha = delta / sqrt ( 1. - delta * delta );
   return alpha;
-  
+
 }
 
 double owens_t (double h, double a) {
@@ -1078,4 +1116,5 @@ double owens_t (double h, double a) {
 
   T /= (2. * TMath::Pi());
   return T;
+
 }

@@ -379,9 +379,9 @@ if ( mode == 1 ) {
               "error\tDiscrim[%%]\tReal-Gaus Leak\n");
     }
     for (i = 0; i < numBins; i++) {
-
-      if (!skewness) {
-        if (ERis2nd) {
+      
+      if ( skewness <= 1 ) {
+        if ( ERis2nd ) {
           numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
           errorBars[i][0] =
             (band2[i][2] - band2[i][5] - band[i][2] - band[i][5]) /
@@ -403,13 +403,13 @@ if ( mode == 1 ) {
           NRbandX[i] = band2[i][0];
           NRbandY[i] = band2[i][2];
         }
-        leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
+	leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
         errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
         errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
       }
-
-      if (skewness) {
-        if (ERis2nd) {
+      
+      if ( skewness == 2 ) {
+        if ( ERis2nd ) {
           leakage[i] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
             2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11], band2[i][4]);
 
@@ -484,11 +484,11 @@ if ( mode == 1 ) {
             fitf->GetParameter(0) / (inputs[i][j] + fitf->GetParameter(1)) +
             fitf->GetParameter(2) * inputs[i][j] +
             fitf->GetParameter(3);  // use Woods function
-        // NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
+        //NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
         // the fit, to compare to past data that did not use a smoothing spline
-        // NRbandGCentroid =
-        // fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
-        // // compromise
+	//NRbandGCentroid =
+	//fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
+        // compromise
         if (outputs[i][j] < NRbandGCentroid) below[i]++;
       }
       leakTotal = double(below[i]) / (double)outputs[i].size();
@@ -761,14 +761,23 @@ void GetFile(char* fileName) {
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_spike, S2cor_phd, false));
   }
-  if (!loop) {
+  if ( !loop ) {
     if ( verbosity ) {
-      fprintf(stdout,
-	      "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig "
-	      "Error\tGaus Skew\tSkew Error\tX^2/DOF\n");
-      for (o = 0; o < numBins; o++) {
-	fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0], band[o][1], band[o][2], band[o][5], band[o][3], band[o][6],
-		band[o][4], band[o][7], band[o][8]); }
+      if ( skewness == 2 ) {
+	fprintf(stdout,"Bin Center\tBin Actual\tBand Mean\tBand Stddev\tBand Skew\tBand Mean Err\tBand Stddev Err\tBand Skew Err\tX^2 NEST\tX^2 ROOT\n");
+	for (o = 0; o < numBins; o++) {
+	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+		  band[o][0], band[o][9], band[o][10], band[o][11], band[o][12], band[o][4], band[o][7], band[o][13], band[o][14], band[o][15],
+		  band[o][2], band[o][5], band[o][3], band[o][6]);
+	}
+      }
+      else {
+	fprintf(stdout, "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig Error\tGaus Skew\tSkew Error\tX^2/DOF\n");
+	for (o = 0; o < numBins; o++) {
+	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0], band[o][1], band[o][2], band[o][5], band[o][3], band[o][6],
+		  band[o][4], band[o][7], band[o][8]);
+	}
+      }
     }
   }
   return;
@@ -1019,7 +1028,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 	xiEstimate = fit_xi;
 	omegaEstimate = fit_omega;
 	alphaEstimate = 0.0;
-	cerr << "Re-fitting...\n";
+	cerr << "Re-fitting... (stats, more? and/or logBins, fewer? might help)\n";
 	goto RETRY;
       }
       

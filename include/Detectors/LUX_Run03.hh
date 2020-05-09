@@ -120,8 +120,17 @@ public:
 				double zPos_mm) {
     vector<double> BotTotRat(2);
     
-    BotTotRat[0] = 0.650;  // 1712.05696
-    BotTotRat[1] = 0.449;  // 1712.05696 and 1710.02752
+    double radSq = ( pow(xPos_mm,2.) + pow(yPos_mm,2.) ) / 1e2;
+    double TBAzS1 = -0.853 + 0.00925 * ( zPos_mm / 10. );
+    double TBArS2 = 0.126+0.000545*radSq-1.90e-6*radSq*radSq+1.20e-9*radSq*radSq*radSq;
+    
+    if ( TBAzS1 < -1. ) TBAzS1 = -1.;
+    if ( TBAzS1 > 1.0 ) TBAzS1 = 1.0;
+    if ( TBArS2 < -1. ) TBArS2 = -1.;
+    if ( TBArS2 > 1.0 ) TBArS2 = 1.0;
+    
+    BotTotRat[0] = (1.-TBAzS1)/2.;  // 1712.05696
+    BotTotRat[1] = 0.449;//(1.-TBArS2)/2.;  // 1712.05696 and 1710.02752
                            // position recon (1-this)
     
     return BotTotRat;

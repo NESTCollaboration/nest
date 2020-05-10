@@ -115,27 +115,38 @@ if ( mode == 2 ) {
   }
 
   FILE* ifp = fopen(argv[1], "r");
-  int ch, nLines = 0;
+  int ch, nLines = -1;
   while (EOF != (ch = getc(ifp))) {
     if ('\n' == ch) nLines++;
   }
-  double energy[nLines], efficiency[nLines];
+  double input[9][nLines];
   rewind(ifp);
-  for (i = 0; i < nLines; i++) {
-    fscanf(ifp, "%lf %lf", &energy[i], &efficiency[i]);
-    if ( efficiency[i] > 1.02 ) //2% margin of error is allowed
+  for (i = -1; i < nLines; i++) {
+    if ( i == -1 ) {
+      char line[180];
+      fgets ( line, 180, ifp );
+      continue;
+    }
+    fscanf ( ifp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+             &input[0][i], &input[1][i], &input[2][i], &input[3][i], &input[4][i], &input[5][i], &input[6][i], &input[7][i], &input[8][i] );
+    input[7][i] /= 1e2;
+    if ( input[7][i] > 1.02 ) //2% margin of error is allowed
       { cerr << "eff should be frac not %" << endl; return 1; }
-    if ( efficiency[i] < -.02 ) //allowing for digitization err
+    if ( input[7][i] < -.02 ) //allowing for digitization err
       { cerr << "eff must not be negative" << endl; return 1; }
+    if ( input[7][i] > 0.00 )
+      input[7][i] = log10(input[7][i]);
+    else
+      input[7][i] = -6.;
   }
   fclose(ifp);
-  TGraph* gr1 = new TGraph(nLines, energy, efficiency);
+  TGraph* gr1 = new TGraph(nLines, input[0], input[7]);
   TF1* fitf =
       new TF1("FracEffVkeVEnergy",
-              "10.^(2.-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5]))/100.",
-              energy[0], energy[nLines - 1]);  // eqn inspired by Alex Murphy
+              "-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5])",
+              input[0][0], input[0][nLines - 1]);  // eqn inspired by Alex Murphy
   fitf->SetParameters(10., 2., 1., 20., 1e4, -2.5);
-  gr1->Fit(fitf, "q");  // remove the quiet option q if you want to see all of
+  gr1->Fit(fitf, "q");  // remove the quiet option if you want to see all
                         // the parameters' values for Fractional Efficiency
                         // versus Energy in keV. Prints to screen
   double aa = fitf->GetParameter(0);
@@ -241,6 +252,7 @@ if ( mode == 2 ) {
       double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) -
                                 dd * exp(-ee * pow(j, ff))) /
                    100.;
+      //cerr << j << " " << eff << endl;
       if ( eff > 1. || eff < 0. )
 	{ cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
       if (j > loE)
@@ -289,7 +301,7 @@ if ( mode == 1 ) {
     return 0;
   }
   
-  int DoF = numBins - freeParam;
+  int DoF = numBins - abs(freeParam);
   FILE* ifp = fopen(argv[2], "r");
   for (i = 0; i < numBins; i++) {
     fscanf(ifp, "%lf %lf %lf %lf %lf %lf", &band2[i][0], &band2[i][1],
@@ -1017,7 +1029,10 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
         modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
           (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
         double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);
-        chiSq += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom; //combined Pearson-Neyman chi-squared (Matthew Sz.)
+	if ( freeParam > 0 )
+	  chiSq += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom; //combined Pearson-Neyman chi-squared (Matthew Sz.)
+	else
+	  chiSq += 2. * ( modelValue - double ( HistogramArray[j][k] ) * log ( modelValue ) ); //MLE: Maximum Likelihood Estimator (Poisson)
       }
       chiSq /= ( double(logBins) - 4. - 1. );
       band[j][8] = chiSq;

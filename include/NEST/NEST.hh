@@ -94,6 +94,7 @@
 #define PULSEHEIGHT \
   0.005                 // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
+#define PHE_MAX 1000 // saturation threshold
 
 namespace NEST {
 

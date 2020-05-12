@@ -594,8 +594,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
                                int useTiming, bool outputTiming,
                                vector<long int>& wf_time,
                                vector<double>& wf_amp) {
-  int Nph = quanta.photons;
-
+  int Nph = quanta.photons; double subtract[2] = { 0., 0. };
+  
   wf_time.clear();
   wf_amp.clear();
 
@@ -751,11 +751,13 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
 
       wf_time.push_back((ii - numPts / 2) * SAMPLE_SIZE);
       wf_amp.push_back(AreaTable[0][ii] + AreaTable[1][ii]);
-
+      
       if (outputTiming) {
         char line[80];
+	if ( AreaTable[0][ii] > PHE_MAX ) subtract[0] = AreaTable[0][ii] - PHE_MAX;
+	if ( AreaTable[1][ii] > PHE_MAX ) subtract[1] = AreaTable[1][ii] - PHE_MAX;
         sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back() + (long)tRandOffset,
-		AreaTable[0][ii], AreaTable[1][ii]);
+		AreaTable[0][ii]-subtract[0], AreaTable[1][ii]-subtract[1]);
         pulseFile << line << flush;
       }
 
@@ -778,6 +780,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
 
   pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[0] * pulseArea);
+  pulseArea -= ( subtract[0] + subtract[1] );
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
   if (spike < 0) spike = 0;
   double pulseAreaC = pulseArea / posDepSm;
@@ -883,7 +886,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
   double g2 = g2_params[3];
   double gasGap = g2_params[4];
 
-  vector<double> ionization(9);
+  vector<double> ionization(9); double subtract[2] = { 0., 0. };
   int i;
   bool eTrain = false;
   if (useTiming >= 2 && !fdetector->get_inGas()) eTrain = true;
@@ -1074,8 +1077,10 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
 
       if (outputTiming) {
         char line[80];
+	if ( AreaTableBot[1][k] > PHE_MAX ) subtract[0] = AreaTableBot[1][k] - PHE_MAX;
+        if ( AreaTableTop[1][k] > PHE_MAX ) subtract[1] = AreaTableTop[1][k] - PHE_MAX;
         sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back(),
-		AreaTableBot[1][k], AreaTableTop[1][k]);
+		AreaTableBot[1][k]-subtract[0], AreaTableTop[1][k]-subtract[1]);
         pulseFile << line << endl;
       }
     }
@@ -1092,6 +1097,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
 
   pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[1] * pulseArea);
+  pulseArea -= (subtract[0]+subtract[1]);
   double pulseAreaC =
       pulseArea / exp(-dt / fdetector->get_eLife_us()) / posDepSm;
   double Nphd = pulseArea / (1. + fdetector->get_P_dphe());

@@ -933,7 +933,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 
       TF1* f = new TF1("skewband",
           "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-0.5*(x-[1])^2/[2]^2)*(1.+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))",
-		       logMin, logMax); //minimum and maximum in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
+		       logMin+0.5, logMax+0.5); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
       //equation inspired by Vetri Velan
       double amplEstimate = signals[j].size();
       double alphaEstimate = EstimateSkew(band[j][2],band[j][3],signals[j]);
@@ -1038,6 +1038,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       band[j][8] = chiSq;
 
       // Retry fit if it does not converge.
+      //if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 2. || band[j][7] > 10. || band[j][3] > 1. || band[j][6] > 0.5 || band[j][2] <= 0. ) {
       if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 1. || fabs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
 	   band[j][2] <= 0. || band[j][3] <= 0. ) {
 	xiEstimate = fit_xi;

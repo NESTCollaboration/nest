@@ -5,7 +5,7 @@ using namespace std;
 using namespace NEST;
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
-                               bool resol);
+                               bool resol, int nFold);
 
 void GetEnergyRes(vector<double> Es);
 

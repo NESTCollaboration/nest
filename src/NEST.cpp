@@ -403,7 +403,7 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   double fieldDep = pow(1. + pow(dfield / 95., 8.7), 0.0592);
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
   double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
-  if ( A1 == 206. && Z1 == 82. ) {
+  if ( A1 == 206. && Z1 == 82. ) { //Pb-206 (from Po-210 alpha decay)
     ThomasImel = 79.9 * pow ( dfield, -0.868 ); //Nishat Parveen
   }
   const double logden = log10(density);
@@ -851,21 +851,21 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   } else {  // some of these are set to -1 to flag them as having been below
             // threshold
     if (scintillation[0] == 0.) scintillation[0] = PHE_MIN;
-    scintillation[0] *= -1.;
+    scintillation[0] = -1.*fabs(scintillation[0]);
     if (scintillation[1] == 0.) scintillation[1] = PHE_MIN;
-    scintillation[1] *= -1.;
+    scintillation[1] = -1.*fabs(scintillation[1]);
     if (scintillation[2] == 0.) scintillation[2] = PHE_MIN;
-    scintillation[2] *= -1.;
+    scintillation[2] = -1.*fabs(scintillation[2]);
     if (scintillation[3] == 0.) scintillation[3] = PHE_MIN;
-    scintillation[3] *= -1.;
+    scintillation[3] = -1.*fabs(scintillation[3]);
     if (scintillation[4] == 0.) scintillation[4] = PHE_MIN;
-    scintillation[4] *= -1.;
+    scintillation[4] = -1.*fabs(scintillation[4]);
     if (scintillation[5] == 0.) scintillation[5] = PHE_MIN;
-    scintillation[5] *= -1.;
+    scintillation[5] = -1.*fabs(scintillation[5]);
     if (scintillation[6] == 0.) scintillation[6] = PHE_MIN;
-    scintillation[6] *= -1.;
+    scintillation[6] = -1.*fabs(scintillation[6]);
     if (scintillation[7] == 0.) scintillation[7] = PHE_MIN;
-    scintillation[7] *= -1.;
+    scintillation[7] = -1.*fabs(scintillation[7]);
   }
 
   // scintillation[8] =
@@ -1144,11 +1144,12 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
                                                             // units)
   }
 
-  if (pulseArea < fabs(fdetector->get_s2_thr()))
+  if (pulseArea < fabs(fdetector->get_s2_thr())) {
     for (i = 0; i < 8; i++) {
       if (ionization[i] == 0.) ionization[i] = PHE_MIN;
-      ionization[i] *= -1.;
+      ionization[i] = -1.*fabs(ionization[i]);
     }
+  }
 
   ionization[8] =
       g2;  // g2 = ExtEff * SE, gain of EL in gas gap (from CalculateG2)

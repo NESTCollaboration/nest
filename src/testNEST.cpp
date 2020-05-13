@@ -744,6 +744,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       Nph *= MultFact;
       if (signal1.back() <= 0.) Nph = 0.;
       if (signal2.back() <= 0.) Ne = 0.;
+      if ( detector->get_coinLevel() <= 0 && Nph <= PHE_MIN ) Nph = DBL_MIN;
       if (yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
 	if ( detector->get_extraPhot() ) yields.Lindhard = 1.;
 	if ( yields.Lindhard == 1. )
@@ -761,7 +762,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       } else
         keV = 0.;
     }
-    if ((signal1.back() <= 0. || signal2.back() <= 0.) && field >= FIELD_MIN)
+    if ((signal1.back() <= 0. || signal2.back() <= 0.) && field >= FIELD_MIN && detector->get_coinLevel() != 0)
       signalE.push_back(0.);
     else
       signalE.push_back(keV);
@@ -869,9 +870,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   if (verbosity) {
     if (eMin != eMax) {
       if (useS2 == 2)
-        GetBand(signal2, signal1, false);
+        GetBand(signal2, signal1, false, detector->get_coinLevel());
       else
-        GetBand(signal1, signal2, false);
+        GetBand(signal1, signal2, false, detector->get_coinLevel());
       fprintf(stderr,
               "Bin Center\tBin Actual\tHist Mean\tMean Error\tHist "
               "Sigma\tSkewness\t\tEff[%%>thr]\n");
@@ -899,7 +900,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         }
       }
     } else {
-      GetBand(signal1, signal2, true);
+      GetBand(signal1, signal2, true, detector->get_coinLevel());
       GetEnergyRes(signalE);
       if (type_num == NR || type_num == WIMP || type_num == B8 || type_num == DD || type_num == AmBe || type_num == Cf || type_num == ion) {
         fprintf(stderr,
@@ -945,7 +946,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 }
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
-                               bool resol) {
+                               bool resol, int nFold) {
   
   if ( numBins > NUMBINS_MAX ) {
     cerr << "ERROR: Too many bins. Decrease numBins (analysis.hh) or increase NUMBINS_MAX (TestSpectra.hh)" << endl;
@@ -970,14 +971,17 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
     numBins = 1;
     binWidth = DBL_MAX;
   }
-
+  
+  double ReqS1 = 0.;
+  if ( nFold == 0 )
+    ReqS1 = -DBL_MAX;
   for (i = 0; i < S1s.size(); i++) {
     for (j = 0; j < numBins; j++) {
       s1c = border + binWidth / 2. + double(j) * binWidth;
       if (i == 0 && !resol) band[j][0] = s1c;
-      if (fabs(S1s[i]) > (s1c - binWidth / 2.) &&
-          fabs(S1s[i]) <= (s1c + binWidth / 2.)) {
-        if (S1s[i] >= 0. && S2s[i] >= 0.) {
+      if ( (fabs(S1s[i]) > (s1c - binWidth / 2.) &&
+	    fabs(S1s[i]) <=(s1c + binWidth / 2.)) || !nFold ) {
+        if (S1s[i] >= ReqS1 && S2s[i] >= 0.) {
           if (resol) {
             signals[j].push_back(S2s[i]);
           } else {
@@ -1030,7 +1034,7 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
         band[j][3] += pow(signals[j][i] - band[j][2], 2.);  // std dev calc
     }
     for (i = 0; i < S1s.size(); i++) {
-      if (resol && S1s[i] > 0.0 && S2s[i] > 0.0)
+      if (resol && S1s[i] > ReqS1 && S2s[i] > 0.0)
         band[j][1] += pow(S1s[i] - band[j][0], 2.);  // std dev calc
     }
     band[j][3] /= numPts - 1.;

@@ -18,6 +18,9 @@
 
 #include "LUX_Run03.hh"
 
+#define tZero 0.00
+#define tStep 0.03
+
 using namespace std;
 using namespace NEST;
 
@@ -375,8 +378,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   
   if ( type_num < 6 ) massNum = 0;
   
-  double keV = -999.;
+  double keV = -999.; double timeStamp = tZero;
   for (unsigned long int j = 0; j < numEvts; j++) {
+    timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
     if (eMin == eMax && eMin >= 0. && eMax > 0.) {
       keV = eMin;
     } else {

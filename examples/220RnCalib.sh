@@ -211,3 +211,5 @@ rm Pb212.dat;
 ./testNEST 3857 gamma 520 530 -1 -1 0 >> Pb212.dat 2> /dev/null
 ./testNEST 2573 gamma 530 540 -1 -1 0 >> Pb212.dat 2> /dev/null
 ./testNEST 1491 gamma 540 550 -1 -1 0 >> Pb212.dat 2> /dev/null
+
+#SOURCE: arXiv:1602.01138 R.F. Lang et al. "A 220Rn source for..."

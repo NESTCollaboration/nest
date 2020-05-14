@@ -755,7 +755,9 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       if (outputTiming) {
         char line[80];
 	if ( AreaTable[0][ii] > PHE_MAX ) subtract[0] = AreaTable[0][ii] - PHE_MAX;
+	else subtract[0] = 0.0;
 	if ( AreaTable[1][ii] > PHE_MAX ) subtract[1] = AreaTable[1][ii] - PHE_MAX;
+	else subtract[1] = 0.0;
         sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back() + (long)tRandOffset,
 		AreaTable[0][ii]-subtract[0], AreaTable[1][ii]-subtract[1]);
         pulseFile << line << flush;
@@ -1078,7 +1080,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
       if (outputTiming) {
         char line[80];
 	if ( AreaTableBot[1][k] > PHE_MAX ) subtract[0] = AreaTableBot[1][k] - PHE_MAX;
+	else subtract[0] = 0.0;
         if ( AreaTableTop[1][k] > PHE_MAX ) subtract[1] = AreaTableTop[1][k] - PHE_MAX;
+	else subtract[1] = 0.0;
         sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back(),
 		AreaTableBot[1][k]-subtract[0], AreaTableTop[1][k]-subtract[1]);
         pulseFile << line << endl;

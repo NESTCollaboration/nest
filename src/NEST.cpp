@@ -264,6 +264,28 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   double skewness = 2.25;
 
+/* LUX Skewness Model
+  Wvalue wvalue = WorkFunction(density);
+  double Wq_eV = wvalue.Wq_eV;
+  double engy = Wq_eV * (yields.PhotonYield + yields.ElectronYield);
+  double fld = yields.ElectricField;
+
+  double alpha0 = 1.39;
+  double cc0 = 4.0, cc1 = 22.1;
+  double E0 = 7.7, E1 = 54., E2 = 26.7, E3 = 6.4;
+  double F0 = 225., F1 = 71.;
+
+  double skewness = 0.;
+
+  if (yields.Lindhard == 1.) {
+    skewness = 1. / (1. + exp((engy - E2) / E3)) * (alpha0 + cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
+        1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
+  }
+  else {
+    skewness = 0.0;
+  }
+*/
+
   double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
   double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
   Ne = int(floor(

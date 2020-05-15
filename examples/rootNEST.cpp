@@ -773,10 +773,11 @@ void GetFile(char* fileName) {
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_spike, S2cor_phd, false));
   }
+
   if ( !loop ) {
     if ( verbosity ) {
       if ( skewness == 2 ) {
-	fprintf(stdout,"Bin Center\tBin Actual\tBand Mean\tBand Stddev\tBand Skew\tBand Mean Err\tBand Stddev Err\tBand Skew Err\tX^2 NEST\tX^2 ROOT\n");
+	fprintf(stdout,"Bin Center\tBand Xi\tBand Xi Err\tBand Omega\tBand Omega Err\tBand Alpha\tBand Alpha Err\tBand Cov Xi-Om\tBand Cov Xi-Al\tBand Cov Om-Al\tBand Mean\tBand Mean Err\tBand Stddev\tBand Stddev Err\n");
 	for (o = 0; o < numBins; o++) {
 	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 		  band[o][0], band[o][9], band[o][10], band[o][11], band[o][12], band[o][4], band[o][7], band[o][13], band[o][14], band[o][15],

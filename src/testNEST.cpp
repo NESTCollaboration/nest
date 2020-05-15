@@ -381,6 +381,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   double keV = -999.; double timeStamp = tZero;
   for (unsigned long int j = 0; j < numEvts; j++) {
     timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
+    //for E-recon when you've changed g1,g2-related stuff, redo line 341+
     if (eMin == eMax && eMin >= 0. && eMax > 0.) {
       keV = eMin;
     } else {

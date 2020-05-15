@@ -41,8 +41,8 @@ double E_step = 5.0;  // keV, for integrating WIMP spectrum
 
 // Set the rootNEST options
 int freeParam= 2; // #free param for calculating DoF in X^2; 2 for Ly and Qy, or g1 and g2
-int skewness = 2; // true means skew-Gaussian fits
-int mode = 0;
+int skewness = 0; // true means skew-Gaussian fits
+int mode = 1;
 //0 default is to provide the ER BG discrimination & leakage frac
 //1 outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)
 //2 outputs wimp masses and cross-sections for given efficiency

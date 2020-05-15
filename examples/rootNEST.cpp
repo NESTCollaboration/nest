@@ -415,7 +415,9 @@ if ( mode == 1 ) {
           NRbandX[i] = band2[i][0];
           NRbandY[i] = band2[i][2];
         }
-	leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
+	//leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
+	leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
+	  2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
         errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
         errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
       }
@@ -777,7 +779,7 @@ void GetFile(char* fileName) {
   if ( !loop ) {
     if ( verbosity ) {
       if ( skewness == 2 ) {
-	fprintf(stdout,"Bin Center\tBand Xi\tBand Xi Err\tBand Omega\tBand Omega Err\tBand Alpha\tBand Alpha Err\tBand Cov Xi-Om\tBand Cov Xi-Al\tBand Cov Om-Al\tBand Mean\tBand Mean Err\tBand Stddev\tBand Stddev Err\n");
+	fprintf(stdout,"Bin Center\tBand Xi\t\tXi Err\t\tBand Omega\tOmega Err\tBand Alpha\tAlpha Err\tBand Cov Xi-Om\tBand Cov Xi-Al\tBand Cov Om-Al\tBand Mean\tMean Err\tBand Stddev\tStddev Err\n");
 	for (o = 0; o < numBins; o++) {
 	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 		  band[o][0], band[o][9], band[o][10], band[o][11], band[o][12], band[o][4], band[o][7], band[o][13], band[o][14], band[o][15],

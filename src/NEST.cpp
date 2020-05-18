@@ -262,7 +262,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
-  //double skewness = 2.25;
+  //double skewness = 2.25; //if you want to try having it constant
 
   // LUX Skewness Model
   Wvalue wvalue = WorkFunction(density);
@@ -282,7 +282,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
         1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
   }
   else {
-    skewness = 2.25;
+    skewness = 2.25; //~5-20 also good (for NR). All better than zero, but 0 is OK too
   }
 //
 

@@ -359,18 +359,11 @@ if ( mode == 1 ) {
     cout << endl << "Calculating band for first dataset" << endl;
     GetFile(argv[2]);
     for (i = 0; i < numBins; i++) {
-      band2[i][0] = band[i][0];
-      band2[i][1] = band[i][1];
-      band2[i][2] = band[i][2];
-      band2[i][3] = band[i][3];
-      band2[i][4] = band[i][4];
-      band2[i][5] = band[i][5];
-      band2[i][6] = band[i][6];
-      band2[i][7] = band[i][7];
-      band2[i][8] = band[i][8];
+      for ( int j = 0; j < 17; j++ ) {
+	band2[i][j] = band[i][j]; }
     }
   }
-
+  
   cout << endl << "Calculating band for second dataset" << endl;
   GetFile(argv[1]);
   if (leak) {
@@ -403,6 +396,8 @@ if ( mode == 1 ) {
             (band2[i][3] - band2[i][6]);  // lower (less leakage)
           NRbandX[i] = band[i][0];
           NRbandY[i] = band[i][2];
+	  leakage[i] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
+	    2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11], band2[i][4]);
         }
         else {
           numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
@@ -414,16 +409,30 @@ if ( mode == 1 ) {
             (band[i][3] - band[i][6]);  // lower (less leakage)
           NRbandX[i] = band2[i][0];
           NRbandY[i] = band2[i][2];
+	  leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
+	    2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
         }
-	//leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
-	leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
-	  2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
-        errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
-        errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
+	if ( skewness == 0 )
+	  leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
+	else {
+	  if ( ERis2nd ) {
+	    errorBars[i][0] = (band2[i][2] - band[i][2]) / (0.5*(band2[i][11]+band2[i][3])); //average of omega and sigma
+	    errorBars[i][1] = (band2[i][2] - band[i][2]) / band2[i][3]; //just plain sigma
+	  }
+	  else {
+	    errorBars[i][0] = (band[i][2] - band2[i][2]) / (0.5*(band[i][11]+band[i][3]));
+	    errorBars[i][1] = (band[i][2] - band2[i][2]) / band[i][3];
+	  }
+	}
+	errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
+	errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
       }
       
       if ( skewness == 2 ) {
         if ( ERis2nd ) {
+	  numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
+	  NRbandX[i] = band[i][0];
+	  NRbandY[i] = band[i][2];
           leakage[i] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
             2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11], band2[i][4]);
 
@@ -435,14 +444,17 @@ if ( mode == 1 ) {
           double dlkg_dalpha = -1. / TMath::Pi() / (1. + pow(band2[i][4],2.)) * 
             exp(-1. * (1. + pow(band2[i][4],2.)) * pow((band[i][2] - band2[i][9]),2.) / 2. / pow(band2[i][11],2.));
 
-          errorBars[i][0] = sqrt(0. +
+          errorBars[i][0] = leakage[i]+sqrt(0. +
             pow(dlkg_dx,2.) * pow(band[i][5],2.) + pow(dlkg_dxi,2.) * pow(band2[i][10],2.) +
             pow(dlkg_domega,2.) * pow(band2[i][12],2.) + pow(dlkg_dalpha,2.) * pow(band2[i][7],2.) + 
             2 * dlkg_dxi * dlkg_domega * band2[i][13] + 2 * dlkg_domega * dlkg_dalpha * band2[i][15] +
             2 * dlkg_dxi * dlkg_dalpha * band2[i][14]);
-          errorBars[i][1] = errorBars[i][0];
+          errorBars[i][1] = 2.*leakage[i]-errorBars[i][0];
         }
         else {
+	  numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
+	  NRbandX[i] = band2[i][0];
+	  NRbandY[i] = band2[i][2];
           leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
             2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
 
@@ -454,12 +466,12 @@ if ( mode == 1 ) {
           double dlkg_dalpha = -1. / TMath::Pi() / (1. + pow(band[i][4],2.)) * 
             exp(-1. * (1. + pow(band[i][4],2.)) * pow((band2[i][2] - band[i][9]),2.) / 2. / pow(band[i][11],2.));
 
-          errorBars[i][0] = sqrt(0. +
+          errorBars[i][0] = leakage[i]+sqrt(0. +
             pow(dlkg_dx,2.) * pow(band2[i][5],2.) + pow(dlkg_dxi,2.) * pow(band[i][10],2.) +
             pow(dlkg_domega,2.) * pow(band[i][12],2.) + pow(dlkg_dalpha,2.) * pow(band[i][7],2.) +               
             2 * dlkg_dxi * dlkg_domega * band[i][13] + 2 * dlkg_domega * dlkg_dalpha * band[i][15] +
             2 * dlkg_dxi * dlkg_dalpha * band[i][14]);
-          errorBars[i][1] = errorBars[i][0];
+          errorBars[i][1] = 2.*leakage[i]-errorBars[i][0];
         }
       }
 
@@ -474,7 +486,8 @@ if ( mode == 1 ) {
                                              // the Band Fit Parameters on
                                              // screen
     double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
-    if (chi2 > 1.5) {
+    bool FailedFit = false;
+    if (chi2 > 1.5 || chi2 <= 0. || std::isnan(chi2) ) {
       cerr << "WARNING: Poor fit to NR Gaussian band centroids i.e. means of "
               "log(S2) or log(S2/S1) histograms in S1 bins. Investigate please!"
            << endl;
@@ -483,10 +496,10 @@ if ( mode == 1 ) {
       fitf->SetParameters(0.5, 3., 1e2, 0.4);
       gr1->Fit(fitf, "rq", "", minS1, maxS1);
       chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
-      if (chi2 > 2.) {
+      if (chi2 > 2. || chi2 < 0. || std::isnan(chi2) ) {
         cerr << "ERROR: Even the backup plan to use sigmoid failed as well!"
              << endl;
-        return 1;
+        FailedFit = true; //return 1;
       }
     }
     long below[NUMBINS_MAX] = {0};
@@ -498,7 +511,7 @@ if ( mode == 1 ) {
             fitf->GetParameter(0) / (inputs[i][j] + fitf->GetParameter(1)) +
             fitf->GetParameter(2) * inputs[i][j] +
             fitf->GetParameter(3);  // use Woods function
-        //NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
+        if ( FailedFit ) NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
         // the fit, to compare to past data that did not use a smoothing spline
 	//NRbandGCentroid =
 	//fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
@@ -915,7 +928,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       logMin = band[j][2]-3.*band[j][3];
       logMax = band[j][2]+3.*band[j][3];
     }
-    HistogramArray[j].SetBins(logBins, logMin, logMax);
+    HistogramArray[j].SetBins(logBins, logMin-0.5, logMax+0.5); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
     for (unsigned long i = 0; i < signals[j].size(); i++)
       HistogramArray[j].Fill(signals[j][i]);
     HistogramArray[j].Draw();
@@ -935,8 +948,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     else {
 
       TF1* f = new TF1("skewband",
-          "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-0.5*(x-[1])^2/[2]^2)*(1.+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))",
-		       logMin+0.5, logMax+0.5); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
+"([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-.5*(x-[1])^2/[2]^2)*(1+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))");
       //equation inspired by Vetri Velan
       double amplEstimate = signals[j].size();
       double alphaEstimate = EstimateSkew(band[j][2],band[j][3],signals[j]);
@@ -1028,7 +1040,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       // Calculate reduced chi2 manually
       double chiSq = 0.00, modelValue, xValue, denom;
       for ( int k = 0; k < logBins; k++ ) {
-        xValue = logMin + k * ( logMax - logMin ) / logBins;
+        xValue = (logMin-0.5) + k * ( 1. + logMax - logMin ) / logBins;
         modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
           (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
         double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);
@@ -1048,7 +1060,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 	omegaEstimate = fit_omega;
 	alphaEstimate = 0.0;
 	cerr << "Re-fitting... (stats, more? and/or logBins, fewer? might help)\n";
-	goto RETRY;
+	if ( mode != 0 ) goto RETRY;
       }
       
       delete f;

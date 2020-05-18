@@ -32,7 +32,7 @@ double maxS2 = 1e4; //5e3 for DD. At least 2e5 for post-Run04 14C
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
 double logMax = 3.6;
 double logMin = 0.6;
-int logBins = 50; //#bins in between logMin & logMax for fits
+int logBins = 30; //#bins in between logMin & logMax for fits
 
 // some numbers for fine-tuning the speed vs. the accuracy
 double z_step = 0.1;  // mm, for integrating non-uniform field

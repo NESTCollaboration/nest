@@ -359,6 +359,8 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     cerr << "\nERROR: You need a minimum of 12 nuisance parameters for the mean yields.\n";
     exit(EXIT_FAILURE);
   }
+  if ( energy > 330. )
+    cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of about 300 keV.\n";
   int massNumber;
   double ScaleFactor[2] ={1., 1.};
   if ( massNum == 0. )
@@ -378,11 +380,13 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Ne = Qy * energy * ScaleFactor[1];
   double Nph = Ly * energy * ScaleFactor[0] *
           (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]), NuisParam[11]));
+  //Ne = energy * (4.1395*pow(energy,0.13816)*(log(1.+(0.040945*pow(energy,1.1388)))/(0.040945*pow(energy,1.1388))));
+  //Nph = energy * 3.35 * pow(energy,0.29222); // NESTv0.98 (2013) model for legacy comparisons (arXiv:1307.6601)
   Nq = Nph + Ne;
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
           (Ne + Nph) * ThomasImel - 4.);
-  if (fabs(Nex + Ni -Nq) > PHE_MIN) 
+  if ( fabs(Nex + Ni -Nq) > 2. * PHE_MIN )
   {
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
     exit(EXIT_FAILURE);

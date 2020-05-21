@@ -529,8 +529,8 @@ if ( mode == 1 ) {
           stderr,
           "%.2f\t\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\n",
           0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
-          numSigma[i], leakage[i], errorBars[i][0] - leakage[i],
-          leakage[i] - errorBars[i][1], discrim[i] * 100., leakTotal,
+          numSigma[i], leakage[i], fabs(errorBars[i][0] - leakage[i]),
+          fabs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,
           poisErr[0] - leakTotal, leakTotal - poisErr[1],
           (1. - leakTotal) * 100., leakTotal - leakage[i]);
       finalSums[0] += (double)below[i];
@@ -917,7 +917,7 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
 }
 
 vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
-  int j = 0;
+  int j = 0; bool wings = false;
   TH1F* HistogramArray = new TH1F[numBins];
 
   for (j = 0; j < numBins; j++) {
@@ -925,10 +925,11 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     HistName.Form("%i", j);
     HistogramArray[j].SetName(HistName.Data());
     if ( skewness ) {
-      logMin = band[j][2]-3.*band[j][3];
-      logMax = band[j][2]+3.*band[j][3];
+      logMin = band[j][2]-3.*band[j][3]; if ( logMin > 2. ) wings = true;
+      logMax = band[j][2]+3.*band[j][3]; if ( logMax > 3. ) wings = true;
     }
-    HistogramArray[j].SetBins(logBins, logMin-0.5, logMax+0.5); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
+    if ( wings ) { logMin -= 0.5; logMax += 0.5; }
+    HistogramArray[j].SetBins ( logBins, logMin, logMax ); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
     for (unsigned long i = 0; i < signals[j].size(); i++)
       HistogramArray[j].Fill(signals[j][i]);
     HistogramArray[j].Draw();
@@ -1040,7 +1041,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       // Calculate reduced chi2 manually
       double chiSq = 0.00, modelValue, xValue, denom;
       for ( int k = 0; k < logBins; k++ ) {
-        xValue = (logMin-0.5) + k * ( 1. + logMax - logMin ) / logBins;
+        xValue = logMin + k * ( logMax - logMin ) / logBins;
         modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
           (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
         double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);

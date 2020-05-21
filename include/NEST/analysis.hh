@@ -21,7 +21,7 @@ int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
 double minS1 = 1.5; //units are controlled by the usePE flag
 // this is separate from S1 thresholds controlled by detector
 double maxS1 = 99.5;
-int numBins = 98; //for DD, change these to 1.7,110.6,99
+int numBins = 98; //for LUXRun03 DD, change these to 1.7,110.6,99
 
 // for efficiency calculation
 // minS2 need not match S2 threshold in detector.hh
@@ -30,7 +30,7 @@ double minS2 = 42.;
 double maxS2 = 1e4; //5e3 for DD. At least 2e5 for post-Run04 14C
 
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
-double logMax = 3.6;
+double logMax = 3.6; //when skewness=1 or 2 ROOT ignores these and does raw mean +/- 3-sigma
 double logMin = 0.6;
 int logBins = 30; //#bins in between logMin & logMax for fits
 
@@ -41,8 +41,8 @@ double E_step = 5.0;  // keV, for integrating WIMP spectrum
 
 // Set the rootNEST options
 int freeParam= 2; // #free param for calculating DoF in X^2; 2 for Ly and Qy, or g1 and g2
-int skewness = 0; // true means skew-Gaussian fits
+int skewness = 1; // 1 means skew-Gaussian fits (2 more rigorous fit, more detail output)
 int mode = 1;
-//0 default is to provide the ER BG discrimination & leakage frac
+//0 old default is to provide the ER BG discrimination & leakage frac
 //1 outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)
 //2 outputs wimp masses and cross-sections for given efficiency

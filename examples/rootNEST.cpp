@@ -34,7 +34,7 @@
 #define CL 0.90  // confidence level
 #define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
 
-using namespace std;
+using namespace std; double dayNumber = 0.;
 
 vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals);
 vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
@@ -256,7 +256,7 @@ if ( mode == 2 ) {
       if ( eff > 1. || eff < 0. )
 	{ cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
       if (j > loE)
-        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i]) * eff * xEff *
+        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNum) * eff * xEff *
                           NRacc;  // integrating (Riemann, left sum)
                                   // mass-dependent differential rate with
                                   // effxacc and step size

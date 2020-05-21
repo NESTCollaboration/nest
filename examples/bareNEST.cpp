@@ -25,6 +25,7 @@ using namespace NEST;
 
 // Skeleton function for doing a simple NEST calculation
 int main(int argc, char** argv) {
+  double dayNum = 0.;
   // Give a message establishing the use of this code
   cerr << "NOTE: This is a skeleton code meant to be a starting point for "
           "custom uses of NEST. But you should really look at testNEST." << endl
@@ -119,8 +120,8 @@ int main(int argc, char** argv) {
         break;
       case WIMP:
         spec.wimp_spectrum_prep =
-            spec.WIMP_prep_spectrum(wimp_mass_GeV, E_step);
-        keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, wimp_mass_GeV);
+	  spec.WIMP_prep_spectrum(wimp_mass_GeV, E_step, dayNum);
+        keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, wimp_mass_GeV, dayNum);
         break;
       default:
         keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();

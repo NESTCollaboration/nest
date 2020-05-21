@@ -18,7 +18,7 @@
 
 #include "LUX_Run03.hh"
 
-#define tZero 0.00
+#define tZero 0.00 //day{of the year, 0 is average WIMP velocity}
 #define tStep 0.03
 
 using namespace std;
@@ -192,12 +192,12 @@ int main(int argc, char** argv) {
   }
   
   return testNEST(detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos,
-                  seed, no_seed);
+                  seed, no_seed, tZero);
 }
 
 int testNEST(VDetector* detector, unsigned long int numEvts, string type,
              double eMin, double eMax, double inField, string position, string posiMuon,
-             double fPos, int seed, bool no_seed) {
+             double fPos, int seed, bool no_seed, double dayNumber ) {
   // Construct NEST class using detector object
   NESTcalc n(detector);
 
@@ -246,7 +246,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       return 1;
     }
     type_num = WIMP;
-    spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(eMin, E_step);
+    spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(eMin, E_step, dayNumber);
     numEvts = RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral * //here eMax is cross-section
                                               1.0 * double(numEvts) * eMax / 1e-36);
   } else if (type == "B8" || type == "Boron8" || type == "8Boron" ||
@@ -378,7 +378,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   
   if ( type_num < 6 ) massNum = 0;
   
-  double keV = -999.; double timeStamp = tZero;
+  double keV = -999.; double timeStamp = dayNumber;
   for (unsigned long int j = 0; j < numEvts; j++) {
     timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
     //for E-recon when you've changed g1,g2-related stuff, redo line 341+
@@ -406,7 +406,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
           keV = spec.DD_spectrum(eMin, eMax);
           break;
         case WIMP: {
-          keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, eMin);
+          keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, eMin, timeStamp);
         } break;
         default:
           if (eMin < 0.) return 1;

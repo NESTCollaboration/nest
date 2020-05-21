@@ -180,8 +180,8 @@ double TestSpectra::DD_spectrum(
 // dR() //generator written by Vic Gehman originally
 //------++++++------++++++------++++++------++++++------++++++------++++++------
 
-// This spectrum comes from Phys. Rev. D 82 (2010) 023530 (McCabe)
-double TestSpectra::WIMP_dRate(double ER, double mWimp) {
+// This spectrum comes from Phys. Rev. D 82 (2010) 023530 (McCabe). It's PreGAIA
+double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   // We are going to hard code in the astrophysical halo for now.  This may be
   // something that we make an argument later, but this is good enough to start.
   // Some constants:
@@ -198,8 +198,8 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp) {
   // Convert all velocities from km/s into cm/s
   double v_0 = V_WIMP * cmPerkm;     // peak WIMP velocity
   double v_esc = V_ESCAPE * cmPerkm; // escape velocity
-  double v_e = V_EARTH * cmPerkm;    // the Earth's velocity
-
+  double v_e = ( V_EARTH + 15. * sin ( dayNum * 2. * M_PI / 365.24 ) ) * cmPerkm; // the Earth's velocity
+  
   // Define the detector Z and A and the mass of the target nucleus
   double Z = ATOM_NUM;
   double A = (double)RandomGen::rndm()->SelectRanXeAtom();
@@ -315,8 +315,7 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp) {
   return dSpec;
 }
 
-TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass,
-                                                                double eStep) {
+TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, double eStep, double dayNum) {
   WIMP_spectrum_prep spectrum;
   double divisor, x1, x2;
   vector<double> EnergySpec;
@@ -333,14 +332,14 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass,
   }
   int nZeros = 0; //keep track of the number of zeros in a row
   for (int i = 0; i < (numberPoints + 1); i++) {
-    EnergySpec.push_back( WIMP_dRate(double(i) / divisor, mass) );
+    EnergySpec.push_back( WIMP_dRate(double(i) / divisor, mass, dayNum) );
     if ( EnergySpec[i] == 0. ) nZeros++;
     else nZeros = 0; //reset the count if EnergySpec[i] != zero
     if ( nZeros == 100 ) break; //quit the for-loop once we're sure we're only getting zeros
   }
 
   for (long i = 0; i < 1000000; i++) {
-    spectrum.integral += WIMP_dRate(double(i) / 1e4, mass) / 1e4;
+    spectrum.integral += WIMP_dRate(double(i) / 1e4, mass, dayNum) / 1e4;
   }
   spectrum.xMax = ( (double) EnergySpec.size() - 1. )/divisor;
                 //defualt value -- will be overwritten if 
@@ -375,17 +374,17 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass,
 }
 
 double TestSpectra::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum,
-                                  double mass) {
+                                  double mass, double dayNum) {
   double xMin = 0., FuncValue = 0.00, x = 0.;
-  double yMax = WIMP_dRate(xMin, mass);
+  double yMax = WIMP_dRate(xMin, mass, dayNum);
   vector<double> xyTry = {
       xMin + (wimp_spectrum.xMax - xMin) * RandomGen::rndm()->rand_uniform(),
       yMax * RandomGen::rndm()->rand_uniform(), 1.};
   while (xyTry[2] > 0.) {
     while (
         xyTry[1] >
-        (-WIMP_dRate(0., mass) / wimp_spectrum.xMax * xyTry[0] +
-         WIMP_dRate(0., mass))) {  // triangle cut more efficient than rectangle
+        (-WIMP_dRate(0., mass, dayNum) / wimp_spectrum.xMax * xyTry[0] +
+         WIMP_dRate(0., mass, dayNum))) {  // triangle cut more efficient than rectangle
       xyTry[0] =
           (wimp_spectrum.xMax - xMin) * RandomGen::rndm()->rand_uniform();
       xyTry[1] = yMax * RandomGen::rndm()->rand_uniform();

@@ -256,7 +256,7 @@ if ( mode == 2 ) {
       if ( eff > 1. || eff < 0. )
 	{ cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
       if (j > loE)
-        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNum) * eff * xEff *
+        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNumber) * eff * xEff *
                           NRacc;  // integrating (Riemann, left sum)
                                   // mass-dependent differential rate with
                                   // effxacc and step size
@@ -371,17 +371,17 @@ if ( mode == 1 ) {
     if (band2[0][2] > band[0][2]) {
       ERis2nd = true;
       fprintf(stderr,
-              "\nBin Center\tBin Actual\t#StdDev's\tLeak Frac Gaus\t+ error  - "
+              "\n#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ error  - "
               "error\tDiscrim[%%]\tLower ''Half''\t+ error  - "
-              "error\tUpperHf[%%]\tignore column!\n");
+              "error\tUpperHf[%%]\n");
     } else {
       ERis2nd = false;
       fprintf(stderr,
-              "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t- => Gaus more\n");
+              "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t- => Fit more\n");
       fprintf(stderr,
-              "Bin Center\tBin Actual\t#StdDev's\tLeak Frac Gaus\t+ error  - "
-              "error\tDiscrim[%%]\tLeak Frac Real\t+ error  - "
-              "error\tDiscrim[%%]\tReal-Gaus Leak\n");
+              "#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ error  - "
+              "error\tDiscrim[%%]\tLeak Frac Raw\t+ error  - "
+              "error\tDiscrim[%%]\tRaw-Fit Leak\n");
     }
     for (i = 0; i < numBins; i++) {
       
@@ -527,18 +527,19 @@ if ( mode == 1 ) {
           (double(outputs[i].size()) + sqrt(double(outputs[i].size())));
       fprintf(
           stderr,
-          "%.2f\t\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\n",
-          0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
+          "%d\t%.2f\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t",
+          outputs[i].size(), 0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
           numSigma[i], leakage[i], fabs(errorBars[i][0] - leakage[i]),
           fabs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,
-          poisErr[0] - leakTotal, leakTotal - poisErr[1],
-          (1. - leakTotal) * 100., leakTotal - leakage[i]);
+          poisErr[0] - leakTotal, leakTotal - poisErr[1], (1. - leakTotal) * 100.);
+      if ( !ERis2nd ) fprintf ( stderr, "%e\n",leakTotal-leakage[i] );
+      else fprintf(stderr,"\n");
       finalSums[0] += (double)below[i];
       finalSums[1] += (double)outputs[i].size();
     }
     fprintf(stderr,
             "OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
-            "%.12f%%, total: Gaussian + non-Gaussian ('anomalous'). Leakage "
+            "%.12f%%, total: Gaussian & non-Gaussian (tot=counting) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[0] / finalSums[1]) * 100.,
             finalSums[0] / finalSums[1]);  // Dividing by total for average
@@ -557,7 +558,7 @@ if ( mode == 1 ) {
             (1. - LowValue) * 100., LowValue);
     fprintf(stderr,
             "OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
-            "%.12f%%, Gaussian.                                     Leakage "
+            "%.12f%%, Gauss, or skew-normal fits (whatever you ran) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[2] / numBins) * 100., finalSums[2] / numBins);
     delete gr1;

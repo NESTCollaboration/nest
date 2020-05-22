@@ -262,30 +262,33 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
-  //double skewness = 2.25; //if you want to try having it constant
-
-  // LUX Skewness Model
-  Wvalue wvalue = WorkFunction(density);
-  double Wq_eV = wvalue.Wq_eV;
-  double engy = Wq_eV * (yields.PhotonYield + yields.ElectronYield);
-  double fld = yields.ElectricField;
-
-  double alpha0 = 1.39;
-  double cc0 = 4.0, cc1 = 22.1;
-  double E0 = 7.7, E1 = 54., E2 = 26.7, E3 = 6.4;
-  double F0 = 225., F1 = 71.;
-
-  double skewness = 0.;
-
-  if (yields.Lindhard == 1.) {
-    skewness = 1. / (1. + exp((engy - E2) / E3)) * (alpha0 + cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
+  
+  double skewness;
+  if ( (yields.PhotonYield+yields.ElectronYield) > 1e4 || yields.ElectricField > 5e2 || yields.ElectricField < 50. ) {
+    skewness = 2.25; //make it constant when outside range of Vetri Velan's Run04 models. 0 for ion (wall BG) incl. alpha?
+  }
+  else { // LUX Skewness Model
+    Wvalue wvalue = WorkFunction(density);
+    double Wq_eV = wvalue.Wq_eV;
+    double engy = Wq_eV * (yields.PhotonYield + yields.ElectronYield);
+    double fld = yields.ElectricField;
+    
+    double alpha0 = 1.39;
+    double cc0 = 4.0, cc1 = 22.1;
+    double E0 = 7.7, E1 = 54., E2 = 26.7, E3 = 6.4;
+    double F0 = 225., F1 = 71.;
+    
+    skewness = 0.;
+    
+    if (yields.Lindhard == 1.) {
+      skewness = 1. / (1. + exp((engy - E2) / E3)) * (alpha0 + cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
         1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
+    }
+    else {
+      skewness = 2.25; //~5-20 also good (for NR). All better than zero, but 0 is OK too
+    }
   }
-  else {
-    skewness = 2.25; //~5-20 also good (for NR). All better than zero, but 0 is OK too
-  }
-//
-
+  
   double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
   double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
   Ne = int(floor(
@@ -386,6 +389,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
           (Ne + Nph) * ThomasImel - 4.);
+  if ( Nex <= 0. ) cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy NR, or are beyond it, at " << energy << " keV." << endl;
   if ( fabs(Nex + Ni -Nq) > 2. * PHE_MIN )
   {
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";

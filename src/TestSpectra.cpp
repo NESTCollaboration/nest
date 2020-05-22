@@ -375,33 +375,38 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
 
 double TestSpectra::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum,
                                   double mass, double dayNum) {
+  int count = 0; //added by Jack Genovesi of LZ
   double xMin = 0., FuncValue = 0.00, x = 0.;
   double yMax = WIMP_dRate(xMin, mass, dayNum);
   vector<double> xyTry = {
       xMin + (wimp_spectrum.xMax - xMin) * RandomGen::rndm()->rand_uniform(),
       yMax * RandomGen::rndm()->rand_uniform(), 1.};
-  while (xyTry[2] > 0.) {
+  while (xyTry[2] > 0.) {  // start outer while loop
     while (
         xyTry[1] >
         (-WIMP_dRate(0., mass, dayNum) / wimp_spectrum.xMax * xyTry[0] +
          WIMP_dRate(0., mass, dayNum))) {  // triangle cut more efficient than rectangle
       xyTry[0] =
           (wimp_spectrum.xMax - xMin) * RandomGen::rndm()->rand_uniform();
-      xyTry[1] = yMax * RandomGen::rndm()->rand_uniform();
-    }
-    for (x = 0; x < wimp_spectrum.xMax; x += (1. / wimp_spectrum.divisor)) {
-      if (xyTry[0] > x && xyTry[0] < (x + 1. / wimp_spectrum.divisor)) {
+      xyTry[1] = yMax * RandomGen::rndm()->rand_uniform();  // needs to be a lower value
+    }  // end of the inner while loop
+    for (x = 0; x < wimp_spectrum.xMax; x += (1. / wimp_spectrum.divisor)) {  // start inner for loop
+      if (xyTry[0] > x && xyTry[0] < (x + 1. / wimp_spectrum.divisor)) {  // start inner if statement
         FuncValue =
             wimp_spectrum.base[int(x * wimp_spectrum.divisor)] *
             exp(-wimp_spectrum.exponent[int(x * wimp_spectrum.divisor)] *
                 xyTry[0]);
         break;
-      }
-    }
+      }  // end inner if statement
+    }  // end inner for loop
     xyTry = RandomGen::rndm()->VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax,
                                           xyTry[0], xyTry[1], FuncValue);
+    
+    count++; // for avoiding an infinite loop
+    if ( count >= 100 ) { xyTry[0] = 0.; break; }
+    
   }
-
+  
   return xyTry[0];
 }
 

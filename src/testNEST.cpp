@@ -514,6 +514,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         if (type_num == Kr83m && eMin == 9.4 && eMax == 9.4)
           fprintf(stdout,
                   "t [ns]\t\t");
+	if (type_num == WIMP)
+	  fprintf(stdout,
+		  "dayNum\t");
 	if ( MCtruthE && eMax != eMin ) fprintf(stdout,"E_truth [keV]");
 	else fprintf(stdout,"E_recon [keV]");
 	fprintf(stdout,
@@ -845,6 +848,8 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       // and using max's too, pinching both ends
       if (type_num == Kr83m && eMin == 9.4 && eMax == 9.4)
         printf("%.6f\t", yields.DeltaT_Scint);
+      if (type_num == WIMP)
+	printf("%.0f\t", timeStamp);
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field,
              driftTime, smearPos[0], smearPos[1], smearPos[2], quanta.photons,
              quanta.electrons);  // comment this out when below line in

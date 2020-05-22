@@ -36,7 +36,12 @@ int main(int argc, char** argv) {
 
   // Custom parameter modification functions
   // detector->ExampleFunction();
-
+  
+  /* vector<double> eList = { 1., 2., 3. }; // fast example--for PLR, ML train
+  vector<vector<double>> pos3dxyz = { {0.,-1.,60.},{-1.,0.,70.},{1.,0.,80.} };
+  runNESTvec ( detector, NEST::beta, eList, pos3dxyz );
+  return EXIT_SUCCESS; */
+  
   if (argc < 7) {
     cout << "This program takes 6 (or 7) inputs, with Z position in mm from "
             "bottom of detector:" << endl;
@@ -195,6 +200,40 @@ int main(int argc, char** argv) {
                   seed, no_seed, tZero);
 }
 
+vector<vector<double>> runNESTvec ( VDetector* detector, INTERACTION_TYPE particleType, //func suggested by Xin Xiang, PD Brown U. for RG, LZ
+				    vector<double> eList, vector<vector<double>> pos3dxyz ) {
+  
+  verbosity = false; NESTcalc n(detector);
+  NESTresult result; QuantaResult quanta;
+  double x, y, z, driftTime, vD;
+  NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
+  FreeParam = {1.,1.,0.10,0.5,0.19};
+  vector<double> scint, scint2, wf_amp; vector<long int> wf_time;
+  vector<vector<double>> S1cS2cpairs; S1cS2cpairs.resize(eList.size(),vector<double>(2,-999.));
+  vector<double> g2_params = n.CalculateG2(verbosity);
+  
+  for ( long i = 0; i < eList.size(); i++ ) {
+    x = pos3dxyz[i][0];
+    y = pos3dxyz[i][1];
+    z = pos3dxyz[i][2];
+    double truthPos[3] = { x, y, z };
+    double smearPos[3] = { x, y, z }; //ignoring the difference in this quick function caused by smearing
+    result = n.FullCalculation(particleType,eList[i],DENSITY,detector->FitEF(x,y,z),detector->get_molarMass(),ATOM_NUM,NuisParam,FreeParam,verbosity);
+    quanta = result.quanta; //used default density (2.9 at time of writing)
+    vD = n.SetDriftVelocity(detector->get_T_Kelvin(),DENSITY,detector->FitEF(x,y,z));
+    scint = n.GetS1(quanta,truthPos,smearPos,vD,vD,particleType,i,detector->FitEF(x,y,z),eList[i],0,verbosity,wf_time,wf_amp); //0 means useTiming = 0
+    driftTime = (detector->get_TopDrift()-z)/vD; //vD,vDmiddle assumed same (uniform field)
+    scint2= n.GetS2(quanta.electrons,truthPos,smearPos,driftTime,vD,i,detector->FitEF(x,y,z),0,verbosity,wf_time,wf_amp,g2_params);
+    if ( scint[7] > PHE_MIN && scint2[7] > PHE_MIN ) {
+      S1cS2cpairs[0][i] = fabs(scint[7]); //default is S1c in units of spikes, 3-D XYZ corr
+      S1cS2cpairs[1][i] = log10(fabs(scint2[7])); //default is log10(S2c) in terms of log(phd) not phe a.k.a. PE
+    }
+    else { S1cS2cpairs[0][i] = 0.0; S1cS2cpairs[1][i] = 0.0; }
+  }
+  
+  return S1cS2cpairs;
+}
+
 int testNEST(VDetector* detector, unsigned long int numEvts, string type,
              double eMin, double eMax, double inField, string position, string posiMuon,
              double fPos, int seed, bool no_seed, double dayNumber ) {
@@ -336,13 +375,12 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
   if ( detector->get_extraPhot() )
     Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO
-
   
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
   g2 = fabs(g2_params[3]);
   double g1 = detector->get_g1();
-
+  
   double centralZ =
       (detector->get_gate() * 0.8 + detector->get_cathode() * 1.03) /
       2.;  // fid vol def usually shave more off the top, because of gas

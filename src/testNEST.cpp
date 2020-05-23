@@ -224,7 +224,7 @@ vector<vector<double>> runNESTvec ( VDetector* detector, INTERACTION_TYPE partic
     scint = n.GetS1(quanta,truthPos,smearPos,vD,vD,particleType,i,detector->FitEF(x,y,z),eList[i],0,verbosity,wf_time,wf_amp); //0 means useTiming = 0
     driftTime = (detector->get_TopDrift()-z)/vD; //vD,vDmiddle assumed same (uniform field)
     scint2= n.GetS2(quanta.electrons,truthPos,smearPos,driftTime,vD,i,detector->FitEF(x,y,z),0,verbosity,wf_time,wf_amp,g2_params);
-    if ( scint[7] > PHE_MIN && scint2[7] > PHE_MIN ) {
+    if ( scint[7] > PHE_MIN && scint2[7] > PHE_MIN ) { //unlike usual, kill (don't skip, just -> 0) sub-thr evts
       S1cS2cpairs[0][i] = fabs(scint[7]); //default is S1c in units of spikes, 3-D XYZ corr
       S1cS2cpairs[1][i] = log10(fabs(scint2[7])); //default is log10(S2c) in terms of log(phd) not phe a.k.a. PE
     }

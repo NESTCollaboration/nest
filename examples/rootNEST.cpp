@@ -51,7 +51,7 @@ band[bin][4] = log(S2/S1) alpha
 band[bin][5] = log(S2/S1) mean error
 band[bin][6] = log(S2/S1) stddev error
 band[bin][7] = log(S2/S1) alpha error
-band[bin][8] = log(S2/S1) chi2/ndf (NEST)
+band[bin][8] = log(S2/S1) chi2/ndf (ROOT)
 band[bin][9] = log(S2/S1) xi
 band[bin][10] = log(S2/S1) xi error
 band[bin][11] = log(S2/S1) omega
@@ -59,7 +59,7 @@ band[bin][12] = log(S2/S1) omega error
 band[bin][13] = log(S2/S1) covariance xi-omega
 band[bin][14] = log(S2/S1) covariance xi-alpha
 band[bin][15] = log(S2/S1) covariance omega-alpha
-band[bin][16] = log(S2/S1) chi2/ndf (ROOT)
+band[bin][16] = log(S2/S1) chi2/ndf (NEST)
 */
 
 void GetFile(char* fileName);
@@ -749,43 +749,19 @@ void GetFile(char* fileName) {
   if (usePD <= 0) {
     inputs = GetBand(S1cor_phe, S2cor_phe, true);
     for (o = 0; o < numBins; o++) {
-      band[o][0] = 0.;
-      band[o][1] = 0.;
-      band[o][2] = 0.;
-      band[o][3] = 0.;
-      band[o][4] = 0.;
-      band[o][5] = 0.;
-      band[o][6] = 0.;
-      band[o][7] = 0.;
-      band[o][8] = 0.;
+      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_phe, S2cor_phe, false));
   } else if (usePD == 1) {
     inputs = GetBand(S1cor_phd, S2cor_phd, true);
     for (o = 0; o < numBins; o++) {
-      band[o][0] = 0.;
-      band[o][1] = 0.;
-      band[o][2] = 0.;
-      band[o][3] = 0.;
-      band[o][4] = 0.;
-      band[o][5] = 0.;
-      band[o][6] = 0.;
-      band[o][7] = 0.;
-      band[o][8] = 0.;
+      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_phd, S2cor_phd, false));
   } else {
     inputs = GetBand(S1cor_spike, S2cor_phd, true);
     for (o = 0; o < numBins; o++) {
-      band[o][0] = 0.;
-      band[o][1] = 0.;
-      band[o][2] = 0.;
-      band[o][3] = 0.;
-      band[o][4] = 0.;
-      band[o][5] = 0.;
-      band[o][6] = 0.;
-      band[o][7] = 0.;
-      band[o][8] = 0.;
+      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_spike, S2cor_phd, false));
   }
@@ -1035,9 +1011,9 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       
       // Store reduced chi2
       if ( skewness == 2 )
-	band[j][16] = res->Chi2() / double(res->Ndf());
+	band[j][8] = res->Chi2() / double(res->Ndf());
       else
-	band[j][16] = f->GetChisquare() / (double)f->GetNDF();
+	band[j][8] = f->GetChisquare() / (double)f->GetNDF();
 
       // Calculate reduced chi2 manually
       double chiSq = 0.00, modelValue, xValue, denom;
@@ -1045,14 +1021,14 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
         xValue = logMin + k * ( logMax - logMin ) / logBins;
         modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
           (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
-        double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);
+        double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.); //alternatively: skip the zero bins entirely?? Not sure better
 	if ( freeParam > 0 )
 	  chiSq += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom; //combined Pearson-Neyman chi-squared (Matthew Sz.)
 	else
 	  chiSq += 2. * ( modelValue - double ( HistogramArray[j][k] ) * log ( modelValue ) ); //MLE: Maximum Likelihood Estimator (Poisson)
       }
       chiSq /= ( double(logBins) - 4. - 1. );
-      band[j][8] = chiSq;
+      band[j][16] = chiSq;
 
       // Retry fit if it does not converge.
       //if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 2. || band[j][7] > 10. || band[j][3] > 1. || band[j][6] > 0.5 || band[j][2] <= 0. ) {

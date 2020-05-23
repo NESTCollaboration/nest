@@ -383,8 +383,10 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Ne = Qy * energy * ScaleFactor[1];
   double Nph = Ly * energy * ScaleFactor[0] *
           (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]), NuisParam[11]));
-  //Ne = energy * (4.1395*pow(energy,0.13816)*(log(1.+(0.040945*pow(energy,1.1388)))/(0.040945*pow(energy,1.1388))));
-  //Nph = energy * 3.35 * pow(energy,0.29222); // NESTv0.98 (2013) model for legacy comparisons (arXiv:1307.6601)
+  //Ne = energy * (4.1395*pow(energy,0.13816)*(log(1.+(0.040945*pow(energy,1.1388)))/(0.040945*pow(energy,1.1388)))); // conservative: k < or ~ to 0.110 (Hitachi-like)
+  //Nph = energy * 3.35 * pow(energy,0.29222); // NESTv0.98 (2013) model for legacy comparisons (arXiv:1307.6601) at ~200 V/cm
+  //Nph = 0.95*64.*energy * (0.050295*pow(energy,1.3483)*(log(1.+(0.84074*pow(energy,1.3875)))/(0.84074*pow(energy,1.3875)))); // NESTv0.97beta (2011) ~0 V/cm arXiv:1106.1613
+  //Ne = energy * (10.661*pow(energy,0.16199)*(log(1.+(0.745330*pow(energy,1.0880)))/(0.745330*pow(energy,1.0880)))+0.93739); // essentially Lindhard with k of 0.166
   Nq = Nph + Ne;
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
@@ -551,7 +553,40 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations;
 }
 
-
+YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfield ) {
+  
+  double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
+  double alpha = 0.067366 + density * 0.039693;
+  double Nq = energy * 1e3 / Wq_eV;
+  double m1 = (14.10181492*log10(dfield) -13.1164354516);
+  if ( m1 > 30.66 ) { m1 = 30.66; }
+  double m5 = Nq/energy/(1 + alpha*erf(0.05 * energy))-m1;
+  double m10 = (0.0508273937+(0.1166087199-0.0508273937)/(1+pow(dfield/1.39260460e+02,-0.65763592)));
+  
+  double Qy = m1 + (77.2931084-m1)/
+    pow((1.+pow(energy/(log10(dfield)*0.13946236+0.52561312),1.82217496+(2.82528809-1.82217496)/(1+pow(dfield/144.65029656,-2.80532006)))),0.3344049589)
+    + m5 +(0.- m5)/pow((1.+pow(energy/(7.02921301+(98.27936794-7.02921301)/
+				       (1.+pow(dfield/256.48156448,1.29119251))),4.285781736)), m10);
+  
+  double coeff_TI = pow(1./DENSITY, 0.3);
+  double coeff_Ni = pow(1./DENSITY, 1.4);
+  double coeff_OL = pow(1./DENSITY, -1.7)/log(1.+coeff_TI*coeff_Ni*pow(DENSITY,1.7));
+  Qy *= coeff_OL*log(1.+coeff_TI*coeff_Ni*pow(density,1.7))*pow(density,-1.7);
+  double Ly = Nq / energy - Qy;
+  double Ne = Qy * energy;
+  double Nph = Ly * energy;
+  double lux_NexONi = alpha * erf(0.05 * energy);
+  
+  YieldResult result;
+  result.PhotonYield = Nph;
+  result.ElectronYield = Ne;
+  result.ExcitonRatio = lux_NexONi;
+  result.Lindhard = 1;
+  result.ElectricField = dfield;
+  result.DeltaT_Scint = -999;
+  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations;
+  
+}
 
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
                                 double density, double dfield, double massNum,
@@ -582,6 +617,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
     default:  // beta, CH3T
     {
       return GetYieldBeta(energy,density,dfield);
+      //return GetYieldBetaGR(energy,density,dfield);
     } break;
   }
 

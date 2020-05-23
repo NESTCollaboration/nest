@@ -203,6 +203,8 @@ class NESTcalc {
   // Called by GetYields in the K383m case
   virtual YieldResult GetYieldBeta(double energy, double density, double dfield);
   // Called by GetYields in the Beta/Compton/etc.(IC,Auger,EC) Case
+  virtual YieldResult GetYieldBetaGR(double energy, double density, double dfield);
+  // Greg R. version: arXiv:1910.04211
   virtual YieldResult YieldResultValidity(YieldResult& res, const double energy, const double Wq_eV);
   // Confirms and sometimes adjusts YieldResult to make physical sense
   virtual QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.19});

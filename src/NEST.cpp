@@ -699,14 +699,14 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   vector<double> newSpike(2);  // for re-doing spike counting more precisely
 
   // Add some variability in g1 drawn from a polynomial spline fit
-  double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2]);
-  double posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2]);
+  double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2], VDetector::fold);
+  double posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
   double dt = (fdetector->get_TopDrift() - truthPos[2]) / driftVelocity;
   double dz_center = fdetector->get_TopDrift() -
                      dV_mid * fdetector->get_dtCntr();  // go from t to z
   posDep /=
-      fdetector->FitS1(0., 0., dz_center);  // XYZ always in mm now never cm
-  posDepSm /= fdetector->FitS1(0., 0., dz_center);
+    fdetector->FitS1(0., 0., dz_center, VDetector::fold);  // XYZ always in mm now never cm
+  posDepSm /= fdetector->FitS1(0., 0., dz_center, VDetector::unfold);
 
   // generate a number of PMT hits drawn from a binomial distribution.
   // Initialize number of photo-electrons
@@ -997,10 +997,10 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
 
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = fdetector->FitS2(
-      truthPos[0], truthPos[1]);  // XY is always in mm now, never cm
-  double posDepSm = fdetector->FitS2(smearPos[0], smearPos[1]);
-  posDep /= fdetector->FitS2(0., 0.);
-  posDepSm /= fdetector->FitS2(0., 0.);
+				   truthPos[0], truthPos[1], VDetector::fold);  // XY is always in mm now, never cm
+  double posDepSm = fdetector->FitS2(smearPos[0], smearPos[1], VDetector::unfold);
+  posDep /= fdetector->FitS2(0., 0., VDetector::fold);
+  posDepSm /= fdetector->FitS2(0., 0., VDetector::unfold);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
   int Nee = BinomFluct(Ne, ExtEff * exp(-dt / fdetector->get_eLife_us()));
@@ -1315,7 +1315,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     r = fdetector->get_radius()*sqrt(RandomGen::rndm()->rand_uniform());
     x = r * cos(phi);
     y = r * sin(phi);
-    posDep = fdetector->FitS2(x,y) / fdetector->FitS2(0.,0.); //future upgrade: smeared pos
+    posDep = fdetector->FitS2(x,y,VDetector::fold) / fdetector->FitS2(0.,0.,VDetector::fold); //future upgrade: smeared pos
     nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
     Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
     pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
@@ -1364,9 +1364,9 @@ vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
   newSpike[0] = RandomGen::rndm()->rand_gauss(
       newSpike[0], (fdetector->get_sPEres() / 4.) * sqrt(newSpike[0]));
   if (newSpike[0] < 0.0) newSpike[0] = 0.0;
-  newSpike[1] = newSpike[0] / fdetector->FitS1(dx, dy, dz) *
+  newSpike[1] = newSpike[0] / fdetector->FitS1(dx, dy, dz, VDetector::unfold) *
                 fdetector->FitS1(0., 0., fdetector->get_TopDrift() -
-                                             dS_mid * fdetector->get_dtCntr());
+				 dS_mid * fdetector->get_dtCntr(), VDetector::unfold);
 
   return newSpike;  // regular and position-corrected spike counts returned
 }

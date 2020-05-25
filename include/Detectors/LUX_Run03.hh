@@ -76,7 +76,7 @@ public:
   
   // S1 PDE custom fit for function of xyz
   // 1712.05696 indirectly, 1708.02566 Figure 10 color map
-  virtual double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+  virtual double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm, LCE map ) {
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     double amplitude = 307.9-0.3071*zPos_mm+0.0002257*pow(zPos_mm,2.);
@@ -100,7 +100,7 @@ public:
   
   // S2 PDE custom fit for function of r
   // 1712.05696 & 1710.02752 indirectly. Fig. 13 1708.02566
-  virtual double FitS2 ( double xPos_mm, double yPos_mm ) {
+  virtual double FitS2 ( double xPos_mm, double yPos_mm, LCE map ) {
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     

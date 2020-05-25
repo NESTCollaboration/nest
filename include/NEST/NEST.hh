@@ -197,6 +197,8 @@ class NESTcalc {
   virtual YieldResult GetYieldNR(double energy, double density, double dfield, double massNum,
                   std::vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   // Called by GetYields in the NR (and related) cases
+  virtual YieldResult GetYieldNROld ( double energy, int alt );
+  // Quick and dirty simple analytical approximations saved for earlier NEST versions that were first principles: power laws, ln, sigmoid, exponentials
   virtual YieldResult GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum, vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   // Called by GetYields in the ion case
   virtual YieldResult GetYieldKr83m(double energy, double density, double dfield);

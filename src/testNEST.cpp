@@ -443,9 +443,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         case DD:
           keV = spec.DD_spectrum(eMin, eMax);
           break;
-        case WIMP: {
+        case WIMP:
           keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, eMin, timeStamp);
-        } break;
+	  break;
         default:
           if (eMin < 0.) return 1;
           if (eMax > 0.)

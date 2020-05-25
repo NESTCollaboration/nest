@@ -351,7 +351,42 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
   result.Lindhard = 1;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
-  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
+  return YieldResultValidity(result,energy,Wq_eV);
+}
+
+YieldResult NESTcalc::GetYieldNROld ( double energy, int option ) { // possible anti-correlation in NR ignored totally
+  
+  double Ne, Nph, FakeField;
+  
+  if ( option == 0 ) { // with old-school L_eff*S_nr conversion, and more explicit Thomas-Imel box model formulae but approximation where Qy can sail off as energy to 0
+    FakeField = 1.00;
+    Nph = 0.95*64.*energy * (0.050295*pow(energy,1.3483)*(log(1.+(0.84074*pow(energy,1.3875)))/(0.84074*pow(energy,1.3875)))); // NESTv0.97beta (2011) ~0 V/cm arXiv:1106.1613
+    Ne = energy * (10.661*pow(energy,0.16199)*(log(1.+(0.745330*pow(energy,1.0880)))/(0.745330*pow(energy,1.0880)))+0.93739); // essentially Lindhard with k of 0.166
+  }
+  else if ( option == 1 ) {
+    FakeField = 200.;
+    Ne = energy * (4.1395*pow(energy,0.13816)*(log(1.+(0.040945*pow(energy,1.1388)))/(0.040945*pow(energy,1.1388)))); // conservative: k < or ~ to 0.110 (Hitachi-like)
+    Nph = energy * 3.35 * pow(energy,0.29222); // NESTv0.98 (2013) model for legacy comparisons (arXiv:1307.6601) using simple power law (optional constant; optional for Nph)
+  }
+  else if ( option == 2 ) {
+    FakeField = 730.;
+    Nph = 7582.3+(-1.3728-7582.3)/(1.+pow(energy/385.46,1.2669)); // NEST v1.0 (2015) arXiv:1412.4417, with ability to cut off yield at either low or high energy. Fit to Nph
+    Ne = (60.914*pow(energy,0.32220))*(1.-exp(-0.12684*pow(energy,0.65729))); // middle of road: k = 0.14. By Brian Lenardo, still pre-LUX-DD. With explicit bi-Exc quenching
+  }
+  else { // simplest by far, but not 1st principles: based on work of M. Wyman UAlbany
+    FakeField = 180.; // fit to LUX Run03 D-D alone
+    Ne = ( -3.8780 + 12.372 * pow ( energy, 0.73502 ) ) * exp ( -0.0034329 * energy ); // slide 68 of Matthew's private Google Slides mega-deck
+    Nph = 0.81704 + 3.8584 * pow ( energy, 1.30180 ); // ditto
+  }
+  
+  YieldResult result; if(Nph<0.)Nph=0.; if(Ne<0.)Ne=0.;
+  result.PhotonYield = Nph; result.ElectronYield = Ne;
+  result.ExcitonRatio = 1.;
+  result.Lindhard = ( ( Nph + Ne ) / energy ) * W_DEFAULT * 1e-3;
+  result.ElectricField = FakeField;
+  result.DeltaT_Scint = -999.;
+  return YieldResultValidity ( result, energy, W_DEFAULT );
+  
 }
 
 YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, double massNum, vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
@@ -383,10 +418,6 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Ne = Qy * energy * ScaleFactor[1];
   double Nph = Ly * energy * ScaleFactor[0] *
           (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]), NuisParam[11]));
-  //Ne = energy * (4.1395*pow(energy,0.13816)*(log(1.+(0.040945*pow(energy,1.1388)))/(0.040945*pow(energy,1.1388)))); // conservative: k < or ~ to 0.110 (Hitachi-like)
-  //Nph = energy * 3.35 * pow(energy,0.29222); // NESTv0.98 (2013) model for legacy comparisons (arXiv:1307.6601) at ~200 V/cm
-  //Nph = 0.95*64.*energy * (0.050295*pow(energy,1.3483)*(log(1.+(0.84074*pow(energy,1.3875)))/(0.84074*pow(energy,1.3875)))); // NESTv0.97beta (2011) ~0 V/cm arXiv:1106.1613
-  //Ne = energy * (10.661*pow(energy,0.16199)*(log(1.+(0.745330*pow(energy,1.0880)))/(0.745330*pow(energy,1.0880)))+0.93739); // essentially Lindhard with k of 0.166
   Nq = Nph + Ne;
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
@@ -601,24 +632,22 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
     case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
               // statement. Same intrinsic yields, but different energy spectra
               // (TestSpectra)
-      {
         return GetYieldNR(energy, density, dfield, massNum,NuisParam);
-      }
+	//return GetYieldNROld ( energy, 1 );
       break;
-    case ion: {
+    case ion:
       return GetYieldIon(energy,density,dfield,massNum,atomNum,NuisParam);
-    } break;
-    case gammaRay: {
+    break;
+    case gammaRay:
       return GetYieldGamma(energy,density,dfield);
-    } break;
-    case Kr83m: {
+    break;
+    case Kr83m:
       return GetYieldKr83m(energy,density,dfield);
-    } break;
+    break;
     default:  // beta, CH3T
-    {
       return GetYieldBeta(energy,density,dfield);
       //return GetYieldBetaGR(energy,density,dfield);
-    } break;
+    break;
   }
 
 

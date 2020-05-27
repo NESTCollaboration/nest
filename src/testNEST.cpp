@@ -498,6 +498,10 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         position.erase(0, loc + delimiter.length());
         i++;
       }
+      if ( sqrt ( pos_x*pos_x+pos_y*pos_y ) > detector->get_radius() && j == 0 )
+	cerr << "WARNING: outside fiducial radius." << endl;
+      if ( sqrt ( pos_x*pos_x+pos_y*pos_y ) > detector->get_radmax() ) {
+	cerr << "\nERROR: outside physical radius!!!" << endl; return EXIT_FAILURE; }
       pos_z = stof(position);
       if (stof(position) == -1.)
         pos_z =
@@ -555,7 +559,8 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	if (type_num == WIMP)
 	  fprintf(stdout,
 		  "dayNum\t");
-	if ( MCtruthE && eMax != eMin ) fprintf(stdout,"E_truth [keV]");
+	if ( eMax == eMin && numBins == 1 ) MCtruthE = false;
+	if ( MCtruthE ) fprintf(stdout,"E_truth [keV]");
 	else fprintf(stdout,"E_recon [keV]");
 	fprintf(stdout,
 		"\tfield [V/cm]\ttDrift [us]\tX,Y,Z "
@@ -981,7 +986,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
             cerr << "CAUTION: Poor stats. You must have at least 2 events to "
                     "calculate S1 and S2 and E resolutions.\n";
         } else if ((energies[0] == eMin || energies[0] == eMax ||
-                    energies[1] <= 0.0) &&
+                    energies[1] <= 1E-6) &&
                    field >= FIELD_MIN)
           cerr << "If your energy resolution is 0% then you probably still "
                   "have MC truth energy on." << endl;

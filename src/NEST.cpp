@@ -586,8 +586,10 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 
 YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfield ) {
   
-  double Wq_eV = 1.9896 + (20.8 - 1.9896) / (1. + pow(density / 4.0434, 1.4407));
-  double alpha = 0.067366 + density * 0.039693;
+  Wvalue wvalue = WorkFunction(density);
+  double Wq_eV = wvalue.Wq_eV;
+  double alpha = wvalue.alpha;
+  
   double Nq = energy * 1e3 / Wq_eV;
   double m1 = (14.10181492*log10(dfield) -13.1164354516);
   if ( m1 > 30.66 ) { m1 = 30.66; }

@@ -510,22 +510,15 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
   if (energy == 9.4)
   {
     deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
-    Nq = energy * (1e3 / Wq_eV + 6.5);
-    double medTlevel =
-            47.8 + (69.201 - 47.8) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-    double highTrise =
-            1.15 + (1. - 1.15) / (1. + pow(deltaT_ns / 1200., 18.));
-    double lowTdrop = 14. * pow(dfield, 0.19277);
-    Nph = energy * highTrise *
-            (5.1e4 * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-            (1. + pow(deltaT_ns / lowTdrop, -3.));
+    Nq = energy * 1e3 / Wq_eV;
+    double medTlevel = 70. * (-0.35 * 6.3e-4 * dfield * log(1. + 1. / (9.298e-4 * dfield)) + 1.);
+    double lowTdrop = 17. * pow(dfield, 0.11277);
+    Nph = energy * (5.3e4 * pow(1.8 * deltaT_ns + lowTdrop, -1.5) + medTlevel) / (1. + pow(deltaT_ns / lowTdrop, -7.5));
     alpha = 0.;
   } else
   {
-    Nq = energy * 1000. / Wq_eV;
-    Nph =
-            energy *
-            (6. + (69.742 - 6.) / pow(1. + pow(dfield / 9.515, 1.9), 0.063032));
+    Nq = energy * 1e3 / Wq_eV;
+    Nph = energy * (3. + (69.742 - 3.) / pow(1. + pow(dfield / 119.853, 0.5618), 0.36637));
   }
   double Ne = Nq - Nph;
  

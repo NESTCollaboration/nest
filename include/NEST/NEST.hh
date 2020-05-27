@@ -157,7 +157,7 @@ class NESTcalc {
   NESTcalc(const NESTcalc&) = delete;
   NESTcalc& operator=(const NESTcalc&) = delete;
   NESTcalc(VDetector* detector);
-  ~NESTcalc();
+  virtual ~NESTcalc();
 
   long BinomFluct(long, double);
   
@@ -294,6 +294,8 @@ class NESTcalc {
   virtual double NexONi(double energy, double density);
   //calculate exciton/ion 
   VDetector* GetDetector() { return fdetector; }
+  void SetDetector(VDetector* detector) { fdetector = detector; }
+  
 };
 }
 

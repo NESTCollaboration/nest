@@ -89,7 +89,7 @@ class DetectorExample_ZEPLIN : public VDetector {
   // For example, use a high-order poly spline
   virtual double FitEF(double xPos_mm, double yPos_mm,
                        double zPos_mm) {  // in V/cm
-    return 3900.;
+    return 3850.; //compromise between 3900 (published) and 3800 (more accurate??)
   }
 
   // S2 PDE custom fit for function of r

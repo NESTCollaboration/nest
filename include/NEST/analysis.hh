@@ -35,7 +35,7 @@ double logMin = 0.6;
 int logBins = 30; //#bins in between logMin & logMax for fits
 
 // some numbers for fine-tuning the speed vs. the accuracy
-double z_step = 0.1;  // mm, for integrating non-uniform field
+double z_step = 0.1;  // mm, for integrating non-uni EF. Big slow-down: increase at LZ scale
 double E_step = 5.0;  // keV, for integrating WIMP spectrum
 // Rec >~20GeV 6keV, <~5GeV 0.5keV
 

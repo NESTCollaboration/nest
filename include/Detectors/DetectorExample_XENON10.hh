@@ -101,7 +101,7 @@ class DetectorExample_XENON10 : public VDetector {
   // For example, use a high-order poly spline
   virtual double FitEF(double xPos_mm, double yPos_mm,
                        double zPos_mm) {  // in V/cm
-    return 730.;
+    return 730.; // NOTE: if just const don't use -1 field option at run-time
   }
 
   // S2 PDE custom fit for function of r

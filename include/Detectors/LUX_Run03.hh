@@ -89,7 +89,7 @@ public:
   // 1709.00095, 1904.08979, 1708.02566 Fig. 13
   virtual double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
     
-    return 158.92
+    return 158.92 // NOTE: DO NOT JUST RETURN A CONSTANT, THAT IS A SILLY USE of FitEF
       -0.2209000 *pow(zPos_mm,1.)
       +0.0024485 *pow(zPos_mm,2.)
       -8.7098e-6 *pow(zPos_mm,3.)

@@ -761,9 +761,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       signal2.push_back(-999.);
     
     if ( eMin == eMax ) {
-      if ( scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1 )
+      if ( (scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1) && j < 10 )
 	cerr << "WARNING: Some S1 pulse areas are greater than maxS1" << endl;
-      if ( scint2[5] > maxS2 || scint2[7] > maxS2 )
+      if ( (scint2[5] > maxS2 || scint2[7] > maxS2) && j < 10 ) //don't repeat too much: only if within first 10 events then show (+above)
 	cerr << "WARNING: Some S2 pulse areas are greater than maxS2" << endl;
     }
     
@@ -801,11 +801,14 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	if ( yields.Lindhard == 1. )
 	  keV = (Nph/FudgeFactor[0] + Ne/FudgeFactor[1]) * Wq_eV * 1e-3;
 	else {
-	  keV = pow((Ne+Nph)/NuisParam[0],1./NuisParam[1]);
-	  Ne *= 1. - 1. / pow(1. + pow((keV / NuisParam[5]), NuisParam[6]), NuisParam[10]);
-	  Nph *=1. - 1. / pow(1. + pow((keV / NuisParam[7]), NuisParam[8]), NuisParam[11]);
-	  keV = pow((Ne+Nph)/NuisParam[0],1./NuisParam[1]);
-	  //keV= (Nph + Ne) * Wq_eV * 1e-3 / yields.Lindhard; // cheating :-)
+	  if ( type_num <= NEST::INTERACTION_TYPE::Cf ) {
+	    keV = pow((Ne+Nph)/NuisParam[0],1./NuisParam[1]);
+	    Ne *= 1. - 1. / pow(1. + pow((keV / NuisParam[5]), NuisParam[6]), NuisParam[10]);
+	    Nph *=1. - 1. / pow(1. + pow((keV / NuisParam[7]), NuisParam[8]), NuisParam[11]);
+	    keV = pow((Ne+Nph)/NuisParam[0],1./NuisParam[1]);
+	  }
+	  else
+	    keV =(Nph + Ne) * Wq_eV * 1e-3 / yields.Lindhard; // cheating :-)
 	}
         keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
                                              // both places, but will not account

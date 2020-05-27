@@ -294,8 +294,7 @@ class NESTcalc {
   virtual double NexONi(double energy, double density);
   //calculate exciton/ion 
   VDetector* GetDetector() { return fdetector; }
-  void SetDetector(VDetector* detector) { fdetector = detector; }
-  
+  void SetDetector(VDetector* detector) { fdetector = detector; }  
 };
 }
 

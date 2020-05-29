@@ -48,6 +48,10 @@ int main(int argc, char** argv) {
     cout << "\t./testNEST numEvts type_interaction E_min[keV] E_max[keV] "
             "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl
          << endl;
+    cout << "For Kr83m time-dependent 9.4, 32.1, or 41.5 keV yields: " << endl;
+    cout << "\t ./testNEST numEvents Kr83m Energy[keV] maxTimeDiff[ns] "
+	    "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl 
+         << endl;
     cout << "For 8B, numEvts is kg-days of exposure with everything else same. "
             "For WIMPs:" << endl;
     cout << "\t./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] "
@@ -346,12 +350,14 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     return 1;
   }
   
+  double maxTimeSep = DBL_MAX;
   if (type_num == Kr83m) {
-    if (eMin == 9.4 && eMax == 9.4) {
-    } else if (eMin == 32.1 && eMax == 32.1) {
+    if ( (eMin == 9.4 || eMin == 32.1 || eMin == 41.5) && eMin != eMax) {
+      maxTimeSep = eMax;
     } else {
-      cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV "
-              "please." << endl;
+      cerr << "ERROR: For Kr83m, put E_min as 9.4, 32.1, or 41.5 keV "
+              "and E_max as the max time-separation [ns] between the two decays "
+	      "please." << endl;
       return 1;
     }
   }
@@ -401,7 +407,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     else
       energyMaximum = eMax;
     if (type_num == Kr83m)
-      yieldsMax = n.GetYields(NEST::beta, energyMaximum, rho, centralField,
+      yieldsMax = n.GetYields(NEST::beta, eMin, rho, centralField,
                               double(massNum), double(atomNum),
                               NuisParam);  // the reason for this: don't do the
     // special Kr stuff when just
@@ -415,12 +421,13 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   
   if ( type_num < 6 ) massNum = 0;
-  
+  if ( type_num == Kr83m ) massNum = maxTimeSep; 
+      //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
   for (unsigned long int j = 0; j < numEvts; j++) {
     timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
     //for E-recon when you've changed g1,g2-related stuff, redo line 341+
-    if (eMin == eMax && eMin >= 0. && eMax > 0.) {
+    if ( (eMin == eMax && eMin >= 0. && eMax > 0.) || type_num == Kr83m ) {
       keV = eMin;
     } else {
       switch (type_num) {
@@ -553,7 +560,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
              << " eV\tNegative numbers are flagging things below threshold!   "
                 "phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
 
-        if (type_num == Kr83m && eMin == 9.4 && eMax == 9.4)
+        if (type_num == Kr83m && eMin != 32.1)
           fprintf(stdout,
                   "t [ns]\t\t");
 	if (type_num == WIMP)
@@ -892,7 +899,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       // other suggestions: minS1, minS2 (or s2_thr) for tighter cuts depending
       // on analysis.hh settings (think of as analysis v. trigger thresholds)
       // and using max's too, pinching both ends
-      if (type_num == Kr83m && eMin == 9.4 && eMax == 9.4)
+      if (type_num == Kr83m && eMin != 32.1 )
         printf("%.6f\t", yields.DeltaT_Scint);
       if (type_num == WIMP)
 	printf("%.0f\t", timeStamp);
@@ -924,7 +931,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   }
   
   if (verbosity) {
-    if (eMin != eMax) {
+    if (eMin != eMax && type_num != Kr83m) {
       if (useS2 == 2)
         GetBand(signal2, signal1, false, detector->get_coinLevel());
       else

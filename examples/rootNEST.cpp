@@ -33,6 +33,7 @@
 // non-input parameters hardcoded in
 #define CL 0.90  // confidence level
 #define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
+#define SKIP 0  // number of lines of energy to skip in efficiency file (lim)
 
 using namespace std; double dayNumber = 0.;
 
@@ -119,47 +120,79 @@ if ( mode == 2 ) {
   while (EOF != (ch = getc(ifp))) {
     if ('\n' == ch) nLines++;
   }
-  double input[9][nLines];
+  double input[9][nLines-SKIP];
   rewind(ifp);
   for (i = -1; i < nLines; i++) {
-    if ( i == -1 ) {
+    if ( i <= (-1+SKIP) ) {
       char line[180];
       fgets ( line, 180, ifp );
       continue;
     }
     fscanf ( ifp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-             &input[0][i], &input[1][i], &input[2][i], &input[3][i], &input[4][i], &input[5][i], &input[6][i], &input[7][i], &input[8][i] );
-    input[7][i] /= 1e2;
-    if ( input[7][i] > 1.02 ) //2% margin of error is allowed
+             &input[0][i-SKIP], &input[1][i-SKIP], &input[2][i-SKIP], &input[3][i-SKIP], &input[4][i-SKIP],
+	     &input[5][i-SKIP], &input[6][i-SKIP], &input[7][i-SKIP], &input[8][i-SKIP] );
+    input[7][i-SKIP] /= 1e2;
+    if ( input[7][i-SKIP] > 1.02 ) //2% margin of error is allowed
       { cerr << "eff should be frac not %" << endl; return 1; }
-    if ( input[7][i] < -.02 ) //allowing for digitization err
+    if ( input[7][i-SKIP] < -.02 ) //allowing for digitization err
       { cerr << "eff must not be negative" << endl; return 1; }
-    if ( input[7][i] > 0.00 )
-      input[7][i] = log10(input[7][i]);
+    if ( input[7][i-SKIP] > 0.00 && !std::isnan(input[7][i-SKIP]) )
+      input[7][i-SKIP] = log10(input[7][i-SKIP]);
     else
-      input[7][i] = -6.;
+      input[7][i-SKIP] = -6.;
   }
-  fclose(ifp);
+  fclose(ifp); nLines -= SKIP;
   TGraph* gr1 = new TGraph(nLines, input[0], input[7]);
+  double start; int jj = 0;
+  while ( input[0][jj] <= 0.00000 ) { start = input[0][jj]; jj++; }
+  double loE = start, hiE = input[0][nLines-1];
+  cout << "Minimum energy (keV) for detection: ";
+  cin >> loE;
+  cout << "Maximum energy (keV) for detection: ";
+  cin >> hiE;
   TF1* fitf =
       new TF1("FracEffVkeVEnergy",
               "-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5])",
-              input[0][0], input[0][nLines - 1]);  // eqn inspired by Alex Murphy
-  fitf->SetParameters(10., 2., 1., 20., 1e4, -2.5);
-  gr1->Fit(fitf, "q");  // remove the quiet option if you want to see all
-                        // the parameters' values for Fractional Efficiency
-                        // versus Energy in keV. Prints to screen
+              loE, hiE);  // eqn inspired by Alex Murphy
+  fitf->SetParameters(17.1, 1.82, 0.659, 18.3, 20869., -2.35);
+  TFitResultPtr fitr = gr1->Fit(fitf, "qrs");  // remove the quiet option if you want to see all
+  // the parameters' values for Fractional Efficiency versus Energy in keV. Prints to the screen
+  int status = int ( fitr );
   double aa = fitf->GetParameter(0);
   double bb = fitf->GetParameter(1);
   double cc = fitf->GetParameter(2);
   double dd = fitf->GetParameter(3);
   double ee = fitf->GetParameter(4);
   double ff = fitf->GetParameter(5);
+  jj = 0;
+  while ( status != 0 || fitf->GetChisquare() > 1.4 ) {
+    fitf->SetParameters(aa, bb, cc, dd, ee, ff);
+    fitf->SetRange ( loE + 0.1 * jj, hiE - 1. * jj );
+    fitr = gr1->Fit(fitf, "rs");
+    if ( aa == fitf->GetParameter(0) || bb == fitf->GetParameter(1) || cc == fitf->GetParameter(2) ||
+	 dd == fitf->GetParameter(3) || ee == fitf->GetParameter(4) || ff == fitf->GetParameter(5) )
+      break;
+    status = int ( fitr );
+    aa = fitf->GetParameter(0);
+    bb = fitf->GetParameter(1);
+    cc = fitf->GetParameter(2);
+    dd = fitf->GetParameter(3);
+    ee = fitf->GetParameter(4);
+    ff = fitf->GetParameter(5);
+    jj++;
+    if ( jj > 10 ) {
+      cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
+      return EXIT_FAILURE;
+    }
+  }
+  if ( fitf->GetChisquare() > 1.3 )
+    cerr << "WARNING: The efficiency curve is poorly fit. chi^2 = "
+	 << fitf->GetChisquare() << endl;
   delete gr1;
   delete fitf;  // it is always important to clear the memory in ROOT
 
   // Get input parameters for sensitivity or limit calculation
-  double time, fidMass, loE, hiE, xEff, NRacc, numBGeventsExp = 0.,
+  double time, fidMass, xEff, NRacc, numBGeventsExp = 0.,
                                                numBGeventsObs;
   cout << "Target Mass (kilograms): ";
   cin >> fidMass;
@@ -177,10 +210,6 @@ if ( mode == 2 ) {
     cout << "Number of BG events expected: ";
     cin >> numBGeventsExp;  // for FC stats
   }
-  cout << "Minimum energy (keV) for detection: ";
-  cin >> loE;
-  cout << "Maximum energy (keV) for detection: ";
-  cin >> hiE;
   // Make sure inputs were valid.
   if (cin.fail() || fidMass <= 0. || time <= 0. || xEff <= 0. || NRacc <= 0. ||
       loE < 0. || hiE <= 0. || numBGeventsExp < 0. || numBGeventsObs < 0.) {
@@ -364,7 +393,7 @@ if ( mode == 1 ) {
     }
   }
   
-  cout << endl << "Calculating band for second dataset" << endl;
+  if ( argc >= 3 ) cout << endl << "Calculating band for second dataset" << endl;
   GetFile(argv[1]);
   if (leak) {
     double finalSums[3] = {0., 0., 0.};

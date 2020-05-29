@@ -43,7 +43,7 @@ class DetectorExample_ZEPLIN : public VDetector {
     noiseL[1] = 0.;
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = .103;// phd per S2 photon in gas, used to get SE size. SET EQUAL TO G1, above
+    g1_gas = .103;// phd per S2 photon in gas, used to get SE size. ZIII is exception to <~g1
     s2Fano = 0.00; // Fano-like fudge factor for SE width
     s2_thr = 155.; // the S2 threshold in phe or PE, *not* phd. Affects NR most (5e x 31 phe/e)
     // could be as low as 125 or as high as 215

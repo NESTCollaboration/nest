@@ -955,7 +955,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     else {
 
       TF1* f = new TF1("skewband",
-"([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-.5*(x-[1])^2/[2]^2)*(1+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))");
+		       "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-.5*(x-[1])^2/[2]^2)*(1+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))",logMin,logMax);
       //equation inspired by Vetri Velan
       double amplEstimate = signals[j].size();
       double alphaEstimate = EstimateSkew(band[j][2],band[j][3],signals[j]);
@@ -966,9 +966,9 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     RETRY:
       f->SetParameters(amplEstimate, xiEstimate, omegaEstimate, alphaEstimate);
       if ( skewness == 2 )
-	res = HistogramArray[j].Fit(f, "QS");
+	res = HistogramArray[j].Fit(f, "QRS");
       else
-	HistogramArray[j].Fit(f, "QS");
+	HistogramArray[j].Fit(f, "QRS");
       double fit_xi, fit_xi_err, fit_omega, fit_omega_err, fit_alpha, fit_alpha_err;
       if ( skewness == 2 ) {
 	fit_xi = res->Value(1);

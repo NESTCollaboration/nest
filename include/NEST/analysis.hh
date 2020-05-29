@@ -16,22 +16,22 @@ int useTiming = 0;  // photon arrival times + pulse shapes (2=eTrains)
 // 0 means PE, 1 means phd (PE/~1.2), 2 means spike count
 int usePD = 2;
 // band style: log(S2) with 1, while 0 means log(S2/S1)
-int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
+int useS2 = 1;  // xtra feature: 2 means S2 x-axis energy scale
 
 double minS1 = 1.5; //units are controlled by the usePE flag
 // this is separate from S1 thresholds controlled by detector
-double maxS1 = 99.5;
-int numBins = 98; //for LUXRun03 DD, change these to 1.7,110.6,99
+double maxS1 = 399.5;
+int numBins = 2; //for LUXRun03 DD, change these to 1.7,110.6,99
 
 // for efficiency calculation
 // minS2 need not match S2 threshold in detector.hh
 // you can treat as trigger vs. analysis thresholds
-double minS2 = 42.;
-double maxS2 = 1e4; //5e3 for DD. At least 2e5 for post-Run04 14C
+double minS2 = 0.;
+double maxS2 = 1e9; //5e3 for DD. At least 2e5 for post-Run04 14C
 
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
-double logMax = 3.6; //when skewness=1 or 2 ROOT ignores these and does raw mean +/- 3-sigma
-double logMin = 0.6;
+double logMax = 9.; //when skewness=1 or 2 ROOT ignores these and does raw mean +/- 3-sigma
+double logMin = 0.;
 int logBins = 30; //#bins in between logMin & logMax for fits
 
 // some numbers for fine-tuning the speed vs. the accuracy

@@ -497,31 +497,58 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
 }
 
-YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield)
+YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield, double maxTimeSeparation)
 {
   double Nq = -999;
   double Nph = -999;
-  
+  double Ne = -999;
   Wvalue wvalue = WorkFunction(density);
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
-  double deltaT_ns = -999;
+  double deltaT_ns = DBL_MAX;
   constexpr double deltaT_ns_halflife = 154.4;
   if (energy == 9.4)
-  {
-    deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+  { 
+    while (deltaT_ns > maxTimeSeparation){
+      deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+    }
     Nq = energy * 1e3 / Wq_eV;
-    double medTlevel = 70. * (-0.35 * 6.3e-4 * dfield * log(1. + 1. / (9.298e-4 * dfield)) + 1.);
-    double lowTdrop = 17. * pow(dfield, 0.11277);
-    Nph = energy * (5.3e4 * pow(1.8 * deltaT_ns + lowTdrop, -1.5) + medTlevel) / (1. + pow(deltaT_ns / lowTdrop, -7.5));
+    double  medTlevel = 57.462 + (69.201 - 57.462 ) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
+    double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield/60, 1), 1); 
+    double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4 ) / pow(1. + pow(dfield/60, 1.), 1);
+    Nph = energy * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) / (1. + pow(deltaT_ns / lowTdrop, -1.*lowTdrop/5.));
+    Ne = Nq - Nph;
+    if (Ne < 0)
+	    Ne = 0.;
     alpha = 0.;
   } else
   {
-    Nq = energy * 1e3 / Wq_eV;
-    Nph = energy * (3. + (69.742 - 3.) / pow(1. + pow(dfield / 119.853, 0.5618), 0.36637));
+    if ( energy == 32.1 ) {	 
+      Nq = energy * 1e3 / Wq_eV;	    
+      Nph = energy * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037,  0.6409),0.3215));
+      Ne = Nq - Nph;
+      if (Ne < 0.)
+	      Ne = 0.;
+    } else {   //merged 41.5 keV decay
+      while (deltaT_ns > maxTimeSeparation){
+        deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+      }
+      double  medTlevel = 57.462 + (69.201 - 57.462 ) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
+      double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield/60, 1), 1);
+      double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4 ) / pow(1. + pow(dfield/60, 1.), 1);
+      //9.4 keV model
+      Nph = 9.4 * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) / (1. + pow(deltaT_ns / lowTdrop, -1.*lowTdrop/5.));
+      Ne = ( 9.4 * 1e3 / Wq_eV) - Nph;
+      if ( Ne < 0. ) Ne = 0.;  //can't have negative charge from either decay
+      //Add in 32.1 keV yields
+
+      double Nph_32 = 32.1 * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037,  0.6409),0.3215));
+      double Ne_32 = ( 32.1 * 1e3 / Wq_eV ) - Nph_32;
+      Nph += Nph_32;
+      Ne  += Ne_32;
+      if ( Ne < 0. ) Ne = 0.;
+    }
   }
-  double Ne = Nq - Nph;
- 
   
   YieldResult result;
   result.PhotonYield = Nph;
@@ -637,7 +664,8 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       return GetYieldGamma(energy,density,dfield);
     break;
     case Kr83m:
-      return GetYieldKr83m(energy,density,dfield);
+      return GetYieldKr83m(energy,density,dfield,massNum);
+      //not actually massNumber, but a place holder for maxTime
     break;
     default:  // beta, CH3T
       return GetYieldBeta(energy,density,dfield);

@@ -23,7 +23,8 @@ class DetectorExample_ZEPLIN : public VDetector {
   // function of time
   virtual void Initialization() {
     // Primary Scintillation (S1) parameters
-    g1 = 0.0613;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
+    g1 = 0.0683;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
+    // incorrect earlier value 0.0613. Error bar +/- 0.0050
     sPEres = 0.4;   // single phe resolution (Gaussian assumed)
     sPEthr = 0.33;  // POD threshold in phe, usually used IN PLACE of sPEeff
     sPEeff = 1.0;   // actual efficiency, can be used in lieu of POD threshold
@@ -32,37 +33,40 @@ class DetectorExample_ZEPLIN : public VDetector {
     noiseB[2] = 0.0;
     noiseB[3] = 0.0;
     P_dphe = 0.11;  // chance 1 photon makes 2 phe instead of 1 in ETEL PMTs (LopezParedes, 2018)
-
+    
     coinWind = 50;  // S1 coincidence window in ns (Note: Z3 used time difference method in Neves, 2011)
     coinLevel = 3;  // how many PMTs have to fire for an S1 to count
-    numPMTs = 31;   // For coincidence calculation
+    numPMTs = 31;   // For coincidence calculation using the nFold defined in previous line
     
     extraPhot = false;
     noiseL[0] = 0.;
     noiseL[1] = 0.;
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.06; // phd per S2 photon in gas, used to get SE size
-    s2Fano = 2.89; // Fano-like fudge factor for SE width
+    g1_gas = .103;// phd per S2 photon in gas, used to get SE size. SET EQUAL TO G1, above
+    s2Fano = 0.00; // Fano-like fudge factor for SE width
     s2_thr = 155.; // the S2 threshold in phe or PE, *not* phd. Affects NR most (5e x 31 phe/e)
-    E_gas = 7.84;  // field in kV/cm between liquid/gas border and anode
+    // could be as low as 125 or as high as 215
+    E_gas = 7.1;  // field in kV/cm between liquid/gas border and anode
+    // 7.8 reported, but upon re-analysis 1.96*3.8(not3.9)=7.4,and 1.85*3.8=7. (DanM's epsilon)
     eLife_us = 35.;// the drift electron mean lifetime in micro-seconds (Santos, 2011)
-
+    
     // Thermodynamic Properties
     inGas = false;
     T_Kelvin = 174.0;  // for liquid drift speed calculation
     p_bar = 1.66;      // gas pressure in units of bars, it controls S2 size
-    // if you are getting warnings about being in gas, lower T and/or raise p
-
+    // if you're getting warnings about being in gas lower T and/or raise p
+    
     // Data Analysis Parameters and Geometry
-    dtCntr = 0.5;   // center of detector for S1 corrections, in usec.
-    dt_min = 0.5;   // minimum. Top of detector fiducial volume
-    dt_max = 12.4;  // maximum. Bottom of detector fiducial volume
-
+    dtCntr = 0.5;  // center of detector for S1 corrections, in usec.
+    dt_min = 0.5;  // minimum. Top of detector fiducial volume
+    dt_max = 13.;  // maximum. Bottom of detector fiducial volume
+    // Fid larger: actual value 14.1-14.3us but NEST's vD doesn't quite match Z3's (2.55 mm/us)
+    
     radius = 150.;  // millimeters (fiducial rad)
     radmax = 192.;  // actual physical geo. limit
-
-    TopDrift = 33.8;  // mm not cm or us (but, this *is* where dt=0) - NOTE: Z3 HAD NO GATE
+    
+    TopDrift = 35.8;  // mm not cm or us (but, this *is* where dt=0) - NOTE: Z3 HAD NO GATE
     // a z-axis value of 0 means the bottom of the detector (cathode OR bottom
     // PMTs)
     // In 2-phase, TopDrift=liquid/gas border. In gas detector it's GATE, not
@@ -70,7 +74,7 @@ class DetectorExample_ZEPLIN : public VDetector {
     anode = 40.0;  // the level of the anode grid-wire plane in mm
     // In a gas TPC, this is not TopDrift (top of drift region), but a few mm
     // above it
-    gate = 33.8;   // mm. This is where the E-field changes (higher) - NOTE: Z3 HAD NO GATE
+    gate = 35.8;   // mm. This is where the E-field changes (higher) - NOTE: Z3 HAD NO GATE
     // in gas detectors, the gate is still the gate, but it's where S2 starts
     cathode = 0.;  // mm. Defines point below which events are gamma-X
 
@@ -89,7 +93,7 @@ class DetectorExample_ZEPLIN : public VDetector {
   // For example, use a high-order poly spline
   virtual double FitEF(double xPos_mm, double yPos_mm,
                        double zPos_mm) {  // in V/cm
-    return 3850.; //compromise between 3900 (published) and 3800 (more accurate??)
+    return 3850.; //compromise between 3900 (published) and 3800 (reanalysis)
   }
 
   // S2 PDE custom fit for function of r

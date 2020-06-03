@@ -1,0 +1,30 @@
+set(MIN_G4_VERSION 10.03)
+
+find_package(Geant4 ${MIN_G4_VERSION} REQUIRED CONFIG)
+set(NEST_G4_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/NESTProc.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/NESTStackingAction.cpp
+)
+set(NEST_G4_HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/NESTProc.hh
+  ${CMAKE_CURRENT_SOURCE_DIR}/NESTStackingAction.hh
+)
+
+add_library(
+    NESTG4
+    ${NEST_G4_SOURCES}
+    ${NEST_G4_HEADERS}
+)
+add_library(NEST::NESTG4 ALIAS NESTG4)
+
+target_compile_features(NESTG4 PUBLIC cxx_std_17)
+target_link_libraries(NESTG4 PUBLIC NEST::Core ${Geant4_LIBRARIES})
+# Geant4 does not seem to have targets yet (last version checked: 1)
+target_include_directories(
+    NESTG4 PUBLIC
+    ${Geant4_INCLUDE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/G4integration/>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/NEST/G4>
+)
+
+INSTALL(FILES ${NEST_G4_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/NEST/G4)

@@ -71,11 +71,6 @@ write_basic_package_version_file(
     COMPATIBILITY ExactVersion
 )
 
-set(CONF_INCLUDE_DIRS
-  "\${NEST_CMAKE_DIR}/${REL_INCLUDE_DIR}"
-  "\${NEST_CMAKE_DIR}/${REL_INCLUDE_DIR}/NEST"
-  "\${NEST_CMAKE_DIR}/${REL_INCLUDE_DIR}/Detectors"
-)
 configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/NESTConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/NESTConfig.cmake
     INSTALL_DESTINATION ${INSTALL_CONFIGDIR}

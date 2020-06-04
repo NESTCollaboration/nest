@@ -1,6 +1,6 @@
 
 # Set minimum CMake version required and prevent building in source
-cmake_minimum_required(VERSION 3.13...3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12...3.16 FATAL_ERROR)
 
 project(NEST VERSION 2.1.0 LANGUAGES CXX)
 

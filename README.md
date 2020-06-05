@@ -22,7 +22,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 	* [ Running in Different Modes ](#modes)
 	* [ Input Arguments ](#inputs)
 	* [ Other User-Modifiable Parameters ](#usermod)
-	* [Running with Pulse Timing] (#timing)
+	* [Running with Pulse Timing](#timing)
 	* [ Running loopNEST ](#loop)
 5. [ Useful Tools ](#tools)
 	* [ Using bareNEST ](#barenest)

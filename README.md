@@ -22,9 +22,12 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 	* [ Running in Different Modes ](#modes)
 	* [ Input Arguments ](#inputs)
 	* [ Other User-Modifiable Parameters ](#usermod)
+	* [Running with Pulse Timing] (#timing)
+	* [ Running loopNEST ](#loop)
 5. [ Useful Tools ](#tools)
 	* [ Using bareNEST ](#barenest)
 	* [ Running rootNEST ](#rootnest)
+	* [Custom Energy Spectrum Example: 220RnCalib.sh](#220rn)
 6. [ GEANT4 Integration ](#geant)
 7. [ Need Help with Detector Parameters? ](#params)
 8. [ Versioning ](#versions)
@@ -163,30 +166,32 @@ The "include/Detectors/" folder contains a number of header files:
 
 * VDetector.hh
 * DetectorExample_XENON10.hh
+* LUX_Run03.hh (defualt)
 
 The VDetector files (.cpp, .hh) which serve as the base detector class **should not be edited** 
 (except by NEST developers). VDetector is a virtual class inherited by your custom detector.
 
-"DetectorExample_XENON10.hh" is an example of a custom detector file, and is currently set as the default in testNEST.
+"DetectorExample_XENON10.hh" and "LUX_Run03.hh" are examples of a custom detector file, and the latter is currently 
+set as the default in testNEST.
 It serves as a template for users to create their own detector. Follow the steps below (where "MyDetector" is an example).
 
 1. Within the "include/Detectors/" folder, create your own header using the template:
 
 	```	
-	cp DetectorExample_XENON10.hh MyDetector.hh
+	cp LUX_Run03.hh MyDetector.hh
 	```
 
 2. Edit the parameters/functions in MyDetector.hh as desired. 
-	At minimum, one has to replace every instance of "DetectorExample_XENON10" with "MyDetector": 
+	At minimum, one has to replace every instance of "DetectorExample_RUN03" with "MyDetector": 
 
 	```cpp	
-	// DetectorExample_XENON10.hh 
+	// DetectorExample_RUN03.hh 
 	
 	--> // MyDetector.hh
 	```
 
 	```cpp
-	#ifndef DetectorExample_XENON10_hh 
+	#ifndef DetectorExample_LUX_RUN03_hh 
 	
 	--> #ifndef MyDetector_hh
 	```
@@ -197,13 +202,13 @@ It serves as a template for users to create their own detector. Follow the steps
 3. Once your header file is done, one should edit "src/testNEST.cpp" in the following way:
 
 	```cpp
-	#include "DetectorExample_XENON10.hh" 
+	#include "LUX_Run03.hh" 
 	
 	--> #include "MyDetector.hh"
 	```
 
 	```cpp
-	DetectorExample_XENON10* detector = new DetectorExample_XENON10(); 
+	DetectorExample_LUX_RUN03 detector = new DetectorExample_LUX_RUN03(); 
 	
 	--> MyDetector* detector = new MyDetector();
 	```
@@ -244,6 +249,9 @@ An explanation of the various parameters:
 
 WARNING: Whenever you modify this header, **make sure to do a clean recompile**!
 
+Only **verbosity**, **MCtruthE**, and **MCtruthPos** will change the event-by-event output for testNEST. 
+The min/max S1,S2,log values will only effect post-simulation analyses, such as event selection for energy 
+reconstruction and efficiency calculations in testNEST, and binning for creating bands and leakage calculations in rootNEST.
 
 <a name="run"></a>
 ## Running testNEST
@@ -265,6 +273,11 @@ This program takes 6 (or 7) inputs, with Z position in mm from bottom of detecto
 
 ```
 ./testNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
+```
+To simulate time-dependent 83m-Kr decays -- 83m-Kr produces yields via a 32.1 keV $\gamma$ followed by a 9.4 keV $\gamma$ --  E_max[keV} is replaced with the time between the decays in ns; E_min[keV] is replaced with either 9.4, 32.1, or 41.5 [keV]. Example of 9.4 keV decay 250ns after the inital 32.1 keV:
+
+```
+./testNEST numEvts Kr83m 9.4 250 field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
 
 To simulate 8B, numEvts (integer) is replaced with kg-days of exposure (floating-point #) with all other input parameters the same (unchanged). 
@@ -297,6 +310,29 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 * **NuisParam**: an array currently located in line 43 of testNEST.cpp.
 	These change the mean light and charge yields of nuclear recoils (separately) as E-independent multiplicative factors.
 
+<a name="timig"></a>
+### Running with Pulse Timing
+
+In include/NEST/analysis.hh, the **useTiming** flag allows users to get S1 and S2 photon arrival times for each simulated event.
+useTiming=0 (default) will not return timing info. If verbosity=true and useTiming=1, running testNEST will create a file called 
+"photon_times.txt" in the user's build directory with S1 and S2 top/bottom PMT arrival times for each event. If useTiming=2, 
+approximated e-trains will be included for the output events.
+
+The script, "PulseShape.cpp", in the "examples" directory will take the photon_times.txt output, and calculate pulse shape parameters
+for each event in the file. This must be compiled separately from the other NEST executables. 
+
+<a name="loop"></a>
+### Running loopNEST
+
+New as of v2.1.0, users have the ability to transform testNEST into _loopNEST_. This is declared via the **loopNEST** flag
+in include/NEST/analysis.hh . **Using loopNEST will change the functionality of all testNEST inputs** and therefor should
+only be used by experienced NEST users. The loopNEST event parameters are hard-coded into lines 70-140 of src/testNEST.cpp. 
+
+loopNEST is a powerful tool that allows NEST to be iterated over many times, with different model parameters or detector parameters.
+In essence, the user can vary select NEST parameters over a loop of values, and in tandem with FIT mode of rootNEST (see below), get a best fit model to their provided data set. See arXiv:1910.04211 for an example in the literature where this is useful. 
+
+A bash script, "loopNEST.sh" is provided in the examples directory. It serves as an example of how one would use loopNEST to 
+find best-fit model parameters for a data set.
 
 <a name="tools"></a>
 ## Useful Tools and Examples
@@ -306,42 +342,51 @@ The "examples/" folder contains two very useful codes: bareNEST and rootNEST.
 <a name="barenest"></a>
 ### Using bareNEST
 
+**NOTE**: bareNEST is deprecated as of NEST v2.1.0. It will eventually be phased-out from the standard NEST compilation.
+
 bareNEST is a minimal implementation of NEST, which does not contain the various complications
 of testNEST (e.g. field non-uniformities, muon tracks, etc.). It provides the "bare minimum" function calls
-needed to demonstrate the yield calculations step-by-step.
+needed to demonstrate the yield calculations step-by-step. 
 
-This tool provides the basics, showing you how to implement the NEST class in your own code in a no-frills 
-approach.
-
-NOTE: It is currently hard-coded to take no inputs, as this source code is a skeleton intended for 
+It is currently hard-coded to take no inputs, as this source code is a skeleton intended for 
 adaptation/customization.
 
 <a name="rootnest"></a>
 ### Running rootNEST
 
 rootNEST is an extremely diverse and powerful tool, but requires compilation against ROOT libraries to work at all.
+**NEW TO v2.1.0**: the rootNEST mode is set in include/NEST/analysis.hh. The **mode** flag in analysis.hh has 3 options:
 
-* In "default" mode (i.e., no #define pre-compiler directives commented in at the top) it executes Gaussian fits 
-	to a histogrammed band in log(S2/S1) or log(S2) for you vs. S1. 
+
+* **mode = 0**: "default" mode. It executes Gaussian fits to a histogrammed band in log(S2/S1) or log(S2) for you vs. S1. 
+	- If you give it only one argument (being the file path to a testNEST output file) with **verbosity=true**, it will 
+	        print out S1 vs. log(S2/S1) or S1 vs. log(S2) band information for the given S1,S2,log ranges in analysis.hh .
 	- If you give it 2 arguments it'll give you the leakage of ER events below a smooth fit to the Gaussian means 
 		of the NR band, so it shows your background discrimination for WIMPs. 
 	- If the second argument is NR and first ER raw data (produced first with testNEST) instead of the other way 
 		around then it will spit out NR "acceptance" below the centroid.
 
-* In FIT mode (#define and #ifdef FIT) it takes 2 arguments and compares the NEST band to real data and 
-	gives you the goodness of fit
+* **mode = 1**: "FIT" mode. It takes 2 arguments and compares the NEST band to real data and 
+	gives you the goodness of fit. Note that the data file must be formatted to match rootNEST band outputs. 
+	See "LUXRun03_CH3TBand_SpikeFull.txt" and "LUXRun03_DDBand_SpikeFull.txt" for example format.
 
-* In either FIT or normal mode, if the number of bins in analysis.hh is set to 1, then it assumes you want 
+* In either FIT or default mode, if the number of bins in analysis.hh is set to 1, then it assumes you want 
 	a Gaussian fit (S1, S2, and energy) for a mono-energy calibration peak
 
-* In LIMIT mode (#define and #ifdef LIMIT) it takes 2 arguments:
+* **mode = 2**: "LIMIT" mode. It takes 2 arguments:
 	1. A file of NR efficiency vs. energy, which can be provided by real data or by running testNEST or 
 		similar code based on it repeatedly and building a new text file. The code will perform a smooth fit 
-		for you to the efficiency.
+		for you to the efficiency. See "LUXRun03_betaEff_Simulated.txt" or "LUXRun03_nrEff_Simulated.txt" for 
+		formatting examples. 
 	2. 0, 1, or 2 for spin-independent or spin-dependent neutron or proton respectively. 
 		It will ask you questions like #kg-days on screen
 
-The following example tab-delimited plain ASCII text files are provided to go with rootNEST.
+There is a new **skewness** parameter in analysis.hh that allows rootNEST to fit skew-Gaussian to the log(S2/S1) 
+or log(S2) distributions for bands and goodness-of-fit calculation. skewness=0 will perform Gaussian fits;
+skewness=1 will perform skew-Gaussian fits; skewness=2 will perform more rigorous skew-Gaussian fits 
+for additional accuracy. 
+
+The following additional example tab-delimited plain ASCII text files are provided to go with rootNEST.
 
 * Xe10_ERBand_Luiz.txt and Xe10_NRBand_Luiz.txt graciously produced by Prof. Luiz de Viveiros of Penn State 
 	for XENON10 for use in FIT mode to compare to NEST MC output.
@@ -352,9 +397,6 @@ The following example tab-delimited plain ASCII text files are provided to go wi
 	Bin Center  Bin Actual  Gaus Mean  Mean Error  Gaus Sigma  Sig Error
 	```
 
-* LUX_Run03.txt comes from Phys. Rev. Lett. 116, 161301 (2016) (or arXiv:1512.03506) Fig. 1 thick black band, 
-	used without uncertainty here. Needed for LIMIT mode. Do NOT treat as "official" LUX numbers.
-
 NOTE: While rootNEST can be built using NEST's built-in CMake (see setup instructions), you can compile 
 yourself by doing:
 
@@ -364,6 +406,18 @@ g++ -g -Wno-c++11-extensions -Wno-deprecated-declarations -Ofast `root-config --
 
 The argument "-Ofast" may be "-O3" on your machine (optimization flag). 
 
+
+<a name="220rn"></a>
+## Custom Energy Spectrum Example: 220RnCalib.sh
+
+While TestSpectra.cpp provides many useful energy spectra to be used directly in testNEST, it is often useful to use a custom
+energy spectrum, or one from a physics signal that is not included in TestSpectra.cpp. The script, "220RnCalib.sh",
+in the examples directory provides one method of creating a custom spectrum. 
+
+This example uses the 212Pb ER spectrum ( from the 220Rn chain: a prevalent background in xenon TPCs ) and writes the testNEST
+output to a single file: "Pb212.dat". This script uses the 212Pb energy spectrum, and calls testNEST for a given energy bin.
+The number of events in each testNEST command is the probability for a 212Pb event to recoil in that energy bin, multiplied 
+by the total desired number of output events (1M in this case). 
 
 <a name="geant"></a>
 ## GEANT4 Integration
@@ -467,9 +521,13 @@ want (g2 is broken down: SE x e- ext eff).
 
 For these functions and for all the #'s if you're confused or don't know something:
 
-Just stick with the XENON10 defaults, which are mixed with some published LUX values. Why? They are there because 
-even though they're old detectors now, their numbers are ~ representative of detectors past/present/future, big/small even.
+Just stick with the LUX or XENON10 defaults. Why? They are there because even though they're old detectors now,
+their numbers are ~ representative of detectors past/present/future, big/small even.
 
+There is an additional boolean detector parameter called **extraPhot**. In order to incorporate the new measurement 
+of the work function in LXe by EXO-200 (arXiv:1908.04128), the extraPhot flag (if true) will boost light yields 
+to reconcile the discrepancy. This does not serve to solve the discrepancy, but provides NEST the flexibility to match
+this new result.
 
 <a name="versions"></a>
 ## Versioning

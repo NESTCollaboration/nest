@@ -254,7 +254,7 @@ Only **verbosity**, **MCtruthE**, and **MCtruthPos** will change the event-by-ev
 The min/max S1,S2,log values will only effect post-simulation analyses, such as event selection for energy 
 reconstruction and efficiency calculations in testNEST, and binning for creating bands and leakage calculations in rootNEST.
 
-<a name="yieldsModels"></a>
+<a name="yieldModels"></a>
 ## Using Alternate NR and ER Yields Models
 
 As of NESTv2.1.0, additional yields models have been provided for nuclear recoils and beta electronic recoils. 

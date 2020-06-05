@@ -18,6 +18,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 3. [ Simulation Settings ](#settings)
 	* [ Creating a Custom Detector ](#detector)
 	* [ Modifying the testNEST Output (Analysis Settings) ](#analysis)
+	* [Using Alternate NR and ER Yields Models](#yieldModels)
 4. [ Running NEST ](#run)
 	* [ Running in Different Modes ](#modes)
 	* [ Input Arguments ](#inputs)
@@ -253,6 +254,26 @@ Only **verbosity**, **MCtruthE**, and **MCtruthPos** will change the event-by-ev
 The min/max S1,S2,log values will only effect post-simulation analyses, such as event selection for energy 
 reconstruction and efficiency calculations in testNEST, and binning for creating bands and leakage calculations in rootNEST.
 
+<a name="yieldsModels"></a>
+## Using Alternate NR and ER Yields Models
+
+As of NESTv2.1.0, additional yields models have been provided for nuclear recoils and beta electronic recoils. 
+Since NESTv2.0.0, the NR yields model has changed. To use the original model see lines 660-661 in src/NEST.cpp:
+
+```return GetYieldNR(energy, density, dfield, massNum,NuisParam);
+   //return GetYieldNROld ( energy, 1 );
+```
+By commenting out the first of those lines, and un-commenting the second, you will have the original NR model.
+
+For the ER beta model, extensive work was done in arXiv:1910.04211 to create a LUX-specific beta model. 
+To use this model, see lines 674-675 of src/NEST.cpp:
+
+```return GetYieldBeta(energy,density,dfield);
+   //return GetYieldBetaGR(energy,density,dfield);
+```
+By commenting out the first of those lines, and un-commenting the second, you will have the LUX-specific yield model.
+
+
 <a name="run"></a>
 ## Running testNEST
 
@@ -274,7 +295,7 @@ This program takes 6 (or 7) inputs, with Z position in mm from bottom of detecto
 ```
 ./testNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
-To simulate time-dependent 83m-Kr decays -- 83m-Kr produces yields via a 32.1 keV $\gamma$ followed by a 9.4 keV $\gamma$ --  E_max[keV} is replaced with the time between the decays in ns; E_min[keV] is replaced with either 9.4, 32.1, or 41.5 [keV]. Example of 9.4 keV decay 250ns after the inital 32.1 keV:
+To simulate time-dependent 83m-Kr decays -- 83m-Kr produces yields via a 32.1 keV $\gamma$ followed by a 9.4 keV gamma --  E_max[keV} is replaced with the time between the decays in ns; E_min[keV] is replaced with either 9.4, 32.1, or 41.5 [keV]. Example of 9.4 keV decay 250ns after the inital 32.1 keV:
 
 ```
 ./testNEST numEvts Kr83m 9.4 250 field_drift[V/cm] x,y,z-position[mm] {optional:seed}

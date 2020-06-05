@@ -310,7 +310,7 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 * **NuisParam**: an array currently located in line 43 of testNEST.cpp.
 	These change the mean light and charge yields of nuclear recoils (separately) as E-independent multiplicative factors.
 
-<a name="timig"></a>
+<a name="timing"></a>
 ### Running with Pulse Timing
 
 In include/NEST/analysis.hh, the **useTiming** flag allows users to get S1 and S2 photon arrival times for each simulated event.
@@ -337,7 +337,8 @@ find best-fit model parameters for a data set.
 <a name="tools"></a>
 ## Useful Tools and Examples
 
-The "examples/" folder contains two very useful codes: bareNEST and rootNEST.
+The "examples/" folder contains a few very useful codes, and most importantly, it is where the rootNEST.cpp code lives. 
+Additionally, several other scripts and examples for performing advanced analyses are included. 
 
 <a name="barenest"></a>
 ### Using bareNEST
@@ -418,6 +419,15 @@ This example uses the 212Pb ER spectrum ( from the 220Rn chain: a prevalent back
 output to a single file: "Pb212.dat". This script uses the 212Pb energy spectrum, and calls testNEST for a given energy bin.
 The number of events in each testNEST command is the probability for a 212Pb event to recoil in that energy bin, multiplied 
 by the total desired number of output events (1M in this case). 
+
+For any general spectrum, the user will want to run testNEST for every relevant bin of some energy spectrum PDF:
+
+```
+./testNEST numTotalEvts*PDF_value interactionType bin_min[keV] bin_max[keV] drift_field[V/cm] x,y,z_pos[mm] {optional:seed} >> outputfile 
+```
+
+Note the funnel command used here, ```>>``` appends the command's output to an existing file (if the file already exists). 
+One must make sure they use proper ```rm outputfile``` commands when trying to re-run. See the "220RnCalib.sh" example.
 
 <a name="geant"></a>
 ## GEANT4 Integration

@@ -260,7 +260,8 @@ reconstruction and efficiency calculations in testNEST, and binning for creating
 As of NESTv2.1.0, additional yields models have been provided for nuclear recoils and beta electronic recoils. 
 Since NESTv2.0.0, the NR yields model has changed. To use the original model see lines 660-661 in src/NEST.cpp:
 
-```return GetYieldNR(energy, density, dfield, massNum,NuisParam);
+```
+   return GetYieldNR(energy, density, dfield, massNum,NuisParam);
    //return GetYieldNROld ( energy, 1 );
 ```
 By commenting out the first of those lines, and un-commenting the second, you will have the original NR model.
@@ -268,7 +269,8 @@ By commenting out the first of those lines, and un-commenting the second, you wi
 For the ER beta model, extensive work was done in arXiv:1910.04211 to create a LUX-specific beta model. 
 To use this model, see lines 674-675 of src/NEST.cpp:
 
-```return GetYieldBeta(energy,density,dfield);
+```
+   return GetYieldBeta(energy,density,dfield);
    //return GetYieldBetaGR(energy,density,dfield);
 ```
 By commenting out the first of those lines, and un-commenting the second, you will have the LUX-specific yield model.

@@ -264,7 +264,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   
   double skewness;
-  if ( (yields.PhotonYield+yields.ElectronYield) > 1e4 || yields.ElectricField > 5e2 || yields.ElectricField < 50. ) {
+  if ( (yields.PhotonYield+yields.ElectronYield) > 3e3 || yields.ElectricField > 5e2 || yields.ElectricField < 50. ) {
     skewness = 2.25; //make it constant when outside range of Vetri Velan's Run04 models. 0 for ion (wall BG) incl. alpha?
   }
   else { // LUX Skewness Model
@@ -1334,31 +1334,32 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     SE *= fdetector->FitTBA(0., 0., fdetector->get_TopDrift() / 2.)[1];
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r,x,y; int Nph, nHits;
-  
-  for ( int i = 0; i < 10000; i++ ) { // calculate properly the width (1-sigma std dev) in the SE size
-    Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
-    phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
-    r = fdetector->get_radius()*sqrt(RandomGen::rndm()->rand_uniform());
-    x = r * cos(phi);
-    y = r * sin(phi);
-    posDep = fdetector->FitS2(x,y,VDetector::fold) / fdetector->FitS2(0.,0.,VDetector::fold); //future upgrade: smeared pos
-    nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
-    Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
-    pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
-    pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noiseL()[1]*pulseArea);
-    pulseAreaC = pulseArea / posDep;
-    NphdC = pulseAreaC/(1.+fdetector->get_P_dphe());
-    StdDev += (SE-NphdC)*(SE-NphdC);
-  } StdDev = sqrt(StdDev)/sqrt(9999.); // N-1 from above (10,000)
-  
-  if (verbosity) {
-    cout << endl
-         << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2
-         << " phd per electron (e-EE = ";
-    cout << ExtEff * 100. << "%, SE_mean,width = " << SE << "," << StdDev
-         << ")\t";
-  }
 
+  if (verbosity) {
+    
+    for ( int i = 0; i < 10000; i++ ) { // calculate properly the width (1-sigma std dev) in the SE size
+      Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
+      phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
+      r = fdetector->get_radius()*sqrt(RandomGen::rndm()->rand_uniform());
+      x = r * cos(phi);
+      y = r * sin(phi);
+      posDep = fdetector->FitS2(x,y,VDetector::fold) / fdetector->FitS2(0.,0.,VDetector::fold); //future upgrade: smeared pos
+      nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
+      Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
+      pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
+      pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noiseL()[1]*pulseArea);
+      pulseAreaC = pulseArea / posDep;
+      NphdC = pulseAreaC/(1.+fdetector->get_P_dphe());
+      StdDev += (SE-NphdC)*(SE-NphdC);
+    } StdDev = sqrt(StdDev)/sqrt(9999.); // N-1 from above (10,000)
+    
+    cout << endl
+	 << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2
+	 << " phd per electron (e-EE = ";
+    cout << ExtEff * 100. << "%, SE_mean,width = " << SE << "," << StdDev
+	 << ")\t";
+  }
+  
   // Store the g2 parameters in a vector for later (calculated once per
   // detector)
   g2_params[0] = elYield;

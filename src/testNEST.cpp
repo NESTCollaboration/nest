@@ -425,7 +425,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
   for (unsigned long int j = 0; j < numEvts; j++) {
-    timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
+    //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
     //for E-recon when you've changed g1,g2-related stuff, redo line 341+
     if ( (eMin == eMax && eMin >= 0. && eMax > 0.) || type_num == Kr83m ) {
       keV = eMin;
@@ -563,7 +563,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         if (type_num == Kr83m && eMin != 32.1)
           fprintf(stdout,
                   "t [ns]\t\t");
-	if (type_num == WIMP)
+	if (type_num == WIMP && timeStamp > (tZero+tStep))
 	  fprintf(stdout,
 		  "dayNum\t");
 	if ( eMax == eMin && numBins == 1 ) MCtruthE = false;
@@ -901,7 +901,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       // and using max's too, pinching both ends
       if (type_num == Kr83m && eMin != 32.1 )
         printf("%.6f\t", yields.DeltaT_Scint);
-      if (type_num == WIMP)
+      if (type_num == WIMP && timeStamp > (tZero+tStep))
 	printf("%.0f\t", timeStamp);
       printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field,
              driftTime, smearPos[0], smearPos[1], smearPos[2], quanta.photons,

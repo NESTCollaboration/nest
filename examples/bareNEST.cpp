@@ -25,9 +25,10 @@ using namespace NEST;
 
 // Skeleton function for doing a simple NEST calculation
 int main(int argc, char** argv) {
+  double dayNum = 0.;
   // Give a message establishing the use of this code
   cerr << "NOTE: This is a skeleton code meant to be a starting point for "
-          "custom uses of NEST." << endl
+          "custom uses of NEST. But you should really look at testNEST." << endl
        << endl;
 
   // Instantiate your own VDetector class here, then load into NEST class
@@ -46,9 +47,7 @@ int main(int argc, char** argv) {
 
   // Declare needed temporary variables
   vector<double> vTable,
-      NuisParam = {
-          1.,
-          1.};  // NuisParam are scaling factors, for now just for NR Ly & Qy
+    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
   int index;    // index for Z step (for getting pre-calculated drift field)
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD, vD_middle;
   // Energy min and max for source spectrum
@@ -121,8 +120,8 @@ int main(int argc, char** argv) {
         break;
       case WIMP:
         spec.wimp_spectrum_prep =
-            spec.WIMP_prep_spectrum(wimp_mass_GeV, E_step);
-        keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, wimp_mass_GeV);
+	  spec.WIMP_prep_spectrum(wimp_mass_GeV, E_step, dayNum);
+        keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, wimp_mass_GeV, dayNum);
         break;
       default:
         keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
@@ -178,7 +177,8 @@ int main(int argc, char** argv) {
   // Get yields from NEST calculator, along with number of quanta
   yields = n.GetYields(type_num, keV, rho, field, double(massNum),
                        double(atomNum), NuisParam);
-  quanta = n.GetQuanta(yields, rho);
+  vector<double> FreeParam = {1,1,.1,.5,.19};
+  quanta = n.GetQuanta(yields, rho, FreeParam);
 
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =

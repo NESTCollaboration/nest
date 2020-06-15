@@ -40,6 +40,34 @@ double RandomGen::rand_exponential(double half_life) {
   return log(1 - r) * -1 * half_life / log(2.);
 }
 
+double RandomGen::rand_skewGauss(double xi, double omega, double alpha) { 
+  double delta = alpha/sqrt(1 + alpha*alpha);
+  double gamma1 = 0.5*(4. - M_PI)*( pow(delta*sqrt(2./M_PI), 3.) / pow( 1 - 2.*delta*delta/M_PI, 1.5 ) ); //skewness
+  double muz = delta*sqrt(2./M_PI); double sigz = sqrt(1. - muz*muz);
+  double m_o;
+  if (alpha > 0.){
+    m_o = muz - 0.5*gamma1*sigz - 0.5*exp( -2.*M_PI/alpha );
+  }
+  if (alpha < 0.){ 
+    m_o = muz - 0.5*gamma1*sigz + 0.5*exp( +2.*M_PI/alpha );
+  }
+  double mode = xi + omega*m_o;
+  //the height should be the value of the PDF at the mode
+  double height = exp( -0.5*( pow((mode - xi)/omega, 2.) ) ) / ( sqrt( 2.*M_PI ) * omega ) * erfc( -1.*alpha*(mode - xi)/omega/sqrt(2.) );
+  bool gotValue = false;
+  double minX = xi - 6.*omega; double maxX = xi + 6.*omega;  // +/- 6sigma should be essentially +/- infinity
+                                                             //  can increase these for even better accuracy, at the cost of speed
+  double testX, testY, testProb;
+  while ( gotValue == false ){
+    testX = minX + ( maxX - minX ) * RandomGen::rndm()->rand_uniform(); 
+    testY = height*RandomGen::rndm()->rand_uniform(); // between 0 and peak height
+    //calculate the value of the skewGauss PDF at the test x-value
+    testProb = exp( -0.5*( pow((testX - xi)/omega, 2.) ) ) / ( sqrt( 2.*M_PI ) * omega ) * erfc( -1.*alpha*(testX - xi)/omega/sqrt(2.) );
+    if ( testProb >= testY ){ gotValue =  true; }
+  }
+  return testX;
+}
+
 int RandomGen::poisson_draw(double mean) {
   std::poisson_distribution<int> distribution(mean);
   return distribution(rng);

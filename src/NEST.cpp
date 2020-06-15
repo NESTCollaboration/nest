@@ -1,11 +1,14 @@
 
 #include "NEST.hh"
 
+#define InfraredER 1.35
+#define InfraredNR 7.00
+
 using namespace std;
 using namespace NEST;
 
 const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
-const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.07};
+const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19};
 
 long NESTcalc::BinomFluct(long N0, double prob) {
   double mean = N0 * prob;
@@ -34,7 +37,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
                                      vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.07}*/,
+				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.19}*/,
                                      bool do_times /*=true*/) {
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
@@ -120,25 +123,28 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
   return return_photons;
 }
 
-double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/)
+double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19}*/)
 {
-  double omega = FreeParam[2] * exp(-pow(elecFrac - FreeParam[3], 2.) / FreeParam[4]);
+  double omega = FreeParam[2]*exp(-0.5*pow(elecFrac-FreeParam[3],2.)/(FreeParam[4]*FreeParam[4]));
   if ( omega < 0. )
     omega = 0;
   return omega;
-} 
+}
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 {
-  double cc = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25));
-  if ( cc < 0. )
-    cc = 0.;
-  double aa = 0.205;
-  double bb = 0.41;
-  double omega = cc*0.988*exp(-0.5*pow(elecFrac-bb,2.)/(aa*aa))*(1.+erf(-0.2*(elecFrac-bb)/(aa*sqrt(2.))));
+  double ampl = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25));
+  if ( ampl < 0. )
+    ampl = 0.;
+  double wide = 0.205;
+  double cntr = 0.5; //0.41 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E)
+  //for gamma-rays larger than 100 keV at least in XENON10 use 0.43 as the best fit. 0.62-0.37 for LUX Run03
+  double skew = -0.2;
+  double norm = 0.988; //makes sure omega never exceeds ampl
+  double omega = norm*ampl*exp(-0.5*pow(elecFrac-cntr,2.)/(wide*wide))*(1.+erf(skew*(elecFrac-cntr)/(wide*sqrt(2.))));
   if ( omega < 0. )
     omega = 0;
-    return omega;
+  return omega;
 }
 
 double NESTcalc::FanoER(double density, double Nq_mean,double efield)
@@ -157,7 +163,7 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 
 
 QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
-				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/) {
+				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19}*/) {
   QuantaResult result;
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -240,9 +246,9 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     if ( fdetector->get_extraPhot() )
     {
       if ( yields.Lindhard != 1. )
-        Nph = int(floor(double(Nph)*7.00 + 0.5)); //IR photons for NR
+        Nph = int(floor(double(Nph)*InfraredNR + 0.5)); //IR photons for NR
       else
-        Nph = int(floor(double(Nph)*1.35 + 0.5)); //EXO
+        Nph = int(floor(double(Nph)*InfraredER + 0.5)); //EXO
     }
     result.photons = Nex;
     result.electrons =Ni;
@@ -256,9 +262,39 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
+  
+  double skewness;
+  if ( (yields.PhotonYield+yields.ElectronYield) > 3e3 || yields.ElectricField > 5e2 || yields.ElectricField < 50. ) {
+    skewness = 2.25; //make it constant when outside range of Vetri Velan's Run04 models. 0 for ion (wall BG) incl. alpha?
+  }
+  else { // LUX Skewness Model
+    Wvalue wvalue = WorkFunction(density);
+    double Wq_eV = wvalue.Wq_eV;
+    double engy = Wq_eV * (yields.PhotonYield + yields.ElectronYield);
+    double fld = yields.ElectricField;
+    
+    double alpha0 = 1.39;
+    double cc0 = 4.0, cc1 = 22.1;
+    double E0 = 7.7, E1 = 54., E2 = 26.7, E3 = 6.4;
+    double F0 = 225., F1 = 71.;
+    
+    skewness = 0.;
+    
+    if (yields.Lindhard == 1.) {
+      skewness = 1. / (1. + exp((engy - E2) / E3)) * (alpha0 + cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
+        1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
+    }
+    else {
+      skewness = 2.25; //~5-20 also good (for NR). All better than zero, but 0 is OK too
+    }
+  }
+  
+  double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
+  double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
   Ne = int(floor(
-      RandomGen::rndm()->rand_gauss((1. - recombProb) * Ni, sqrt(Variance)) +
-      0.5));
+       RandomGen::rndm()->rand_skewGauss((1. - recombProb) * Ni - muCorrection, sqrt(Variance) / widthCorrection, skewness) +
+       0.5));
+
   if (Ne < 0) Ne = 0;
   if (Ne > Ni) Ne = Ni;
 
@@ -273,9 +309,9 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   
   if ( fdetector->get_extraPhot() ) {
     if ( yields.Lindhard != 1. )
-      Nph = int(floor(double(Nph)*7.00+0.5)); //IR photons for NR
+      Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR
     else
-      Nph = int(floor(double(Nph)*1.35+0.5)); //EXO
+      Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
   }
   result.Variance=Variance;
   result.recombProb=recombProb;
@@ -315,7 +351,42 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
   result.Lindhard = 1;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
-  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
+  return YieldResultValidity(result,energy,Wq_eV);
+}
+
+YieldResult NESTcalc::GetYieldNROld ( double energy, int option ) { // possible anti-correlation in NR ignored totally
+  
+  double Ne, Nph, FakeField;
+  
+  if ( option == 0 ) { // with old-school L_eff*S_nr conversion, and more explicit Thomas-Imel box model formulae but approximation where Qy can sail off as energy to 0
+    FakeField = 1.00;
+    Nph = 0.95*64.*energy * (0.050295*pow(energy,1.3483)*(log(1.+(0.84074*pow(energy,1.3875)))/(0.84074*pow(energy,1.3875)))); // NESTv0.97beta (2011) ~0 V/cm arXiv:1106.1613
+    Ne = energy * (10.661*pow(energy,0.16199)*(log(1.+(0.745330*pow(energy,1.0880)))/(0.745330*pow(energy,1.0880)))+0.93739); // essentially Lindhard with k of 0.166
+  }
+  else if ( option == 1 ) {
+    FakeField = 200.;
+    Ne = energy * (4.1395*pow(energy,0.13816)*(log(1.+(0.040945*pow(energy,1.1388)))/(0.040945*pow(energy,1.1388)))); // conservative: k < or ~ to 0.110 (Hitachi-like)
+    Nph = energy * 3.35 * pow(energy,0.29222); // NESTv0.98 (2013) model for legacy comparisons (arXiv:1307.6601) using simple power law (optional constant; optional for Nph)
+  }
+  else if ( option == 2 ) {
+    FakeField = 730.;
+    Nph = 7582.3+(-1.3728-7582.3)/(1.+pow(energy/385.46,1.2669)); // NEST v1.0 (2015) arXiv:1412.4417, with ability to cut off yield at either low or high energy. Fit to Nph
+    Ne = (60.914*pow(energy,0.32220))*(1.-exp(-0.12684*pow(energy,0.65729))); // middle of road: k = 0.14. By Brian Lenardo, still pre-LUX-DD. With explicit bi-Exc quenching
+  }
+  else { // simplest by far, but not 1st principles: based on work of M. Wyman UAlbany
+    FakeField = 180.; // fit to LUX Run03 D-D alone
+    Ne = ( -3.8780 + 12.372 * pow ( energy, 0.73502 ) ) * exp ( -0.0034329 * energy ); // slide 68 of Matthew's private Google Slides mega-deck
+    Nph = 0.81704 + 3.8584 * pow ( energy, 1.30180 ); // ditto
+  }
+  
+  YieldResult result; if(Nph<0.)Nph=0.; if(Ne<0.)Ne=0.;
+  result.PhotonYield = Nph; result.ElectronYield = Ne;
+  result.ExcitonRatio = 1.;
+  result.Lindhard = ( ( Nph + Ne ) / energy ) * W_DEFAULT * 1e-3;
+  result.ElectricField = FakeField;
+  result.DeltaT_Scint = -999.;
+  return YieldResultValidity ( result, energy, W_DEFAULT );
+  
 }
 
 YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, double massNum, vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
@@ -326,6 +397,8 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     cerr << "\nERROR: You need a minimum of 12 nuisance parameters for the mean yields.\n";
     exit(EXIT_FAILURE);
   }
+  if ( energy > 330. )
+    cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of about 300 keV.\n";
   int massNumber;
   double ScaleFactor[2] ={1., 1.};
   if ( massNum == 0. )
@@ -349,7 +422,8 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
           (Ne + Nph) * ThomasImel - 4.);
-  if (fabs(Nex + Ni -Nq) > PHE_MIN) 
+  if ( Nex <= 0. ) cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy NR, or are beyond it, at " << energy << " keV." << endl;
+  if ( fabs(Nex + Ni -Nq) > 2. * PHE_MIN )
   {
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
     exit(EXIT_FAILURE);
@@ -392,15 +466,16 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   double fieldDep = pow(1. + pow(dfield / 95., 8.7), 0.0592);
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
   double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
-  if ( A1 == 206. && Z1 == 82. )
-    ThomasImel = 40. * pow ( dfield, -0.75 );
+  if ( A1 == 206. && Z1 == 82. ) { //Pb-206 (from Po-210 alpha decay)
+    ThomasImel = 79.9 * pow ( dfield, -0.868 ); //Nishat Parveen
+  }
   const double logden = log10(density);
   double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
           123.73 * pow(logden, 3.) - 136.47 * pow(logden, 4.) -
           74.194 * pow(logden, 5.) - 20.276 * pow(logden, 6.) -
           2.2352 * pow(logden, 7.);
   double alpha = 0.64 / pow(1. + pow(density / 10., 2.), 449.61);
-  double NexONi = alpha + 0.00178 * pow(atomNum, 1.587);
+  double NexONi = alpha + 0.00178 * pow(atomNum, 1.587); //Wq_eV=13.7;ThomasImel=0.05;NexONi=0.05;
   double Nq = 1e3 * L * energy / Wq_eV;
   double Ni = Nq / (1. + NexONi);
   double recombProb;
@@ -422,38 +497,61 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
 }
 
-YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield)
+YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield, double maxTimeSeparation, double deltaT_ns=-999)
 {
   double Nq = -999;
   double Nph = -999;
-  
+  double Ne = -999;
   Wvalue wvalue = WorkFunction(density);
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
-  double deltaT_ns = -999;
   constexpr double deltaT_ns_halflife = 154.4;
   if (energy == 9.4)
-  {
-    deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
-    Nq = energy * (1e3 / Wq_eV + 6.5);
-    double medTlevel =
-            47.8 + (69.201 - 47.8) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-    double highTrise =
-            1.15 + (1. - 1.15) / (1. + pow(deltaT_ns / 1200., 18.));
-    double lowTdrop = 14. * pow(dfield, 0.19277);
-    Nph = energy * highTrise *
-            (5.1e4 * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-            (1. + pow(deltaT_ns / lowTdrop, -3.));
+  { 
+    if (deltaT_ns < 0) {
+      while (deltaT_ns > maxTimeSeparation || deltaT_ns < 0) {
+        deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+      }
+    }
+    Nq = energy * 1e3 / Wq_eV;
+    double  medTlevel = 57.462 + (69.201 - 57.462 ) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
+    double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield/60, 1), 1); 
+    double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4 ) / pow(1. + pow(dfield/60, 1.), 1);
+    Nph = energy * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) / (1. + pow(deltaT_ns / lowTdrop, -1.*lowTdrop/5.));
+    Ne = Nq - Nph;
+    if (Ne < 0)
+	    Ne = 0.;
     alpha = 0.;
   } else
   {
-    Nq = energy * 1000. / Wq_eV;
-    Nph =
-            energy *
-            (6. + (69.742 - 6.) / pow(1. + pow(dfield / 9.515, 1.9), 0.063032));
+    if ( energy == 32.1 ) {	 
+      Nq = energy * 1e3 / Wq_eV;	    
+      Nph = energy * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037,  0.6409),0.3215));
+      Ne = Nq - Nph;
+      if (Ne < 0.)
+	      Ne = 0.;
+    } else {   //merged 41.5 keV decay
+      if (deltaT_ns < 0) {
+        while (deltaT_ns > maxTimeSeparation || deltaT_ns < 0) {
+          deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+        }
+      }
+      double  medTlevel = 57.462 + (69.201 - 57.462 ) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
+      double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield/60, 1), 1);
+      double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4 ) / pow(1. + pow(dfield/60, 1.), 1);
+      //9.4 keV model
+      Nph = 9.4 * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) / (1. + pow(deltaT_ns / lowTdrop, -1.*lowTdrop/5.));
+      Ne = ( 9.4 * 1e3 / Wq_eV) - Nph;
+      if ( Ne < 0. ) Ne = 0.;  //can't have negative charge from either decay
+      //Add in 32.1 keV yields
+
+      double Nph_32 = 32.1 * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037,  0.6409),0.3215));
+      double Ne_32 = ( 32.1 * 1e3 / Wq_eV ) - Nph_32;
+      Nph += Nph_32;
+      Ne  += Ne_32;
+      if ( Ne < 0. ) Ne = 0.;
+    }
   }
-  double Ne = Nq - Nph;
- 
   
   YieldResult result;
   result.PhotonYield = Nph;
@@ -509,7 +607,42 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations;
 }
 
-
+YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfield ) {
+  
+  Wvalue wvalue = WorkFunction(density);
+  double Wq_eV = wvalue.Wq_eV;
+  double alpha = wvalue.alpha;
+  
+  double Nq = energy * 1e3 / Wq_eV;
+  double m1 = (14.10181492*log10(dfield) -13.1164354516);
+  if ( m1 > 30.66 ) { m1 = 30.66; }
+  double m5 = Nq/energy/(1 + alpha*erf(0.05 * energy))-m1;
+  double m10 = (0.0508273937+(0.1166087199-0.0508273937)/(1+pow(dfield/1.39260460e+02,-0.65763592)));
+  
+  double Qy = m1 + (77.2931084-m1)/
+    pow((1.+pow(energy/(log10(dfield)*0.13946236+0.52561312),1.82217496+(2.82528809-1.82217496)/(1+pow(dfield/144.65029656,-2.80532006)))),0.3344049589)
+    + m5 +(0.- m5)/pow((1.+pow(energy/(7.02921301+(98.27936794-7.02921301)/
+				       (1.+pow(dfield/256.48156448,1.29119251))),4.285781736)), m10);
+  
+  double coeff_TI = pow(1./DENSITY, 0.3);
+  double coeff_Ni = pow(1./DENSITY, 1.4);
+  double coeff_OL = pow(1./DENSITY, -1.7)/log(1.+coeff_TI*coeff_Ni*pow(DENSITY,1.7));
+  Qy *= coeff_OL*log(1.+coeff_TI*coeff_Ni*pow(density,1.7))*pow(density,-1.7);
+  double Ly = Nq / energy - Qy;
+  double Ne = Qy * energy;
+  double Nph = Ly * energy;
+  double lux_NexONi = alpha * erf(0.05 * energy);
+  
+  YieldResult result;
+  result.PhotonYield = Nph;
+  result.ElectronYield = Ne;
+  result.ExcitonRatio = lux_NexONi;
+  result.Lindhard = 1;
+  result.ElectricField = dfield;
+  result.DeltaT_Scint = -999;
+  return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations;
+  
+}
 
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
                                 double density, double dfield, double massNum,
@@ -524,23 +657,23 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
     case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
               // statement. Same intrinsic yields, but different energy spectra
               // (TestSpectra)
-      {
         return GetYieldNR(energy, density, dfield, massNum,NuisParam);
-      }
+	//return GetYieldNROld ( energy, 1 );
       break;
-    case ion: {
+    case ion:
       return GetYieldIon(energy,density,dfield,massNum,atomNum,NuisParam);
-    } break;
-    case gammaRay: {
+    break;
+    case gammaRay:
       return GetYieldGamma(energy,density,dfield);
-    } break;
-    case Kr83m: {
-      return GetYieldKr83m(energy,density,dfield);
-    } break;
+    break;
+    case Kr83m:
+      return GetYieldKr83m(energy,density,dfield,massNum);
+      //not actually massNumber, but a place holder for maxTime
+    break;
     default:  // beta, CH3T
-    {
       return GetYieldBeta(energy,density,dfield);
-    } break;
+      //return GetYieldBetaGR(energy,density,dfield);
+    break;
   }
 
 
@@ -582,8 +715,8 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
                                int useTiming, bool outputTiming,
                                vector<long int>& wf_time,
                                vector<double>& wf_amp) {
-  int Nph = quanta.photons;
-
+  int Nph = quanta.photons; double subtract[2] = { 0., 0. };
+  
   wf_time.clear();
   wf_amp.clear();
 
@@ -592,14 +725,14 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   vector<double> newSpike(2);  // for re-doing spike counting more precisely
 
   // Add some variability in g1 drawn from a polynomial spline fit
-  double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2]);
-  double posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2]);
+  double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2], VDetector::fold);
+  double posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
   double dt = (fdetector->get_TopDrift() - truthPos[2]) / driftVelocity;
   double dz_center = fdetector->get_TopDrift() -
                      dV_mid * fdetector->get_dtCntr();  // go from t to z
   posDep /=
-      fdetector->FitS1(0., 0., dz_center);  // XYZ always in mm now never cm
-  posDepSm /= fdetector->FitS1(0., 0., dz_center);
+    fdetector->FitS1(0., 0., dz_center, VDetector::fold);  // XYZ always in mm now never cm
+  posDepSm /= fdetector->FitS1(0., 0., dz_center, VDetector::unfold);
 
   // generate a number of PMT hits drawn from a binomial distribution.
   // Initialize number of photo-electrons
@@ -733,17 +866,21 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
       // TimeTable[0].push_back(-999.);
       // TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
-    double tRandOffset = (PULSE_WIDTH/2.)*(2.*RandomGen::rndm()->rand_uniform()-1.); //-16,20 was good for LUX, but made weird skew in fP
+    double tRandOffset = (SAMPLE_SIZE/2.)*(2.*RandomGen::rndm()->rand_uniform()-1.); //-16,20 was good for LUX, but made weird skew in fP
     for (ii = 0; ii < numPts; ++ii) {
       if ((AreaTable[0][ii] + AreaTable[1][ii]) <= PULSEHEIGHT) continue;
 
       wf_time.push_back((ii - numPts / 2) * SAMPLE_SIZE);
       wf_amp.push_back(AreaTable[0][ii] + AreaTable[1][ii]);
-
+      
       if (outputTiming) {
         char line[80];
+	if ( AreaTable[0][ii] > PHE_MAX ) subtract[0] = AreaTable[0][ii] - PHE_MAX;
+	else subtract[0] = 0.0;
+	if ( AreaTable[1][ii] > PHE_MAX ) subtract[1] = AreaTable[1][ii] - PHE_MAX;
+	else subtract[1] = 0.0;
         sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back() + (long)tRandOffset,
-		AreaTable[0][ii], AreaTable[1][ii]);
+		AreaTable[0][ii]-subtract[0], AreaTable[1][ii]-subtract[1]);
         pulseFile << line << flush;
       }
 
@@ -766,6 +903,7 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
 
   pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[0] * pulseArea);
+  pulseArea -= ( subtract[0] + subtract[1] );
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
   if (spike < 0) spike = 0;
   double pulseAreaC = pulseArea / posDepSm;
@@ -836,21 +974,21 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   } else {  // some of these are set to -1 to flag them as having been below
             // threshold
     if (scintillation[0] == 0.) scintillation[0] = PHE_MIN;
-    scintillation[0] *= -1.;
+    scintillation[0] = -1.*fabs(scintillation[0]);
     if (scintillation[1] == 0.) scintillation[1] = PHE_MIN;
-    scintillation[1] *= -1.;
+    scintillation[1] = -1.*fabs(scintillation[1]);
     if (scintillation[2] == 0.) scintillation[2] = PHE_MIN;
-    scintillation[2] *= -1.;
+    scintillation[2] = -1.*fabs(scintillation[2]);
     if (scintillation[3] == 0.) scintillation[3] = PHE_MIN;
-    scintillation[3] *= -1.;
+    scintillation[3] = -1.*fabs(scintillation[3]);
     if (scintillation[4] == 0.) scintillation[4] = PHE_MIN;
-    scintillation[4] *= -1.;
+    scintillation[4] = -1.*fabs(scintillation[4]);
     if (scintillation[5] == 0.) scintillation[5] = PHE_MIN;
-    scintillation[5] *= -1.;
+    scintillation[5] = -1.*fabs(scintillation[5]);
     if (scintillation[6] == 0.) scintillation[6] = PHE_MIN;
-    scintillation[6] *= -1.;
+    scintillation[6] = -1.*fabs(scintillation[6]);
     if (scintillation[7] == 0.) scintillation[7] = PHE_MIN;
-    scintillation[7] *= -1.;
+    scintillation[7] = -1.*fabs(scintillation[7]);
   }
 
   // scintillation[8] =
@@ -871,7 +1009,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
   double g2 = g2_params[3];
   double gasGap = g2_params[4];
 
-  vector<double> ionization(9);
+  vector<double> ionization(9); double subtract[2] = { 0., 0. };
   int i;
   bool eTrain = false;
   if (useTiming >= 2 && !fdetector->get_inGas()) eTrain = true;
@@ -885,10 +1023,10 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
 
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = fdetector->FitS2(
-      truthPos[0], truthPos[1]);  // XY is always in mm now, never cm
-  double posDepSm = fdetector->FitS2(smearPos[0], smearPos[1]);
-  posDep /= fdetector->FitS2(0., 0.);
-  posDepSm /= fdetector->FitS2(0., 0.);
+				   truthPos[0], truthPos[1], VDetector::fold);  // XY is always in mm now, never cm
+  double posDepSm = fdetector->FitS2(smearPos[0], smearPos[1], VDetector::unfold);
+  posDep /= fdetector->FitS2(0., 0., VDetector::fold);
+  posDepSm /= fdetector->FitS2(0., 0., VDetector::unfold);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
   
   int Nee = BinomFluct(Ne, ExtEff * exp(-dt / fdetector->get_eLife_us()));
@@ -1062,8 +1200,12 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
 
       if (outputTiming) {
         char line[80];
+	if ( AreaTableBot[1][k] > PHE_MAX ) subtract[0] = AreaTableBot[1][k] - PHE_MAX;
+	else subtract[0] = 0.0;
+        if ( AreaTableTop[1][k] > PHE_MAX ) subtract[1] = AreaTableTop[1][k] - PHE_MAX;
+	else subtract[1] = 0.0;
         sprintf(line, "%lu\t%ld\t%.3f\t%.3f", evtNum, wf_time.back(),
-		AreaTableBot[1][k], AreaTableTop[1][k]);
+		AreaTableBot[1][k]-subtract[0], AreaTableTop[1][k]-subtract[1]);
         pulseFile << line << endl;
       }
     }
@@ -1080,6 +1222,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
 
   pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[1] * pulseArea);
+  pulseArea -= (subtract[0]+subtract[1]);
   double pulseAreaC =
       pulseArea / exp(-dt / fdetector->get_eLife_us()) / posDepSm;
   double Nphd = pulseArea / (1. + fdetector->get_P_dphe());
@@ -1126,11 +1269,12 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
                                                             // units)
   }
 
-  if (pulseArea < fabs(fdetector->get_s2_thr()))
+  if (pulseArea < fabs(fdetector->get_s2_thr())) {
     for (i = 0; i < 8; i++) {
       if (ionization[i] == 0.) ionization[i] = PHE_MIN;
-      ionization[i] *= -1.;
+      ionization[i] = -1.*fabs(ionization[i]);
     }
+  }
 
   ionization[8] =
       g2;  // g2 = ExtEff * SE, gain of EL in gas gap (from CalculateG2)
@@ -1190,31 +1334,32 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     SE *= fdetector->FitTBA(0., 0., fdetector->get_TopDrift() / 2.)[1];
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r,x,y; int Nph, nHits;
-  
-  for ( int i = 0; i < 10000; i++ ) { // calculate properly the width (1-sigma std dev) in the SE size
-    Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
-    phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
-    r = fdetector->get_radius()*sqrt(RandomGen::rndm()->rand_uniform());
-    x = r * cos(phi);
-    y = r * sin(phi);
-    posDep = fdetector->FitS2(x,y) / fdetector->FitS2(0.,0.); //future upgrade: smeared pos
-    nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
-    Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
-    pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
-    pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noiseL()[1]*pulseArea);
-    pulseAreaC = pulseArea / posDep;
-    NphdC = pulseAreaC/(1.+fdetector->get_P_dphe());
-    StdDev += (SE-NphdC)*(SE-NphdC);
-  } StdDev = sqrt(StdDev)/sqrt(9999.); // N-1 from above (10,000)
-  
-  if (verbosity) {
-    cout << endl
-         << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2
-         << " phd per electron (e-EE = ";
-    cout << ExtEff * 100. << "%, SE_mean,width = " << SE << "," << StdDev
-         << ")\t";
-  }
 
+  if (verbosity) {
+    
+    for ( int i = 0; i < 10000; i++ ) { // calculate properly the width (1-sigma std dev) in the SE size
+      Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
+      phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
+      r = fdetector->get_radius()*sqrt(RandomGen::rndm()->rand_uniform());
+      x = r * cos(phi);
+      y = r * sin(phi);
+      posDep = fdetector->FitS2(x,y,VDetector::fold) / fdetector->FitS2(0.,0.,VDetector::fold); //future upgrade: smeared pos
+      nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
+      Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
+      pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
+      pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noiseL()[1]*pulseArea);
+      pulseAreaC = pulseArea / posDep;
+      NphdC = pulseAreaC/(1.+fdetector->get_P_dphe());
+      StdDev += (SE-NphdC)*(SE-NphdC);
+    } StdDev = sqrt(StdDev)/sqrt(9999.); // N-1 from above (10,000)
+    
+    cout << endl
+	 << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2
+	 << " phd per electron (e-EE = ";
+    cout << ExtEff * 100. << "%, SE_mean,width = " << SE << "," << StdDev
+	 << ")\t";
+  }
+  
   // Store the g2 parameters in a vector for later (calculated once per
   // detector)
   g2_params[0] = elYield;
@@ -1246,9 +1391,9 @@ vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
   newSpike[0] = RandomGen::rndm()->rand_gauss(
       newSpike[0], (fdetector->get_sPEres() / 4.) * sqrt(newSpike[0]));
   if (newSpike[0] < 0.0) newSpike[0] = 0.0;
-  newSpike[1] = newSpike[0] / fdetector->FitS1(dx, dy, dz) *
+  newSpike[1] = newSpike[0] / fdetector->FitS1(dx, dy, dz, VDetector::unfold) *
                 fdetector->FitS1(0., 0., fdetector->get_TopDrift() -
-                                             dS_mid * fdetector->get_dtCntr());
+				 dS_mid * fdetector->get_dtCntr(), VDetector::unfold);
 
   return newSpike;  // regular and position-corrected spike counts returned
 }

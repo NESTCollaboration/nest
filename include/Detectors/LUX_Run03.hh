@@ -5,13 +5,17 @@
 #include "VDetector.hh"
 using namespace std;
 
+//NOTES: best g1 for DD 0.1193, but for tritium 0.1146; S2 noise 1.9, 7.5%; g1_gas 0.1019, 0.1012
+//s2fano 3.6, 0.9; eField in gas 6.25, 6.2; e- life 650, 750 us; fid vol 80-130, 38-305 us; gasGap 4.25, 4.5 mm
+//DISCLAIMER: Slight differences from official published values due to private LUX algorithms
+
 class DetectorExample_LUX_RUN03: public VDetector {
   
 public:
   
   DetectorExample_LUX_RUN03() {
-    cerr << "*** Detector definition message ***" << endl;
-    cerr << "You are currently using the LUX Run03 template detector." << endl << endl;
+    if ( verbosity ) cerr << "*** Detector definition message ***" << endl;
+    if ( verbosity ) cerr << "You are currently using the LUX Run03 template detector." << endl << endl;
     
     // Call the initialization of all the parameters
     Initialization();
@@ -22,62 +26,57 @@ public:
   virtual void Initialization() {
     
     // Primary Scintillation (S1) parameters
-    g1 = 0.115; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
-    sPEres = 0.37; //single phe resolution (Gaussian assumed)
-    sPEthr = (0.3*1.173)/0.915; //POD threshold in phe, usually used IN PLACE of sPEeff
-    sPEeff = 1.00; //actual efficiency, can be used in lieu of POD threshold
-    noiseB[0] =-0.01; //baseline noise mean and width in PE (Gaussian)
-    noiseB[1] = 0.08; //baseline noise mean and width in PE (Gaussian)
+    g1 = 0.1170; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim
+    sPEres = 0.37; //arXiv:1910.04211
+    sPEthr = (0.3*1.173)/0.915; //arXiv:1910.04211
+    sPEeff = 1.00; //arXiv:1910.04211
+    noiseB[0] =-0.01; //arXiv:1910.04211
+    noiseB[1] = 0.08; //arXiv:1910.04211
     noiseB[2] = 0.;
     noiseB[3] = 0.;
-    P_dphe = 0.173; //chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
+    P_dphe = 0.173; //arXiv:1910.04211
     
-    coinWind= 100;// S1 coincidence window in ns
-    coinLevel=2;  //how many PMTs have to fire for an S1 to count
-    numPMTs = 119; //For coincidence calculation
+    coinWind= 100;// 1310.8214
+    coinLevel=2;  //1512.03506
+    numPMTs = 119;// 122 minus 3 off
     
-    extraPhot =false;
-    noiseL[0]=1.4e-2;
-    noiseL[1]=1.4e-2;
+    extraPhot =false; //default
+    noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[1]=5.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.09775; //phd per S2 photon in gas, used to get SE size
-    s2Fano = 3.0; //Fano-like fudge factor for SE width
-    s2_thr = 164.;//(150.*1.173)/0.915; //the S2 threshold in phe or PE, *not* phd. Affects NR most
-    E_gas = 6.2; //field in kV/cm between liquid/gas border and anode
-    eLife_us = 650.; //the drift electron mean lifetime in micro-seconds
+    g1_gas = 0.1016; //0.1 in 1910.04211
+    s2Fano = 2.2; //3.7 in 1910.04211; this matches 1608.05381 better
+    s2_thr = 165.;//(150.*1.173)/0.915; //65-194 pe in 1608.05381
+    E_gas = 6.23; //6.55 in 1910.04211
+    eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown
     
     // Thermodynamic Properties
-    inGas = false;
-    T_Kelvin = 173.; //for liquid drift speed calculation
-    p_bar = 1.57; //gas pressure in units of bars, it controls S2 size
-    //if you are getting warnings about being in gas, lower T and/or raise p
+    inGas = false; //duh
+    T_Kelvin = 173.; //1910.04211
+    p_bar = 1.57; //1910.04211
     
     // Data Analysis Parameters and Geometry
-    dtCntr = 160.; //center of detector for S1 corrections, in usec.
-    dt_min = 80.; //minimum. Top of detector fiducial volume
-    dt_max = 130.; //maximum. Bottom of detector fiducial volume
+    dtCntr = 160.; //p.61 Dobi thesis UMD, 159 in 1708.02566
+    dt_min = 38.; //1608.05381
+    dt_max = 305.; //1608.05381
     
-    radius = 200.; //millimeters
-    radmax = 235.;
+    radius = 200.; //1512.03506
+    radmax = 235.; //1910.04211
     
-    TopDrift = 544.7; //mm not cm or us (but, this *is* where dt=0)
-    //a z-axis value of 0 means the bottom of the detector (cathode OR bottom PMTs)
-    //In 2-phase, TopDrift=liquid/gas border. In gas detector it's GATE, not anode!
-    anode = 549.2; //the level of the anode grid-wire plane in mm
-    //In a gas TPC, this is not TopDrift (top of drift region), but a few mm above it
-    gate = 539.2; //mm. This is where the E-field changes (higher)
-    // in gas detectors, the gate is still the gate, but it's where S2 starts
-    cathode = 55.90; //mm. Defines point below which events are gamma-X
+    TopDrift = 544.8; //544.95 in 1910.04211
+    anode = 549.2; //1910.04211 and 549 in 1708.02566
+    gate = 539.2; //1910.04211 and 539 in 1708.02566
+    cathode = 55.90; //55.9-56 in 1910.04211,1708.02566
     
     // 2-D (X & Y) Position Reconstruction
-    PosResExp = 0.015; // exp increase in pos recon res at hi r, 1/mm
-    PosResBase = 70.8364; // baseline unc in mm, see NEST.cpp for usage
+    PosResExp = 0.015; //arXiv:1710.02752 indirectly
+    PosResBase = 70.8364; //1710.02752 indirectly
   }
   
-  //S1 PDE custom fit for function of z
-  //s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
-  virtual double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+  // S1 PDE custom fit for function of xyz
+  // 1712.05696 indirectly, 1708.02566 Figure 10 color map
+  virtual double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm, LCE map ) {
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     double amplitude = 307.9-0.3071*zPos_mm+0.0002257*pow(zPos_mm,2.);
@@ -86,11 +85,11 @@ public:
     
   }
   
-  //Drift electric field as function of Z in mm
-  //For example, use a high-order poly spline
+  // Drift electric field as function of Z in mm
+  // 1709.00095, 1904.08979, 1708.02566 Fig. 13
   virtual double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
     
-    return 158.92
+    return 158.92 // NOTE: DO NOT JUST RETURN A CONSTANT, THAT IS A SILLY USE of FitEF
       -0.2209000 *pow(zPos_mm,1.)
       +0.0024485 *pow(zPos_mm,2.)
       -8.7098e-6 *pow(zPos_mm,3.)
@@ -99,21 +98,21 @@ public:
     
   }
   
-  //S2 PDE custom fit for function of r
-  //s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
-  virtual double FitS2 ( double xPos_mm, double yPos_mm ) {
+  // S2 PDE custom fit for function of r
+  // 1712.05696 & 1710.02752 indirectly. Fig. 13 1708.02566
+  virtual double FitS2 ( double xPos_mm, double yPos_mm, LCE map ) {
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     
     return // unitless, 1.000 at detector center
-      9156.3
-      +6.22750*pow(radius,1.)
-      +0.38126*pow(radius,2.)
+    9156.3
+       +6.22750*pow(radius,1.)
+       +0.38126*pow(radius,2.)
       -0.017144*pow(radius,3.)+
       0.0002474*pow(radius,4.)-
       1.6953e-6*pow(radius,5.)+
       5.6513e-9*pow(radius,6.)
-      -7.3989e-12*pow(radius,7.);
+    -7.3989e-12*pow(radius,7.);
     
   }
   
@@ -121,8 +120,17 @@ public:
 				double zPos_mm) {
     vector<double> BotTotRat(2);
     
-    BotTotRat[0] = 0.650;  // S1 bottom-to-total ratio
-    BotTotRat[1] = 0.449;  // S2 bottom-to-total ratio, typically only used for
+    double radSq = ( pow(xPos_mm,2.) + pow(yPos_mm,2.) ) / 1e2;
+    double TBAzS1 = -0.853 + 0.00925 * ( zPos_mm / 10. );
+    double TBArS2 = 0.126+0.000545*radSq-1.90e-6*radSq*radSq+1.20e-9*radSq*radSq*radSq;
+    
+    if ( TBAzS1 < -1. ) TBAzS1 = -1.;
+    if ( TBAzS1 > 1.0 ) TBAzS1 = 1.0;
+    if ( TBArS2 < -1. ) TBArS2 = -1.;
+    if ( TBArS2 > 1.0 ) TBArS2 = 1.0;
+    
+    BotTotRat[0] = (1.-TBAzS1)/2.;  // 1712.05696
+    BotTotRat[1] = 0.449;//(1.-TBArS2)/2.;  // 1712.05696 and 1710.02752
                            // position recon (1-this)
     
     return BotTotRat;
@@ -140,7 +148,7 @@ public:
     double tau_b = 4.5093 + 0.03437 * relativeZ -0.00018406 * pow ( relativeZ, 2. ) - 1.6383e-6 * pow ( relativeZ, 3. );
     if ( tau_b < 0. ) tau_b = 0.; //cannot have negative time
     
-    A = 0.0574; B_a = 1.062; tau_a = 11.1; tau_b = 2.70; B_b = 1.0 - B_a; //LUX D-D conditions
+    //A = 0.0574; B_a = 1.062; tau_a = 11.1; tau_b = 2.70; B_b = 1.0 - B_a; //LUX D-D conditions
     
     if ( RandomGen::rndm()->rand_uniform() < A )
       phoTravT = 0.; //direct travel time to PMTs (low)
@@ -157,7 +165,7 @@ public:
     if ( phoTravT > DBL_MAX ) phoTravT = tau_a;
     if ( phoTravT <-DBL_MAX ) phoTravT = 0.000;
     
-    return phoTravT; //this function follows LUX (arXiv:1802.06162) not Xe10 technically but tried to make general
+    return phoTravT; //this function follows LUX (arXiv:1802.06162)
   }
   
   virtual vector<double> SinglePEWaveForm ( double area, double t0 ) {
@@ -202,10 +210,8 @@ public:
   }
   
   // Vary VDetector parameters through custom functions
-  virtual void ExampleFunction() {
-    set_g1 ( 0.1167 );
-  }
-  
+  virtual void ExampleFunction() { set_g1(0.1167); }
+  virtual void ExampleFunction2() { set_molarMass(132.); }
 };
 
 #endif

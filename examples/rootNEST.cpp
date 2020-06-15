@@ -20,6 +20,9 @@
 #include "TH1F.h"
 #include "TMath.h"
 #include "TRandom3.h"
+#include "TFitResult.h"
+#include "TFitResultPtr.h"
+#include "TMatrixDSym.h"
 
 #include <string.h>
 #include <vector>
@@ -30,14 +33,36 @@
 // non-input parameters hardcoded in
 #define CL 0.90  // confidence level
 #define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
+#define SKIP 0  // number of lines of energy to skip in efficiency file (lim)
 
-using namespace std;
+using namespace std; double dayNumber = 0.;
 
 vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals);
 vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
                                 bool resol);
 TRandom3 r;  // r.SetSeed(10);
-double band[NUMBINS_MAX][7];
+
+double band[NUMBINS_MAX][17], band2[NUMBINS_MAX][17];
+/* 
+band[bin][0] = s1c_center
+band[bin][1] = s1c_actual_mean
+band[bin][2] = log(S2/S1) mean, OR log(S2) depending on "useS2." Ditto below
+band[bin][3] = log(S2/S1) stddev
+band[bin][4] = log(S2/S1) alpha
+band[bin][5] = log(S2/S1) mean error
+band[bin][6] = log(S2/S1) stddev error
+band[bin][7] = log(S2/S1) alpha error
+band[bin][8] = log(S2/S1) chi2/ndf (ROOT)
+band[bin][9] = log(S2/S1) xi
+band[bin][10] = log(S2/S1) xi error
+band[bin][11] = log(S2/S1) omega
+band[bin][12] = log(S2/S1) omega error
+band[bin][13] = log(S2/S1) covariance xi-omega
+band[bin][14] = log(S2/S1) covariance xi-alpha
+band[bin][15] = log(S2/S1) covariance omega-alpha
+band[bin][16] = log(S2/S1) chi2/ndf (NEST)
+*/
+
 void GetFile(char* fileName);
 vector<vector<double> > outputs, inputs;
 
@@ -51,16 +76,18 @@ int modPoisRnd(double poisMean, double preFactor);  // not used currently, but
                                                     // Poissons
 int modBinom(int nTot, double prob,
              double preFactor);  // just like above, but for binomial
+double EstimateSkew ( double mean, double sigma, vector<double> data );
+double owens_t(double h, double a);
 
 bool loop = false;
 double g1x = 1.0, g2x = 1.0;  // for looping over small changes in g1 and g2
 
 int main(int argc, char** argv) {
   bool leak, ERis2nd;
-  double band2[numBins][7], NRbandX[numBins], NRbandY[numBins],
+  double NRbandX[numBins], NRbandY[numBins],
       numSigma[numBins], leakage[numBins], discrim[numBins],
       errorBars[numBins][2];
-  int i = 0;
+  int i = 0; if ( loopNEST ) verbosity = false;
 
   if (argc < 2) {
     cout << endl
@@ -89,40 +116,83 @@ if ( mode == 2 ) {
   }
 
   FILE* ifp = fopen(argv[1], "r");
-  int ch, nLines = 0;
+  int ch, nLines = -1;
   while (EOF != (ch = getc(ifp))) {
     if ('\n' == ch) nLines++;
   }
-  double energy[nLines], efficiency[nLines];
+  double input[9][nLines-SKIP];
   rewind(ifp);
-  for (i = 0; i < nLines; i++) {
-    fscanf(ifp, "%lf %lf", &energy[i], &efficiency[i]);
-    if ( efficiency[i] > 1.02 ) //2% margin of error is allowed
+  for (i = -1; i < nLines; i++) {
+    if ( i <= (-1+SKIP) ) {
+      char line[180];
+      fgets ( line, 180, ifp );
+      continue;
+    }
+    fscanf ( ifp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+             &input[0][i-SKIP], &input[1][i-SKIP], &input[2][i-SKIP], &input[3][i-SKIP], &input[4][i-SKIP],
+	     &input[5][i-SKIP], &input[6][i-SKIP], &input[7][i-SKIP], &input[8][i-SKIP] );
+    input[7][i-SKIP] /= 1e2;
+    if ( input[7][i-SKIP] > 1.02 ) //2% margin of error is allowed
       { cerr << "eff should be frac not %" << endl; return 1; }
-    if ( efficiency[i] < -.02 ) //allowing for digitization err
+    if ( input[7][i-SKIP] < -.02 ) //allowing for digitization err
       { cerr << "eff must not be negative" << endl; return 1; }
+    if ( input[7][i-SKIP] > 0.00 && !std::isnan(input[7][i-SKIP]) )
+      input[7][i-SKIP] = log10(input[7][i-SKIP]);
+    else
+      input[7][i-SKIP] = -6.;
   }
-  fclose(ifp);
-  TGraph* gr1 = new TGraph(nLines, energy, efficiency);
+  fclose(ifp); nLines -= SKIP;
+  TGraph* gr1 = new TGraph(nLines, input[0], input[7]);
+  double start; int jj = 0;
+  while ( input[0][jj] <= 0.00000 ) { start = input[0][jj]; jj++; }
+  double loE = start, hiE = input[0][nLines-1];
+  cout << "Minimum energy (keV) for detection: ";
+  cin >> loE;
+  cout << "Maximum energy (keV) for detection: ";
+  cin >> hiE;
   TF1* fitf =
       new TF1("FracEffVkeVEnergy",
-              "10.^(2.-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5]))/100.",
-              energy[0], energy[nLines - 1]);  // eqn inspired by Alex Murphy
-  fitf->SetParameters(10., 2., 1., 20., 1e4, -2.5);
-  gr1->Fit(fitf, "q");  // remove the quiet option q if you want to see all of
-                        // the parameters' values for Fractional Efficiency
-                        // versus Energy in keV. Prints to screen
+              "-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5])",
+              loE, hiE);  // eqn inspired by Alex Murphy
+  fitf->SetParameters(17.1, 1.82, 0.659, 18.3, 20869., -2.35);
+  TFitResultPtr fitr = gr1->Fit(fitf, "qrs");  // remove the quiet option if you want to see all
+  // the parameters' values for Fractional Efficiency versus Energy in keV. Prints to the screen
+  int status = int ( fitr );
   double aa = fitf->GetParameter(0);
   double bb = fitf->GetParameter(1);
   double cc = fitf->GetParameter(2);
   double dd = fitf->GetParameter(3);
   double ee = fitf->GetParameter(4);
   double ff = fitf->GetParameter(5);
+  jj = 0;
+  while ( status != 0 || fitf->GetChisquare() > 1.4 ) {
+    fitf->SetParameters(aa, bb, cc, dd, ee, ff);
+    fitf->SetRange ( loE + 0.1 * jj, hiE - 1. * jj );
+    fitr = gr1->Fit(fitf, "rs");
+    if ( aa == fitf->GetParameter(0) || bb == fitf->GetParameter(1) || cc == fitf->GetParameter(2) ||
+	 dd == fitf->GetParameter(3) || ee == fitf->GetParameter(4) || ff == fitf->GetParameter(5) )
+      break;
+    status = int ( fitr );
+    aa = fitf->GetParameter(0);
+    bb = fitf->GetParameter(1);
+    cc = fitf->GetParameter(2);
+    dd = fitf->GetParameter(3);
+    ee = fitf->GetParameter(4);
+    ff = fitf->GetParameter(5);
+    jj++;
+    if ( jj > 10 ) {
+      cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
+      return EXIT_FAILURE;
+    }
+  }
+  if ( fitf->GetChisquare() > 1.3 )
+    cerr << "WARNING: The efficiency curve is poorly fit. chi^2 = "
+	 << fitf->GetChisquare() << endl;
   delete gr1;
   delete fitf;  // it is always important to clear the memory in ROOT
 
   // Get input parameters for sensitivity or limit calculation
-  double time, fidMass, loE, hiE, xEff, NRacc, numBGeventsExp = 0.,
+  double time, fidMass, xEff, NRacc, numBGeventsExp = 0.,
                                                numBGeventsObs;
   cout << "Target Mass (kilograms): ";
   cin >> fidMass;
@@ -140,10 +210,6 @@ if ( mode == 2 ) {
     cout << "Number of BG events expected: ";
     cin >> numBGeventsExp;  // for FC stats
   }
-  cout << "Minimum energy (keV) for detection: ";
-  cin >> loE;
-  cout << "Maximum energy (keV) for detection: ";
-  cin >> hiE;
   // Make sure inputs were valid.
   if (cin.fail() || fidMass <= 0. || time <= 0. || xEff <= 0. || NRacc <= 0. ||
       loE < 0. || hiE <= 0. || numBGeventsExp < 0. || numBGeventsObs < 0.) {
@@ -215,10 +281,11 @@ if ( mode == 2 ) {
       double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) -
                                 dd * exp(-ee * pow(j, ff))) /
                    100.;
+      //cerr << j << " " << eff << endl;
       if ( eff > 1. || eff < 0. )
 	{ cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
       if (j > loE)
-        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i]) * eff * xEff *
+        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNumber) * eff * xEff *
                           NRacc;  // integrating (Riemann, left sum)
                                   // mass-dependent differential rate with
                                   // effxacc and step size
@@ -263,11 +330,11 @@ if ( mode == 1 ) {
     return 0;
   }
   
-  int DoF = numBins - freeParam;
+  int DoF = numBins - abs(freeParam);
   FILE* ifp = fopen(argv[2], "r");
   for (i = 0; i < numBins; i++) {
     fscanf(ifp, "%lf %lf %lf %lf %lf %lf", &band2[i][0], &band2[i][1],
-           &band2[i][2], &band2[i][4], &band2[i][3], &band2[i][5]);
+           &band2[i][2], &band2[i][5], &band2[i][3], &band2[i][6]);
   }
   fclose(ifp);
   // comment in the next 3 lines for g1 and g2 variation loops. Use 2> /dev/null
@@ -282,21 +349,33 @@ if ( mode == 1 ) {
         g2x = 1.;
       }
       GetFile(argv[1]);
-      double error, chi2[2] = {0., 0.};
+      double error, chi2[4] = {0., 0., 0., 0.};
       for (i = 0; i < numBins; i++) {
-        error = sqrt(pow(band[i][4], 2.) + pow(band2[i][4], 2.));
-        chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
+	if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
+	  cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
+	  return 1;
+	}
         error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
+        chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
+        error = sqrt(pow(band[i][6], 2.) + pow(band2[i][6], 2.));
         chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
+	chi2[2] += 100. * ( band2[i][2] - band[i][2] ) / band2[i][2];
+	chi2[3] += 100. * ( band2[i][3] - band[i][3] ) / band2[i][3];
       }
-      chi2[0] /= double(DoF - 1);
-      chi2[1] /= double(DoF - 1);
+      chi2[0] /= double(DoF - 1); chi2[2] /= numBins;
+      chi2[1] /= double(DoF - 1); chi2[3] /= numBins;
       //cout.precision(3);
-      if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
-      if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
-      //cout << chi2[0] << "\t" << chi2[1] << endl; //abbreviated #only version
-      cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1]
-           << " for width" << endl;
+      //if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
+      //if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
+      if ( loopNEST ) { //abbreviated #only version
+	cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << "\t" << chi2[2] << "\t" << chi2[3] << "\t"
+	     << band[0][2] << "\t" << band[0][3] << endl;
+      }
+      else {
+	cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width. ";
+	cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width and mean*width)"<<endl;
+	cout << "%-errors of the form (1/N)*sum{(data-NEST)/data} for mean and width are " << chi2[2] << " and " << chi2[3] << " (averages)" << endl;
+      }
       if (!loop) break;
     }
     if (!loop) break;
@@ -306,60 +385,125 @@ if ( mode == 1 ) {
 }
 
   if (leak) {
+    cout << endl << "Calculating band for first dataset" << endl;
     GetFile(argv[2]);
     for (i = 0; i < numBins; i++) {
-      band2[i][0] = band[i][0];
-      band2[i][1] = band[i][1];
-      band2[i][2] = band[i][2];
-      band2[i][3] = band[i][3];
-      band2[i][4] = band[i][4];
-      band2[i][5] = band[i][5];
-      band2[i][6] = band[i][6];
+      for ( int j = 0; j < 17; j++ ) {
+	band2[i][j] = band[i][j]; }
     }
   }
+  
+  if ( argc >= 3 ) cout << endl << "Calculating band for second dataset" << endl;
   GetFile(argv[1]);
   if (leak) {
     double finalSums[3] = {0., 0., 0.};
     if (band2[0][2] > band[0][2]) {
       ERis2nd = true;
       fprintf(stderr,
-              "Bin Center\tBin Actual\t#StdDev's\tLeak Frac Gaus\t+ error  - "
+              "\n#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ error  - "
               "error\tDiscrim[%%]\tLower ''Half''\t+ error  - "
-              "error\tUpperHf[%%]\tignore column!\n");
+              "error\tUpperHf[%%]\n");
     } else {
       ERis2nd = false;
       fprintf(stderr,
-              "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t- => Gaus more\n");
+              "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t- => Fit more\n");
       fprintf(stderr,
-              "Bin Center\tBin Actual\t#StdDev's\tLeak Frac Gaus\t+ error  - "
-              "error\tDiscrim[%%]\tLeak Frac Real\t+ error  - "
-              "error\tDiscrim[%%]\tReal-Gaus Leak\n");
+              "#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ error  - "
+              "error\tDiscrim[%%]\tLeak Frac Raw\t+ error  - "
+              "error\tDiscrim[%%]\tRaw-Fit Leak\n");
     }
     for (i = 0; i < numBins; i++) {
-      if (ERis2nd) {
-        numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
-        errorBars[i][0] =
-            (band2[i][2] - band2[i][4] - band[i][2] - band[i][4]) /
-            (band2[i][3] + band2[i][5]);  // upper (more leakage)
-        errorBars[i][1] =
-            (band2[i][2] + band2[i][4] - band[i][2] + band[i][4]) /
-            (band2[i][3] - band2[i][5]);  // lower (less leakage)
-        NRbandX[i] = band[i][0];
-        NRbandY[i] = band[i][2];
-      } else {
-        numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
-        errorBars[i][0] =
-            (band[i][2] - band[i][4] - band2[i][2] - band2[i][4]) /
-            (band[i][3] + band[i][5]);  // upper (more leakage)
-        errorBars[i][1] =
-            (band[i][2] + band[i][4] - band2[i][2] + band2[i][4]) /
-            (band[i][3] - band[i][5]);  // lower (less leakage)
-        NRbandX[i] = band2[i][0];
-        NRbandY[i] = band2[i][2];
+      
+      if ( skewness <= 1 ) {
+        if ( ERis2nd ) {
+          numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
+          errorBars[i][0] =
+            (band2[i][2] - band2[i][5] - band[i][2] - band[i][5]) /
+            (band2[i][3] + band2[i][6]);  // upper (more leakage)
+          errorBars[i][1] =
+            (band2[i][2] + band2[i][5] - band[i][2] + band[i][5]) /
+            (band2[i][3] - band2[i][6]);  // lower (less leakage)
+          NRbandX[i] = band[i][0];
+          NRbandY[i] = band[i][2];
+	  leakage[i] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
+	    2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11], band2[i][4]);
+        }
+        else {
+          numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
+          errorBars[i][0] =
+            (band[i][2] - band[i][5] - band2[i][2] - band2[i][5]) /
+            (band[i][3] + band[i][6]);  // upper (more leakage)
+          errorBars[i][1] =
+            (band[i][2] + band[i][5] - band2[i][2] + band2[i][5]) /
+            (band[i][3] - band[i][6]);  // lower (less leakage)
+          NRbandX[i] = band2[i][0];
+          NRbandY[i] = band2[i][2];
+	  leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
+	    2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
+        }
+	if ( skewness == 0 )
+	  leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
+	else {
+	  if ( ERis2nd ) {
+	    errorBars[i][0] = (band2[i][2] - band[i][2]) / (0.5*(band2[i][11]+band2[i][3])); //average of omega and sigma
+	    errorBars[i][1] = (band2[i][2] - band[i][2]) / band2[i][3]; //just plain sigma
+	  }
+	  else {
+	    errorBars[i][0] = (band[i][2] - band2[i][2]) / (0.5*(band[i][11]+band[i][3]));
+	    errorBars[i][1] = (band[i][2] - band2[i][2]) / band[i][3];
+	  }
+	}
+	errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
+	errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
       }
-      leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
-      errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
-      errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
+      
+      if ( skewness == 2 ) {
+        if ( ERis2nd ) {
+	  numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
+	  NRbandX[i] = band[i][0];
+	  NRbandY[i] = band[i][2];
+          leakage[i] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
+            2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11], band2[i][4]);
+
+          double pdf_at_NR = (1./(band2[i][11]*sqrt(2.*TMath::Pi()))) * exp(-0.5*pow(band[i][2]-band2[i][9],2.)/pow(band2[i][11],2.)) *
+            (1.+erf(band2[i][4]*(band[i][2]-band2[i][9])/(band2[i][11]*sqrt(2.))));
+          double dlkg_dx = pdf_at_NR;
+          double dlkg_dxi = -1. * pdf_at_NR;
+          double dlkg_domega = -1. * (band[i][2] - band2[i][9]) / band2[i][11] * pdf_at_NR;
+          double dlkg_dalpha = -1. / TMath::Pi() / (1. + pow(band2[i][4],2.)) * 
+            exp(-1. * (1. + pow(band2[i][4],2.)) * pow((band[i][2] - band2[i][9]),2.) / 2. / pow(band2[i][11],2.));
+
+          errorBars[i][0] = leakage[i]+sqrt(0. +
+            pow(dlkg_dx,2.) * pow(band[i][5],2.) + pow(dlkg_dxi,2.) * pow(band2[i][10],2.) +
+            pow(dlkg_domega,2.) * pow(band2[i][12],2.) + pow(dlkg_dalpha,2.) * pow(band2[i][7],2.) + 
+            2 * dlkg_dxi * dlkg_domega * band2[i][13] + 2 * dlkg_domega * dlkg_dalpha * band2[i][15] +
+            2 * dlkg_dxi * dlkg_dalpha * band2[i][14]);
+          errorBars[i][1] = 2.*leakage[i]-errorBars[i][0];
+        }
+        else {
+	  numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
+	  NRbandX[i] = band2[i][0];
+	  NRbandY[i] = band2[i][2];
+          leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
+            2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
+
+          double pdf_at_NR = (1./(band[i][11]*sqrt(2.*TMath::Pi()))) * exp(-0.5*pow(band2[i][2]-band[i][9],2.)/pow(band[i][11],2.)) *
+            (1.+erf(band[i][4]*(band2[i][2]-band[i][9])/(band[i][11]*sqrt(2.))));
+          double dlkg_dx = pdf_at_NR;
+          double dlkg_dxi = -1. * pdf_at_NR;
+          double dlkg_domega = -1. * (band2[i][2] - band[i][9]) / band[i][11] * pdf_at_NR;
+          double dlkg_dalpha = -1. / TMath::Pi() / (1. + pow(band[i][4],2.)) * 
+            exp(-1. * (1. + pow(band[i][4],2.)) * pow((band2[i][2] - band[i][9]),2.) / 2. / pow(band[i][11],2.));
+
+          errorBars[i][0] = leakage[i]+sqrt(0. +
+            pow(dlkg_dx,2.) * pow(band2[i][5],2.) + pow(dlkg_dxi,2.) * pow(band[i][10],2.) +
+            pow(dlkg_domega,2.) * pow(band[i][12],2.) + pow(dlkg_dalpha,2.) * pow(band[i][7],2.) +               
+            2 * dlkg_dxi * dlkg_domega * band[i][13] + 2 * dlkg_domega * dlkg_dalpha * band[i][15] +
+            2 * dlkg_dxi * dlkg_dalpha * band[i][14]);
+          errorBars[i][1] = 2.*leakage[i]-errorBars[i][0];
+        }
+      }
+
       finalSums[2] += leakage[i];
       discrim[i] = 1. - leakage[i];
     }
@@ -371,7 +515,8 @@ if ( mode == 1 ) {
                                              // the Band Fit Parameters on
                                              // screen
     double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
-    if (chi2 > 1.5) {
+    bool FailedFit = false;
+    if (chi2 > 1.5 || chi2 <= 0. || std::isnan(chi2) ) {
       cerr << "WARNING: Poor fit to NR Gaussian band centroids i.e. means of "
               "log(S2) or log(S2/S1) histograms in S1 bins. Investigate please!"
            << endl;
@@ -380,10 +525,10 @@ if ( mode == 1 ) {
       fitf->SetParameters(0.5, 3., 1e2, 0.4);
       gr1->Fit(fitf, "rq", "", minS1, maxS1);
       chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
-      if (chi2 > 2.) {
+      if (chi2 > 2. || chi2 < 0. || std::isnan(chi2) ) {
         cerr << "ERROR: Even the backup plan to use sigmoid failed as well!"
              << endl;
-        return 1;
+        FailedFit = true; //return 1;
       }
     }
     long below[NUMBINS_MAX] = {0};
@@ -395,11 +540,11 @@ if ( mode == 1 ) {
             fitf->GetParameter(0) / (inputs[i][j] + fitf->GetParameter(1)) +
             fitf->GetParameter(2) * inputs[i][j] +
             fitf->GetParameter(3);  // use Woods function
-        // NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
+        if ( FailedFit ) NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
         // the fit, to compare to past data that did not use a smoothing spline
-        // NRbandGCentroid =
-        // fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
-        // // compromise
+	//NRbandGCentroid =
+	//fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
+        // compromise
         if (outputs[i][j] < NRbandGCentroid) below[i]++;
       }
       leakTotal = double(below[i]) / (double)outputs[i].size();
@@ -411,18 +556,19 @@ if ( mode == 1 ) {
           (double(outputs[i].size()) + sqrt(double(outputs[i].size())));
       fprintf(
           stderr,
-          "%.2f\t\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\n",
-          0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
-          numSigma[i], leakage[i], errorBars[i][0] - leakage[i],
-          leakage[i] - errorBars[i][1], discrim[i] * 100., leakTotal,
-          poisErr[0] - leakTotal, leakTotal - poisErr[1],
-          (1. - leakTotal) * 100., leakTotal - leakage[i]);
+          "%d\t%.2f\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t",
+          outputs[i].size(), 0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
+          numSigma[i], leakage[i], fabs(errorBars[i][0] - leakage[i]),
+          fabs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,
+          poisErr[0] - leakTotal, leakTotal - poisErr[1], (1. - leakTotal) * 100.);
+      if ( !ERis2nd ) fprintf ( stderr, "%e\n",leakTotal-leakage[i] );
+      else fprintf(stderr,"\n");
       finalSums[0] += (double)below[i];
       finalSums[1] += (double)outputs[i].size();
     }
     fprintf(stderr,
             "OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
-            "%.12f%%, total: Gaussian + non-Gaussian ('anomalous'). Leakage "
+            "%.12f%%, total: Gaussian & non-Gaussian (tot=counting) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[0] / finalSums[1]) * 100.,
             finalSums[0] / finalSums[1]);  // Dividing by total for average
@@ -441,7 +587,7 @@ if ( mode == 1 ) {
             (1. - LowValue) * 100., LowValue);
     fprintf(stderr,
             "OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
-            "%.12f%%, Gaussian.                                     Leakage "
+            "%.12f%%, Gauss, or skew-normal fits (whatever you ran) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[2] / numBins) * 100., finalSums[2] / numBins);
     delete gr1;
@@ -459,15 +605,16 @@ void GetFile(char* fileName) {
   vector<double> E_keV, electricField, tDrift_us, X_mm, Y_mm, Z_mm, Nph, Ne,
       S1cor_phe, S2cor_phe, S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr,
       S2raw_phe, S2cor_phd;
-
-  while (EOF != (ch = getc(ifp))) {
-    if ('\n' == ch && nLines)
-      break;
-    else
-      nLines = 0;
-    if (']' == ch && nLines == 0) nLines++;
+  
+  if ( verbosity ) {
+    while (EOF != (ch = getc(ifp))) {
+      if ('\n' == ch && nLines)
+	break;
+      else
+	nLines = 0;
+      if (']' == ch && nLines == 0) nLines++; }
   }
-
+  
   while (1) {
     fscanf(ifp,
            "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
@@ -631,51 +778,40 @@ void GetFile(char* fileName) {
   if (usePD <= 0) {
     inputs = GetBand(S1cor_phe, S2cor_phe, true);
     for (o = 0; o < numBins; o++) {
-      band[o][0] = 0.;
-      band[o][1] = 0.;
-      band[o][2] = 0.;
-      band[o][3] = 0.;
-      band[o][4] = 0.;
-      band[o][5] = 0.;
-      band[o][6] = 0.;
+      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_phe, S2cor_phe, false));
   } else if (usePD == 1) {
     inputs = GetBand(S1cor_phd, S2cor_phd, true);
     for (o = 0; o < numBins; o++) {
-      band[o][0] = 0.;
-      band[o][1] = 0.;
-      band[o][2] = 0.;
-      band[o][3] = 0.;
-      band[o][4] = 0.;
-      band[o][5] = 0.;
-      band[o][6] = 0.;
+      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_phd, S2cor_phd, false));
   } else {
     inputs = GetBand(S1cor_spike, S2cor_phd, true);
     for (o = 0; o < numBins; o++) {
-      band[o][0] = 0.;
-      band[o][1] = 0.;
-      band[o][2] = 0.;
-      band[o][3] = 0.;
-      band[o][4] = 0.;
-      band[o][5] = 0.;
-      band[o][6] = 0.;
+      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_spike, S2cor_phd, false));
   }
-  if (!loop) {
-    // fprintf(stdout,"Bin Center\tBin Actual\tHist Mean\tMean Error\tHist
-    // Sigma\t\tEff[%%>thr]\n");
-    fprintf(stdout,
-            "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig "
-            "Error\tX^2/DOF\n");
-    for (o = 0; o < numBins; o++) {
-      // fprintf(stdout,"%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n",band[o][0],band[o][1],band[o][2],band[o][4],band[o][3],band[o][5]*100.);
-      fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0],
-              band[o][1], band[o][2], band[o][4], band[o][3], band[o][5],
-              band[o][6]);
+
+  if ( !loop ) {
+    if ( verbosity ) {
+      if ( skewness == 2 ) {
+	fprintf(stdout,"Bin Center\tBand Xi\t\tXi Err\t\tBand Omega\tOmega Err\tBand Alpha\tAlpha Err\tBand Cov Xi-Om\tBand Cov Xi-Al\tBand Cov Om-Al\tBand Mean\tMean Err\tBand Stddev\tStddev Err\n");
+	for (o = 0; o < numBins; o++) {
+	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+		  band[o][0], band[o][9], band[o][10], band[o][11], band[o][12], band[o][4], band[o][7], band[o][13], band[o][14], band[o][15],
+		  band[o][2], band[o][5], band[o][3], band[o][6]);
+	}
+      }
+      else {
+	fprintf(stdout, "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig Error\tGaus Skew\tSkew Error\tX^2/DOF\n");
+	for (o = 0; o < numBins; o++) {
+	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0], band[o][1], band[o][2], band[o][5], band[o][3], band[o][6],
+		  band[o][4], band[o][7], band[o][8]);
+	}
+      }
     }
   }
   return;
@@ -776,8 +912,8 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
       band[j][1] /= numPts - 1.;
       band[j][1] = sqrt(band[j][1]);
     }
-    band[j][4] = band[j][3] / sqrt(numPts);
-    band[j][5] =
+    band[j][5] = band[j][3] / sqrt(numPts);
+    band[j][6] =
         numPts /
         (numPts +
          double(reject[j]));  // cerr << numPts << " " << reject[j] << endl;
@@ -787,28 +923,158 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
 }
 
 vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
-  int j = 0;
+  int j = 0; bool wings = false;
   TH1F* HistogramArray = new TH1F[numBins];
 
   for (j = 0; j < numBins; j++) {
     TString HistName;
     HistName.Form("%i", j);
     HistogramArray[j].SetName(HistName.Data());
-    HistogramArray[j].SetBins(50, logMin, logMax);
+    if ( skewness ) {
+      logMin = band[j][2]-3.*band[j][3]; if ( logMin > 2. ) wings = true;
+      logMax = band[j][2]+3.*band[j][3]; if ( logMax > 3. ) wings = true;
+    }
+    if ( wings ) { logMin -= 0.5; logMax += 0.5; }
+    HistogramArray[j].SetBins ( logBins, logMin, logMax ); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
     for (unsigned long i = 0; i < signals[j].size(); i++)
       HistogramArray[j].Fill(signals[j][i]);
     HistogramArray[j].Draw();
-    TF1* f = new TF1("band", "gaus");
-    f->SetParameters(1., 0.1);
-    HistogramArray[j].Fit(f, "Q");
-    band[j][2] = f->GetParameter("Mean");
-    band[j][3] = f->GetParameter("Sigma");
-    band[j][4] = f->GetParError(1);
-    band[j][5] = f->GetParError(2);
-    band[j][6] = f->GetChisquare() / (double)f->GetNDF();
-    delete f;
-  }
+    if ( !skewness ) {
+      TF1* f = new TF1("band", "gaus");
+      f->SetParameters(signals[j].size(),band[j][2],band[j][3]);
+      HistogramArray[j].Fit(f, "Q");
+      band[j][2] = f->GetParameter("Mean");
+      band[j][3] = f->GetParameter("Sigma");
+      band[j][4] = 0.;
+      band[j][5] = f->GetParError(1);
+      band[j][6] = f->GetParError(2);
+      band[j][7] = 0.;
+      band[j][8] = f->GetChisquare() / (double)f->GetNDF();
+      delete f;
+    }
+    else {
 
+      TF1* f = new TF1("skewband",
+		       "([0]/([2]*sqrt(2.*TMath::Pi())))*exp(-.5*(x-[1])^2/[2]^2)*(1+TMath::Erf([3]*(x-[1])/([2]*sqrt(2.))))",logMin,logMax);
+      //equation inspired by Vetri Velan
+      double amplEstimate = signals[j].size();
+      double alphaEstimate = EstimateSkew(band[j][2],band[j][3],signals[j]);
+      double deltaEstimate = alphaEstimate / sqrt ( 1. + alphaEstimate * alphaEstimate );
+      double omegaEstimate = band[j][3] / sqrt ( 1. - 2. * deltaEstimate * deltaEstimate / TMath::Pi() );
+      double xiEstimate = band[j][2] - omegaEstimate * deltaEstimate * sqrt(2./TMath::Pi());
+      TFitResultPtr res;
+    RETRY:
+      f->SetParameters(amplEstimate, xiEstimate, omegaEstimate, alphaEstimate);
+      if ( skewness == 2 )
+	res = HistogramArray[j].Fit(f, "QRS");
+      else
+	HistogramArray[j].Fit(f, "QRS");
+      double fit_xi, fit_xi_err, fit_omega, fit_omega_err, fit_alpha, fit_alpha_err;
+      if ( skewness == 2 ) {
+	fit_xi = res->Value(1);
+	fit_xi_err = res->ParError(1);
+	fit_omega = res->Value(2);
+	fit_omega_err = res->ParError(2);
+	fit_alpha = res->Value(3);
+	fit_alpha_err = res->ParError(3);
+      }
+      else {
+	fit_xi = f->GetParameter(1);
+	fit_xi_err = f->GetParError(1);
+	fit_omega = f->GetParameter(2);
+	fit_omega_err = f->GetParError(2);
+	fit_alpha = f->GetParameter(3);
+	fit_alpha_err = f->GetParError(3);
+      }
+      double fit_delta = fit_alpha / sqrt(1. + fit_alpha * fit_alpha);
+      double fit_cov_xo, fit_cov_xa, fit_cov_oa;
+      if ( skewness == 2 ) {
+	TMatrixDSym fit_cov = res->GetCovarianceMatrix();
+	fit_cov_xo = fit_cov[1][2];
+	fit_cov_xa = fit_cov[1][3];
+	fit_cov_oa = fit_cov[2][3];
+      }
+      else {
+	fit_cov_xo = 0.;
+        fit_cov_xa = 0.;
+        fit_cov_oa = 0.;
+      }
+      
+      // Calculate band mean, std dev, and skewness
+      band[j][2] = fit_xi + fit_omega * fit_delta * sqrt(2. / TMath::Pi());
+      band[j][3] = fit_omega * sqrt(1. - 2. * fit_delta * fit_delta / TMath::Pi());
+      band[j][4] = fit_alpha;
+
+      // Calculate error on mean
+      if ( skewness == 2 ) {
+	double dmudxi = fit_omega * sqrt(2. / TMath::Pi()) * fit_delta;
+	double dmudomega = sqrt(2. / TMath::Pi()) * fit_delta;
+	double dmudalpha = fit_omega * sqrt(2. / TMath::Pi()) * pow(1. + fit_alpha * fit_alpha, -1.5);
+	band[j][5] = sqrt(dmudxi * dmudxi * fit_xi_err * fit_xi_err + dmudomega * dmudomega * fit_omega_err * fit_omega_err +
+			  dmudalpha * dmudalpha * fit_alpha_err * fit_alpha_err + 2. * dmudxi * dmudomega * fit_cov_xo + 2. * dmudomega * dmudalpha * fit_cov_oa +
+			  2. * dmudxi * dmudalpha * fit_cov_xa);
+      }
+      else
+	band[j][5] = f->GetParError(1);
+      
+      // Calculate error on standard deviation
+      if ( skewness == 2 ) {
+	double dvardomega = 2. * fit_omega * (1. - 2. / TMath::Pi() * fit_delta * fit_delta);
+	double dvardalpha = -4. / TMath::Pi() * fit_omega * fit_omega * fit_alpha / (1. + fit_alpha * fit_alpha) / (1. + fit_alpha * fit_alpha);
+	double var_err = sqrt(dvardomega * dvardomega * fit_omega_err * fit_omega_err +
+			      dvardalpha * dvardalpha * fit_alpha_err * fit_alpha_err + 2. * dvardomega * dvardalpha * fit_cov_oa);
+	band[j][6] = 0.5 / band[j][3] * var_err;
+      }
+      else
+	band[j][6] = f->GetParError(2);
+      
+      // Store other parameters directly from the fit
+      band[j][7] = fit_alpha_err;
+      band[j][9] = fit_xi;
+      band[j][10] = fit_xi_err;
+      band[j][11] = fit_omega;
+      band[j][12] = fit_omega_err;
+      band[j][13] = fit_cov_xo;
+      band[j][14] = fit_cov_xa;
+      band[j][15] = fit_cov_oa;
+      
+      // Store reduced chi2
+      if ( skewness == 2 )
+	band[j][8] = res->Chi2() / double(res->Ndf());
+      else
+	band[j][8] = f->GetChisquare() / (double)f->GetNDF();
+
+      // Calculate reduced chi2 manually
+      double chiSq = 0.00, modelValue, xValue, denom;
+      for ( int k = 0; k < logBins; k++ ) {
+        xValue = logMin + k * ( logMax - logMin ) / logBins;
+        modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
+          (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
+        double denom = max(float(modelValue+HistogramArray[j][k]),(float)1.); //alternatively: skip the zero bins entirely?? Not sure better
+	if ( freeParam > 0 )
+	  chiSq += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom; //combined Pearson-Neyman chi-squared (Matthew Sz.)
+	else
+	  chiSq += 2. * ( modelValue - double ( HistogramArray[j][k] ) * log ( modelValue ) ); //MLE: Maximum Likelihood Estimator (Poisson)
+      }
+      chiSq /= ( double(logBins) - 4. - 1. );
+      band[j][16] = chiSq;
+
+      // Retry fit if it does not converge.
+      //if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 2. || band[j][7] > 10. || band[j][3] > 1. || band[j][6] > 0.5 || band[j][2] <= 0. ) {
+      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 1. || fabs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
+	   band[j][2] <= 0. || band[j][3] <= 0. ) {
+	xiEstimate = fit_xi;
+	omegaEstimate = fit_omega;
+	alphaEstimate = 0.0;
+	cerr << "Re-fitting... (stats, more? and/or logBins, fewer? might help)\n";
+	if ( mode != 0 ) goto RETRY;
+      }
+      
+      delete f;
+      
+    }
+  }
+  
   delete[] HistogramArray;
   return signals;
 }
@@ -864,4 +1130,38 @@ int modBinom(int nTot, double prob, double preFactor) {
   if (randomNumber < 0) randomNumber = 0;  // just in case
 
   return randomNumber;
+}
+
+double EstimateSkew ( double mean, double sigma, vector<double> data ) {
+
+  double xi = mean;
+  double omega = sigma;
+  double skew = 0.0;
+  for ( int i = 0; i < (int)data.size(); i++ )
+    skew += pow((data[i]-xi)/omega,3.);
+  skew /= (double)data.size();
+  skew = skew / fabs(skew) * std::min(0.7, fabs(skew)); // Sample skewness could theoretically be < -1 or > 1
+  double delta = skew / fabs(skew) * sqrt(TMath::Pi() / 2. * pow(fabs(skew),(2./3.)) / (pow(fabs(skew),(2./3.)) + pow(((4. - TMath::Pi()) / 2.),(2./3.))));
+  double alpha = delta / sqrt ( 1. - delta * delta );
+  return alpha;
+
+}
+
+double owens_t (double h, double a) {
+
+  int nIntSteps = 2500;
+  double T = 0;
+  double dx = a / nIntSteps;
+  double x = 0;
+  double integrand = 0;
+
+  for (int k = 0; k < nIntSteps; k++) {
+    x = (k + 0.5) * dx;
+    integrand = exp(-0.5 * h * h * (1 + x * x)) / (1 + x * x);
+    T += (integrand * dx);
+  }
+
+  T /= (2. * TMath::Pi());
+  return T;
+
 }

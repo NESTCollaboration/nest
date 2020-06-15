@@ -94,6 +94,7 @@
 #define PULSEHEIGHT \
   0.005                 // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
+#define PHE_MAX 180 // saturation threshold, in PE per bin i.e. sample
 
 namespace NEST {
 
@@ -156,19 +157,19 @@ class NESTcalc {
   NESTcalc(const NESTcalc&) = delete;
   NESTcalc& operator=(const NESTcalc&) = delete;
   NESTcalc(VDetector* detector);
-  ~NESTcalc();
+  virtual ~NESTcalc();
 
   long BinomFluct(long, double);
   
   static const std::vector<double> default_NuisParam; /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
-  static const std::vector<double> default_FreeParam; /* = {1.,1.,0.1,0.5,0.07} */
+  static const std::vector<double> default_FreeParam; /* = {1.,1.,0.1,0.5,0.19} */
   // basic binomial fluctuation, which switches to Gaussian for large numbers of
   // quanta, this is called repeatedly, and built upon to produce greater,
   // non-binomial fluctuations
   NESTresult FullCalculation(INTERACTION_TYPE species, double energy,
                              double density, double dfield, double A, double Z,
                              std::vector<double> NuisParam = default_NuisParam, /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
-			     std::vector<double> FreeParam = default_FreeParam, /* = {1.,1.,0.1,0.5,0.07} */
+			     std::vector<double> FreeParam = default_FreeParam, /* = {1.,1.,0.1,0.5,0.19} */
                              bool do_times = true);
   // the so-called full NEST calculation puts together all the individual
   // functions/calculations below
@@ -196,20 +197,24 @@ class NESTcalc {
   virtual YieldResult GetYieldNR(double energy, double density, double dfield, double massNum,
                   std::vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   // Called by GetYields in the NR (and related) cases
+  virtual YieldResult GetYieldNROld ( double energy, int alt );
+  // Quick and dirty simple analytical approximations saved for earlier NEST versions that were first principles: power laws, ln, sigmoid, exponentials
   virtual YieldResult GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum, vector<double> NuisParam={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.});
   // Called by GetYields in the ion case
-  virtual YieldResult GetYieldKr83m(double energy, double density, double dfield);
+  virtual YieldResult GetYieldKr83m(double energy, double density, double dfield, double maxTimeSeparation, double deltaT_ns);
   // Called by GetYields in the K383m case
   virtual YieldResult GetYieldBeta(double energy, double density, double dfield);
   // Called by GetYields in the Beta/Compton/etc.(IC,Auger,EC) Case
+  virtual YieldResult GetYieldBetaGR(double energy, double density, double dfield);
+  // Greg R. version: arXiv:1910.04211
   virtual YieldResult YieldResultValidity(YieldResult& res, const double energy, const double Wq_eV);
   // Confirms and sometimes adjusts YieldResult to make physical sense
-  virtual QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.07});
+  virtual QuantaResult GetQuanta(YieldResult yields, double density, std::vector<double> FreeParam={1.,1.,0.1,0.5,0.19});
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
   // photons and electrons
   // Namely, the recombination fluctuations
-  virtual double RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.07}*/);
+  virtual double RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19}*/);
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for nuclear recoils and ions (Lindhard<1)
   virtual double RecombOmegaER(double efield, double elecFrac);
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
@@ -289,6 +294,7 @@ class NESTcalc {
   virtual double NexONi(double energy, double density);
   //calculate exciton/ion 
   VDetector* GetDetector() { return fdetector; }
+  void SetDetector(VDetector* detector) { fdetector = detector; }  
 };
 }
 

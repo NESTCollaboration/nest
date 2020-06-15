@@ -89,16 +89,10 @@ class NESTProc : public G4VRestDiscreteProcess {
   // For in-flight particles losing energy (or those stopped)
   G4VParticleChange* PostStepDoIt(const G4Track& aTrack, const G4Step& aStep);
   G4VParticleChange* AtRestDoIt(const G4Track& aTrack, const G4Step& aStep);
+  
+  void TryPopLineages(const G4Track& aTrack, const G4Step& aStep);
 
-  // These are the methods implementing the scintillation process.
 
-  void SetTrackSecondariesFirst(const G4bool state);
-  // If set, the primary particle tracking is interrupted and any
-  // produced scintillation quanta are tracked next. When all have been
-  // tracked, the tracking of the primary resumes.
-
-  G4bool GetTrackSecondariesFirst() const;
-  // Returns the boolean flag for tracking secondaries first.
 
   void SetScintillationYieldFactor(const G4double yieldfactor);
   // Called to set the scintillation quantum yield factor, useful for
@@ -109,6 +103,8 @@ class NESTProc : public G4VRestDiscreteProcess {
 
   G4double GetScintillationYieldFactor() const;
   // Returns the quantum (photon/electron) yield factor. See above.
+  
+  
 
   Lineage GetChildType(const G4Track* aTrack, const G4Track* sec) const;
   G4Track* MakePhoton(G4ThreeVector xyz, double t);

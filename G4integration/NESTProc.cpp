@@ -106,42 +106,53 @@ G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t,doub
   // calculate time
 }
 
-G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
-                                        const G4Step& aStep) {
-  PostStepDoIt(aTrack, aStep);
-
-  pParticleChange->Initialize(aTrack);
+void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
+{
   pParticleChange->SetNumberOfSecondaries(1e7);
 
   // ready to pop out OP and TE?
-  if (NESTStackingAction::theStackingAction->isUrgentEmpty() &&
-      aStep.GetSecondary()->empty()) {
+  if (aTrack.GetKineticEnergy()==0 &&
+      NESTStackingAction::theStackingAction->isUrgentEmpty() &&
+      aStep.GetSecondary()->empty())
+  {
     lineages_prevEvent.clear();
 
-    for (auto &lineage : lineages) {
+    for (auto &lineage : lineages)
+    {
       double etot =
-          std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
-                          [](double a, Hit b) { return a + b.E; });
-      if(etot==0){
+              std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
+                              [](double a, Hit b)
+                              {
+                                return a + b.E; });
+      if (etot == 0)
+      {
         continue;
       }
-      G4ThreeVector maxHit_xyz = std::max_element(lineage.hits.begin(),lineage.hits.end(),
-                                                  [](Hit a, Hit b){return a.E < b.E;})->xyz;
-      double efield_here = fDetector->FitEF(maxHit_xyz.x(),maxHit_xyz.y(),maxHit_xyz.z());
+      G4ThreeVector maxHit_xyz = std::max_element(lineage.hits.begin(), lineage.hits.end(),
+                                                  [](Hit a, Hit b)
+                                                  {
+                                                    return a.E < b.E;
+                                                  })->xyz;
+      double efield_here = fDetector->FitEF(maxHit_xyz.x(), maxHit_xyz.y(), maxHit_xyz.z());
       lineage.result = fNESTcalc->FullCalculation(
-          lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z,NESTcalc::default_NuisParam, NESTcalc::default_FreeParam,detailed_secondaries);
+                                                  lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z, NESTcalc::default_NuisParam, NESTcalc::default_FreeParam, detailed_secondaries);
       lineage.result_calculated = true;
-      if (lineage.result.quanta.photons) {
+      if (lineage.result.quanta.photons)
+      {
         auto photontimes = lineage.result.photon_times.begin();
         double ecum = 0;
         int phot_cum = 0;
-        for (auto &hit : lineage.hits) {
-          hit.result.photons = round((lineage.result.quanta.photons - phot_cum)*hit.E/(etot-ecum));
+        for (auto &hit : lineage.hits)
+        {
+          hit.result.photons = round((lineage.result.quanta.photons - phot_cum) * hit.E / (etot - ecum));
           ecum += hit.E;
           phot_cum += hit.result.photons;
-          for (int i=0; i<hit.result.photons; ++i) {
-            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
-              if(stack_photons){
+          for (int i=0; i < hit.result.photons; ++i)
+          {
+            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor))
+            {
+              if (stack_photons)
+              {
                 G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
                 pParticleChange->AddSecondary(onePhoton);
               }
@@ -150,20 +161,25 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
           }
         }
       }
-      if (lineage.result.quanta.electrons) {
+      if (lineage.result.quanta.electrons)
+      {
         double ecum = 0;
         double el_cum = 0;
-        double electron_speed = fNESTcalc->SetDriftVelocity(fDetector->get_T_Kelvin(),lineage.density, efield_here);
-        double electron_kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(electron_speed*mm/us,2);
-        for (auto &hit : lineage.hits) {
-          hit.result.electrons = round((lineage.result.quanta.electrons - el_cum)*hit.E/(etot-ecum));
+        double electron_speed = fNESTcalc->SetDriftVelocity(fDetector->get_T_Kelvin(), lineage.density, efield_here);
+        double electron_kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(electron_speed * mm / us, 2);
+        for (auto &hit : lineage.hits)
+        {
+          hit.result.electrons = round((lineage.result.quanta.electrons - el_cum) * hit.E / (etot - ecum));
           ecum += hit.E;
           el_cum+= hit.result.electrons;
-          for(int i = 0 ; i<hit.result.electrons; i++){
-            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor)){
-              if(stack_electrons){
-                G4Track* oneElectron = MakeElectron(hit.xyz,lineage.density,hit.t,electron_kin_E);
-                if(oneElectron) pParticleChange->AddSecondary(oneElectron);          
+          for (int i = 0 ; i < hit.result.electrons; i++)
+          {
+            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor))
+            {
+              if (stack_electrons)
+              {
+                G4Track* oneElectron = MakeElectron(hit.xyz, lineage.density, hit.t, electron_kin_E);
+                if (oneElectron) pParticleChange->AddSecondary(oneElectron);
               }
             }
           }
@@ -172,14 +188,22 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
 
       lineages_prevEvent.push_back(lineage);
     }
-    if (analysisTrigger) {
+    if (analysisTrigger)
+    {
       analysisTrigger(lineages_prevEvent);
     }
     lineages.clear();
     track_lins.clear();
   }
 
-  return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
+  return;
+}
+
+
+G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
+                                        const G4Step& aStep) {
+  pParticleChange->Initialize(aTrack);  
+  return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep); 
 }
 
 Lineage NESTProc::GetChildType(const G4Track* parent,
@@ -342,12 +366,15 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   if (myLinID2 == track_lins.end()) {
     if (sec_mylinid)
       myLinID2 = myLinID;
-    else
+    else{
+      TryPopLineages(aTrack, aStep);
       return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+    }
   }
   Lineage* myLineage = &lineages.at(myLinID->second);
   //...if the step deposited energy...
   if (aStep.GetTotalEnergyDeposit() <= 0) {
+    TryPopLineages(aTrack, aStep);
     return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
   }
   
@@ -380,7 +407,10 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
     NobleLater = true;
   }
 
-  if (!NobleNow) return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+  if (!NobleNow){
+    TryPopLineages(aTrack, aStep);
+    return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
+  }
 
   // ...retrieve the particle's position, time, attributes at both the
   // beginning and the end of the current step along its track...
@@ -400,6 +430,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   myLineage->hits.push_back(stepHit);
 
   // the end (exiting)
+  TryPopLineages(aTrack, aStep);
   return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
 }
 

@@ -6,7 +6,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 [![DOI](https://zenodo.org/badge/96344242.svg)](https://zenodo.org/badge/latestdoi/96344242)
 
 (For Python bindings, see the related [nestpy project](https://github.com/NESTCollaboration/nestpy))
-
+(For Information Regarding a Specific NEST Release, please see the [NEST Release Notes](https://github.com/NESTCollaboration/nest/releases)
 ### Table of Contents
 
 1. [ Getting the Repository ](#get)
@@ -253,6 +253,12 @@ WARNING: Whenever you modify this header, **make sure to do a clean recompile**!
 Only **verbosity**, **MCtruthE**, and **MCtruthPos** will change the event-by-event output for testNEST. 
 The min/max S1,S2,log values will only effect post-simulation analyses, such as event selection for energy 
 reconstruction and efficiency calculations in testNEST, and binning for creating bands and leakage calculations in rootNEST.
+
+**Note**: There can be negative S1 and S2 pulse areas in the testNEST output. Negative pulse areas simply flag an event that is below thresholds set in the Detector settings file. 
+For S1s, negative areas indicate that the PMT coincidence hasn't been met. For a PMT hit to count towards the coincidence requirement, the pulse area in that channel must be greater than the detector->sPEthr (single photon threshold) parameter. 
+For S2s, the S2 area must be larger than the S2 threshold (generally O(100 phd)). 
+Although these events are below threshold, they're still present in a detector, therefore they are not removed from the output.
+For the actual pulse area of these events, take the magnitude of the S1 or S2. 
 
 <a name="yieldModels"></a>
 ## Using Alternate NR and ER Yields Models

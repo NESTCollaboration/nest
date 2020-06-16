@@ -203,8 +203,7 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
   pParticleChange->Initialize(aTrack);  
-  return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
- 
+  return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep); 
 }
 
 Lineage NESTProc::GetChildType(const G4Track* parent,
@@ -253,7 +252,6 @@ Lineage NESTProc::GetChildType(const G4Track* parent,
 
 G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                           const G4Step& aStep) {
-
   pParticleChange->Initialize(aTrack);
 
   auto myLinID = track_lins.find(

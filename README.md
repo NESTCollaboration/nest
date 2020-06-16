@@ -6,7 +6,9 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 [![DOI](https://zenodo.org/badge/96344242.svg)](https://zenodo.org/badge/latestdoi/96344242)
 
 (For Python bindings, see the related [nestpy project](https://github.com/NESTCollaboration/nestpy))
+
 (For Information Regarding a Specific NEST Release, please see the [NEST Release Notes](https://github.com/NESTCollaboration/nest/releases)
+
 ### Table of Contents
 
 1. [ Getting the Repository ](#get)

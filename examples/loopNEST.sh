@@ -1,6 +1,15 @@
 
 #!/bin/bash
+#This code doesn't actually perform any model fitting, however,
+#it provides an example for using rootNEST if one wishes to use testNEST + rootNEST
+#to fit a data target to find optimal model/detector parameters to match data
 
+#See lines 70-140 of src/testNEST.cpp for more info on what each of these input arguments is doing
+
+#Note that rootNEST must be in FIT mode (mode=1) to compare with data
+
+#First declare ranges for each of the free parameters/
+#Here, in several for-loops, using 7 parameters with set ranges
 for a in -0.1 0.00 0.10
 do
 for b in 0.40 0.50 0.60
@@ -17,9 +26,15 @@ for g in 6e-2 7e-2 8e-2
 do
     
     echo $a $b $c $d $e $f $g
-    #/home/mszydagis/build/testNEST $a $b $c $d $e $f $g > /home/mszydagis/nest_output/nest_output.ER 2> /dev/null
-    #/home/mszydagis/build/rootNEST /home/mszydagis/nest_output/nest_output.ER /home/mszydagis/build/Run4_C14_Time_bin_5_105_tdrift_170_us.txt 2> /dev/null
-    #rm /home/mszydagis/nest_output/nest_output.ER
+    
+    #below: run testNEST with the select parameters, and save the output
+    #/path/to/testNEST $a $b $c $d $e $f $g > nest_output.ER 2> /dev/null
+    
+    #next, use rootNEST in FIT mode to get goodness-of-fit statistic with a data file (See README on rootNEST)
+    #/path/to/rootNEST nest_output.ER /path/to/fittingTarget_dataFile.dat 2> /dev/null
+    
+    #then remove the output file and move on to the next parameter set
+    #rm nest_output.ER
     
 done
 done

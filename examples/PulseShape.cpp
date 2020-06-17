@@ -4,16 +4,18 @@
 #include <cfloat>
 #include <vector>
 
-#define NUMEVT 10000
+unsigned int NUMEVT;
 #define S2BORD 1000 //ns
+#define RISEDEF 0.05
 
-double S1tot[NUMEVT];
-double S2tot[NUMEVT];
-double S1f30[NUMEVT];
-double T05[NUMEVT];
 using namespace std;
 
 int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o PulseShape.exe
+  
+  if ( argc < 3 ) {
+    cerr << "2 args needed: S1 (non-c) in phe (NOT phd). 1st value is min, 2nd max." << endl;
+    return EXIT_FAILURE;
+  }
   
   double MaxPossibleTime = DBL_MAX, S1LimPE[2]={atof(argv[1]),atof(argv[2])}; //avoid Seg Fault!
   default_random_engine generator;
@@ -29,7 +31,9 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
       i = 1;
       continue;
     }
-    if ( fgets ( line, 40, ifp ) == NULL ) break;
+    if ( fgets ( line, 40, ifp ) == NULL ) {
+      NUMEVT = unsigned(a) + 1; break;
+    }
     else ;
     sscanf ( line, "%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &d, &e );
     if ( feof ( ifp ) )
@@ -45,24 +49,29 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
   }
   fclose ( ifp );
   
+  vector<double> S1tot(NUMEVT);
+  vector<double> S2tot(NUMEVT);
+  vector<double> S1f30(NUMEVT);
+  vector<double> T0X(NUMEVT);
+  
   for ( i = 0; i < num.size(); i++ ) {
-    T05[num[i]] = MaxPossibleTime;
+    T0X[num[i]] = MaxPossibleTime;
     if ( tns[i] < S2BORD ) S1tot[num[i]] += top[i] + bot[i];
     else S2tot[num[i]] += top[i] + bot[i];
   }
   double soFar = 0.;
   for ( i = 0; i < num.size(); i++ ) {
-    if ( tns[i] < S2BORD && T05[num[i]] >= MaxPossibleTime ) {
+    if ( tns[i] < S2BORD && T0X[num[i]] >= MaxPossibleTime ) {
       soFar += top[i] + bot[i];
-      if ( soFar > (0.05*S1tot[num[i]]) && T05[num[i]] >= MaxPossibleTime )
-	{ T05[num[i]] = tns[i]; soFar = 0.0; continue; }
+      if ( soFar > (RISEDEF*S1tot[num[i]]) && T0X[num[i]] >= MaxPossibleTime )
+	{ T0X[num[i]] = tns[i]; soFar = 0.0; continue; }
     }
   }
   
   double area[2] = {0.0,0.0}; double range[4] = {-14.,134.,-8.,32.}; double rRange[4]={range[0],range[1],range[2],range[3]};
   for ( i = 0; i < num.size(); i++ ) {
-    if ( T05[num[i]] < MaxPossibleTime ) tns[i] -= T05[num[i]];
-    if ( tns[i] < (S2BORD-T05[num[i]]) && win[i] == 1 ) {
+    if ( T0X[num[i]] < MaxPossibleTime ) tns[i] -= T0X[num[i]];
+    if ( tns[i] < (S2BORD-T0X[num[i]]) && win[i] == 1 ) {
       if ( tns[i] > rRange[0] && tns[i] < rRange[1] ) {
 	area[0] += top[i] + bot[i];
 	if ( tns[i] > rRange[2] && tns[i] < rRange[3] )
@@ -77,15 +86,19 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
     }
   }
   
-  double mean = 0.0; int j = 0;
+  double mean = 0.0; int j = 0; vector<double> NonBlank;
   cout << "evt#\tS1, pe\tpromptFrac\n";
   for ( i = 0; i < NUMEVT; i++ ) {
-    //cerr << T05[i] << endl;
+    //cerr << T0X[i] << endl;
     if ( S1tot[i] > S1LimPE[0] && S2tot[i] > 0. && S1f30[i] > 0. && S1f30[i] < 1. && S1tot[i] < S1LimPE[1] )
-      { mean += S1f30[i]; j++; cout << i << "\t" << S1tot[i] << "\t" << S1f30[i] << endl; }
+      { mean += S1f30[i]; j++; cout << i << "\t" << S1tot[i] << "\t" << S1f30[i] << endl; NonBlank.push_back(S1f30[i]); }
     else
       cout << i << endl;
-  } mean /= double ( j );
+  }
+  if ( j == 0 ) { cerr << "no events in range!\n"; return EXIT_FAILURE; }
+  mean /= double ( j );
+  std::sort ( NonBlank.begin(), NonBlank.end() );
+  double median = NonBlank[j/2];
   
   double sigma = 0.0;
   for ( i = 0; i < NUMEVT; i++ )
@@ -93,8 +106,10 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
   sigma /= (double(j)-1.); sigma = sqrt(sigma); double skew = 0.0;
   for ( i = 0; i < NUMEVT; i++ )
     if ( S1f30[i] != 0. && S1tot[i] > S1LimPE[0] && S1tot[i] < S1LimPE[1] ) skew += pow ( ( S1f30[i] - mean ) / sigma, 3. );
-  skew /= double(j); cerr << "MEAN\t\tSIGMA\t\tSKEW\n";
-  cerr << mean << "\t" << sigma << "\t" << skew << endl;
+  skew /= double(j);
+  cerr << "MEDIAN\t\tSIGMA\t\tSKEWNESS\n";
+  cerr << median << "\t" << sigma << "\t" << skew << endl;
   
-  return 0;
+  return EXIT_SUCCESS;
+
 }

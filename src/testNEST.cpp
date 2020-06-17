@@ -204,38 +204,74 @@ int main(int argc, char** argv) {
                   seed, no_seed, tZero);
 }
 
-vector<vector<double>> runNESTvec ( VDetector* detector, INTERACTION_TYPE particleType, //func suggested by Xin Xiang, PD Brown U. for RG, LZ
-				    vector<double> eList, vector<vector<double>> pos3dxyz ) {
+NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleType, //func suggested by Xin Xiang, PD Brown U. for RG, LZ
+				 vector<double> eList, vector<vector<double>> pos3dxyz, double inField, int seed ) {
   
   verbosity = false; NESTcalc n(detector);
   NESTresult result; QuantaResult quanta;
-  double x, y, z, driftTime, vD;
+  double x, y, z, driftTime, vD; RandomGen::rndm()->SetSeed(seed);
   NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
   FreeParam = {1.,1.,0.10,0.5,0.19};
   vector<double> scint, scint2, wf_amp; vector<long int> wf_time;
-  vector<vector<double>> S1cS2cpairs; S1cS2cpairs.resize(eList.size(),vector<double>(2,-999.));
+  NESTObservableArray OutputResults; double useField;
   vector<double> g2_params = n.CalculateG2(verbosity);
+  double rho = n.SetDensity(detector->get_T_Kelvin(),detector->get_p_bar());
   
   for ( long i = 0; i < eList.size(); i++ ) {
     x = pos3dxyz[i][0];
     y = pos3dxyz[i][1];
     z = pos3dxyz[i][2];
+    if ( inField <= 0. ) useField = detector->FitEF(x,y,z);
+    else useField = inField;
     double truthPos[3] = { x, y, z };
     double smearPos[3] = { x, y, z }; //ignoring the difference in this quick function caused by smearing
-    result = n.FullCalculation(particleType,eList[i],DENSITY,detector->FitEF(x,y,z),detector->get_molarMass(),ATOM_NUM,NuisParam,FreeParam,verbosity);
-    quanta = result.quanta; //used default density (2.9 at time of writing)
-    vD = n.SetDriftVelocity(detector->get_T_Kelvin(),DENSITY,detector->FitEF(x,y,z));
-    scint = n.GetS1(quanta,truthPos,smearPos,vD,vD,particleType,i,detector->FitEF(x,y,z),eList[i],0,verbosity,wf_time,wf_amp); //0 means useTiming = 0
+    result = n.FullCalculation(particleType,eList[i],rho,useField,detector->get_molarMass(),ATOM_NUM,NuisParam,FreeParam,verbosity);
+    quanta = result.quanta;
+    vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,useField);
+    scint = n.GetS1(quanta,truthPos,smearPos,vD,vD,particleType,i,useField,eList[i],0,verbosity,wf_time,wf_amp); //0 means useTiming = 0
     driftTime = (detector->get_TopDrift()-z)/vD; //vD,vDmiddle assumed same (uniform field)
-    scint2= n.GetS2(quanta.electrons,truthPos,smearPos,driftTime,vD,i,detector->FitEF(x,y,z),0,verbosity,wf_time,wf_amp,g2_params);
+    scint2= n.GetS2(quanta.electrons,truthPos,smearPos,driftTime,vD,i,useField,0,verbosity,wf_time,wf_amp,g2_params);
     if ( scint[7] > PHE_MIN && scint2[7] > PHE_MIN ) { //unlike usual, kill (don't skip, just -> 0) sub-thr evts
-      S1cS2cpairs[0][i] = fabs(scint[7]); //default is S1c in units of spikes, 3-D XYZ corr
-      S1cS2cpairs[1][i] = log10(fabs(scint2[7])); //default is log10(S2c) in terms of log(phd) not phe a.k.a. PE
+      OutputResults.s1_nhits.push_back(abs(int(scint[0])));
+      OutputResults.s1_nhits_thr.push_back(abs(int(scint[8])));
+      OutputResults.s1_nhits_dpe.push_back(abs(int(scint[1])));
+      OutputResults.s1r_phe.push_back(fabs(scint[2]));
+      OutputResults.s1c_phe.push_back(fabs(scint[3]));
+      OutputResults.s1r_phd.push_back(fabs(scint[4]));
+      OutputResults.s1c_phd.push_back(fabs(scint[5]));
+      OutputResults.s1r_spike.push_back(fabs(scint[6]));
+      OutputResults.s1c_spike.push_back(fabs(scint[7])); //default is S1c in units of spikes, 3-D XYZ corr
+      OutputResults.Nee.push_back(abs(int(scint2[0])));
+      OutputResults.Nph.push_back(abs(int(scint2[1])));
+      OutputResults.s2_nhits.push_back(abs(int(scint2[2])));
+      OutputResults.s2_nhits_dpe.push_back(abs(int(scint2[3])));
+      OutputResults.s2r_phe.push_back(fabs(scint2[4]));
+      OutputResults.s2c_phe.push_back(fabs(scint2[5]));
+      OutputResults.s2r_phd.push_back(fabs(scint2[6]));
+      OutputResults.s2c_phd.push_back(fabs(scint2[7])); //default is S2c in terms of phd, not phe a.k.a. PE
     }
-    else { S1cS2cpairs[0][i] = 0.0; S1cS2cpairs[1][i] = 0.0; }
+    else {
+      OutputResults.s1_nhits.push_back(0);
+      OutputResults.s1_nhits_thr.push_back(0);
+      OutputResults.s1_nhits_dpe.push_back(0);
+      OutputResults.s1r_phe.push_back(0.0);
+      OutputResults.s1c_phe.push_back(0.0);
+      OutputResults.s1r_phd.push_back(0.0);
+      OutputResults.s1c_phd.push_back(0.0);
+      OutputResults.s1r_spike.push_back(0.0);
+      OutputResults.s1c_spike.push_back(0.0);
+      OutputResults.Nee.push_back(0);
+      OutputResults.Nph.push_back(0);
+      OutputResults.s2_nhits.push_back(0);
+      OutputResults.s2_nhits_dpe.push_back(0);
+      OutputResults.s2r_phe.push_back(0.);
+      OutputResults.s2c_phe.push_back(0.);
+      OutputResults.s2r_phd.push_back(0.);
+      OutputResults.s2c_phd.push_back(0.);
+    }
   }
   
-  return S1cS2cpairs;
+  return OutputResults;
 }
 
 int testNEST(VDetector* detector, unsigned long int numEvts, string type,

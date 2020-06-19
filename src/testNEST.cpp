@@ -20,6 +20,7 @@
 
 #define tZero 0.00 //day{of the year, 0 is average WIMP velocity}
 #define tStep 0.03
+#define hiEregime 1E+2 //keV
 
 using namespace std;
 using namespace NEST;
@@ -309,7 +310,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
   if (eMin == -1.) eMin = 0.;
 
   if (eMax == -1. && eMin == 0.)
-    eMax = 1e2;  // the default energy max is 100 keV
+    eMax = hiEregime;  // the default energy max
   if (eMax == 0.) {
     cerr << "ERROR: The maximum energy cannot be 0 keV!" << endl;
     return 1;
@@ -602,9 +603,16 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	if (type_num == WIMP && timeStamp > (tZero+tStep))
 	  fprintf(stdout,
 		  "dayNum\t");
-	if ( eMax == eMin && numBins == 1 ) MCtruthE = false;
-	if ( MCtruthE ) fprintf(stdout,"E_truth [keV]");
-	else fprintf(stdout,"E_recon [keV]");
+	if ( eMax == eMin && numBins == 1 && MCtruthE == true ) {
+	  MCtruthE = false;
+	  fprintf(stderr,"Simulating a mono-E peak; setting MCtruthE false.\n");
+	}
+	if ( eMax > hiEregime )
+	  fprintf(stdout,"Energy [keV]");
+	else {
+	  if ( MCtruthE ) fprintf(stdout,"E_truth [keV]");
+	  else fprintf(stdout,"E_recon [keV]");
+	}
 	fprintf(stdout,
 		"\tfield [V/cm]\ttDrift [us]\tX,Y,Z "
 		"[mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor "
@@ -864,7 +872,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     else
       signalE.push_back(keV);
     
-    if ( (Ne+Nph == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > 1E+2 && !BeenHere ) { //efficiency is zero?
+    if ( (Ne+Nph == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > hiEregime && !BeenHere ) { //efficiency is zero?
       minS1 = -999.;
       minS2 = -999.;
       detector->set_s2_thr(0.0); //since needs GetS2() re-run, only "catches" after the first caught event
@@ -878,7 +886,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       signal2.pop_back();
       signalE.pop_back();
       cerr << endl << "CAUTION: Efficiency seems to have been zero, so trying again with full S1 and S2 ranges." << endl;
-      cerr << "OR, you tried to simulate a mono-energetic peak with MC truth E turned on. Silly!" << endl;
+      cerr << "OR, you tried to simulate a mono-energetic peak with MC truth E turned on. Silly! Setting MCtruthE to false." << endl;
       goto NEW_RANGES;
     }
     
@@ -945,7 +953,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       // printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f,%.0f\t%lf\t%lf\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],yields.PhotonYield,yields.ElectronYield);
       //for when you want means
       // if (truthPos[2] < detector->get_cathode() && verbosity) printf("g-X ");
-      if (keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2 ||
+      if (keV > 10.*hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
           // switch to exponential notation to make output more readable, if
           // energy is too high (>1 MeV)
           type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||

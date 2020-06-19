@@ -37,7 +37,7 @@ int logBins = 30; //#bins in between logMin & logMax for fits
 // some numbers for fine-tuning the speed vs. the accuracy
 double z_step = 0.1;  // mm, for integrating non-uni EF. Larger detectors require larger z_step
                       // ~0.5-1mm for tonne-scale TPCs like LZ and XENONnT
-double E_step = 5.0;  // keV, for integrating WIMP spectrum
+double E_step = 5.0;  // keV, for integrating WIMP spectrum. NEST will warn you if choice poor
 // Rec >~20GeV 6keV, <~5GeV 0.5keV
 
 // Set the rootNEST options

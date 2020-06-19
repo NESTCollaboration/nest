@@ -73,7 +73,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     if (!exciton) {
       tauR = exp(-0.00900 * dfield) *
 	(7.3138 + 3.8431 * log10(energy));    // arXiv:1310.1117
-      if ( tauR < 3.5 && species == gammaRay ) tauR = 3.5;
+      if ( tauR < 3.5 ) tauR = 3.5; //used to be for gammas only but helpful for matching beta data better
       if ( dfield > 8e2 ) dfield = 8e2; //to match Kubota's 4,000 V/cm
       SingTripRatio = 1.00 * pow(energy, -0.45+0.0005*dfield);  // see comment below; also, dfield may need to be fixed at ~100-200 V/cm (for NR too)
     } else
@@ -466,8 +466,8 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   double fieldDep = pow(1. + pow(dfield / 95., 8.7), 0.0592);
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
   double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
-  if ( A1 == 206. && Z1 == 82. ) { //Pb-206 (from Po-210 alpha decay)
-    ThomasImel = 79.9 * pow ( dfield, -0.868 ); //Nishat Parveen
+  if ( A1 == 206. && Z1 == 82. ) { //Pb-206 (from Po-210 alpha decay). Xe-Xe NR model matches best
+    ThomasImel = 0.048 * pow ( dfield, -.0533 ); //Nishat Parveen
   }
   const double logden = log10(density);
   double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -

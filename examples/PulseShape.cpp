@@ -6,7 +6,8 @@
 
 unsigned int NUMEVT;
 #define S2BORD 1000 //ns
-#define RISEDEF 0.05
+#define RISEDEF 0.05 //5% rise time used as the t0 point
+#define UNC 0.35 //uncertainty in definition of rise t
 
 using namespace std;
 
@@ -19,7 +20,7 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
   
   double MaxPossibleTime = DBL_MAX, S1LimPE[2]={atof(argv[1]),atof(argv[2])}; //avoid Seg Fault!
   default_random_engine generator;
-  uniform_real_distribution<double> distribution(0.,15.); //ns for ran offset. 1.5 bin default
+  uniform_real_distribution<double> distribution(0.,20.); //ns for ran offset. 2 bin default
   vector<long> num, win; char line[60];
   vector<double> tns, bot, top;
   FILE* ifp = fopen ( "photon_times.txt", "r" );
@@ -59,11 +60,12 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
     if ( tns[i] < S2BORD ) S1tot[num[i]] += top[i] + bot[i];
     else S2tot[num[i]] += top[i] + bot[i];
   }
-  double soFar = 0.;
+  double fraction, soFar = 0.; normal_distribution<double> distribution2(RISEDEF,RISEDEF*UNC);
   for ( i = 0; i < num.size(); i++ ) {
     if ( tns[i] < S2BORD && T0X[num[i]] >= MaxPossibleTime ) {
       soFar += top[i] + bot[i];
-      if ( soFar > (RISEDEF*S1tot[num[i]]) && T0X[num[i]] >= MaxPossibleTime )
+      fraction = distribution2(generator); if ( fraction < 0. ) fraction = 0.;
+      if ( soFar > (fraction*S1tot[num[i]]) && T0X[num[i]] >= MaxPossibleTime )
 	{ T0X[num[i]] = tns[i]; soFar = 0.0; continue; }
     }
   }

@@ -592,7 +592,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         cout << "Density = " << rho << " g/mL"
              << "\t";
         cout << "central vDrift = " << vD_middle << " mm/us\n";
-        cout << "\t\t\t\t\t\t\t\tW = " << Wq_eV
+        cout << "\t\t\tPRO TIP: neg s2_thr in detector->S2bot!\tW = " << Wq_eV
              << " eV\tNegative numbers are flagging things below threshold!   "
                 "phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
 

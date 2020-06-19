@@ -1348,6 +1348,10 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
       Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
       pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
       pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noiseL()[1]*pulseArea);
+      if ( fdetector->get_s2_thr() < 0. )
+	pulseArea = RandomGen::rndm()->rand_gauss(fdetector->FitTBA(0.0,0.0,fdetector->get_TopDrift()/2.)[1]*pulseArea,sqrt
+						 (fdetector->FitTBA(0.0,0.0,fdetector->get_TopDrift()/2.)[1]*
+						 pulseArea*(1.-fdetector->FitTBA(0.0,0.0,fdetector->get_TopDrift()/2.)[1])));
       pulseAreaC = pulseArea / posDep;
       NphdC = pulseAreaC/(1.+fdetector->get_P_dphe());
       StdDev += (SE-NphdC)*(SE-NphdC);

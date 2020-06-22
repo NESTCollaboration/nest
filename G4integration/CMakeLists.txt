@@ -17,7 +17,6 @@ add_library(
 )
 add_library(NEST::NESTG4 ALIAS NESTG4)
 
-target_compile_features(NESTG4 PUBLIC cxx_std_17)
 target_link_libraries(NESTG4 PUBLIC NEST::Core ${Geant4_LIBRARIES})
 # Geant4 does not seem to have targets yet (last version checked: 1)
 target_include_directories(

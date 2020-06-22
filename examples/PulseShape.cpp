@@ -4,10 +4,11 @@
 #include <cfloat>
 #include <vector>
 
-unsigned int NUMEVT;
+unsigned int NUMEVT; //first global var: #lines from file
 #define S2BORD 1000 //ns
 #define RISEDEF 0.05 //5% rise time used as the t0 point
-#define UNC 0.35 //uncertainty in definition of rise t
+#define UNC 0.35 //uncertainty in definition of rise time
+//35% for Run04, but all-natural 0% better for Run03
 
 using namespace std;
 
@@ -21,6 +22,7 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
   double MaxPossibleTime = DBL_MAX, S1LimPE[2]={atof(argv[1]),atof(argv[2])}; //avoid Seg Fault!
   default_random_engine generator;
   uniform_real_distribution<double> distribution(0.,20.); //ns for ran offset. 2 bin default
+  //for LUX Run03: better results with -4 to 16. Still 2 samples-wide, but different centering
   vector<long> num, win; char line[60];
   vector<double> tns, bot, top;
   FILE* ifp = fopen ( "photon_times.txt", "r" );
@@ -50,17 +52,35 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
   }
   fclose ( ifp );
   
-  vector<double> S1tot(NUMEVT);
-  vector<double> S2tot(NUMEVT);
-  vector<double> S1f30(NUMEVT);
-  vector<double> T0X(NUMEVT);
+  vector<double> S1tot(NUMEVT,0.);
+  vector<double> S2tot(NUMEVT,0.);
+  vector<double> S2max(NUMEVT,0.);
+  vector<double> CI_left(NUMEVT,0.);
+  vector<double> CI_right(NUMEVT,0.);
+  vector<double> S2width(NUMEVT,0.);
+  vector<double> S1f30(NUMEVT,0.);
+  vector<double> T0X(NUMEVT,0.);
+  vector<double> driftT(NUMEVT,0.);
   
   for ( i = 0; i < num.size(); i++ ) {
     T0X[num[i]] = MaxPossibleTime;
     if ( tns[i] < S2BORD ) S1tot[num[i]] += top[i] + bot[i];
-    else S2tot[num[i]] += top[i] + bot[i];
+    else { S2tot[num[i]] += ( top[i] + bot[i] ) * 1.015;//1% adjustment for untraceable tiny bug in S2 areas. Not universal?
+      if ( ( top[i] + bot[i] ) > S2max[num[i]] ) {
+	S2max[num[i]] = top[i] + bot[i]; driftT[num[i]] = tns[i] - S2BORD; //minus 1 microsecond fudge factor to get mean drift
+      }
+      else ; }
+  } double fraction = 0.0225, soFar = 0.; //default Confidence Interval is 95.5% (~2-sigma)
+  for ( i = 0; i < num.size(); i++ ) {
+    if ( tns[i] >= S2BORD && S2width[num[i]] == 0. ) {
+      soFar += top[i] + bot[i];
+      if ( soFar > (fraction-0.)*S2tot[num[i]] && CI_left[num[i]] == 0. && CI_right[num[i]]== 0. ) CI_left[num[i]] = tns[i];
+      if ( soFar > (1.-fraction)*S2tot[num[i]] && CI_right[num[i]]== 0. && CI_left[num[i]] != 0. ) CI_right[num[i]] =tns[i];
+      if ( CI_left[num[i]] != 0. && CI_right[num[i]] != 0. )
+	{ S2width[num[i]] = ( CI_right[num[i]] - CI_left[num[i]] ) / 4.; soFar = 0.0; continue; } //div by 4 as 2s--2s=4sigma
+    }
   }
-  double fraction, soFar = 0.; normal_distribution<double> distribution2(RISEDEF,RISEDEF*UNC);
+  soFar = 0.00; normal_distribution<double> distribution2(RISEDEF,RISEDEF*UNC);
   for ( i = 0; i < num.size(); i++ ) {
     if ( tns[i] < S2BORD && T0X[num[i]] >= MaxPossibleTime ) {
       soFar += top[i] + bot[i];
@@ -81,19 +101,23 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast PulseShape.cpp -o
       }
     }
     else {
-      double offset = distribution(generator); //consider unique offset for each range[]
-      rRange[0] = range[0]+offset; rRange[1] = range[1]+offset; rRange[2] = range[2]+offset; rRange[3] = range[3]+offset;
+      double offset0 = 0.0+distribution(generator); //consider unique offset for each range[]. In original try makes bumps
+      //double offset1 = 10.+distribution(generator);
+      //double offset2 = 10.+distribution(generator);
+      //double offset3 = 10.+distribution(generator);
+      rRange[0] = range[0]+offset0; rRange[1] = range[1]+offset0; rRange[2] = range[2]+offset0; rRange[3] = range[3]+offset0;
       if ( S1f30[num[i]] == 0. && area[0] != 0. && area[1] != 0. && area[0] != area[1] ) S1f30[num[i]] = area[1]/area[0];
       area[0] = 0.0; area[1] = 0.0;
     }
   }
   
   double mean = 0.0; int j = 0; vector<double> NonBlank;
-  cout << "evt#\tS1, pe\tpromptFrac\n";
+  cout << "evt#\tS1, pe\tpromptFrac\tdrift [ms]\tS2, pe\tWidth [ns]\n";
   for ( i = 0; i < NUMEVT; i++ ) {
     //cerr << T0X[i] << endl;
     if ( S1tot[i] > S1LimPE[0] && S2tot[i] > 0. && S1f30[i] > 0. && S1f30[i] < 1. && S1tot[i] < S1LimPE[1] )
-      { mean += S1f30[i]; j++; cout << i << "\t" << S1tot[i] << "\t" << S1f30[i] << endl; NonBlank.push_back(S1f30[i]); }
+      { mean += S1f30[i]; j++; cout << i << "\t" << S1tot[i] << "\t" << S1f30[i] << "\t" << driftT[i]/1e6 << "\t" <<
+				 S2tot[i] << "\t" << S2width[i] << endl; NonBlank.push_back(S1f30[i]); }
     else
       cout << i << endl;
   }

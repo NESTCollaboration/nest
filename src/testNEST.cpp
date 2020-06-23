@@ -1136,6 +1136,8 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
     if (resol) band[j][0] /= numPts;
     band[j][1] /= numPts;
     band[j][2] /= numPts;
+    if ( numPts > signals[j].size() )
+      numPts = signals[j].size();  // seg fault prevention line
     for (i = 0; i < (int)numPts; i++) {
       if (signals[j][i] != -999.)
         band[j][3] += pow(signals[j][i] - band[j][2], 2.);  // std dev calc

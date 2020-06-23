@@ -1,7 +1,8 @@
 
 #!/bin/bash
-#Be sure to turn off verbosity in analysis.hh for best results!
-rm Pb212.dat;
+# Be sure to turn off verbosity in analysis.hh for best results!
+# And add standard header to Pb212.dat before attempting to run rootNEST
+rm Pb212.dat &> /dev/null;
 
 ./testNEST 740 beta .125017 1.39536 -1 -1 0 >> Pb212.dat 2> /dev/null
 ./testNEST 955 beta 1.39536 3.89835 -1 -1 0 >> Pb212.dat 2> /dev/null
@@ -213,3 +214,4 @@ rm Pb212.dat;
 ./testNEST 1491 gamma 540 550 -1 -1 0 >> Pb212.dat 2> /dev/null
 
 #SOURCE: arXiv:1602.01138 R.F. Lang et al. "A 220Rn source for..."
+# the calibration of low-background experiments" JINST 11 P04004

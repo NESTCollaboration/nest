@@ -28,6 +28,9 @@ target_link_libraries(rootNEST PUBLIC NEST::Core ${ROOT_LIBRARIES} ${ROOT_EXE_LI
 list(APPEND EXAMPLES rootNEST)
 endif()
 
+add_executable(pulseShape PulseShape.cpp)
+target_link_libraries(pulseShape PUBLIC NEST::Core)
+list(APPEND EXAMPLES pulseShape)
 
 install(
     TARGETS ${EXAMPLES}        

@@ -1,6 +1,8 @@
 #ifndef NESTPROC_h
 #define NESTPROC_h 1
 
+#include <functional>
+
 #include "G4Track.hh"
 #include "G4DynamicParticle.hh"
 #include "G4Material.hh"

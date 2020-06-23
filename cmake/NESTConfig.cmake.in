@@ -1,0 +1,18 @@
+@PACKAGE_INIT@
+
+get_filename_component(NEST_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+list(APPEND CMAKE_MODULE_PATH ${NEST_CMAKE_DIR})
+set(NEST_INCLUDE_DIRS
+    "${PACKAGE_PREFIX_DIR}/include"
+    "${PACKAGE_PREFIX_DIR}/include/NEST"
+    "${PACKAGE_PREFIX_DIR}/include/NEST/G4"
+    "${PACKAGE_PREFIX_DIR}/include/Detectors"
+)
+
+if(NOT TARGET NEST::Core)
+    include("${NEST_CMAKE_DIR}/NESTTargets.cmake")
+endif()
+
+set(NEST_LIBRARIES @NEST_LIBRARY_TARGETS@)

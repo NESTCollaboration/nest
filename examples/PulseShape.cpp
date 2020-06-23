@@ -1,7 +1,8 @@
 
-#include <random>
-#include <iostream>
+#include <algorithm>
 #include <cfloat>
+#include <iostream>
+#include <random>
 #include <vector>
 
 unsigned int NUMEVT; //first global var: #lines from file

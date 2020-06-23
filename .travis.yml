@@ -31,4 +31,4 @@ install:
 # Test commands
 script:
   - ls
-  - ./testNEST 100 WIMP 100 1e-40 10 100,100,100 42
+  - ./bin/testNEST 100 WIMP 100 1e-40 10 100,100,100 42

@@ -64,7 +64,7 @@ Please contact Matthew Szydagis about becoming involved in development before me
 
 In order to compile and run NEST, the following are required:
 
-* CMake 2.8 (or higher)
+* CMake 3.8 (or higher)
 * gcc (with C++11 support, 4.8.1 or higher)
 
 The following are optional, depending on intended use of NEST:
@@ -142,7 +142,7 @@ As an example, if you would like to link NEST in a project which generates an ex
 from the script "MyApp.cc", add the following lines to your CMakeLists.txt:
 
 ```
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 set (CMAKE_CXX_STANDARD 11)
 
 find_package(NEST REQUIRED)

@@ -8,6 +8,10 @@ option(G4 "Build integration with Geant4" OFF)
 option(BUILD_ROOT "Build ROOT tools" OFF)
 option(BUILD_EXAMPLES "Build NEST examples" ON)
 
+# enable position independent code so shared libraries can link against 
+# the static version of NEST::Core 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 

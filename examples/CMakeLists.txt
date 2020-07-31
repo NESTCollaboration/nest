@@ -12,7 +12,7 @@ set(EXAMPLES bareNEST)
 # ROOT example
 if(BUILD_ROOT)
 # https://cliutils.gitlab.io/modern-cmake/examples/root-simple/
-find_package(ROOT ${MIN_BOOST_VERSION} REQUIRED CONFIG)
+find_package(ROOT ${MIN_ROOT_VERSION} REQUIRED CONFIG)
 
 add_executable(rootNEST ${PROJECT_SOURCE_DIR}/examples/rootNEST.cpp)
 

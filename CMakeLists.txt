@@ -1,12 +1,16 @@
 
 # Set minimum CMake version required and prevent building in source
-cmake_minimum_required(VERSION 3.12...3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8...3.16 FATAL_ERROR)
 
 project(NEST VERSION 2.1.0 LANGUAGES CXX)
 
 option(G4 "Build integration with Geant4" OFF)
 option(BUILD_ROOT "Build ROOT tools" OFF)
 option(BUILD_EXAMPLES "Build NEST examples" ON)
+
+# enable position independent code so shared libraries can link against 
+# the static version of NEST::Core 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -48,6 +52,10 @@ add_executable(testNEST
 )
 target_link_libraries(testNEST PUBLIC NEST::Core)
 list(APPEND NEST_TARGETS "testNEST")
+
+## scripts
+configure_file(examples/loopNEST.in loopNEST)
+configure_file(examples/220RnCalib.in 220RnCalib)
 
 ## Optional targets
 
@@ -101,6 +109,15 @@ install(
   FILE NESTTargets.cmake
   NAMESPACE NEST::
   DESTINATION ${INSTALL_CONFIGDIR}
+)
+
+## install scripts
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/loopNEST
+  ${CMAKE_CURRENT_BINARY_DIR}/220RnCalib
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 ##############################################

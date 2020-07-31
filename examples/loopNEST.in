@@ -1,5 +1,5 @@
 
-#!/bin/bash
+#!/usr/bin/env bash
 #This code doesn't actually perform any model fitting, however,
 #it provides an example for using rootNEST if one wishes to use testNEST + rootNEST
 #to fit a data target to find optimal model/detector parameters to match data
@@ -28,13 +28,13 @@ do
     echo $a $b $c $d $e $f $g
     
     #below: run testNEST with the select parameters, and save the output
-    #/path/to/testNEST $a $b $c $d $e $f $g > nest_output.ER 2> /dev/null
+    @CMAKE_INSTALL_FULL_BINDIR@/testNEST $a $b $c $d $e $f $g > nest_output.ER 2> /dev/null
     
     #next, use rootNEST in FIT mode to get goodness-of-fit statistic with a data file (See README on rootNEST)
-    #/path/to/rootNEST nest_output.ER /path/to/fittingTarget_dataFile.dat 2> /dev/null
+    @CMAKE_INSTALL_FULL_BINDIR@/rootNEST nest_output.ER fittingTarget_dataFile.dat 2> /dev/null
     
     #then remove the output file and move on to the next parameter set
-    #rm nest_output.ER
+    rm nest_output.ER &> /dev/null
     
 done
 done

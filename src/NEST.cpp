@@ -1546,18 +1546,23 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
     slope = (vf - vi) / (Tf - Ti);
     speed = slope * (Kelvin - Ti) + vi;
   }
-
-  if (speed <= 0.) {
-    if (eField < 1e2 && eField >= FIELD_MIN) {
-      cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO LOW\n";
-      exit(EXIT_FAILURE);
+  
+  if ( speed <= 0. ) {
+    cerr << "\nWARNING: DRIFT SPEED NON-POSITIVE. Setting to 0.1 mm/us\t" <<
+      "Line Number 1551 of NEST.cpp, in function NESTcalc::GetDriftVelocity_Liquid\n";
+    if ( eField < 1e2 && eField >= FIELD_MIN ) {
+      cerr << "FIELD MAY BE TOO LOW. ";
     }
-    if (eField > 1e4) {
-      cerr << "\nERROR: DRIFT SPEED NON-POSITIVE -- FIELD TOO HIGH\n";
-      exit(EXIT_FAILURE);
+    else if ( eField > 1e4 ) {
+      cerr << "FIELD MAYBE TOO HIGH. ";
     }
+    else {
+      cerr << "Something unknown went wrong: are you in a noble element?? ";
+    }
+    cerr << "EF = " << eField << " V/cm. T = " << Kelvin << " Kelvin" << endl;
+    speed = 0.1;
   }
-  return speed;
+  return speed; //mm per microsecond
 }
 
 double NESTcalc::GetDriftVelocity_MagBoltz(
@@ -1588,7 +1593,7 @@ double NESTcalc::GetDriftVelocity_MagBoltz(
   }
   if (gasdep >= 3.8e-17) edrift = 6e21 * gasdep - 32279.;
 
-  return edrift * 1e-5;  // from cm/s into mm per microsecond
+  return fabs ( edrift ) * 1e-5;  // from cm/s into mm per microsecond
 }
 
 vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,

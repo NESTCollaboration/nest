@@ -8,7 +8,7 @@ using namespace std;
 using namespace NEST;
 
 const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
-const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19};
+const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19,2.25};
 
 long NESTcalc::BinomFluct(long N0, double prob) {
   double mean = N0 * prob;
@@ -37,7 +37,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
                                      vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.19}*/,
+				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
                                      bool do_times /*=true*/) {
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
@@ -123,7 +123,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
   return return_photons;
 }
 
-double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19}*/)
+double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/)
 {
   double omega = FreeParam[2]*exp(-0.5*pow(elecFrac-FreeParam[3],2.)/(FreeParam[4]*FreeParam[4]));
   if ( omega < 0. )
@@ -163,13 +163,13 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 
 
 QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
-				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19}*/) {
+				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
   QuantaResult result;
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
   
-  if ( FreeParam.size() < 5 ) {
-    cerr << "\nERROR: You need a minimum of 5 free parameters for the resolution model.\n";
+  if ( FreeParam.size() < 6 ) {
+    cerr << "\nERROR: You need a minimum of 6 free parameters for the resolution model.\n";
     exit(EXIT_FAILURE);
   }
   
@@ -285,7 +285,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
         1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
     }
     else {
-      skewness = 2.25; //~5-20 also good (for NR). All better than zero, but 0 is OK too
+      skewness = FreeParam[5]; //2.25 but ~5-20 also good (for NR). All better than zero, but 0 is OK too
     }
   }
   
@@ -1311,12 +1311,12 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   }
 
   // Calculate EL yield based on gas gap, extraction field, and pressure
-  double elYield = (alpha * fdetector->get_E_gas() * 1e3 -
-                    beta * fdetector->get_p_bar() - gamma) *
-                   gasGap * 0.1;  // arXiv:1207.2292 (HA, Vitaly C.)
+  //double elYield = (alpha * fdetector->get_E_gas() * 1e3 -
+  //                beta * fdetector->get_p_bar() - gamma) *
+  //               gasGap * 0.1;  // arXiv:1207.2292 (HA, Vitaly C.)
   double rho = fdetector->get_p_bar() * 1e5 /
     (fdetector->get_T_Kelvin() * 8.314) * fdetector->get_molarMass() * 1e-6;
-  elYield = (0.137*fdetector->get_E_gas()*1e3-4.70e-18*(NEST_AVO*rho/fdetector->get_molarMass())) * gasGap * 0.1;
+  double elYield = (0.137*fdetector->get_E_gas()*1e3-4.70e-18*(NEST_AVO*rho/fdetector->get_molarMass())) * gasGap * 0.1;
   // replaced with more accurate version also from 1207.2292, but works for room temperature gas
   if (elYield <= 0.0 && E_liq != 0.) {
     cerr << "\tWARNING, the field in gas must be at least "

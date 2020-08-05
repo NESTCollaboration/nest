@@ -138,6 +138,7 @@ int main(int argc, char** argv) {
       FreeParam.push_back(atof(argv[4])); //0.070
       FreeParam.push_back(0.50);
       FreeParam.push_back(0.19);
+      FreeParam.push_back(2.25);
       
     }
     
@@ -184,6 +185,7 @@ int main(int argc, char** argv) {
       FreeParam.push_back(0.10); // amplitude for non-binomial recombination fluctuations
       FreeParam.push_back(0.50); // center in e-Frac
       FreeParam.push_back(0.19); // width parameter (Gaussian 1-sigma)
+      FreeParam.push_back(2.25); // raw skewness, for NR
     }
     NuisParam.push_back(11.); //alpha, for NR model. See http://nest.physics.ucdavis.edu
     NuisParam.push_back(1.1); //beta
@@ -212,7 +214,7 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
   NESTresult result; QuantaResult quanta;
   double x, y, z, driftTime, vD; RandomGen::rndm()->SetSeed(seed);
   NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
-  FreeParam = {1.,1.,0.10,0.5,0.19};
+  FreeParam = {1.,1.,0.10,0.5,0.19,2.25};
   vector<double> scint, scint2, wf_amp; vector<long int> wf_time;
   NESTObservableArray OutputResults; double useField;
   vector<double> g2_params = n.CalculateG2(verbosity);
@@ -751,7 +753,7 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
 	}
 	//FreeParam.clear();
-	//FreeParam = { 1.00, 1.00, 0.100, 0.50, 0.19 };
+	//FreeParam = { 1.00, 1.00, 0.100, 0.50, 0.19, 2.25 };
         quanta = n.GetQuanta(yields, rho, FreeParam);
       }
       else {

@@ -71,6 +71,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
             0.416);  // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
   else {             // ER
     if (!exciton) {
+      if ( energy > 1e3 ) energy = 1e3; // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
       tauR = exp(-0.00900 * dfield) *
 	(7.3138 + 3.8431 * log10(energy));    // arXiv:1310.1117
       if ( tauR < 3.5 ) tauR = 3.5; //used to be for gammas only but helpful for matching beta data better
@@ -264,7 +265,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   
   double skewness;
-  if ( (yields.PhotonYield+yields.ElectronYield) > 3e3 || yields.ElectricField > 5e2 || yields.ElectricField < 50. ) {
+  if ( (yields.PhotonYield+yields.ElectronYield) > 1e4 || yields.ElectricField > 4e3 || yields.ElectricField < 50. ) {
     skewness = 2.25; //make it constant when outside range of Vetri Velan's Run04 models. 0 for ion (wall BG) incl. alpha?
   }
   else { // LUX Skewness Model
@@ -283,6 +284,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     if (yields.Lindhard == 1.) {
       skewness = 1. / (1. + exp((engy - E2) / E3)) * (alpha0 + cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
         1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
+      if ( fabs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
     }
     else {
       skewness = FreeParam[5]; //2.25 but ~5-20 also good (for NR). All better than zero, but 0 is OK too
@@ -422,7 +424,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
           (Ne + Nph) * ThomasImel - 4.);
-  if ( Nex <= 0. ) cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy NR, or are beyond it, at " << energy << " keV." << endl;
+  if ( Nex <= 0. ) cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy (OR, for LOW) NR, or are beyond it, at " << energy << " keV." << endl;
   if ( fabs(Nex + Ni -Nq) > 2. * PHE_MIN )
   {
     cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";

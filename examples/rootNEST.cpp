@@ -5,6 +5,7 @@
  * Created on July 7, 2018, 11:14 PM
  */
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -42,7 +43,7 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
                                 bool resol);
 TRandom3 r;  // r.SetSeed(10);
 
-double band[NUMBINS_MAX][17], band2[NUMBINS_MAX][17];
+double band[NUMBINS_MAX][17], band2[NUMBINS_MAX][17], medians[NUMBINS_MAX];
 /* 
 band[bin][0] = s1c_center
 band[bin][1] = s1c_actual_mean
@@ -88,7 +89,10 @@ int main(int argc, char** argv) {
       numSigma[numBins], leakage[numBins], discrim[numBins],
       errorBars[numBins][2];
   int i = 0; if ( loopNEST ) verbosity = false;
-
+  
+  if ( abs(NRbandCenter) != 1 && abs(NRbandCenter) != 2 && abs(NRbandCenter) != 3 )
+    NRbandCenter = 3; // default
+  
   if (argc < 2) {
     cout << endl
          << "This program takes 1 (or 2) inputs." << endl
@@ -155,7 +159,7 @@ if ( mode == 2 ) {
               "-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5])",
               loE, hiE);  // eqn inspired by Alex Murphy
   fitf->SetParameters(17.1, 1.82, 0.659, 18.3, 20869., -2.35);
-  TFitResultPtr fitr = gr1->Fit(fitf, "qrs");  // remove the quiet option if you want to see all
+  TFitResultPtr fitr = gr1->Fit(fitf, "nqrs");  // remove the quiet option if you want to see all
   // the parameters' values for Fractional Efficiency versus Energy in keV. Prints to the screen
   int status = int ( fitr );
   double aa = fitf->GetParameter(0);
@@ -168,7 +172,7 @@ if ( mode == 2 ) {
   while ( status != 0 || fitf->GetChisquare() > 1.4 ) {
     fitf->SetParameters(aa, bb, cc, dd, ee, ff);
     fitf->SetRange ( loE + 0.1 * jj, hiE - 1. * jj );
-    fitr = gr1->Fit(fitf, "rs");
+    fitr = gr1->Fit(fitf, "nrs");
     if ( aa == fitf->GetParameter(0) || bb == fitf->GetParameter(1) || cc == fitf->GetParameter(2) ||
 	 dd == fitf->GetParameter(3) || ee == fitf->GetParameter(4) || ff == fitf->GetParameter(5) )
       break;
@@ -507,11 +511,14 @@ if ( mode == 1 ) {
       finalSums[2] += leakage[i];
       discrim[i] = 1. - leakage[i];
     }
+    if ( NRbandCenter < 0 ) {
+      for ( int nb; nb < numBins; nb++ ) NRbandY[nb] = medians[nb];
+    }
     TGraph* gr1 = new TGraph(numBins, NRbandX, NRbandY);
     TF1* fitf =
         new TF1("NRbandGCentroid", "[0]/(x+[1])+[2]*x+[3]", minS1, maxS1);
     fitf->SetParameters(10., 15., -1.5e-3, 2.);
-    gr1->Fit(fitf, "rq", "", minS1, maxS1);  // remove the q if you want to see
+    gr1->Fit(fitf, "nrq", "", minS1, maxS1);  // remove the q if you want to see
                                              // the Band Fit Parameters on
                                              // screen
     double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
@@ -523,7 +530,7 @@ if ( mode == 1 ) {
       fitf = new TF1("NRbandGCentroid", "[0]+([1]-[0])/(1+(x/[2])^[3])", minS1,
                      maxS1);
       fitf->SetParameters(0.5, 3., 1e2, 0.4);
-      gr1->Fit(fitf, "rq", "", minS1, maxS1);
+      gr1->Fit(fitf, "nrq", "", minS1, maxS1);
       chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
       if (chi2 > 2. || chi2 < 0. || std::isnan(chi2) ) {
         cerr << "ERROR: Even the backup plan to use sigmoid failed as well!"
@@ -540,10 +547,10 @@ if ( mode == 1 ) {
             fitf->GetParameter(0) / (inputs[i][j] + fitf->GetParameter(1)) +
             fitf->GetParameter(2) * inputs[i][j] +
             fitf->GetParameter(3);  // use Woods function
-        if ( FailedFit ) NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
+        if ( FailedFit || abs(NRbandCenter) == 1 ) NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
         // the fit, to compare to past data that did not use a smoothing spline
-	//NRbandGCentroid =
-	//fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
+	if ( abs(NRbandCenter) == 2 )
+	  NRbandGCentroid = fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
         // compromise
         if (outputs[i][j] < NRbandGCentroid) below[i]++;
       }
@@ -554,10 +561,11 @@ if ( mode == 1 ) {
       poisErr[1] =
           (double(below[i]) - sqrt(double(below[i]))) /
           (double(outputs[i].size()) + sqrt(double(outputs[i].size())));
+      cerr << outputs[i].size();
       fprintf(
           stderr,
-          "%d\t%.2f\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t",
-          outputs[i].size(), 0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
+          "\t%.2f\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t",
+          0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
           numSigma[i], leakage[i], fabs(errorBars[i][0] - leakage[i]),
           fabs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,
           poisErr[0] - leakTotal, leakTotal - poisErr[1], (1. - leakTotal) * 100.);
@@ -726,7 +734,7 @@ void GetFile(char* fileName) {
       TF1* f = new TF1("peak", "gaus");
       average = 0.5 * (minimum + maximum);
       f->SetParameters(average, 0.1 * average);
-      HistogramArray[j].Fit(f, "q");
+      HistogramArray[j].Fit(f, "nq");
       average = f->GetParameter("Mean");
       if (average <= 0.) {
         minimum -= 10.;
@@ -898,6 +906,11 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
     if (resol) band[j][0] /= numPts;
     band[j][1] /= numPts;
     band[j][2] /= numPts;
+    if ( NRbandCenter < 0 && !save && medians[j] == 0. ) {
+      std::sort(signals[j].begin(),signals[j].end());
+      medians[j] = signals[j][int(floor(double(numPts)/2.+0.5))];
+      //band[j][2] = medians[j];
+    }
     for (i = 0; i < (int)numPts; i++) {
       if (signals[j][i] != -999.)
         band[j][3] += pow(signals[j][i] - band[j][2], 2.);  // std dev calc
@@ -942,7 +955,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     if ( !skewness ) {
       TF1* f = new TF1("band", "gaus");
       f->SetParameters(signals[j].size(),band[j][2],band[j][3]);
-      HistogramArray[j].Fit(f, "Q");
+      HistogramArray[j].Fit(f, "NQ");
       band[j][2] = f->GetParameter("Mean");
       band[j][3] = f->GetParameter("Sigma");
       band[j][4] = 0.;
@@ -966,9 +979,9 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     RETRY:
       f->SetParameters(amplEstimate, xiEstimate, omegaEstimate, alphaEstimate);
       if ( skewness == 2 )
-	res = HistogramArray[j].Fit(f, "QRS");
+	res = HistogramArray[j].Fit(f, "MNQRS");
       else
-	HistogramArray[j].Fit(f, "QRS");
+	HistogramArray[j].Fit(f, "NQRS");
       double fit_xi, fit_xi_err, fit_omega, fit_omega_err, fit_alpha, fit_alpha_err;
       if ( skewness == 2 ) {
 	fit_xi = res->Value(1);

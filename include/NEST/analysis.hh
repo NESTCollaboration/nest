@@ -4,6 +4,7 @@ bool verbosity = true;
 // Loop for testNEST and rootNEST to find the best-fit model parameters
 unsigned loopNEST = 0;
 //0 for no or off, 1 for ER, 2 for NR
+// an executable bash script was created in the build directory
 
 // General parameters of importance changing the global behavior
 bool MCtruthE = false;    // false means reconstructed energy
@@ -47,3 +48,4 @@ int mode = 0;
 //0 default is to provide 1 band (no data comp) or if 2 args ER BG discrim & leakage frac
 //1 outputs the goodness of fit for one band (Gaussian centroids of histogram in S1 slices)
 //2 outputs wimp masses and cross-sections for given efficiency
+int NRbandCenter = 3; // 1 is Gauss mean, 3 is fit to means, 2 is compromise. Neg->medians

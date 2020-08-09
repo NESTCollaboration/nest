@@ -330,10 +330,13 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 
 * **field_drift**: if set to -1, the electric field map from the detector settings is used.
 	If set to any other value, that drift field (in V/cm) will be used throughout the detector.
+	The latter method makes the code much faster, so always use it if the field is uniform.
 * **x,y,z-position**: if set to -1, each event's position is drawn randomly within the detector.
-	Otherwise, the **exact** syntax "x,y,z" (with commas) produces events at this coordinate.
+	Otherwise, the **exact** syntax "x,y,z" (with commas) produces events at that coordinate.
+	"-999,-999,Z" will lead to Random X, Random Y, but fixed Z.
 * **seed**: if set to -1, the random seed is internally set based on the timestamp.
-	If another number is provided (optional), that number is the random seed (for debugging purposes).
+  	If another number is provided (optional), that number is the random seed (for debugging purposes).
+	If no seed is specified, then the default random seed is always 0 (for reproducibility purposes).
 
 <a name="usermod"></a>
 ### Other User-Modifiable Parameters

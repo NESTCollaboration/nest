@@ -5,6 +5,8 @@ bool verbosity = true;
 unsigned loopNEST = 0;
 //0 for no or off, 1 for ER, 2 for NR
 // an executable bash script was created in the build directory
+bool PrintSubThr = true;
+// include or exclude the infamous negative S1 & S2 pulses (and 0's)
 
 // General parameters of importance changing the global behavior
 bool MCtruthE = false;    // false means reconstructed energy

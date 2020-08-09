@@ -544,9 +544,9 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
         position.erase(0, loc + delimiter.length());
         i++;
       }
-      if ( sqrt ( pos_x*pos_x+pos_y*pos_y ) > detector->get_radius() && j == 0 )
+      if ( sqrt ( pos_x*pos_x+pos_y*pos_y ) > detector->get_radius() && j == 0 && pos_x != -999. && pos_y != -999. )
 	cerr << "WARNING: outside fiducial radius." << endl;
-      if ( sqrt ( pos_x*pos_x+pos_y*pos_y ) > detector->get_radmax() ) {
+      if ( sqrt ( pos_x*pos_x+pos_y*pos_y ) > detector->get_radmax() && pos_x != -999. && pos_y != -999. ) {
 	cerr << "\nERROR: outside physical radius!!!" << endl; return EXIT_FAILURE; }
       pos_z = stof(position);
       if (stof(position) == -1.)
@@ -797,11 +797,11 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
       n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, j, field,
 	      useTiming, verbosity, wf_time, wf_amp, g2_params);
   NEW_RANGES:
-    if (usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1)
+    if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);
-    else if (usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1)
+    else if ( usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1 )
       signal1.push_back(scint[5]);
-    else if (usePD >= 2 && fabs(scint[7]) > minS1 && scint[7] < maxS1)
+    else if ( (usePD >= 2 && fabs(scint[7]) > minS1 && scint[7] < maxS1) || maxS1 >= 998.5 ) //xtra | handles bizarre bug of ~0eff, S1=999
       signal1.push_back(scint[7]);
     else
       signal1.push_back(-999.);
@@ -938,10 +938,13 @@ int testNEST(VDetector* detector, unsigned long int numEvts, string type,
     // adjusted for 2-PE effect (LUX phd units)
     // scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in
     // gas gap (from CalculateG2)
-
-    if (1) {  // fabs(scint[7]) > PHE_MIN && fabs(scint2[7]) > PHE_MIN ) { //if
-      // you want to skip specific sub-threshold events, comment in this
-      // if statement (save screen/disk space)
+    
+    if ( PrintSubThr || (
+			 scint[0] > PHE_MIN && scint[1] > PHE_MIN && scint[2] > PHE_MIN && scint[3] > PHE_MIN && scint[4] > PHE_MIN &&
+			 scint[5] > PHE_MIN && scint[6] > PHE_MIN && scint[7] > PHE_MIN && scint[8] > PHE_MIN &&
+			 scint2[0] >PHE_MIN && scint2[1] >PHE_MIN && scint2[2] >PHE_MIN && scint2[3] >PHE_MIN && scint2[4] >PHE_MIN &&
+			 scint2[5]> PHE_MIN && scint2[6]> PHE_MIN && scint2[7]> PHE_MIN && scint2[8]> PHE_MIN ) ) {
+      // for skipping specific sub-threshold events (save screen/disk space)
       // other suggestions: minS1, minS2 (or s2_thr) for tighter cuts depending
       // on analysis.hh settings (think of as analysis v. trigger thresholds)
       // and using max's too, pinching both ends

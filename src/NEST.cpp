@@ -4,6 +4,8 @@
 #define InfraredER 1.35
 #define InfraredNR 7.00
 
+#define ChargeLoss 0.20
+
 using namespace std;
 using namespace NEST;
 
@@ -266,7 +268,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   
   double skewness;
   if ( (yields.PhotonYield+yields.ElectronYield) > 1e4 || yields.ElectricField > 4e3 || yields.ElectricField < 50. ) {
-    skewness = 2.25; //make it constant when outside range of Vetri Velan's Run04 models. 0 for ion (wall BG) incl. alpha?
+    skewness = 0.00; //make it a constant 0 when outside the range of Vetri Velan's Run04 models.
   }
   else { // LUX Skewness Model
     Wvalue wvalue = WorkFunction(density);
@@ -288,15 +290,16 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     }
     else {
       skewness = FreeParam[5]; //2.25 but ~5-20 also good (for NR). All better than zero, but 0 is OK too
-    }
+    } //note to self: find way to make 0 for ion (wall BG) incl. alphas?
   }
   
   double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
   double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
-  Ne = int(floor(
-       RandomGen::rndm()->rand_skewGauss((1. - recombProb) * Ni - muCorrection, sqrt(Variance) / widthCorrection, skewness) +
-       0.5));
-
+  if ( skewness != 0. )
+    Ne = int(floor(RandomGen::rndm()->rand_skewGauss((1.-recombProb)*Ni-muCorrection,sqrt(Variance)/widthCorrection,skewness)+0.5));
+  else
+    Ne = int(floor(RandomGen::rndm()->rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
+  
   if (Ne < 0) Ne = 0;
   if (Ne > Ni) Ne = Ni;
 
@@ -468,8 +471,8 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   double fieldDep = pow(1. + pow(dfield / 95., 8.7), 0.0592);
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
   double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
-  if ( A1 == 206. && Z1 == 82. ) { //Pb-206 (from Po-210 alpha decay). Xe-Xe NR model matches best
-    ThomasImel = 0.048 * pow ( dfield, -.0533 ); //Nishat Parveen
+  if ( A1 == 206. && Z1 == 82. ) { //Pb-206 (from Po-210 alpha decay).
+    ThomasImel = 79.9 * pow ( dfield, -0.868 ); //Nishat Parveen
   }
   const double logden = log10(density);
   double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
@@ -488,6 +491,8 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
     recombProb = 0.0;
   double Nph = Nq * NexONi / (1. + NexONi) + recombProb * Ni;
   double Ne = Nq - Nph;
+  if ( A1 == 206. && Z1 == 82. )
+    Ne = RandomGen::rndm()->rand_gauss(Ne/ChargeLoss,2.*sqrt(Ne/(ChargeLoss*ChargeLoss))); // to compensate for accidentally including Q-loss in fits to Xed data
   
   YieldResult result;
   result.PhotonYield = Nph;

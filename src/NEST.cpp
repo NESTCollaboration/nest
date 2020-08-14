@@ -1135,13 +1135,17 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
       newY += sigY;
       DL_time = DL / driftVelocity_gas;
       electronstream[i] += DL_time;
-      if (i >= Nee && eTrain) {  // all numbers are based on arXiv:1711.07025
-        E_liq = fdetector->get_E_gas() / (EPS_LIQ / EPS_GAS);
-        tau2 = 0.58313 * exp(0.20929 * E_liq) * 1e3;
+      if ( i >= Nee && eTrain ) {  // exponential based on arXiv:1711.07025, power on 2004.07791
+        E_liq = fdetector->get_E_gas() / (EPS_LIQ / fabs(EPS_GAS));
+        tau2 = ( fdetector->get_TopDrift() / driftVelocity );//0.58313 * exp(0.20929 * E_liq) * 1e3;
         tau1 = 1.40540 * exp(0.15578 * E_liq) * 1e3 * 1e-2;
         amp2 = 0.38157 * exp(0.21177 * E_liq) * 1e-2;
-        if (RandomGen::rndm()->rand_uniform() < (amp2 / 0.035) * ExtEff)
-          electronstream[i] -= tau2 * log(RandomGen::rndm()->rand_uniform());
+        if ( RandomGen::rndm()->rand_uniform() < (amp2 / 0.035) * ExtEff ) {
+	  tau2 /= RandomGen::rndm()->rand_uniform();
+	  if ( tau2 > 1e6 )
+	    tau2 = 1e6; // 1 sec. cap
+          electronstream[i] += tau2;
+	}
         else
           electronstream[i] -= tau1 * log(RandomGen::rndm()->rand_uniform());
       }
@@ -1296,16 +1300,22 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   double alpha = 0.137, beta = 177.,
          gamma = 45.7;  // note the value of alpha is similar to ~1/7eV. Not
                         // coincidence. Noted in Mock et al.
-  double epsilonRatio = EPS_LIQ / EPS_GAS;
+  double epsilonRatio = EPS_LIQ / fabs(EPS_GAS);
   if (fdetector->get_inGas())
     epsilonRatio = 1.;  // in an all-gas detector, E_liq variable below simply
                         // becomes the field value between anode and gate
 
   // Convert gas extraction field to liquid field
   double E_liq = fdetector->get_E_gas() / epsilonRatio;  // kV per cm
-  double ExtEff = -0.03754 * pow(E_liq, 2.) + 0.52660 * E_liq -
-                  0.84645;  // arXiv:1710.11032 (PIXeY)
-  if (ExtEff > 1. || fdetector->get_inGas() || E_liq > 7.) ExtEff = 1.;
+  double ExtEff;
+  if ( EPS_GAS > 0. ) {
+    ExtEff = -0.03754 * pow(E_liq, 2.) + 0.52660 * E_liq - 0.84645;  // arXiv:1710.11032 (PIXeY)
+    if ( E_liq > 7. ) ExtEff = 1.;
+  }
+  else
+    ExtEff = 1. - 1. / ( 1. + pow ( E_liq / 3.4832, 4.9443 ) );  // arXiv:1904.02885 (Livermore)
+  
+  if (ExtEff > 1. || fdetector->get_inGas()) ExtEff = 1.;
   if (ExtEff < 0. || E_liq <= 0.) ExtEff = 0.;
 
   double gasGap =
@@ -1615,7 +1625,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
         if (!fdetector->get_inGas())
           driftTime += zStep / SetDriftVelocity(fdetector->get_T_Kelvin(), rho,
                                                 fdetector->get_E_gas() /
-                                                    (EPS_LIQ / EPS_GAS) * 1e3);
+						(EPS_LIQ / fabs(EPS_GAS)) * 1e3);
         else  // if gate == TopDrift properly set, shouldn't happen
           driftTime += zStep / GetDriftVelocity_MagBoltz(
                                    rho, fdetector->get_E_gas() * 1e3);

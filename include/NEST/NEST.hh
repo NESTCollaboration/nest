@@ -218,8 +218,8 @@ class NESTcalc {
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
   virtual double FanoER(double density, double Nq_mean,double efield);
   //Fano-factor (and Fano-like additional energy resolution model) for gammas and betas (Lindhard==1)
-  std::vector<double> GetS1(QuantaResult quanta, double truthPos[3],
-                            double smearPos[3], double driftSpeed,
+  std::vector<double> GetS1(QuantaResult quanta, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+                            double driftSpeed,
                             double dS_mid, INTERACTION_TYPE species,
                             long evtNum, double dfield, double energy,
                             int useTiming, bool outputTiming,
@@ -232,7 +232,7 @@ class NESTcalc {
                                std::vector<double> origScint);
   // GetSpike takes the extremely basic digital/integer number of spike counts
   // provided by GetS1 and does more realistic smearing
-  std::vector<double> GetS2(int Ne, double truthPos[3], double smearPos[3],
+  std::vector<double> GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                             double dt, double driftSpeed, long evtNum,
                             double dfield, int useTiming, bool outputTiming,
                             vector<long int>& wf_time, vector<double>& wf_amp,

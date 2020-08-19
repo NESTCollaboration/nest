@@ -231,9 +231,11 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
     result = n.FullCalculation(particleType,eList[i],rho,useField,detector->get_molarMass(),ATOM_NUM,NuisParam,FreeParam,verbosity);
     quanta = result.quanta;
     vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,useField);
-    scint = n.GetS1(quanta,truthPos,smearPos,vD,vD,particleType,i,useField,eList[i],0,verbosity,wf_time,wf_amp); //0 means useTiming = 0
+    scint = n.GetS1(quanta,truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2],
+		    vD,vD,particleType,i,useField,eList[i],0,verbosity,wf_time,wf_amp); //0 means useTiming = 0
     driftTime = (detector->get_TopDrift()-z)/vD; //vD,vDmiddle assumed same (uniform field)
-    scint2= n.GetS2(quanta.electrons,truthPos,smearPos,driftTime,vD,i,useField,0,verbosity,wf_time,wf_amp,g2_params);
+    scint2= n.GetS2(quanta.electrons,truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2],
+		    driftTime,vD,i,useField,0,verbosity,wf_time,wf_amp,g2_params);
     if ( scint[7] > PHE_MIN && scint2[7] > PHE_MIN ) { //unlike usual, kill (don't skip, just -> 0) sub-thr evts
       OutputResults.s1_nhits.push_back(abs(int(scint[0])));
       OutputResults.s1_nhits_thr.push_back(abs(int(scint[8])));
@@ -790,11 +792,12 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
     vector<long int> wf_time;
     vector<double> wf_amp;
     vector<double> scint =
-      n.GetS1(quanta, truthPos, smearPos, vD, vD_middle, type_num, j, field,
-                keV, useTiming, verbosity, wf_time, wf_amp);
+      n.GetS1(quanta, truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2],
+	      vD, vD_middle, type_num, j, field,
+	      keV, useTiming, verbosity, wf_time, wf_amp);
     if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
     vector<double> scint2 =
-      n.GetS2(quanta.electrons, truthPos, smearPos, driftTime, vD, j, field,
+      n.GetS2(quanta.electrons, truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2], driftTime, vD, j, field,
 	      useTiming, verbosity, wf_time, wf_amp, g2_params);
   NEW_RANGES:
     if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )

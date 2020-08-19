@@ -715,13 +715,14 @@ NESTcalc::~NESTcalc() {
   if (fdetector) delete fdetector;
 }
 
-vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
-                               double smearPos[3], double driftVelocity,
+vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPosX, double truthPosY, double truthPosZ,
+                               double smearPosX, double smearPosY, double smearPosZ, double driftVelocity,
                                double dV_mid, INTERACTION_TYPE type_num,
                                long evtNum, double dfield, double energy,
                                int useTiming, bool outputTiming,
                                vector<long int>& wf_time,
                                vector<double>& wf_amp) {
+  double truthPos[3] = { truthPosX, truthPosY, truthPosZ }; double smearPos[3] = { smearPosX, smearPosY, smearPosZ };
   int Nph = quanta.photons; double subtract[2] = { 0., 0. };
   
   wf_time.clear();
@@ -1004,12 +1005,13 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPos[3],
   return scintillation;
 }
 
-vector<double> NESTcalc::GetS2(int Ne, double truthPos[3], double smearPos[3],
+vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                                double dt, double driftVelocity, long evtNum,
                                double dfield, int useTiming, bool outputTiming,
                                vector<long int>& wf_time,
                                vector<double>& wf_amp,
                                vector<double>& g2_params) {
+  double truthPos[3] = { truthPosX, truthPosY, truthPosZ }; double smearPos[3] = { smearPosX, smearPosY, smearPosZ };
   double elYield = g2_params[0];
   double ExtEff = g2_params[1];
   double SE = g2_params[2];

@@ -6,7 +6,7 @@
  *
  * This skeleton program is meant to demonstrate the bare-bones usage of NEST
  * functions.
- * For the sake of simplicity, this code does not implement any of testNEST's
+ * For the sake of simplicity, this code does not implement any of execNEST's
  * statistical
  * functionality (bands, energy resolution, etc.). This will generate a SINGLE
  * event.
@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
   double dayNum = 0.;
   // Give a message establishing the use of this code
   cerr << "NOTE: This is a skeleton code meant to be a starting point for "
-          "custom uses of NEST. But you should really look at testNEST." << endl
+          "custom uses of NEST. But you should really look at execNEST." << endl
        << endl;
 
   // Instantiate your own VDetector class here, then load into NEST class
@@ -273,7 +273,7 @@ int main(int argc, char** argv) {
   // scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in
   // gas gap (from CalculateG2)
 
-  // Print selected outputs a la testNEST
+  // Print selected outputs a la execNEST
   fprintf(
       stdout,
       "\nE [keV]\t\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE "

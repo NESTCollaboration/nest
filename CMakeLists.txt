@@ -46,12 +46,12 @@ target_include_directories(
 
 target_compile_features(Core PUBLIC cxx_std_11)
 
-add_executable(testNEST
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/testNEST.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/testNEST.hh
+add_executable(execNEST
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/execNEST.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/execNEST.hh
 )
-target_link_libraries(testNEST PUBLIC NEST::Core)
-list(APPEND NEST_TARGETS "testNEST")
+target_link_libraries(execNEST PUBLIC NEST::Core)
+list(APPEND NEST_TARGETS "execNEST")
 
 ## scripts
 configure_file(examples/loopNEST.in loopNEST)

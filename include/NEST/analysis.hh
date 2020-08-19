@@ -1,7 +1,7 @@
 
 // Verbosity flag (for limiting output to yields; no timing)
 bool verbosity = true;
-// Loop for testNEST and rootNEST to find the best-fit model parameters
+// Loop for execNEST and rootNEST to find the best-fit model parameters
 unsigned loopNEST = 0;
 //0 for no or off, 1 for ER, 2 for NR
 // an executable bash script was created in the build directory

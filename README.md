@@ -19,7 +19,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 	* [ Linking NEST in a Separate CMake Project ](#linknest)
 3. [ Simulation Settings ](#settings)
 	* [ Creating a Custom Detector ](#detector)
-	* [ Modifying the testNEST Output (Analysis Settings) ](#analysis)
+	* [ Modifying the execNEST Output (Analysis Settings) ](#analysis)
 	* [Using Alternate NR and ER Yields Models](#yieldModels)
 4. [ Running NEST ](#run)
 	* [ Running in Different Modes ](#modes)
@@ -117,7 +117,7 @@ or you do not have the necessary prerequisites installed.
 
 From within the build directory (where the CMake commands were executed), one can now compile NEST.
 
-To generate the NEST library, testNEST executable, and various tools (bareNEST, rootNEST): 
+To generate the NEST library, execNEST executable (***THE MOST IMPORTANT, SWISS-ARMY KNIFE TOOLBOX***), and various tools (bareNEST, rootNEST): 
 
 ```	
 make; make install
@@ -175,7 +175,7 @@ The VDetector files (.cpp, .hh) which serve as the base detector class **should 
 (except by NEST developers). VDetector is a virtual class inherited by your custom detector.
 
 "DetectorExample_XENON10.hh" and "LUX_Run03.hh" are examples of a custom detector file, and the latter is currently 
-set as the default in testNEST.
+set as the default in execNEST, the executable which basically does every analysis for you all in one place.
 It serves as a template for users to create their own detector. Follow the steps below (where "MyDetector" is an example).
 
 1. Within the "include/Detectors/" folder, create your own header using the template:
@@ -200,9 +200,9 @@ It serves as a template for users to create their own detector. Follow the steps
 	```
 
 	Note that you can add your own custom functions (within constraints) to this detector class, 
-	which can be accessed through the detector object within testNEST.
+	which can be accessed through the detector object within execNEST.
 
-3. Once your header file is done, one should edit "src/testNEST.cpp" in the following way:
+3. Once your header file is done, one should edit "src/execNEST.cpp" in the following way:
 
 	```cpp
 	#include "LUX_Run03.hh" 
@@ -218,7 +218,7 @@ It serves as a template for users to create their own detector. Follow the steps
 
 	You've now included your custom header file, and created a "MyDetector" object for manipulation.	
 
-4. In testNEST.cpp (or in whatever implementation links the NEST class), one can access any detector parameter
+4. In execNEST.cpp (or in whatever implementation links the NEST class), one can access any detector parameter
 	using the corresponding "get" functions and reset parameters using their "set" functions:
 
 	```cpp
@@ -229,16 +229,16 @@ It serves as a template for users to create their own detector. Follow the steps
 	detector->set_g1(0.2);
 	```
 
-WARNING: Whenever the detector headers or testNEST is modified, **make sure to do a clean recompile**!
+WARNING: Whenever the detector headers or execNEST is modified, **make sure to do a clean recompile**!
 
 <a name="analysis"></a>
-### Modifying the testNEST Output (Analysis Settings)
+### Modifying the execNEST Output (Analysis Settings)
 
 The file "include/NEST/analysis.hh" is for specifying the output style and setting various analysis parameters.
 
 An explanation of the various parameters:
 
-* verbosity: if set to **false**, testNEST **only** outputs the columns of yield data
+* verbosity: if set to **false**, execNEST **only** outputs the columns of yield data
 * MCtruthE: whether true energy or "reconstructed"/statistically measured energy is expressed
 * MCtruthPos: whether true position or "reconstructed"/statistically fluctuated positions are expressed
 * useTiming: photon arrival times + pulse shapes used
@@ -252,11 +252,11 @@ An explanation of the various parameters:
 
 WARNING: Whenever you modify this header, **make sure to do a clean recompile**!
 
-Only **verbosity**, **MCtruthE**, and **MCtruthPos** will change the event-by-event output for testNEST. 
+Only **verbosity**, **MCtruthE**, and **MCtruthPos** will change the event-by-event output for execNEST. 
 The min/max S1,S2,log values will only effect post-simulation analyses, such as event selection for energy 
-reconstruction and efficiency calculations in testNEST, and binning for creating bands and leakage calculations in rootNEST.
+reconstruction and efficiency calculations in execNEST, and binning for creating bands and leakage calculations in rootNEST.
 
-**Note**: There can be negative S1 and S2 pulse areas in the testNEST output. Negative pulse areas simply flag an event that is below thresholds set in the Detector settings file. 
+**Note**: There can be negative S1 and S2 pulse areas in the execNEST output. Negative pulse areas simply flag an event that is below thresholds set in the Detector settings file. 
 For S1s, negative areas indicate that the PMT coincidence hasn't been met. For a PMT hit to count towards the coincidence requirement, the pulse area in that channel must be greater than the detector->sPEthr (single photon threshold) parameter. 
 For S2s, the S2 area must be larger than the S2 threshold (generally O(100 phd)). 
 Although these events are below threshold, they're still present in a detector, therefore they are not removed from the output.
@@ -285,16 +285,16 @@ By commenting out the first of those lines, and un-commenting the second, you wi
 
 
 <a name="run"></a>
-## Running testNEST
+## Running execNEST
 
-The testNEST executable is a comprehensive, powerful tool that will implement the NEST class in a 
+The execNEST executable is a comprehensive, powerful tool that will implement the NEST class in a 
 pre-structured way. It loads pre-defined detector settings (including electric field, optics, etc. from the 
 "VDetector" inheriting class) and source spectra (from the "TestSpectra" class) to do fast detector simulations.
 
-Running testNEST without arguments will remind you of the necessary inputs:
+Running execNEST without arguments will remind you of the necessary inputs:
 
 ```
-./testNEST
+./execNEST
 ```
 
 <a name="modes"></a>
@@ -303,12 +303,12 @@ Running testNEST without arguments will remind you of the necessary inputs:
 This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector:
 
 ```
-./testNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
+./execNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
 To simulate time-dependent 83m-Kr decays -- 83m-Kr produces yields via a 32.1 keV $\gamma$ followed by a 9.4 keV gamma --  E_max[keV} is replaced with the time between the decays in ns; E_min[keV] is replaced with either 9.4, 32.1, or 41.5 [keV]. Example of 9.4 keV decay 250ns after the inital 32.1 keV:
 
 ```
-./testNEST numEvts Kr83m 9.4 250 field_drift[V/cm] x,y,z-position[mm] {optional:seed}
+./execNEST numEvts Kr83m 9.4 250 field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
 
 To simulate 8B, numEvts (integer) is replaced with kg-days of exposure (floating-point #) with all other input parameters the same (unchanged). 
@@ -316,13 +316,13 @@ To simulate 8B, numEvts (integer) is replaced with kg-days of exposure (floating
 To simulate WIMPs:
 
 ```
-./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
+./execNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
 
 To simulate cosmic-ray muons or other similar particles with elongated track lengths:
 
 ```
-./testNEST numEvts {MIP} LET[MeV*cm^2/gram] x,y-position[mm](Initial) field_drift[V/cm] x,y,z-position[mm](Final) {optional:seed}
+./execNEST numEvts {MIP} LET[MeV*cm^2/gram] x,y-position[mm](Initial) field_drift[V/cm] x,y,z-position[mm](Final) {optional:seed}
 ```
 
 <a name="inputs"></a>
@@ -341,14 +341,14 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 <a name="usermod"></a>
 ### Other User-Modifiable Parameters
 
-* **NuisParam**: an array currently located in line 43 of testNEST.cpp.
+* **NuisParam**: an array currently located in line 43 of execNEST.cpp.
 	These change the mean light and charge yields of nuclear recoils (separately) as E-independent multiplicative factors.
 
 <a name="timing"></a>
 ### Running with Pulse Timing
 
 In include/NEST/analysis.hh, the **useTiming** flag allows users to get S1 and S2 photon arrival times for each simulated event.
-useTiming=0 (default) will not return timing info. If verbosity=true and useTiming=1, running testNEST will create a file called 
+useTiming=0 (default) will not return timing info. If verbosity=true and useTiming=1, running execNEST will create a file called 
 "photon_times.txt" in the user's build directory with S1 and S2 top/bottom PMT arrival times for each event. If useTiming=2, 
 approximated e-trains will be included for the output events.
 
@@ -358,9 +358,9 @@ for each event in the file. This must be compiled separately from the other NEST
 <a name="loop"></a>
 ### Running loopNEST
 
-New as of v2.1.0, users have the ability to transform testNEST into _loopNEST_. This is declared via the **loopNEST** flag
-in include/NEST/analysis.hh . **Using loopNEST will change the functionality of all testNEST inputs** and therefor should
-only be used by experienced NEST users. The loopNEST event parameters are hard-coded into lines 70-140 of src/testNEST.cpp. 
+New as of v2.1.0, users have the ability to transform execNEST into _loopNEST_. This is declared via the **loopNEST** flag
+in include/NEST/analysis.hh . **Using loopNEST will change the functionality of all execNEST inputs** and therefor should
+only be used by experienced NEST users. The loopNEST event parameters are hard-coded into lines 70-140 of src/execNEST.cpp. 
 
 loopNEST is a powerful tool that allows NEST to be iterated over many times, with different model parameters or detector parameters.
 In essence, the user can vary select NEST parameters over a loop of values, and in tandem with FIT mode of rootNEST (see below), get a best fit model to their provided data set. See arXiv:1910.04211 for an example in the literature where this is useful. 
@@ -380,7 +380,7 @@ Additionally, several other scripts and examples for performing advanced analyse
 **NOTE**: bareNEST is deprecated as of NEST v2.1.0. It will eventually be phased-out from the standard NEST compilation.
 
 bareNEST is a minimal implementation of NEST, which does not contain the various complications
-of testNEST (e.g. field non-uniformities, muon tracks, etc.). It provides the "bare minimum" function calls
+of execNEST (e.g. field non-uniformities, muon tracks, etc.). It provides the "bare minimum" function calls
 needed to demonstrate the yield calculations step-by-step. 
 
 It is currently hard-coded to take no inputs, as this source code is a skeleton intended for 
@@ -394,11 +394,11 @@ rootNEST is an extremely diverse and powerful tool, but requires compilation aga
 
 
 * **mode = 0**: "default" mode. It executes Gaussian fits to a histogrammed band in log(S2/S1) or log(S2) for you vs. S1. 
-	- If you give it only one argument (being the file path to a testNEST output file) with **verbosity=true**, it will 
+	- If you give it only one argument (being the file path to a execNEST output file) with **verbosity=true**, it will 
 	        print out S1 vs. log(S2/S1) or S1 vs. log(S2) band information for the given S1,S2,log ranges in analysis.hh .
 	- If you give it 2 arguments it'll give you the leakage of ER events below a smooth fit to the Gaussian means 
 		of the NR band, so it shows your background discrimination for WIMPs. 
-	- If the second argument is NR and first ER raw data (produced first with testNEST) instead of the other way 
+	- If the second argument is NR and first ER raw data (produced first with execNEST) instead of the other way 
 		around then it will spit out NR "acceptance" below the centroid.
 
 * **mode = 1**: "FIT" mode. It takes 2 arguments and compares the NEST band to real data and 
@@ -409,7 +409,7 @@ rootNEST is an extremely diverse and powerful tool, but requires compilation aga
 	a Gaussian fit (S1, S2, and energy) for a mono-energy calibration peak
 
 * **mode = 2**: "LIMIT" mode. It takes 2 arguments:
-	1. A file of NR efficiency vs. energy, which can be provided by real data or by running testNEST or 
+	1. A file of NR efficiency vs. energy, which can be provided by real data or by running execNEST or 
 		similar code based on it repeatedly and building a new text file. The code will perform a smooth fit 
 		for you to the efficiency. See "LUXRun03_betaEff_Simulated.txt" or "LUXRun03_nrEff_Simulated.txt" for 
 		formatting examples. 
@@ -445,19 +445,19 @@ The argument "-Ofast" may be "-O3" on your machine (optimization flag).
 <a name="220rn"></a>
 ## Custom Energy Spectrum Example: 220RnCalib.sh
 
-While TestSpectra.cpp provides many useful energy spectra to be used directly in testNEST, it is often useful to use a custom
+While TestSpectra.cpp provides many useful energy spectra to be used directly in execNEST, it is often useful to use a custom
 energy spectrum, or one from a physics signal that is not included in TestSpectra.cpp. The script, "220RnCalib.sh",
 in the examples directory provides one method of creating a custom spectrum. 
 
-This example uses the 212Pb ER spectrum ( from the 220Rn chain: a prevalent background in xenon TPCs ) and writes the testNEST
-output to a single file: "Pb212.dat". This script uses the 212Pb energy spectrum, and calls testNEST for a given energy bin.
-The number of events in each testNEST command is the probability for a 212Pb event to recoil in that energy bin, multiplied 
+This example uses the 212Pb ER spectrum ( from the 220Rn chain: a prevalent background in xenon TPCs ) and writes the execNEST
+output to a single file: "Pb212.dat". This script uses the 212Pb energy spectrum, and calls execNEST for a given energy bin.
+The number of events in each execNEST command is the probability for a 212Pb event to recoil in that energy bin, multiplied 
 by the total desired number of output events (1M in this case). 
 
-For any general spectrum, the user will want to run testNEST for every relevant bin of some energy spectrum PDF:
+For any general spectrum, the user will want to run execNEST for every relevant bin of some energy spectrum PDF:
 
 ```
-./testNEST numTotalEvts*PDF_value interactionType bin_min[keV] bin_max[keV] drift_field[V/cm] x,y,z_pos[mm] {optional:seed} >> outputfile 
+./execNEST numTotalEvts*PDF_value interactionType bin_min[keV] bin_max[keV] drift_field[V/cm] x,y,z_pos[mm] {optional:seed} >> outputfile 
 ```
 
 Note the funnel command used here, ```>>``` appends the command's output to an existing file (if the file already exists). 
@@ -550,7 +550,7 @@ where "E_gas", "g1_gas", "gasGap_mm", and "p_bar" are in the detector settings f
 
 The next most important thing is the electric field of course, since that changes the recombination probability 
 and thus the "slosh" between S1 & S2. You can set it with either FitEF, or as one of the run-time input arguments 
-to the testNEST default executable example. If you follow all of these instructions, you should be getting at 
+to the execNEST default executable example. If you follow all of these instructions, you should be getting at 
 least the 0th-order answer. Temperature, pressure, etc. should all be 1st- or 2nd-order.
 
 OptTrans and SinglePEWaveForm involve quick and dirty ray tracing and pulse shaping, to be used with 

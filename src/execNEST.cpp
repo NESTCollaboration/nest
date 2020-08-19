@@ -5,7 +5,7 @@
  */
 
 /*
- * File:   testNEST.cpp
+ * File:   execNEST.cpp
  * Author: brodsky3
  *
  * Created on August 1, 2017, 1:03 PM
@@ -14,7 +14,7 @@
 #include "NEST.hh"
 #include "TestSpectra.hh"
 #include "analysis.hh"
-#include "testNEST.hh"
+#include "execNEST.hh"
 
 #include "LUX_Run03.hh"
 
@@ -46,21 +46,21 @@ int main(int argc, char** argv) {
   if (argc < 7) {
     cout << "This program takes 6 (or 7) inputs, with Z position in mm from "
             "bottom of detector:" << endl;
-    cout << "\t./testNEST numEvts type_interaction E_min[keV] E_max[keV] "
+    cout << "\t./execNEST numEvts type_interaction E_min[keV] E_max[keV] "
             "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl
          << endl;
     cout << "For Kr83m time-dependent 9.4, 32.1, or 41.5 keV yields: " << endl;
-    cout << "\t ./testNEST numEvents Kr83m Energy[keV] maxTimeDiff[ns] "
+    cout << "\t ./execNEST numEvents Kr83m Energy[keV] maxTimeDiff[ns] "
 	    "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl 
          << endl;
     cout << "For 8B, numEvts is kg-days of exposure with everything else same. "
             "For WIMPs:" << endl;
-    cout << "\t./testNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] "
+    cout << "\t./execNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] "
             "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl
          << endl;
     cout << "For cosmic-ray muons or other similar particles with elongated "
             "track lengths:" << endl;
-    cout << "\t./testNEST numEvts {MIP} LET[MeV*cm^2/gram] "
+    cout << "\t./execNEST numEvts {MIP} LET[MeV*cm^2/gram] "
             "x,y-position[mm](Initial) field_drift[V/cm] "
             "x,y,z-position[mm](Final) {optional:seed}" << endl
          << endl;
@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
     
   }
   
-  return testNEST(detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos,
+  return execNEST(detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos,
                   seed, no_seed, tZero);
 }
 
@@ -277,7 +277,7 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
   return OutputResults;
 }
 
-int testNEST(VDetector* detector, unsigned long int numEvts, string type,
+int execNEST(VDetector* detector, unsigned long int numEvts, string type,
              double eMin, double eMax, double inField, string position, string posiMuon,
              double fPos, int seed, bool no_seed, double dayNumber ) {
   // Construct NEST class using detector object

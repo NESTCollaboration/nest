@@ -1,10 +1,10 @@
 
 #!/usr/bin/env bash
 #This code doesn't actually perform any model fitting, however,
-#it provides an example for using rootNEST if one wishes to use testNEST + rootNEST
+#it provides an example for using rootNEST if one wishes to use execNEST + rootNEST
 #to fit a data target to find optimal model/detector parameters to match data
 
-#See lines 70-140 of src/testNEST.cpp for more info on what each of these input arguments is doing
+#See lines 70-140 of src/execNEST.cpp for more info on what each of these input arguments is doing
 
 #Note that rootNEST must be in FIT mode (mode=1) to compare with data
 
@@ -27,8 +27,8 @@ do
     
     echo $a $b $c $d $e $f $g
     
-    #below: run testNEST with the select parameters, and save the output
-    @CMAKE_INSTALL_FULL_BINDIR@/testNEST $a $b $c $d $e $f $g > nest_output.ER 2> /dev/null
+    #below: run execNEST with the select parameters, and save the output
+    @CMAKE_INSTALL_FULL_BINDIR@/execNEST $a $b $c $d $e $f $g > nest_output.ER 2> /dev/null
     
     #next, use rootNEST in FIT mode to get goodness-of-fit statistic with a data file (See README on rootNEST)
     @CMAKE_INSTALL_FULL_BINDIR@/rootNEST nest_output.ER fittingTarget_dataFile.dat 2> /dev/null

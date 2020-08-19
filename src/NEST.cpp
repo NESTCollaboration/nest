@@ -286,7 +286,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     if (yields.Lindhard == 1.) {
       skewness = 1. / (1. + exp((engy - E2) / E3)) * (alpha0 + cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
         1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
-      if ( fabs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
+      //if ( fabs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
     }
     else {
       skewness = FreeParam[5]; //2.25 but ~5-20 also good (for NR). All better than zero, but 0 is OK too
@@ -295,7 +295,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
   
   double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
   double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
-  if ( skewness != 0. )
+  if ( fabs(skewness) > DBL_MIN )
     Ne = int(floor(RandomGen::rndm()->rand_skewGauss((1.-recombProb)*Ni-muCorrection,sqrt(Variance)/widthCorrection,skewness)+0.5));
   else
     Ne = int(floor(RandomGen::rndm()->rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));

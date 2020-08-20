@@ -962,7 +962,14 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       band[j][5] = f->GetParError(1);
       band[j][6] = f->GetParError(2);
       band[j][7] = 0.;
-      band[j][8] = f->GetChisquare() / (double)f->GetNDF();
+      band[j][8] = 0.0; double denom, modelValue, xValue;
+      for ( int k = 0; k < logBins; k++ ) {
+	xValue = logMin + k * ( logMax - logMin ) / logBins;
+	modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter("Mean"),2.)/(f->GetParameter("Sigma")*f->GetParameter("Sigma")));
+	denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);
+	band[j][8] += pow ( double(HistogramArray[j][k]) - modelValue, 2. ) / denom;
+      } band[j][8] /= ( double(logBins) - 3. - 1. );
+      if ( std::isnan(band[j][8]) || band[j][8] < 0. || band[j][8] >= DBL_MAX ) band[j][8] = 0.0;
       delete f;
     }
     else {

@@ -293,6 +293,19 @@ class NESTcalc {
   //calculate exciton/ion 
   VDetector* GetDetector() { return fdetector; }
   void SetDetector(VDetector* detector) { fdetector = detector; }  
+
+
+  //Access the diffusion coefficient for transverse diffusion in liquid
+  double GetDiffTran_Liquid(double dfield, bool highFieldModel=false);
+  //Access the diffusion coefficient for longitudinal diffusion in liquid
+  double GetDiffLong_Liquid(double dfield, bool highFieldModel=false);
+  //Function helpful for interpolation of the new diffusion coefficient model (Boyle)
+  double interpolateFunction(const std::vector<std::pair<double,double> > func, double x, bool isLogLog );
+  //Read in the Boyle model data for DT
+  const std::vector<std::pair<double,double> > GetBoyleModelDT();
+  //Read in the Boyle model data for DL
+  const std::vector<std::pair<double,double> > GetBoyleModelDL();
+  
 };
 }
 

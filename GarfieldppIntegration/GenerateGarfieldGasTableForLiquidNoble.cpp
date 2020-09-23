@@ -14,6 +14,9 @@
 //C++ includes
 #include <cstdlib>
 #include <iostream>
+#include <tuple>
+#include <vector>
+#include <map>
 
 //NEST includes
 #include "NEST.hh"

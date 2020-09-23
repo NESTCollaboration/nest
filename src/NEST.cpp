@@ -1867,7 +1867,6 @@ const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
     output.push_back(thePair);
   }
   return output;
-
 }
 
 
@@ -1908,8 +1907,5 @@ const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
     output.push_back(thePair);
   }
   return output;
-
-
-
 }
 

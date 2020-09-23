@@ -59,8 +59,7 @@ std::tuple<std::string,int,double,double,bool,double> ParseInput(int argc, char*
   if( logarithmic == 0 ){  boolLog = false; }
   else{ boolLog = true; }
   std::tuple<std::string,int,double,double,bool,double> output(medium,fieldPoints,minField,maxField,boolLog,temperature);
-  return output;
-  
+  return output;  
 }
 
 
@@ -99,8 +98,7 @@ std::vector<double> GenerateFieldListFromInputs(std::tuple<std::string,int,doubl
       field /= reducedFieldCorrectionFactor; //See the definition of this correction factor for explanation
       output.push_back(field);
     }
-  }
-  
+  }  
   return output;
 }
 
@@ -179,8 +177,7 @@ int PassConstantBody(std::ofstream & outFile, std::string element )
 //--------------------------------------------------------------------------------------------------------//
 //Will be eliminated when NEST.cpp gets a dedicated function for this.
 double GetLatDiffusionConstant(double field_V_cm)
-{
-  
+{  
   double dfield = field_V_cm;
   double Diff_Tran = 37.368 * pow(dfield, .093452) *
     exp(-8.1651e-5 * dfield);  // arXiv:1609.04467 (EXO-200)
@@ -215,7 +212,7 @@ void PassTransportInfo(std::ofstream & outFile, std::vector<double> fieldList_V_
     double DT_cm2_s = n.GetDiffTran_Liquid(field*reducedFieldCorrectionFactor,true);
     double DL_cm2_s = n.GetDiffLong_Liquid(field*reducedFieldCorrectionFactor,true);
     
-    std::cout << "field: " << field*reducedFieldCorrectionFactor << ", DL: " << DL_cm2_s << ", DT : " << DT_cm2_s << ", driftVel_CmperUs: " << driftVel_CmperUs << std::endl;
+    //    std::cout << "field: " << field*reducedFieldCorrectionFactor << ", DL: " << DL_cm2_s << ", DT : " << DT_cm2_s << ", driftVel_CmperUs: " << driftVel_CmperUs << std::endl;
     
     //Have to get correct units and weight the DL and DT properly for Garfield. NB: Garfield uses the diffusion CONSTANT
     //as the input, not the diffusion COEFFICIENT. This is why there's a square root of stuff infolved here.
@@ -224,8 +221,8 @@ void PassTransportInfo(std::ofstream & outFile, std::vector<double> fieldList_V_
     double DL_modified = pow(2*DL_cm2_s/driftVel_CmperS,0.5)*pow(reducedFieldCorrectionFactor,0.5);
     
     std::cout << std::scientific;
-    std::cout << "DT_modified: " << DT_modified << std::endl;
-    std::cout << "DL_modified: " << DL_modified << std::endl;
+    //    std::cout << "DT_modified: " << DT_modified << std::endl;
+    //std::cout << "DL_modified: " << DL_modified << std::endl;
     
     
     double valueToPrint = 0;
@@ -319,7 +316,4 @@ int main(int argc, char** argv)
   PassFooterInformation(outFile);
   
   std::cout << "----> Successful generation of gas file." << std::endl;
-
-}  
-  
-  
+}

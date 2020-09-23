@@ -304,8 +304,7 @@ class NESTcalc {
   //Read in the Boyle model data for DT
   const std::vector<std::pair<double,double> > GetBoyleModelDT();
   //Read in the Boyle model data for DL
-  const std::vector<std::pair<double,double> > GetBoyleModelDL();
-  
+  const std::vector<std::pair<double,double> > GetBoyleModelDL();  
 };
 }
 

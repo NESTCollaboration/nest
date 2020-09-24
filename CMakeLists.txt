@@ -7,6 +7,7 @@ project(NEST VERSION 2.1.0 LANGUAGES CXX)
 option(G4 "Build integration with Geant4" OFF)
 option(BUILD_ROOT "Build ROOT tools" OFF)
 option(BUILD_EXAMPLES "Build NEST examples" ON)
+option(BUILD_GARFIELD "Build integration with Garfield++" ON)
 
 # enable position independent code so shared libraries can link against 
 # the static version of NEST::Core 
@@ -61,6 +62,10 @@ configure_file(examples/220RnCalib.in 220RnCalib)
 
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if(BUILD_GARFIELD)
+  add_subdirectory(GarfieldppIntegration)
 endif()
 
 if(G4)

@@ -1055,12 +1055,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       stopPoint = Nee;
     electronstream.resize(stopPoint, dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
-    double Diff_Tran = 37.368 * pow(dfield, .093452) *
-                       exp(-8.1651e-5 * dfield);  // arXiv:1609.04467 (EXO-200)
-    double Diff_Long = 345.92 * pow(dfield, -0.47880) *
-                       exp(-81.3230 / dfield);  // fit to Aprile & Doke review
-                                                // paper and to arXiv:1102.2865;
-                                                // plus, LUX Run02+03
+    double Diff_Tran = GetDiffTran_Liquid(dfield,false);
+    double Diff_Long = GetDiffLong_Liquid(dfield,false);
+
     // a good rule of thumb but only for liquids, as gas kind of opposite:
     // Diff_Long ~ 0.15 * Diff_Tran, as it is in LAr, at least as field goes to
     // infinity
@@ -1740,3 +1737,175 @@ double NESTcalc::NexONi(double energy, double density)
   double alpha = wvalue.alpha;
   return alpha * erf(0.05 * energy);
 }
+
+//This function returns the transverse diffusion coefficient in liquid. It allows a user
+//to select whether they use the canonical NEST model, or a model modified to accommodate higher
+//field values (from Boyle et al., 2016, arXiv:1603.04157v1)
+double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel)
+{
+  double output;
+
+  //Use the standard NEST parametrization
+  if( !highFieldModel ){
+    output = 37.368 * pow(dfield, .093452) *
+      exp(-8.1651e-5 * dfield);  // arXiv:1609.04467 (EXO-200)
+  }
+  //Use the Boyle model, which is drastically different at high (>5kV/cm) fields. Note here that
+  //the Boyle model is only at one temperature
+  //First double in pair is field, second is DT
+  else{
+    const std::vector<std::pair<double,double> > BoyleModelDT = GetBoyleModelDT();
+    output = interpolateFunction(BoyleModelDT,dfield,true);
+    if( output == 0 ) cerr << "Looks like your desired drift field, " << dfield << ", may be either too low or too high to interpolate a DT. Returning DT=0.\n";
+  }
+  return output;
+}
+
+
+//This function returns the longitudinal diffusion coefficient in liquid. It allows a user
+//to select whether they use the canonical NEST model, or a model modified to accommodate higher
+//field values (from Boyle et al., 2016, arXiv:1603.04157v1)
+double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel)
+{
+  double output;
+
+  //Use the standard NEST parametrization
+  if( !highFieldModel ){
+    output = 345.92 * pow(dfield, -0.47880) *
+      exp(-81.3230 / dfield);  // fit to Aprile & Doke review
+    // paper and to arXiv:1102.2865;
+    // plus, LUX Run02+03
+  }
+  //Use the Boyle model, which is drastically different at high (>5kV/cm) fields. Note here that
+  //the Boyle model is only at one temperature.  
+  //First double in pair is field, second is DL
+  else{
+    const std::vector<std::pair<double,double> > BoyleModelDL = GetBoyleModelDL();
+    output = interpolateFunction(BoyleModelDL,dfield,true);
+    if( output == 0 ) cerr << "Looks like your desired drift field may be either too low or too high to interpolate a DL Returning DL=0.\n";
+  }
+  return output;
+}
+
+
+//Simple function for interpolating
+double NESTcalc::interpolateFunction(const std::vector<std::pair<double,double> > func, double x, bool isLogLog )
+{
+  //Linear interpolation
+  if( !isLogLog ){
+    double y_desired = 0;
+    for( int iP = 0; iP < func.size()-1; ++iP ){
+      double x1 = func[iP].first;
+      double x2 = func[iP+1].first;
+      if( x1 < x && x2 >= x ){
+	double y1 = func[iP].second;
+	double y2 = func[iP+1].second;
+	double slope = (y2-y1)/(x2-x1);
+	y_desired = y1+(slope*(x-x1));
+	break;
+      }
+    }
+    return y_desired;
+  }
+
+  //Linear interpolation on a log-log scale (more accurate at high fields, where points are far apart on a linear scale)
+  else{
+    double y_desired = 0;
+    for( int iP = 0; iP < func.size()-1; ++iP ){
+      double logx1 = log10(func[iP].first);
+      double logx2 = log10(func[iP+1].first);
+      if( logx1 < log10(x) && logx2 > log10(x) ){
+	double logy1 = log10(func[iP].second);
+	double logy2 = log10(func[iP+1].second);
+	double slope = (logy2-logy1)/(logx2-logx1);
+	double logy_desired = logy1 + slope*(log10(x)-logx1);
+	y_desired = pow(10,logy_desired);
+	break;
+      }
+    }
+    return y_desired;
+  }
+}
+
+    
+
+
+//Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
+//all of the size accounting is done nicely downstream without having to pass container
+//sizes around.
+const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
+{
+  std::vector<std::pair<double,double> > output;
+  const int nPts = 25;
+  double modelDT[nPts][2] = {{14.6236, 24.674},
+			     {24.5646, 26.4954},
+			     {36.675, 29.2043},
+			     {53.4802, 32.6845},
+			     {74.3939, 37.9944},
+			     {111.071, 45.3424},
+			     {173.835, 58.2226},
+			     {306.106, 74.6236},
+			     {467.921, 89.2124},
+			     {749.809, 96.9913},
+			     {1093.38, 98.4549},
+			     {1711.25, 97.3852},
+			     {2615.85, 92.5493},
+			     {3998.65, 85.4419},
+			     {6258.24, 78.2405},
+			     {9794.71, 67.7294},
+			     {16453.1, 58.544},
+			     {27637.8, 50.3599},
+			     {38445.7, 48.5424},
+			     {49828.3, 43.4695},
+			     {70967.5, 36.8038},
+			     {98719.8, 32.7631},
+			     {127948, 29.5377},
+			     {169785, 27.4412},
+			     {220053, 27.9686} };  
+  for( int iP = 0; iP < nPts; ++iP ){
+    std::pair<double,double> thePair(modelDT[iP][0],modelDT[iP][1]);
+    output.push_back(thePair);
+  }
+  return output;
+}
+
+
+//Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
+//all of the size accounting is done nicely downstream without having to pass container
+//sizes around. Returns cm^2/s
+const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
+{
+  std::vector<std::pair<double,double> > output;
+  const int nPts = 25;
+  double modelDL[nPts][2] = {{14.6236, 22.2977},
+			     {24.5646, 22.4238},
+			     {36.675, 22.933},
+			     {53.4802, 23.4595},
+			     {74.3939, 25.4994},
+			     {111.071, 29.4632},
+			     {173.835, 33.9251},
+			     {306.106, 38.1019},
+			     {467.921, 37.2352},
+			     {749.809, 31.8425},
+			     {1093.38, 25.495},
+			     {1711.25, 18.3343},
+			     {2615.85, 12.6461},
+			     {3998.65, 8.51594},
+			     {6258.24, 5.23814},
+			     {9794.71, 3.01815},
+			     {16453.1, 1.58294},
+			     {27637.8, 0.779995},
+			     {38445.7, 0.525689},
+			     {49828.3, 0.364016},
+			     {70967.5, 0.228694},
+			     {98719.8, 0.148206},
+			     {127948, 0.116139},
+			     {169785, 0.0957632},
+			     {220053, 0.0900259} };
+  for( int iP = 0; iP < nPts; ++iP ){
+    std::pair<double,double> thePair(modelDL[iP][0],modelDL[iP][1]);
+    output.push_back(thePair);
+  }
+  return output;
+}
+

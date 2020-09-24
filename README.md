@@ -38,6 +38,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 10. [ Citation ](#citation)
 11. [ License ](#license)
 12. [ Python ](#python)
+13. [ Garfield++ Integration ](#garfield)
 
 
 <a name="get"></a>
@@ -608,3 +609,21 @@ pip install nestpy
 ```
 
 For more information, please see [the bindings project](https://github.com/NESTCollaboration/nestpy).
+
+
+
+
+<a name="garfield"></a>
+## Garfield++ Integration
+
+NEST can produce tables of transport parameters for liquid xenon for use with the Garfield++ package. These tables currently only contain the drift velocity and lateral/longitudinal diffusion information as a function of electric field. They can be used as .gas files in Garfield++ for use with the AvalancheMC process, and are intended to allow a user to make Garfield drift electrons through a "gas" that has the same transport properties as LXe. 
+
+The script GenerateGarfieldGasTableForLiquidNoble.cpp (and its executable GenerateGasTable) will take inputs and produce a gas file for use with Garfield. To execute the script, build NEST, then execute the command
+
+`./GarfieldppIntegration/GenerateGasTable Xe <nFieldPoints> <minField_VperCm> <maxField_VperCm> <Logarithmic:0or1> <Temperature_K>`
+
+from the build directory. Generating tables for additional noble elements is not currently supported, but may be added in the future under popular demand.
+
+Another note: for this to work, the temperature you use in your garfield .cpp file must be 293K, and the pressure must be 1350 torr. This gas file generation assumes these numbers and corrects for them so that the transport coefficients end up correct when the table is passed into Garfield++. If you use anything other than 1350 torr, your transport properties (diffusion, drift velocity, etc.) will be wrong!!!
+
+For more information, contact Ryan Linehan (rlinehan@stanford.edu)

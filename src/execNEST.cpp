@@ -752,6 +752,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
 	  detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
 	}
 	else {
+	  if ( seed < 0 && seed != -1 ) massNum = detector->get_molarMass();
 	  yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
 	}
 	//FreeParam.clear();
@@ -955,11 +956,10 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
         printf("%.6f\t", yields.DeltaT_Scint);
       if (type_num == WIMP && timeStamp > (tZero+tStep))
 	printf("%.0f\t", timeStamp);
-      printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field,
-             driftTime, smearPos[0], smearPos[1], smearPos[2], quanta.photons,
-             quanta.electrons);  // comment this out when below line in
-      // printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f,%.0f\t%lf\t%lf\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],yields.PhotonYield,yields.ElectronYield);
-      //for when you want means
+      if ( seed < 0 && seed != -1 ) //for when you want means
+	printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t",keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],yields.PhotonYield,yields.ElectronYield);
+      else
+	printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t",  keV,field,driftTime,smearPos[0],smearPos[1],smearPos[2],quanta.photons,quanta.electrons);
       // if (truthPos[2] < detector->get_cathode() && verbosity) printf("g-X ");
       if (keV > 10.*hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
           // switch to exponential notation to make output more readable, if

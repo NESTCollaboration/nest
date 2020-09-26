@@ -18,7 +18,7 @@
 
 #include "LUX_Run03.hh"
 
-#define tZero 0.00 //day{of the year, 0 is average WIMP velocity}
+#define tZero 0.00 //day{of the year, 0 is ~6/1}
 #define tStep 0.03
 #define hiEregime 1E+2 //keV
 

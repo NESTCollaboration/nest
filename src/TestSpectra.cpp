@@ -198,7 +198,8 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   // Convert all velocities from km/s into cm/s
   double v_0 = V_WIMP * cmPerkm;     // peak WIMP velocity
   double v_esc = V_ESCAPE * cmPerkm; // escape velocity
-  double v_e = ( V_EARTH + 15. * sin ( dayNum * 2. * M_PI / 365.24 ) ) * cmPerkm; // the Earth's velocity
+  double v_e = ( V_SUN + ( 0.49 * 29.8 * cos ( ( dayNum * 2. * M_PI / 365.24 ) - ( 0.415 * 2. * M_PI ) ) ) ) * cmPerkm;  // the Earth's velocity
+  // used Eq. 18 for SHM w/ June 1 as reference date from arXiv 0607121 [Savage, Freese, Gondolo 2006] - Juergen Reichenbacher 09/17/2020
   
   // Define the detector Z and A and the mass of the target nucleus
   double Z = ATOM_NUM;

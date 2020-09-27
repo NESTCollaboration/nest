@@ -353,7 +353,7 @@ useTiming=0 (default) will not return timing info. If verbosity=true and useTimi
 "photon_times.txt" in the user's build directory with S1 and S2 top/bottom PMT arrival times for each event. If useTiming=2, 
 approximated e-trains will be included for the output events.
 
-The script, "PulseShape.cpp", in the "examples" directory will take the photon_times.txt output, and calculate pulse shape parameters
+The script, "pulseShape.cpp", in the "examples" directory will take the photon_times.txt output, and calculate pulse shape parameters
 for each event in the file. This must be compiled separately from the other NEST executables. 
 
 <a name="loop"></a>

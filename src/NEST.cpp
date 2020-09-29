@@ -1662,7 +1662,8 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
   double sigmaX = sigmaR * cos(phi);
   double sigmaY = sigmaR * sin(phi);
   
-  if ( sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ) {
+  if ( sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
+       fabs(sigmaX) > 1e2 || fabs(sigmaY) > 1e2 ) {
     cerr << "WARNING: your position resolution is worse than 10 cm. Is that correct?!" << endl;
     cerr << "Setting resolution to perfect." << endl; sigmaX = 0.; sigmaY = 0.;
   }

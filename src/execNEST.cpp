@@ -733,6 +733,11 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
     } else {
       if (keV > .001 * Wq_eV) {
 	if ( type == "ER" ) {
+	  if ( verbosity && j == 0 ) {
+	    cerr << "CAUTION: Are you sure you don't want beta model instead of ER? This is a weighted average of the beta and gamma models" << endl;
+	    cerr << "with weight values of " << FreeParam[0] << " " << FreeParam[1] << " " << FreeParam[2] << " " << FreeParam[3] << " " << FreeParam[4]
+		 << " " << FreeParam[5] << " " << FreeParam[6] << " " << FreeParam[7] << endl;
+	  }
 	  YieldResult yieldsB = n.GetYields(NEST::beta, keV, rho, field,
 					    double(massNum), double(atomNum), NuisParam);
 	  YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,

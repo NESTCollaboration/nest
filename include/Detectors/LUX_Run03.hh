@@ -81,7 +81,13 @@ public:
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     double amplitude = 307.9-0.3071*zPos_mm+0.0002257*pow(zPos_mm,2.);
     double shape = 1.1525e-7*sqrt(fabs(zPos_mm-318.84));
-    return -shape * pow ( radius, 3. ) + amplitude;
+    double finalCorr = -shape * pow ( radius, 3. ) + amplitude;
+    finalCorr /= 307.9;
+    if ( finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr) ) {
+      cerr << "ERR: S1 corrections exceed a 50% difference. Are you sure you didn't forget to change LUX numbers for your own detector??" << endl; return 1.;
+    }
+    else
+      return finalCorr;
     
   }
   
@@ -89,12 +95,17 @@ public:
   // 1709.00095, 1904.08979, 1708.02566 Fig. 13
   virtual double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
     
-    return 158.92 // NOTE: DO NOT JUST RETURN A CONSTANT, THAT IS A SILLY USE of FitEF
+    double finalEF = 158.92  // NOTE: DO NOT JUST RETURN A CONSTANT, THAT IS A SILLY USE of FitEF
       -0.2209000 *pow(zPos_mm,1.)
       +0.0024485 *pow(zPos_mm,2.)
       -8.7098e-6 *pow(zPos_mm,3.)
       +1.5049e-8 *pow(zPos_mm,4.)
       -1.0110e-11*pow(zPos_mm,5.);
+    if ( finalEF <= FIELD_MIN || finalEF > 1e5 || std::isnan(finalEF) ) {
+      cerr << "ERR: Very weird drift electric field value!! Are you sure you didn't forget to change LUX numbers for your own detector??" << endl; return FIELD_MIN;
+    }
+    else
+      return finalEF;
     
   }
   
@@ -104,7 +115,7 @@ public:
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     
-    return // unitless, 1.000 at detector center
+    double finalCorr =  // unitless, 1.000 at detector center
     9156.3
        +6.22750*pow(radius,1.)
        +0.38126*pow(radius,2.)
@@ -113,6 +124,12 @@ public:
       1.6953e-6*pow(radius,5.)+
       5.6513e-9*pow(radius,6.)
     -7.3989e-12*pow(radius,7.);
+    finalCorr /= 9156.3;
+    if ( finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr) ) {
+      cerr << "ERR: S2 corrections exceed a 50% difference. Are you sure you didn't forget to change LUX numbers for your own detector??" << endl; return 1.;
+    }
+    else
+      return finalCorr;
     
   }
   

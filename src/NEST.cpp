@@ -63,7 +63,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   }
   // tau1 = 3.5*ns; tau3 = 20.*ns; tauR = 40.*ns for solid Xe from old NEST.
   // Here assuming same as in liquid
-
+  
+  // if ( dfield > 60. ) dfield = 60. // makes Xed work. 200 for LUX Run04 instead. A mystery! Why no field dep?
+  
   if (species <= Cf)                           // NR
     SingTripRatio = (0.21-0.0001*dfield) * pow(energy, 0.21-0.0001*dfield ); //arXiv:1803.07935. LUX:0.15*E^0.15
   else if (species == ion)                     // e.g., alphas
@@ -1659,7 +1661,12 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
   sigmaR = fabs(RandomGen::rndm()->rand_gauss(0.0, sigmaR));
   double sigmaX = sigmaR * cos(phi);
   double sigmaY = sigmaR * sin(phi);
-
+  
+  if ( sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ) {
+    cerr << "WARNING: your position resolution is worse than 10 cm. Is that correct?!" << endl;
+    cerr << "Setting resolution to perfect." << endl; sigmaX = 0.; sigmaY = 0.;
+  }
+  
   xySmeared[0] = xPos_mm + sigmaX;
   xySmeared[1] = yPos_mm + sigmaY;
 

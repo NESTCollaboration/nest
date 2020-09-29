@@ -1057,8 +1057,8 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       stopPoint = Nee;
     electronstream.resize(stopPoint, dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
-    double Diff_Tran = GetDiffTran_Liquid(dfield,false);
-    double Diff_Long = GetDiffLong_Liquid(dfield,false);
+    double Diff_Tran = GetDiffTran_Liquid(dfield,false,fdetector->get_T_Kelvin());
+    double Diff_Long = GetDiffLong_Liquid(dfield,false,fdetector->get_T_Kelvin());
 
     // a good rule of thumb but only for liquids, as gas kind of opposite:
     // Diff_Long ~ 0.15 * Diff_Tran, as it is in LAr, at least as field goes to
@@ -1749,7 +1749,7 @@ double NESTcalc::NexONi(double energy, double density)
 //This function returns the transverse diffusion coefficient in liquid. It allows a user
 //to select whether they use the canonical NEST model, or a model modified to accommodate higher
 //field values (from Boyle et al., 2016, arXiv:1603.04157v1)
-double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel)
+double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel, double Kelvin) // for gas: look for Diff_Tran_Gas above
 {
   double output;
 
@@ -1773,7 +1773,7 @@ double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel)
 //This function returns the longitudinal diffusion coefficient in liquid. It allows a user
 //to select whether they use the canonical NEST model, or a model modified to accommodate higher
 //field values (from Boyle et al., 2016, arXiv:1603.04157v1)
-double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel)
+double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel, double Kelvin) // for gas: look for Diff_Long_Gas above
 {
   double output;
 

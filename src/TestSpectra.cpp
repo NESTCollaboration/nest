@@ -176,6 +176,21 @@ double TestSpectra::DD_spectrum(
   return xyTry[0];
 }
 
+double TestSpectra::ppSolar_spectrum ( double xMin, double xMax ) {
+  
+  if ( xMax > 250. ) xMax = 250.;
+  if ( xMin < 0.00 ) xMin = 0.00;
+  double yMax = 0.000594;
+  vector<double> xyTry = {
+    xMin + ( xMax - xMin ) * RandomGen::rndm()->rand_uniform(),
+    yMax * RandomGen::rndm()->rand_uniform(), 1. };
+  while ( xyTry[2] > 0. ) {
+    double FuncValue = 9.2759e-6 - 3.5556e-8 * xyTry[0] - 5.4608e-12 * xyTry[0] * xyTry[0];
+    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
+  }
+  return xyTry[0];
+}
+
 //------++++++------++++++------++++++------++++++------++++++------++++++------
 // dR() //generator written by Vic Gehman originally
 //------++++++------++++++------++++++------++++++------++++++------++++++------

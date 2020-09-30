@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     cout << "\t ./execNEST numEvents Kr83m Energy[keV] maxTimeDiff[ns] "
 	    "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl 
          << endl;
-    cout << "For 8B, numEvts is kg-days of exposure with everything else same. "
+    cout << "For 8B and pp, numEvts is kg-days of exposure with everything else same. "
             "For WIMPs:" << endl;
     cout << "\t./execNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] "
             "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl
@@ -371,6 +371,10 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
            type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
            type == "mu-")
     type_num = NEST::beta;  // default electron recoil model
+  else if ( type == "pp" || type == "ppsolar" || type == "ppSolar" || type == "pp_Solar" || type == "pp_solar" || type == "pp-Solar" || type == "pp-solar" ) {
+    type_num = ppSolar;
+    numEvts = RandomGen::rndm()->poisson_draw(0.0011794 * double(numEvts));
+  }
   else {
     cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
     cerr << "NR or neutron," << endl;
@@ -386,7 +390,8 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
     cerr << "Kr83m or 83mKr or Kr83," << endl;
     cerr << "CH3T or tritium," << endl;
     cerr << "Carbon14 or 14C or C14 or C-14 or Carbon-14," << endl;
-    cerr << "beta or ER or Compton or compton or electron or e-, and" << endl;
+    cerr << "beta or ER or Compton or compton or electron or e-," << endl;
+    cerr << "pp or ppSolar, and" << endl;
     cerr << "muon or MIP or LIP or mu or mu-" << endl;
     return 1;
   }
@@ -494,6 +499,9 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
         case WIMP:
           keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, eMin, timeStamp);
 	  break;
+        case ppSolar:
+	  keV = spec.ppSolar_spectrum(eMin, eMax);
+	  break;
         default:
           if (eMin < 0.) return 1;
           if (eMax > 0.)
@@ -510,7 +518,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
       }
     }
 
-    if (type_num != WIMP && type_num != B8 && eMax > 0.) {
+    if (type_num != WIMP && type_num != B8 && type_num != ppSolar && eMax > 0.) {
       if (keV > eMax) keV = eMax;
       if (keV < eMin) keV = eMin;
     }

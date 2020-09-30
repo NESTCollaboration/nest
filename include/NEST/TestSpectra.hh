@@ -48,6 +48,7 @@ class TestSpectra {
   double AmBe_spectrum(double emin, double emax);
   double Cf_spectrum(double emin, double emax);
   double DD_spectrum(double emin, double emax);
+  double ppSolar_spectrum(double emin, double emax);
   double WIMP_dRate(double ER, double mWimp, double day);
   WIMP_spectrum_prep WIMP_prep_spectrum(double mass, double eStep, double day);
   double WIMP_spectrum(WIMP_spectrum_prep wprep, double mass, double day);

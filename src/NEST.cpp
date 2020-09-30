@@ -679,7 +679,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       return GetYieldKr83m(energy,density,dfield,massNum);
       //not actually massNumber, but a place holder for maxTime
     break;
-    default:  // beta, CH3T
+    default:  // beta, CH3T, and the pp solar neutrino background
       return GetYieldBeta(energy,density,dfield);
       //return GetYieldBetaGR(energy,density,dfield);
     break;

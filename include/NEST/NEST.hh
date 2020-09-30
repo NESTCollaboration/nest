@@ -112,7 +112,8 @@ typedef enum {
   CH3T = 9,
   C14 = 10,
   Kr83m = 11,
-  NoneType = 12
+  ppSolar = 12,
+  NoneType= 13
 
 } INTERACTION_TYPE;
 

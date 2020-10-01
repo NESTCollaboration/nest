@@ -161,7 +161,6 @@ double TestSpectra::Cf_spectrum(double xMin, double xMax) {
 double TestSpectra::DD_spectrum(
     double xMin, double xMax) {  // JV LUX, most closely like JENDL-4. See
                                  // arXiv:1608.05381. Lower than G4/LUXSim
-  
   if (xMax > 80.) xMax = 80.;
   if (xMin < 0.000) xMin = 0.000;
   double yMax = 1.1;
@@ -189,6 +188,22 @@ double TestSpectra::ppSolar_spectrum ( double xMin, double xMax ) {
     xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
   }
   return xyTry[0];
+
+}
+
+double TestSpectra::atmNu_spectrum ( double xMin, double xMax ) {
+  
+  if ( xMax > 85. ) xMax = 85.;
+  if ( xMin < 0.0 ) xMin = 0.0;
+  vector<double> xyTry = {
+    xMin + ( xMax - xMin ) * RandomGen::rndm()->rand_uniform(),
+    RandomGen::rndm()->rand_uniform(), 1. };
+  while ( xyTry[2] > 0. ) {
+    double FuncValue = ( 1. + 0.0041482 * xyTry[0] + 0.00079972 * xyTry[0] * xyTry[0] - 1.0201e-5 * xyTry[0] * xyTry[0] * xyTry[0] ) * exp ( -xyTry[0] / 12.355 );
+    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., 1., xyTry[0], xyTry[1], FuncValue);
+  }
+  return xyTry[0];
+
 }
 
 //------++++++------++++++------++++++------++++++------++++++------++++++------
@@ -214,7 +229,7 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   double v_0 = V_WIMP * cmPerkm;     // peak WIMP velocity
   double v_esc = V_ESCAPE * cmPerkm; // escape velocity
   double v_e = ( V_SUN + ( 0.49 * 29.8 * cos ( ( dayNum * 2. * M_PI / 365.24 ) - ( 0.415 * 2. * M_PI ) ) ) ) * cmPerkm;  // the Earth's velocity
-  // used Eq. 18 for SHM w/ June 1 as reference date from arXiv 0607121 [Savage, Freese, Gondolo 2006] - Juergen Reichenbacher 09/17/2020
+  // used Eq. 18 for SHM w/ June 1 as reference date (MAX!) from arXiv 0607121 [Savage, Freese, Gondolo 2006] - Juergen Reichenbacher 09/17/2020
   
   // Define the detector Z and A and the mass of the target nucleus
   double Z = ATOM_NUM;

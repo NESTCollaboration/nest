@@ -661,6 +661,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
     case NR:
     case WIMP:
     case B8:
+    case atmNu:
     case DD:
     case AmBe:
     case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
@@ -679,7 +680,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       return GetYieldKr83m(energy,density,dfield,massNum);
       //not actually massNumber, but a place holder for maxTime
     break;
-    default:  // beta, CH3T, and the pp solar neutrino background
+    default:  // beta, CH3T, 14C, and the pp solar neutrino background
       return GetYieldBeta(energy,density,dfield);
       //return GetYieldBetaGR(energy,density,dfield);
     break;
@@ -1664,8 +1665,10 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
   
   if ( sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
        fabs(sigmaX) > 1e2 || fabs(sigmaY) > 1e2 ) {
-    cerr << "WARNING: your position resolution is worse than 10 cm. Is that correct?!" << endl;
-    cerr << "Setting resolution to perfect." << endl; sigmaX = 0.; sigmaY = 0.;
+    if ( A_top > 20. ) {
+      cerr << "WARNING: your position resolution is worse than 10 cm. Is that correct?!" << endl;
+      cerr << "Setting resolution to perfect." << endl; sigmaX=0.; sigmaY=0.;
+    } // this is only a problem if the area is large and the res is still bad
   }
   
   xySmeared[0] = xPos_mm + sigmaX;

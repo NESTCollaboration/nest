@@ -113,7 +113,8 @@ typedef enum {
   C14 = 10,
   Kr83m = 11,
   ppSolar = 12,
-  NoneType= 13
+  atmNu = 13,
+  NoneType =14
 
 } INTERACTION_TYPE;
 

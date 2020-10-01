@@ -83,7 +83,7 @@ public:
     double shape = 1.1525e-7*sqrt(fabs(zPos_mm-318.84));
     double finalCorr = -shape * pow ( radius, 3. ) + amplitude;
     finalCorr /= 307.9;
-    if ( finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr) ) {
+    if ( (finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr)) && radius < radmax ) {
       cerr << "ERR: S1 corrections exceed a 50% difference. Are you sure you didn't forget to change LUX numbers for your own detector??" << endl; return 1.;
     }
     else
@@ -125,7 +125,7 @@ public:
       5.6513e-9*pow(radius,6.)
     -7.3989e-12*pow(radius,7.);
     finalCorr /= 9156.3;
-    if ( finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr) ) {
+    if ( (finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr)) && radius < radmax ) {
       cerr << "ERR: S2 corrections exceed a 50% difference. Are you sure you didn't forget to change LUX numbers for your own detector??" << endl; return 1.;
     }
     else

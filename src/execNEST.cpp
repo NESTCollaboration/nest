@@ -18,7 +18,7 @@
 
 #include "LUX_Run03.hh"
 
-#define tZero 0.00 //day{of the year, 0 is ~6/1}
+#define tZero 0.00 //day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03
 #define hiEregime 1E+2 //keV
 
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     cout << "\t ./execNEST numEvents Kr83m Energy[keV] maxTimeDiff[ns] "
 	    "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl 
          << endl;
-    cout << "For 8B and pp, numEvts is kg-days of exposure with everything else same. "
+    cout << "For 8B or pp or atmNu, numEvts is kg-days of exposure with everything else same. "
             "For WIMPs:" << endl;
     cout << "\t./execNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] "
             "field_drift[V/cm] x,y,z-position[mm] {optional:seed}" << endl
@@ -373,7 +373,11 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
     type_num = NEST::beta;  // default electron recoil model
   else if ( type == "pp" || type == "ppsolar" || type == "ppSolar" || type == "pp_Solar" || type == "pp_solar" || type == "pp-Solar" || type == "pp-solar" ) {
     type_num = ppSolar;
-    numEvts = RandomGen::rndm()->poisson_draw(0.0011794 * double(numEvts));
+    numEvts = RandomGen::rndm()->poisson_draw(0.0011794 * double(numEvts)); //normalization: counts per kg-day from 0-250 keV(ee)
+  }
+  else if ( type == "atmNu" || type == "AtmNu" || type == "atm_Nu" || type == "Atm_Nu" || type == "atm-Nu" || type == "Atm-Nu" || type == "atm_nu" || type == "atm-nu" ) {
+    type_num = atmNu; numEvts = RandomGen::rndm()->
+			poisson_draw(1.5764e-7*double(numEvts));
   }
   else {
     cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
@@ -391,7 +395,8 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
     cerr << "CH3T or tritium," << endl;
     cerr << "Carbon14 or 14C or C14 or C-14 or Carbon-14," << endl;
     cerr << "beta or ER or Compton or compton or electron or e-," << endl;
-    cerr << "pp or ppSolar, and" << endl;
+    cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
+    cerr << "atmNu, and" << endl;
     cerr << "muon or MIP or LIP or mu or mu-" << endl;
     return 1;
   }
@@ -502,6 +507,9 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
         case ppSolar:
 	  keV = spec.ppSolar_spectrum(eMin, eMax);
 	  break;
+        case atmNu:
+	  keV = spec.atmNu_spectrum(eMin, eMax);
+	  break;
         default:
           if (eMin < 0.) return 1;
           if (eMax > 0.)
@@ -518,7 +526,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
       }
     }
 
-    if (type_num != WIMP && type_num != B8 && type_num != ppSolar && eMax > 0.) {
+    if ( type_num != WIMP && type_num != B8 && type_num != ppSolar && type_num != atmNu && eMax > 0. ) {
       if (keV > eMax) keV = eMax;
       if (keV < eMin) keV = eMin;
     }

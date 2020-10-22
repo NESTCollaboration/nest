@@ -203,8 +203,9 @@ int main(int argc, char** argv) {
     
   }
   
-  return execNEST(detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos,
-                  seed, no_seed, tZero);
+  auto exec = execNEST ( detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos, seed, no_seed, tZero );
+  if ( detector ) delete detector; return exec;
+  
 }
 
 NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleType, //func suggested by Xin Xiang, PD Brown U. for RG, LZ
@@ -276,7 +277,9 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
     }
   }
   
+  delete detector;
   return OutputResults;
+  
 }
 
 int execNEST(VDetector* detector, unsigned long int numEvts, string type,
@@ -428,7 +431,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
   }
   if (rho < 1.75) detector->set_inGas(true);
 
-  double Wq_eV = n.WorkFunction(rho).Wq_eV;
+  double Wq_eV = n.WorkFunction(rho,detector->get_molarMass()).Wq_eV;
   //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
   if ( detector->get_extraPhot() )
     Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO

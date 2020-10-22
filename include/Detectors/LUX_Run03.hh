@@ -52,7 +52,7 @@ public:
     eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown
     
     // Thermodynamic Properties
-    inGas = false; //duh
+    //inGas = false; //duh
     T_Kelvin = 173.; //1910.04211
     p_bar = 1.57; //1910.04211
     

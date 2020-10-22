@@ -273,7 +273,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
     skewness = 0.00; //make it a constant 0 when outside the range of Vetri Velan's Run04 models.
   }
   else { // LUX Skewness Model
-    Wvalue wvalue = WorkFunction(density);
+    Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
     double Wq_eV = wvalue.Wq_eV;
     double engy = Wq_eV * (yields.PhotonYield + yields.ElectronYield);
     double fld = yields.ElectricField;
@@ -330,7 +330,7 @@ QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
 
 YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield)
 {
-  Wvalue wvalue = WorkFunction(density);
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   constexpr double m3 = 2., m4 = 2., m6 = 0.;
@@ -437,7 +437,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   }
   double NexONi = Nex / Ni;
   
-  Wvalue wvalue = WorkFunction(density);
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double Wq_eV = wvalue.Wq_eV;
   double L = (Nq / energy) * Wq_eV * 1e-3;
   
@@ -511,7 +511,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
   double Nq = -999;
   double Nph = -999;
   double Ne = -999;
-  Wvalue wvalue = WorkFunction(density);
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   constexpr double deltaT_ns_halflife = 154.4;
@@ -574,7 +574,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
 
 YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 {
-  Wvalue wvalue = WorkFunction(density);
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   
@@ -618,7 +618,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 
 YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfield ) {
   
-  Wvalue wvalue = WorkFunction(density);
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   
@@ -715,7 +715,6 @@ NESTcalc::NESTcalc(VDetector* detector) {
 
 NESTcalc::~NESTcalc() {
   if (pulseFile) pulseFile.close();
-  if (fdetector) delete fdetector;
 }
 
 vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPosX, double truthPosY, double truthPosZ,
@@ -744,10 +743,15 @@ vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPosX, double tru
   posDep /=
     fdetector->FitS1(0., 0., dz_center, VDetector::fold);  // XYZ always in mm now never cm
   posDepSm /= fdetector->FitS1(0., 0., dz_center, VDetector::unfold);
+  double g1_XYZ = fdetector->get_g1() * posDep;
+  if ( g1_XYZ > 1. ) g1_XYZ = 1.;
+  if ( g1_XYZ < 0. ) g1_XYZ = 0.;
+  if ( fdetector->get_g1() == 1. ) { g1_XYZ = 1.; posDep = 1.; posDepSm = 1.; }
+  if ( fdetector->get_g1() == 0. ) { g1_XYZ = 0.; posDep = 0.; posDepSm = 0.; }
 
   // generate a number of PMT hits drawn from a binomial distribution.
   // Initialize number of photo-electrons
-  int nHits = BinomFluct(Nph, fdetector->get_g1() * posDep), Nphe = 0;
+  int nHits = BinomFluct ( Nph, g1_XYZ ), Nphe = 0;
   
   double eff = fdetector->get_sPEeff();
   if ( eff < 1. )
@@ -1040,6 +1044,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
   posDep /= fdetector->FitS2(0., 0., VDetector::fold);
   posDepSm /= fdetector->FitS2(0., 0., VDetector::unfold);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
+  
+  if ( fdetector->get_g1_gas() == 1. ) { posDep = 1.; posDepSm = 1.; }
+  if ( fdetector->get_g1_gas() == 0. ) { posDep = 0.; posDepSm = 0.; }
   
   int Nee = BinomFluct(Ne, ExtEff * exp(-dt / fdetector->get_eLife_us()));
   //MAKE this 1 for SINGLE e- DEBUG
@@ -1450,7 +1457,7 @@ double NESTcalc::GetDensity(double Kelvin,
     VaporP_bar = pow(10., 4.0519 - 667.16 / Kelvin);
   else
     VaporP_bar = DBL_MAX;
-  if (bara < VaporP_bar) {
+  if (bara < VaporP_bar || inGas) {
     double density =
         bara * 1e5 / (Kelvin * 8.314);  // ideal gas law approximation, mol/m^3
     density *= molarMass * 1e-6;
@@ -1458,7 +1465,7 @@ double NESTcalc::GetDensity(double Kelvin,
     inGas = true;
     return density;  // in g/cm^3
   }
-
+  inGas = false;
   return 2.9970938084691329E+02 * exp(-8.2598864714323525E-02 * Kelvin) -
          1.8801286589442915E+06 * exp(-pow((Kelvin - 4.0820251276172212E+02) /
                                                2.7863170223154846E+01,
@@ -1727,24 +1734,24 @@ double NESTcalc::CalcElectronLET(double E) {
   return LET;
 }
 
-NESTcalc::Wvalue NESTcalc::WorkFunction(double density) { 
-  double xi_se = 9./(1.+pow(density/2.,2.));
+NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
+  
   double alpha = 0.067366 + density * 0.039693;
+  /*double xi_se = 9./(1.+pow(density/2.,2.));
   double I_ion = 9.+(12.13-9.)/(1.+pow(density/2.953,65.));
   double I_exc = I_ion / 1.46;
   double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
-    +xi_se/(1.+alpha);
-  double eDensity = (density/fdetector->get_molarMass())*NEST_AVO*ATOM_NUM;
-  Wq_eV = 20.7 - 1.01e-23 * eDensity;
-
-  
+  +xi_se/(1.+alpha);*/
+  double eDensity = ( density / MolarMass ) * NEST_AVO * ATOM_NUM;
+  double Wq_eV = 20.7 - 1.01e-23 * eDensity;
   
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together
+  
 }
 
 double NESTcalc::NexONi(double energy, double density)
 {
-  Wvalue wvalue = WorkFunction(density);
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double alpha = wvalue.alpha;
   return alpha * erf(0.05 * energy);
 }

@@ -123,30 +123,29 @@ class VDetector {
   } LCE;
   // S1 PDE custom fit for function of z
   // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
-  virtual double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) {
+  virtual double FitS1(double, double, double, LCE) {
     return 1.;
   }
   
   // Drift electric field as function of Z in mm
   // For example, use a high-order poly spline
-  virtual double FitEF(double xPos_mm, double yPos_mm, double zPos_mm) {
+  virtual double FitEF(double, double, double) {
     return 730.;
   }
 
   // S2 PDE custom fit for function of r
   // s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
-  virtual double FitS2(double xPos_mm, double yPos_mm, LCE map) { return 1.; }
+  virtual double FitS2(double, double, LCE) { return 1.; }
 
-  virtual std::vector<double> FitTBA(double xPos_mm, double yPos_mm,
-                                     double zPos_mm) {
+  virtual std::vector<double> FitTBA(double, double, double) {
     std::vector<double> TopBotAsym;
     return TopBotAsym;
   }
 
-  virtual double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) {
+  virtual double OptTrans(double, double, double) {
     return 0.;
   }
-  virtual std::vector<double> SinglePEWaveForm(double area, double t0) {
+  virtual std::vector<double> SinglePEWaveForm(double, double) {
     std::vector<double> PEperBin;
     return PEperBin;
   }

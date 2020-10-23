@@ -41,6 +41,8 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
 				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
                                      bool do_times /*=true*/) {
+
+  if ( density < 1. ) fdetector->set_inGas(true);
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
   result.quanta = GetQuanta(result.yields, density, FreeParam);
@@ -50,6 +52,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
   else
     result.photon_times = photonstream(result.quanta.photons, 0.0);
   return result;
+
 }
 
 double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,

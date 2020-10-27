@@ -32,7 +32,7 @@
 
 class TestSpectra {
  public:
-  TestSpectra(){};  // private so that it cannot be manually called
+  TestSpectra()= default;;  // private so that it cannot be manually called
 
   struct WIMP_spectrum_prep {
     double base[100] = {1.};

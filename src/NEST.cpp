@@ -1900,7 +1900,7 @@ const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
 //Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
 //all of the size accounting is done nicely downstream without having to pass container
 //sizes around. Returns cm^2/s
-const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
+std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
 {
   std::vector<std::pair<double,double> > output;
   const int nPts = 25;

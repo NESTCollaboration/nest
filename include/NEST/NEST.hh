@@ -298,7 +298,7 @@ class NESTcalc {
 
 
   //Access the diffusion coefficient for transverse diffusion in liquid
-  double GetDiffTran_Liquid(double dfield, bool highFieldModel=false, double T=175.);
+  static double GetDiffTran_Liquid(double dfield, bool highFieldModel=false, double T=175.);
   //Access the diffusion coefficient for longitudinal diffusion in liquid
   static double GetDiffLong_Liquid(double dfield, bool highFieldModel=false, double T=175.);
   //Function helpful for interpolation of the new diffusion coefficient model (Boyle)

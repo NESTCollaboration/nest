@@ -151,7 +151,7 @@ class NESTcalc {
  private:
   ofstream pulseFile;
   static long double Factorial(double x);
-  double nCr(double n, double r);
+  static double nCr(double n, double r);
 
  public:
   NESTcalc(const NESTcalc&) = delete;

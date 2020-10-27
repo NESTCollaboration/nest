@@ -1,4 +1,5 @@
 
+#include <exception>
 #include "NEST.hh"
 
 #define InfraredER 1.35
@@ -177,8 +178,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   int Nq_actual, Ne, Nph, Ni, Nex;
   
   if ( FreeParam.size() < 6 ) {
-    cerr << "\nERROR: You need a minimum of 6 free parameters for the resolution model.\n";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("\nERROR: You need a minimum of 6 free parameters for the resolution model.\n");
   }
   
   double excitonRatio = yields.ExcitonRatio;
@@ -313,8 +313,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   if (Nph < Nex) Nph = Nex;
 
   if ((Nph + Ne) != (Nex + Ni)) {
-    cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("\nERROR: Quanta not conserved. Tell Matthew Immediately!\n");
   }
   
   if ( fdetector->get_extraPhot() ) {
@@ -405,8 +404,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
 
   if ( NuisParam.size() < 12 )
   {
-    cerr << "\nERROR: You need a minimum of 12 nuisance parameters for the mean yields.\n";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("\nERROR: You need a minimum of 12 nuisance parameters for the mean yields.\n");
   }
   if ( energy > 330. )
     cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of about 300 keV.\n";
@@ -436,8 +434,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   if ( Nex <= 0. ) cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy (OR, for LOW) NR, or are beyond it, at " << energy << " keV." << endl;
   if ( fabs(Nex + Ni -Nq) > 2. * PHE_MIN )
   {
-    cerr << "\nERROR: Quanta not conserved. Tell Matthew Immediately!\n";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("\nERROR: Quanta not conserved. Tell Matthew Immediately!\n");
   }
   double NexONi = Nex / Ni;
   
@@ -673,7 +670,10 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
     case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
               // statement. Same intrinsic yields, but different energy spectra
               // (TestSpectra)
-        return GetYieldNR(energy, density, dfield, massNum,NuisParam);
+      try {
+	return GetYieldNR(energy, density, dfield, massNum,NuisParam);
+      }
+      catch ( exception& e ) { exit(EXIT_FAILURE); }
 	//return GetYieldNROld ( energy, 1 );
       break;
     case ion:
@@ -1338,8 +1338,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
       fdetector
           ->get_TopDrift();  // EL gap in mm -> cm, affecting S2 size linearly
   if (gasGap <= 0. && E_liq > 0.) {
-    cerr << "\tERR: The gas gap in the S2 calculation broke!!!!" << endl;
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("\tERR: The gas gap in the S2 calculation broke!!!!");
   }
 
   // Calculate EL yield based on gas gap, extraction field, and pressure
@@ -1491,8 +1490,13 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField){
 }
 
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas){
+  
   if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
-  else return GetDriftVelocity_Liquid(Kelvin, Density, eField);
+  else {
+    try { return GetDriftVelocity_Liquid ( Kelvin, Density, eField ); }
+    catch ( exception& e ) { return 0; }
+  } // handling any possible exception here by returning 0 drift speed
+  
 }
 
 double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
@@ -1549,8 +1553,7 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
   else if (Kelvin >= Temperatures[9] && Kelvin <= Temperatures[10])
     i = 9;
   else {
-    cerr << "\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n";
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("\nERROR: TEMPERATURE OUT OF RANGE (100-230 K)\n");
   }
 
   j = i + 1;

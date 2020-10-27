@@ -781,7 +781,8 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
 	}
 	//FreeParam.clear();
 	//FreeParam = { 1.00, 1.00, 0.100, 0.50, 0.19, 2.25 };
-        quanta = n.GetQuanta(yields, rho, FreeParam);
+        try { quanta = n.GetQuanta(yields, rho, FreeParam); }
+	catch ( exception& e ) { return 1; }
       }
       else {
         yields.PhotonYield = 0.;
@@ -821,9 +822,11 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
 	      vD, vD_middle, type_num, j, field,
 	      keV, useTiming, verbosity, wf_time, wf_amp);
     if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
-    vector<double> scint2 =
+    vector<double> scint2;
+    try { scint2 =
       n.GetS2(quanta.electrons, truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2], driftTime, vD, j, field,
-	      useTiming, verbosity, wf_time, wf_amp, g2_params);
+	      useTiming, verbosity, wf_time, wf_amp, g2_params); }
+    catch ( exception& e ) { return 1; }
   NEW_RANGES:
     if ( usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1 )
       signal1.push_back(scint[3]);

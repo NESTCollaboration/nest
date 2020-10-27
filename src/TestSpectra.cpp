@@ -310,8 +310,8 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
       zeta = 0.;
       break;
     default:
-      cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
-      exit(EXIT_FAILURE);
+      throw std::runtime_error("\tThe velocity integral in the WIMP generator broke!!!");
+      break;
   }
 
   double a = 0.52;                           // in fm
@@ -386,15 +386,11 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
       ;  // spectrum.integral+=spectrum.base[i]/spectrum.exponent[i]*(exp(-spectrum.exponent[i]*x1)-exp(-spectrum.exponent[i]*x2));
     else {
       if ( EnergySpec[i+1] > 10. ) { //i.e. the calculation stopped before event rate was low
-        cerr << "ERROR: WIMP E_step is too small (or large)! Increase(decrease) it slightly to avoid noise in the calculation." << endl;
-        exit(EXIT_FAILURE); 
+        throw std::runtime_error("ERROR: WIMP E_step is too small (or large)! Increase(decrease) it slightly to avoid noise in the calculation.");
       }
       spectrum.xMax = double(i - 1) / divisor;
       if (spectrum.xMax <= 0.0) {
-        cerr << "ERROR: The maximum possible WIMP recoil is not +-ive, which "
-                "usually means your E_step is too small (OR it is too large)."
-             << endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("ERROR: The maximum possible WIMP recoil is not +-ive, which usually means your E_step is too small (OR it is too large).");
       }
       break;
     }

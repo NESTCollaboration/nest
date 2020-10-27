@@ -38,8 +38,8 @@ long NESTcalc::BinomFluct(long N0, double prob) {
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      double density, double dfield, double A,
                                      double Z,
-                                     vector<double> NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-				     vector<double> FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
+                                     const vector<double>& NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+				     const vector<double>& FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
                                      bool do_times /*=true*/) {
 
   if ( density < 1. ) fdetector->set_inGas(true);
@@ -106,7 +106,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
 }
 
 // in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
-photonstream NESTcalc::AddPhotonTransportTime(photonstream emitted_times,
+photonstream NESTcalc::AddPhotonTransportTime(const photonstream& emitted_times,
                                               double x, double y, double z) {
   photonstream return_photons;
   for (auto t : emitted_times) {
@@ -131,7 +131,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
   return return_photons;
 }
 
-double NESTcalc::RecombOmegaNR(double elecFrac,vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/)
+double NESTcalc::RecombOmegaNR(double elecFrac,const vector<double>& FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/)
 {
   double omega = FreeParam[2]*exp(-0.5*pow(elecFrac-FreeParam[3],2.)/(FreeParam[4]*FreeParam[4]));
   if ( omega < 0. )
@@ -170,8 +170,8 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 }
 
 
-QuantaResult NESTcalc::GetQuanta(YieldResult yields, double density,
-				 vector<double> FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
+QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
+				 const vector<double>& FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
   QuantaResult result;
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -399,7 +399,8 @@ YieldResult NESTcalc::GetYieldNROld ( double energy, int option ) { // possible 
   
 }
 
-YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, double massNum, vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
+YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, double massNum,
+				 const vector<double>& NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
 {
 
   if ( NuisParam.size() < 12 )
@@ -454,8 +455,11 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   return YieldResultValidity(result,energy,Wq_eV);  // everything needed to calculate fluctuations
 }
 
-YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum, vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
-{ //simply uses the original Lindhard model, but as cited by Hitachi in: https://indico.cern.ch/event/573069/sessions/230063/attachments/1439101/2214448/Hitachi_XeSAT2017_DM.pdf
+YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum,
+				  const vector<double>& NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
+{ //simply uses the original Lindhard model, but as cited by Hitachi in:
+  //https://indico.cern.ch/event/573069/sessions/230063/attachments/1439101/2214448/Hitachi_XeSAT2017_DM.pdf
+
   double A1 = massNum, A2 = RandomGen::rndm()->SelectRanXeAtom();
   double Z1 = atomNum, Z2 = ATOM_NUM;
   double Z_mean = pow(pow(Z1, (2. / 3.)) + pow(Z2, (2. / 3.)), 1.5);
@@ -656,9 +660,8 @@ YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfi
   
 }
 
-YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
-                                double density, double dfield, double massNum,
-                                double atomNum, vector<double> NuisParam
+YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double density, double dfield, double massNum,
+                                double atomNum, const vector<double>& NuisParam
 				/*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
   switch (species) {
     case NR:
@@ -720,7 +723,7 @@ NESTcalc::~NESTcalc() {
   if (pulseFile) pulseFile.close();
 }
 
-vector<double> NESTcalc::GetS1(QuantaResult quanta, double truthPosX, double truthPosY, double truthPosZ,
+vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, double truthPosY, double truthPosZ,
                                double smearPosX, double smearPosY, double smearPosZ, double driftVelocity,
                                double dV_mid, INTERACTION_TYPE type_num,
                                long evtNum, double dfield, double energy,
@@ -1020,7 +1023,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
                                double dfield, int useTiming, bool outputTiming,
                                vector<long int>& wf_time,
                                vector<double>& wf_amp,
-                               vector<double>& g2_params) {
+                               const vector<double>& g2_params) {
   double truthPos[3] = { truthPosX, truthPosY, truthPosZ }; double smearPos[3] = { smearPosX, smearPosY, smearPosZ };
   double elYield = g2_params[0];
   double ExtEff = g2_params[1];
@@ -1412,7 +1415,7 @@ double NESTcalc::nCr(double n, double r) {
 
 vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
                                   double driftSpeed, double dS_mid,
-                                  vector<double> oldScint) {
+                                  const vector<double>& oldScint) {
   vector<double> newSpike(2);
 
   if (oldScint[7] > SPIKES_MAXM) {
@@ -1810,7 +1813,7 @@ double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel, double K
 
 
 //Simple function for interpolating
-double NESTcalc::interpolateFunction(const std::vector<std::pair<double,double> > func, double x, bool isLogLog )
+double NESTcalc::interpolateFunction(const std::vector<std::pair<double,double> >& func, double x, bool isLogLog )
 {
   //Linear interpolation
   if( !isLogLog ){

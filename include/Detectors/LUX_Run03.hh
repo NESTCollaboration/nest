@@ -20,7 +20,7 @@ public:
     // Call the initialization of all the parameters
     Initialization();
   };
-  virtual ~DetectorExample_LUX_RUN03() {};
+  ~DetectorExample_LUX_RUN03() override = default;;
   
   // Do here the initialization of all the parameters that are not varying as a function of time
   virtual void Initialization() {

@@ -304,7 +304,7 @@ vector<double> signal1, signal2, signalE, vTable;
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD,
     vD_middle = 0., atomNum = 0, keVee = 0.0;
   double massNum = detector->get_molarMass();
-  YieldResult yieldsMax; //for warnings about S1 range
+  YieldResult yieldsMax{}; //for warnings about S1 range
 
   if (!no_seed) {
     if (seed == -1) {

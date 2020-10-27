@@ -1222,5 +1222,4 @@ void GetEnergyRes(vector<double> Es) {
   energies[1] = sqrt(energies[1]);
 
   energies[2] = numerator / double(numPts);
-  return;
 }

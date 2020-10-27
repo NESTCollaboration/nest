@@ -306,7 +306,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
 
   if (!no_seed) {
     if (seed == -1) {
-      RandomGen::rndm()->SetSeed(time(NULL));
+      RandomGen::rndm()->SetSeed(time(nullptr));
     }
 
     else {

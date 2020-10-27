@@ -627,7 +627,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, const string& type,
 	if (type_num == WIMP && timeStamp > (tZero+tStep))
 	  fprintf(stdout,
 		  "dayNum\t");
-	if ( eMax == eMin && numBins == 1 && MCtruthE == true ) {
+	if ( eMax == eMin && numBins == 1 && MCtruthE) {
 	  MCtruthE = false;
 	  fprintf(stderr,"Simulating a mono-E peak; setting MCtruthE false.\n");
 	}

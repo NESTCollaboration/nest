@@ -490,32 +490,32 @@ vector<double> signal1, signal2, signalE, vTable;
       } else {
         switch(type_num) {
           case CH3T:
-            keV = spec.CH3T_spectrum(eMin, eMax);
+            keV = TestSpectra::CH3T_spectrum(eMin, eMax);
             break;
           case C14:
-            keV = spec.C14_spectrum(eMin, eMax);
+            keV = TestSpectra::C14_spectrum(eMin, eMax);
             break;
           case B8:  // normalize this to ~3500 / 10-ton / year, for E-threshold of
             // 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
-            keV = spec.B8_spectrum(eMin, eMax);
+            keV = TestSpectra::B8_spectrum(eMin, eMax);
             break;
           case AmBe:  // for ZEPLIN-III FSR from HA (Pal '98)
-            keV = spec.AmBe_spectrum(eMin, eMax);
+            keV = TestSpectra::AmBe_spectrum(eMin, eMax);
             break;
           case Cf:
-            keV = spec.Cf_spectrum(eMin, eMax);
+            keV = TestSpectra::Cf_spectrum(eMin, eMax);
             break;
           case DD:
-            keV = spec.DD_spectrum(eMin, eMax);
+            keV = TestSpectra::DD_spectrum(eMin, eMax);
             break;
           case WIMP:
-            keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, eMin, timeStamp);
+            keV = TestSpectra::WIMP_spectrum(spec.wimp_spectrum_prep, eMin, timeStamp);
             break;
           case ppSolar:
-            keV = spec.ppSolar_spectrum(eMin, eMax);
+            keV = TestSpectra::ppSolar_spectrum(eMin, eMax);
             break;
           case atmNu:
-            keV = spec.atmNu_spectrum(eMin, eMax);
+            keV = TestSpectra::atmNu_spectrum(eMin, eMax);
             break;
           default:
             if(eMin < 0.) return 1;

@@ -670,10 +670,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
     case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
               // statement. Same intrinsic yields, but different energy spectra
               // (TestSpectra)
-      try {
+
 	return GetYieldNR(energy, density, dfield, massNum,NuisParam);
-      }
-      catch ( exception& e ) { cerr << e.what() << endl; exit(EXIT_FAILURE); }
+
 	//return GetYieldNROld ( energy, 1 );
       break;
     case ion:
@@ -1493,8 +1492,7 @@ double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, 
   
   if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
   else {
-    try { return GetDriftVelocity_Liquid ( Kelvin, Density, eField ); }
-    catch ( exception& e ) { cerr << e.what() << endl; return 0; }
+    return GetDriftVelocity_Liquid ( Kelvin, Density, eField );
   } // handling any possible exception here by returning 0 drift speed
   
 }

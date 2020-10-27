@@ -65,9 +65,9 @@
 #include "RandomGen.hh"
 #include "VDetector.hh"
 
-#include <assert.h>
-#include <float.h>
-#include <math.h>
+#include <cassert>
+#include <cfloat>
+#include <cmath>
 #include <algorithm>
 #include <fstream>
 #include <iostream>

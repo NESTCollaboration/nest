@@ -1860,7 +1860,7 @@ double NESTcalc::interpolateFunction(const std::vector<std::pair<double,double> 
 //Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
 //all of the size accounting is done nicely downstream without having to pass container
 //sizes around.
-const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
+std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
 {
   std::vector<std::pair<double,double> > output;
   const int nPts = 25;

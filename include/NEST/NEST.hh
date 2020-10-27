@@ -304,7 +304,7 @@ class NESTcalc {
   //Function helpful for interpolation of the new diffusion coefficient model (Boyle)
   double interpolateFunction(const std::vector<std::pair<double,double> >& func, double x, bool isLogLog );
   //Read in the Boyle model data for DT
-  const std::vector<std::pair<double,double> > GetBoyleModelDT();
+  std::vector<std::pair<double,double> > GetBoyleModelDT();
   //Read in the Boyle model data for DL
   static std::vector<std::pair<double,double> > GetBoyleModelDL();
 };

@@ -311,7 +311,6 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
       break;
     default:
       throw std::runtime_error("\tThe velocity integral in the WIMP generator broke!!!");
-      break;
   }
 
   double a = 0.52;                           // in fm

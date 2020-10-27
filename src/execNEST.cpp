@@ -484,7 +484,6 @@ vector<double> signal1, signal2, signalE, vTable;
 
     try {
 
-
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
       //for E-recon when you've changed g1,g2-related stuff, redo line 341+
       if((eMin == eMax && eMin >= 0. && eMax > 0.) || type_num == Kr83m) {
@@ -1116,7 +1115,6 @@ vector<double> signal1, signal2, signalE, vTable;
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
                                bool resol, int nFold) {
-  
   if ( numBins > NUMBINS_MAX ) {
     cerr << "ERROR: Too many bins. Decrease numBins (analysis.hh) or increase NUMBINS_MAX (TestSpectra.hh)" << endl;
     exit ( EXIT_FAILURE );

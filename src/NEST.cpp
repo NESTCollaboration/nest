@@ -173,7 +173,7 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 
 QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
 				 const vector<double>& FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
-  QuantaResult result;
+  QuantaResult result{};
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
   
@@ -353,7 +353,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
           (m6 - m5) / (1. + pow(energy / m7, m8));
   double Ly = Nq / energy - Qy;
 
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Ly * energy;
   result.ElectronYield = Qy * energy;
   result.ExcitonRatio = NexONi(energy,density);
@@ -388,7 +388,7 @@ YieldResult NESTcalc::GetYieldNROld ( double energy, int option ) { // possible 
     Nph = 0.81704 + 3.8584 * pow ( energy, 1.30180 ); // ditto
   }
   
-  YieldResult result; if(Nph<0.)Nph=0.; if(Ne<0.)Ne=0.;
+  YieldResult result{}; if(Nph<0.)Nph=0.; if(Ne<0.)Ne=0.;
   result.PhotonYield = Nph; result.ElectronYield = Ne;
   result.ExcitonRatio = 1.;
   result.Lindhard = ( ( Nph + Ne ) / energy ) * W_DEFAULT * 1e-3;
@@ -442,7 +442,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Wq_eV = wvalue.Wq_eV;
   double L = (Nq / energy) * Wq_eV * 1e-3;
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi;
@@ -500,7 +500,7 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   if ( A1 == 206. && Z1 == 82. )
     Ne = RandomGen::rndm()->rand_gauss(Ne/ChargeLoss,2.*sqrt(Ne/(ChargeLoss*ChargeLoss))); // to compensate for accidentally including Q-loss in fits to Xed data
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi;
@@ -610,7 +610,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   double Nph = Ly * energy;
 
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi(energy,density);
@@ -646,7 +646,7 @@ YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfi
   double Nph = Ly * energy;
   double lux_NexONi = alpha * erf(0.05 * energy);
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = lux_NexONi;
@@ -1130,7 +1130,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       double KE = 0.5 * ELEC_MASS * driftVelocity_gas * driftVelocity_gas *
                   1e6 / 1.602e-16;
       double origin = fdetector->get_TopDrift() + gasGap / 2.;
-      QuantaResult quanta;
+      QuantaResult quanta{};
       quanta.photons = int(SE);
       quanta.electrons = 0;
       quanta.ions = 0;

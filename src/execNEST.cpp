@@ -335,7 +335,7 @@ vector<double> signal1, signal2, signalE, vTable;
       return 1;
     }
     type_num = WIMP;
-    spec.wimp_spectrum_prep = spec.WIMP_prep_spectrum(eMin, E_step, dayNumber);
+    spec.wimp_spectrum_prep = TestSpectra::WIMP_prep_spectrum(eMin, E_step, dayNumber);
     numEvts = RandomGen::rndm()->poisson_draw(spec.wimp_spectrum_prep.integral * //here eMax is cross-section
                                               1.0 * double(numEvts) * eMax / 1e-36);
   } else if (type == "B8" || type == "Boron8" || type == "8Boron" ||

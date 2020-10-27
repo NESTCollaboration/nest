@@ -65,9 +65,9 @@
 #include "RandomGen.hh"
 #include "VDetector.hh"
 
-#include <assert.h>
-#include <float.h>
-#include <math.h>
+#include <cassert>
+#include <cfloat>
+#include <cmath>
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -150,16 +150,16 @@ class NESTcalc {
 
  private:
   ofstream pulseFile;
-  long double Factorial(double x);
-  double nCr(double n, double r);
+  static long double Factorial(double x);
+  static double nCr(double n, double r);
 
  public:
   NESTcalc(const NESTcalc&) = delete;
   NESTcalc& operator=(const NESTcalc&) = delete;
-  NESTcalc(VDetector* detector);
+  explicit NESTcalc(VDetector* detector);
   virtual ~NESTcalc();
 
-  long BinomFluct(long, double);
+  static long BinomFluct(long, double);
   
   static const std::vector<double> default_NuisParam; /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
   static const std::vector<double> default_FreeParam; /* = {1.,1.,0.1,0.5,0.19,2.25} */
@@ -298,15 +298,15 @@ class NESTcalc {
 
 
   //Access the diffusion coefficient for transverse diffusion in liquid
-  double GetDiffTran_Liquid(double dfield, bool highFieldModel=false, double T=175.);
+  static double GetDiffTran_Liquid(double dfield, bool highFieldModel=false, double T=175.);
   //Access the diffusion coefficient for longitudinal diffusion in liquid
-  double GetDiffLong_Liquid(double dfield, bool highFieldModel=false, double T=175.);
+  static double GetDiffLong_Liquid(double dfield, bool highFieldModel=false, double T=175.);
   //Function helpful for interpolation of the new diffusion coefficient model (Boyle)
-  double interpolateFunction(const std::vector<std::pair<double,double> >& func, double x, bool isLogLog );
+  static double interpolateFunction(const std::vector<std::pair<double,double> >& func, double x, bool isLogLog );
   //Read in the Boyle model data for DT
-  const std::vector<std::pair<double,double> > GetBoyleModelDT();
+  static std::vector<std::pair<double,double> > GetBoyleModelDT();
   //Read in the Boyle model data for DL
-  const std::vector<std::pair<double,double> > GetBoyleModelDL();  
+  static std::vector<std::pair<double,double> > GetBoyleModelDL();
 };
 }
 

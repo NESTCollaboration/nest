@@ -8,13 +8,11 @@
 // PLEASE DEFINE YOUR OWN DETECTOR (see DetectorExample_XENON10.hh).
 // *********************************************************************
 
-#include <math.h>
-
 #include "VDetector.hh"
 
 VDetector::VDetector() { Initialization(); }
 
-VDetector::~VDetector() {}
+VDetector::~VDetector() = default;
 
 void VDetector::Initialization() {
 }

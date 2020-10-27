@@ -21,48 +21,48 @@ class VDetector {
 
   // "Get Functions"
   // Primary Scintillation (S1) parameters
-  const double get_g1() { return g1; }
-  const double get_sPEres() { return sPEres; }
-  const double get_sPEthr() { return sPEthr; }
-  const double get_sPEeff() { return sPEeff; }
+  double get_g1() const { return g1; }
+  double get_sPEres() const { return sPEres; }
+  double get_sPEthr() const { return sPEthr; }
+  double get_sPEeff() const { return sPEeff; }
   const double* get_noiseB() { return &noiseB[0]; }
   const double* get_noiseL() { return &noiseL[0]; }
-  const double get_P_dphe() { return P_dphe; }
+  double get_P_dphe() const { return P_dphe; }
   
-  const bool get_extraPhot(){ return extraPhot; }
-  const double get_coinWind() { return coinWind; }
-  const int get_coinLevel() { return coinLevel; }
-  const int get_numPMTs() { return numPMTs; }
+  bool get_extraPhot() const{ return extraPhot; }
+  double get_coinWind() const { return coinWind; }
+  int get_coinLevel() const { return coinLevel; }
+  int get_numPMTs() const { return numPMTs; }
 
   // Ionization and Secondary Scintillation (S2) parameters
-  const double get_g1_gas() { return g1_gas; }
-  const double get_s2Fano() { return s2Fano; }
-  const double get_s2_thr() { return s2_thr; }
-  const double get_E_gas() { return E_gas; }
-  const double get_eLife_us() { return eLife_us; }
+  double get_g1_gas() const { return g1_gas; }
+  double get_s2Fano() const { return s2Fano; }
+  double get_s2_thr() const { return s2_thr; }
+  double get_E_gas() const { return E_gas; }
+  double get_eLife_us() const { return eLife_us; }
 
   // Thermodynamic Properties
-  const bool get_inGas() { return inGas; }
-  const double get_T_Kelvin() { return T_Kelvin; }
-  const double get_p_bar() { return p_bar; }
+  bool get_inGas() const { return inGas; }
+  double get_T_Kelvin() const { return T_Kelvin; }
+  double get_p_bar() const { return p_bar; }
 
   // Data Analysis Parameters and Geometry
-  const double get_dtCntr() { return dtCntr; }
-  const double get_dt_min() { return dt_min; }
-  const double get_dt_max() { return dt_max; }
-  const double get_radius() { return radius; }
-  const double get_radmax() { return radmax; }
-  const double get_TopDrift() { return TopDrift; }
-  const double get_anode() { return anode; }
-  const double get_cathode() { return cathode; }
-  const double get_gate() { return gate; }
+  double get_dtCntr() const { return dtCntr; }
+  double get_dt_min() const { return dt_min; }
+  double get_dt_max() const { return dt_max; }
+  double get_radius() const { return radius; }
+  double get_radmax() const { return radmax; }
+  double get_TopDrift() const { return TopDrift; }
+  double get_anode() const { return anode; }
+  double get_cathode() const { return cathode; }
+  double get_gate() const { return gate; }
 
   // 2-D (X & Y) Position Reconstruction
-  const double get_PosResExp() { return PosResExp; }
-  const double get_PosResBase() { return PosResBase; }
+  double get_PosResExp() const { return PosResExp; }
+  double get_PosResBase() const { return PosResBase; }
   
   // Xenon properties
-  const double get_molarMass() {return molarMass;}
+  double get_molarMass() const {return molarMass;}
 
   // "Set Functions"
   // Primary Scintillation (S1) parameters

@@ -28,11 +28,11 @@ class DetectorExample_XENON10 : public VDetector {
     // Call the initialisation of all the parameters
     Initialization();
   };
-  virtual ~DetectorExample_XENON10(){};
+  ~DetectorExample_XENON10() override= default;;
 
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
-  virtual void Initialization() {
+  void Initialization() override {
     // Primary Scintillation (S1) parameters
     g1 = 0.073;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     sPEres = 0.58;   // single phe resolution (Gaussian assumed)
@@ -93,25 +93,25 @@ class DetectorExample_XENON10 : public VDetector {
 
   // S1 PDE custom fit for function of z
   // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
-  virtual double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) {
+  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
     return 1.;  // unitless, 1.000 at detector center
   }
 
   // Drift electric field as function of Z in mm
   // For example, use a high-order poly spline
-  virtual double FitEF(double xPos_mm, double yPos_mm,
-                       double zPos_mm) {  // in V/cm
+  double FitEF(double xPos_mm, double yPos_mm,
+                       double zPos_mm) override {  // in V/cm
     return 730.; // NOTE: if just const don't use -1 field option at run-time
   }
 
   // S2 PDE custom fit for function of r
   // s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
-  virtual double FitS2(double xPos_mm, double yPos_mm, LCE map) {
+  double FitS2(double xPos_mm, double yPos_mm, LCE map) override {
     return 1.;  // unitless, 1.000 at detector center
   }
 
-  virtual vector<double> FitTBA(double xPos_mm, double yPos_mm,
-                                double zPos_mm) {
+  vector<double> FitTBA(double xPos_mm, double yPos_mm,
+                                double zPos_mm) override {
     vector<double> BotTotRat(2);
 
     BotTotRat[0] = 0.6;  // S1 bottom-to-total ratio
@@ -121,7 +121,7 @@ class DetectorExample_XENON10 : public VDetector {
     return BotTotRat;
   }
 
-  virtual double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) {
+  double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
     double phoTravT, approxCenter = (TopDrift + cathode) / 2.,
                      relativeZ = zPos_mm - approxCenter;
 
@@ -166,7 +166,7 @@ class DetectorExample_XENON10 : public VDetector {
                       // technically but tried to make general
   }
 
-  virtual vector<double> SinglePEWaveForm(double area, double t0) {
+  vector<double> SinglePEWaveForm(double area, double t0) override {
     vector<double> PEperBin;
 
     double threshold = PULSEHEIGHT;  // photo-electrons

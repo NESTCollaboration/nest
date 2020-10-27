@@ -32,7 +32,7 @@
 
 class TestSpectra {
  public:
-  TestSpectra(){};  // private so that it cannot be manually called
+  TestSpectra()= default;;  // private so that it cannot be manually called
 
   struct WIMP_spectrum_prep {
     double base[100] = {1.};
@@ -43,17 +43,17 @@ class TestSpectra {
   };
   WIMP_spectrum_prep wimp_spectrum_prep;
 
-  double CH3T_spectrum(double emin, double emax);
-  double C14_spectrum(double emin, double emax);
-  double B8_spectrum(double emin, double emax);
-  double AmBe_spectrum(double emin, double emax);
-  double Cf_spectrum(double emin, double emax);
-  double DD_spectrum(double emin, double emax);
-  double ppSolar_spectrum(double emin, double emax);
-  double atmNu_spectrum(double emin, double emax);
-  double WIMP_dRate(double ER, double mWimp, double day);
-  WIMP_spectrum_prep WIMP_prep_spectrum(double mass, double eStep, double day);
-  double WIMP_spectrum(WIMP_spectrum_prep wprep, double mass, double day);
+  static double CH3T_spectrum(double emin, double emax);
+  static double C14_spectrum(double emin, double emax);
+  static double B8_spectrum(double emin, double emax);
+  static double AmBe_spectrum(double emin, double emax);
+  static double Cf_spectrum(double emin, double emax);
+  static double DD_spectrum(double emin, double emax);
+  static double ppSolar_spectrum(double emin, double emax);
+  static double atmNu_spectrum(double emin, double emax);
+  static double WIMP_dRate(double ER, double mWimp, double day);
+  static WIMP_spectrum_prep WIMP_prep_spectrum(double mass, double eStep, double day);
+  static double WIMP_spectrum(WIMP_spectrum_prep wprep, double mass, double day);
   double ZeplinBackground();  // an example of how to do a better (non-flat) ER
                               // BG spectrum for a WS, from Henrique Araujo
 };

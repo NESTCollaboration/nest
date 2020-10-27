@@ -32,7 +32,7 @@ class RandomGen {
   //  std::ranlux24 rng;
   xoroshiro128plus64 rng;
 
-  RandomGen(){};                // private so that it cannot be manually called
+  RandomGen()= default;                // private so that it cannot be manually called
   RandomGen(RandomGen const&);  // copy constructor is private
   void operator=(RandomGen const&);  // assignment operator is private
   static RandomGen* m_pInstance;     // private class pointer instance

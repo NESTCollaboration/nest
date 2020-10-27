@@ -173,7 +173,7 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 
 QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
 				 const vector<double>& FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
-  QuantaResult result;
+  QuantaResult result{};
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
   
@@ -353,7 +353,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
           (m6 - m5) / (1. + pow(energy / m7, m8));
   double Ly = Nq / energy - Qy;
 
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Ly * energy;
   result.ElectronYield = Qy * energy;
   result.ExcitonRatio = NexONi(energy,density);
@@ -388,7 +388,7 @@ YieldResult NESTcalc::GetYieldNROld ( double energy, int option ) { // possible 
     Nph = 0.81704 + 3.8584 * pow ( energy, 1.30180 ); // ditto
   }
   
-  YieldResult result; if(Nph<0.)Nph=0.; if(Ne<0.)Ne=0.;
+  YieldResult result{}; if(Nph<0.)Nph=0.; if(Ne<0.)Ne=0.;
   result.PhotonYield = Nph; result.ElectronYield = Ne;
   result.ExcitonRatio = 1.;
   result.Lindhard = ( ( Nph + Ne ) / energy ) * W_DEFAULT * 1e-3;
@@ -442,7 +442,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Wq_eV = wvalue.Wq_eV;
   double L = (Nq / energy) * Wq_eV * 1e-3;
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi;
@@ -500,7 +500,7 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   if ( A1 == 206. && Z1 == 82. )
     Ne = RandomGen::rndm()->rand_gauss(Ne/ChargeLoss,2.*sqrt(Ne/(ChargeLoss*ChargeLoss))); // to compensate for accidentally including Q-loss in fits to Xed data
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi;
@@ -566,7 +566,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     }
   }
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi(energy,density);
@@ -610,7 +610,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   double Nph = Ly * energy;
 
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi(energy,density);
@@ -646,7 +646,7 @@ YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfi
   double Nph = Ly * energy;
   double lux_NexONi = alpha * erf(0.05 * energy);
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = lux_NexONi;
@@ -670,10 +670,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
     case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
               // statement. Same intrinsic yields, but different energy spectra
               // (TestSpectra)
-      try {
+
 	return GetYieldNR(energy, density, dfield, massNum,NuisParam);
-      }
-      catch ( exception& e ) { cerr << e.what() << endl; exit(EXIT_FAILURE); }
+
 	//return GetYieldNROld ( energy, 1 );
       break;
     case ion:
@@ -1130,7 +1129,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       double KE = 0.5 * ELEC_MASS * driftVelocity_gas * driftVelocity_gas *
                   1e6 / 1.602e-16;
       double origin = fdetector->get_TopDrift() + gasGap / 2.;
-      QuantaResult quanta;
+      QuantaResult quanta{};
       quanta.photons = int(SE);
       quanta.electrons = 0;
       quanta.ions = 0;
@@ -1493,8 +1492,7 @@ double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, 
   
   if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
   else {
-    try { return GetDriftVelocity_Liquid ( Kelvin, Density, eField ); }
-    catch ( exception& e ) { cerr << e.what() << endl; return 0; }
+    return GetDriftVelocity_Liquid ( Kelvin, Density, eField );
   } // handling any possible exception here by returning 0 drift speed
   
 }
@@ -1860,7 +1858,7 @@ double NESTcalc::interpolateFunction(const std::vector<std::pair<double,double> 
 //Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
 //all of the size accounting is done nicely downstream without having to pass container
 //sizes around.
-const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
+std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
 {
   std::vector<std::pair<double,double> > output;
   const int nPts = 25;
@@ -1889,8 +1887,8 @@ const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
 			     {127948, 29.5377},
 			     {169785, 27.4412},
 			     {220053, 27.9686} };  
-  for( int iP = 0; iP < nPts; ++iP ){
-    std::pair<double,double> thePair(modelDT[iP][0],modelDT[iP][1]);
+  for(auto & iP : modelDT){
+    std::pair<double,double> thePair(iP[0],iP[1]);
     output.push_back(thePair);
   }
   return output;
@@ -1900,7 +1898,7 @@ const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
 //Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
 //all of the size accounting is done nicely downstream without having to pass container
 //sizes around. Returns cm^2/s
-const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
+std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
 {
   std::vector<std::pair<double,double> > output;
   const int nPts = 25;
@@ -1929,8 +1927,8 @@ const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
 			     {127948, 0.116139},
 			     {169785, 0.0957632},
 			     {220053, 0.0900259} };
-  for( int iP = 0; iP < nPts; ++iP ){
-    std::pair<double,double> thePair(modelDL[iP][0],modelDL[iP][1]);
+  for(auto & iP : modelDL){
+    std::pair<double,double> thePair(iP[0],iP[1]);
     output.push_back(thePair);
   }
   return output;

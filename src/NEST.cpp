@@ -1889,8 +1889,8 @@ const std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
 			     {127948, 29.5377},
 			     {169785, 27.4412},
 			     {220053, 27.9686} };  
-  for( int iP = 0; iP < nPts; ++iP ){
-    std::pair<double,double> thePair(modelDT[iP][0],modelDT[iP][1]);
+  for(auto & iP : modelDT){
+    std::pair<double,double> thePair(iP[0],iP[1]);
     output.push_back(thePair);
   }
   return output;

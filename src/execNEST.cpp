@@ -483,7 +483,6 @@ vector<double> signal1, signal2, signalE, vTable;
   for (unsigned long int j = 0; j < numEvts; j++) {
 
     try {
-
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
       //for E-recon when you've changed g1,g2-related stuff, redo line 341+
       if((eMin == eMax && eMin >= 0. && eMax > 0.) || type_num == Kr83m) {

@@ -432,7 +432,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, const string& type,
   }
   if (rho < 1.75) detector->set_inGas(true);
 
-  double Wq_eV = n.WorkFunction(rho,detector->get_molarMass()).Wq_eV;
+  double Wq_eV = NESTcalc::WorkFunction(rho,detector->get_molarMass()).Wq_eV;
   //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
   if ( detector->get_extraPhot() )
     Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO

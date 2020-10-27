@@ -156,10 +156,10 @@ class NESTcalc {
  public:
   NESTcalc(const NESTcalc&) = delete;
   NESTcalc& operator=(const NESTcalc&) = delete;
-  NESTcalc(VDetector* detector);
+  explicit NESTcalc(VDetector* detector);
   virtual ~NESTcalc();
 
-  long BinomFluct(long, double);
+  static long BinomFluct(long, double);
   
   static const std::vector<double> default_NuisParam; /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
   static const std::vector<double> default_FreeParam; /* = {1.,1.,0.1,0.5,0.19,2.25} */

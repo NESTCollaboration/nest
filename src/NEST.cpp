@@ -566,7 +566,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     }
   }
   
-  YieldResult result;
+  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = NexONi(energy,density);

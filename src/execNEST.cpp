@@ -33,7 +33,7 @@ bool BeenHere = false;
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  DetectorExample_LUX_RUN03* detector = new DetectorExample_LUX_RUN03();
+  auto* detector = new DetectorExample_LUX_RUN03();
 
   // Custom parameter modification functions
   // detector->ExampleFunction();

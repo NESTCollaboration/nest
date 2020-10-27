@@ -304,7 +304,7 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
   double massNum = detector->get_molarMass();
   YieldResult yieldsMax; //for warnings about S1 range
 
-  if (no_seed != true) {
+  if (!no_seed) {
     if (seed == -1) {
       RandomGen::rndm()->SetSeed(time(NULL));
     }

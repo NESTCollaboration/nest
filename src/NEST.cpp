@@ -1491,9 +1491,8 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField){
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas){
   
   if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
-  else {
+  else
     return GetDriftVelocity_Liquid ( Kelvin, Density, eField );
-  } // handling any possible exception here by returning 0 drift speed
   
 }
 

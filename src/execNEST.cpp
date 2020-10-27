@@ -204,7 +204,8 @@ int main(int argc, char** argv) {
   }
   
   auto exec = execNEST ( detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos, seed, no_seed, tZero );
-  if ( detector ) delete detector; return exec;
+  delete detector;
+  return exec;
   
 }
 

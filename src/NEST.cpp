@@ -278,7 +278,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   else { // LUX Skewness Model
     Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
     double Wq_eV = wvalue.Wq_eV;
-    double engy = Wq_eV * (yields.PhotonYield + yields.ElectronYield);
+    double engy = 1e-3 * Wq_eV * (yields.PhotonYield + yields.ElectronYield);
     double fld = yields.ElectricField;
     
     double alpha0 = 1.39;

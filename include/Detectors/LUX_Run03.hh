@@ -42,7 +42,7 @@ public:
     
     extraPhot =false; //default
     noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
-    noiseL[1]=5.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[1]=6.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     
     // Ionization and Secondary Scintillation (S2) parameters
     g1_gas = 0.1016; //0.1 in 1910.04211

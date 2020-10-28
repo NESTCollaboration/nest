@@ -185,7 +185,8 @@ if ( mode == 2 ) {
     ff = fitf->GetParameter(5);
     jj++;
     if ( jj > 10 ) {
-      throw std::runtime_error("ERR: The fit to the efficiency curve failed to converge to a good Chi2.");
+      cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
+      return EXIT_FAILURE;
     }
   }
   if ( fitf->GetChisquare() > 1.3 )

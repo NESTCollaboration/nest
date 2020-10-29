@@ -321,7 +321,7 @@ vector<double> signal1, signal2, signalE, vTable;
   if (eMax == -1. && eMin == 0.)
     eMax = hiEregime;  // the default energy max
   if (eMax == 0.) {
-    cerr << "ERROR: The maximum energy cannot be 0 keV!" << endl;
+    cerr << "ERROR: The maximum energy (or Kr time sep) cannot be 0 keV (or 0 ns)!" << endl;
     return 1;
   }
 
@@ -408,8 +408,9 @@ vector<double> signal1, signal2, signalE, vTable;
   
   double maxTimeSep = DBL_MAX;
   if (type_num == Kr83m) {
-    if ( (eMin == 9.4 || eMin == 32.1 || eMin == 41.5) && eMin != eMax) {
+    if ( (eMin == 9.4 || eMin == 32.1 || eMin == 41.5 || eMin == 41.55 || eMin == 41.6) && eMin != eMax ) {
       maxTimeSep = eMax;
+      if ( eMax <= 0. ) { cerr << "Max t sep must be +." << endl; return 1; }
     } else {
       cerr << "ERROR: For Kr83m, put E_min as 9.4, 32.1, or 41.5 keV "
               "and E_max as the max time-separation [ns] between the two decays "
@@ -462,19 +463,14 @@ vector<double> signal1, signal2, signalE, vTable;
       energyMaximum = 1. / fabs(eMax);
     else
       energyMaximum = eMax;
-    if (type_num == Kr83m)
-      yieldsMax = n.GetYields(NEST::beta, eMin, rho, centralField,
-                              double(massNum), double(atomNum),
-                              NuisParam);  // the reason for this: don't do the
-    // special Kr stuff when just
-    // checking max
+    if ( type_num == Kr83m )
+      yieldsMax = n.GetYields(Kr83m, eMin, rho, centralField, 400., double(atomNum), NuisParam);
     else
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum), NuisParam);
   }
-  if ((g1 * yieldsMax.PhotonYield) > (2. * maxS1) && eMin != eMax)
-    cerr
-        << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
+  if ( ( g1 * yieldsMax.PhotonYield ) > ( 2. * maxS1 ) && eMin != eMax && type_num != Kr83m )
+    cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   
   if ( type_num < 6 ) massNum = 0;
   if ( type_num == Kr83m ) massNum = maxTimeSep; 
@@ -632,7 +628,7 @@ vector<double> signal1, signal2, signalE, vTable;
           if(type_num == WIMP && timeStamp > (tZero + tStep))
             fprintf(stdout,
                     "dayNum\t");
-          if(eMax == eMin && numBins == 1 && MCtruthE) {
+          if ( (eMax == eMin || type_num == Kr83m) && numBins == 1 && MCtruthE ) {
             MCtruthE = false;
             fprintf(stderr, "Simulating a mono-E peak; setting MCtruthE false.\n");
           }
@@ -854,7 +850,7 @@ vector<double> signal1, signal2, signalE, vTable;
       else
         signal2.push_back(-999.);
 
-      if(eMin == eMax) {
+      if ( eMin == eMax || type_num == Kr83m ) {
         if((scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1) && j < 10)
           cerr << "WARNING: Some S1 pulse areas are greater than maxS1" << endl;
         if((scint2[5] > maxS2 || scint2[7] > maxS2) &&
@@ -997,9 +993,9 @@ vector<double> signal1, signal2, signalE, vTable;
         // other suggestions: minS1, minS2 (or s2_thr) for tighter cuts depending
         // on analysis.hh settings (think of as analysis v. trigger thresholds)
         // and using max's too, pinching both ends
-        if(type_num == Kr83m && eMin != 32.1)
+        if ( type_num == Kr83m && eMin != 32.1 && verbosity )
           printf("%.6f\t", yields.DeltaT_Scint);
-        if(type_num == WIMP && timeStamp > (tZero + tStep))
+        if ( type_num == WIMP && timeStamp > (tZero + tStep) && verbosity )
           printf("%.0f\t", timeStamp);
         if(seed < 0 && seed != -1) //for when you want means
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t", keV, field, driftTime, smearPos[0], smearPos[1],

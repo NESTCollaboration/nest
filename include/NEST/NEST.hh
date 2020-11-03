@@ -74,18 +74,18 @@
 #include <random>
 #include <vector>
 
-#define W_DEFAULT 13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35
-#define W_SCINT 8.5e-3  // the *max* possible energy of 1 scint phot, keV
+#define W_DEFAULT 13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35. 19.5 eV for LAr
+#define W_SCINT 8.5e-3  // the *max* possible energy of 1 scint phot, keV. Make this at least 10 eV for LAr
 #define NEST_AVO 6.0221409e+23
-#define ATOM_NUM 54.         // period to make float
+#define ATOM_NUM 54.         // period to make float. 18 for LAr
 
 #define PHE_MIN 1e-6         // area
 #define ELEC_MASS 9.109e-31  // kg
 #define FIELD_MIN 1.         // min elec field to make S2 (in V/cm)
-#define DENSITY 2.90         // g/cm^3, ref density for dependent effects
+#define DENSITY 2.90         // g/cm^3, ref density for dependent effects. ~1.4 for LAr
 
 #define EPS_GAS 1.00126  // poly-morphic: make negative to use LLNL instead of PIXeY's e- ext eff
-#define EPS_LIQ 1.85  // LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan McK.
+#define EPS_LIQ 1.85  // LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan M. LAr 1.325
 
 #define SAMPLE_SIZE 10  // nano-seconds
 #define PULSE_WIDTH 10  // nano-seconds
@@ -294,8 +294,7 @@ class NESTcalc {
   virtual double NexONi(double energy, double density);
   //calculate exciton/ion 
   VDetector* GetDetector() { return fdetector; }
-  void SetDetector(VDetector* detector) { fdetector = detector; }  
-
+  void SetDetector(VDetector* detector) { fdetector = detector; }
 
   //Access the diffusion coefficient for transverse diffusion in liquid
   static double GetDiffTran_Liquid(double dfield, bool highFieldModel=false, double T=175.);

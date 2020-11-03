@@ -158,6 +158,8 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 
 double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 {
+  if ( ATOM_NUM == 18. )
+    return 0.1; // conflicting reports of 0.107 (Doke) & 0.1115 (Thomas & Imel)
   double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
             0.0057042 *
             pow(density,
@@ -268,6 +270,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
 
   //set omega (non-binomial recombination fluctuations parameter) according to whether the Lindhard <1, i.e. this is an NR.
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
+  if ( ATOM_NUM == 18. ) omega = 0.0;
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   
@@ -579,36 +582,43 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
 YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 {
   Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+  double Qy, Nq;
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   
-  double QyLvllowE =
-          1e3 / Wq_eV + 6.5 * (1. - 1. / (1. + pow(dfield / 47.408, 1.9851)));
-  double HiFieldQy =
-          1. + 0.4607 / pow(1. + pow(dfield / 621.74, -2.2717), 53.502);
-  double QyLvlmedE =
-          32.988 -
-          32.988 /
-          (1. + pow(dfield / (0.026715 * exp(density / 0.33926)), 0.6705));
-  QyLvlmedE *= HiFieldQy;
-  double DokeBirks =
-          1652.264 +
-          (1.415935e10 - 1652.264) / (1. + pow(dfield / 0.02673144, 1.564691));
-  double Nq = energy * 1e3 /
-          Wq_eV;  //( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
-  double LET_power = -2.;
-  if (fdetector->get_inGas()) LET_power = 2.;
-  double QyLvlhighE = 28.;
-  if (density > 3.100) QyLvlhighE = 49.; //SXe effect from Yoo.
-  double Qy = QyLvlmedE +
-          (QyLvllowE - QyLvlmedE) /
-          pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) +
-          QyLvlhighE / (1. + DokeBirks * pow(energy, LET_power));
-  if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
+  if ( ATOM_NUM == 18. ) { // Liquid Argon
+    double alpha = 32.988 - 552.988/(15.5578+pow(dfield/(-4.7+0.025115*exp(1.3954/0.265360653)), 0.208889));
+    double beta = 2.01952 + 20.9/pow(1.105 + pow(dfield/0.4, 4.55), 7.502);
+    double gamma = 0.642039*(1000/19.5 +6.5*(5 - 0.5/pow(dfield/1047.408, 0.01851)));
+    double delta  =10.3842;
+    double DB = 1052.264+(14159350000 - 1652.264)/(-5+pow(dfield/0.328038, 1.74654));
+    double p1 = 1;
+    double p2 = 10.304;
+    double p3 = 24.3509;
+    double p4 = 0.10535;
+    double p5 = 0.7;
+    double LET = -2.11259;
+    Nq = energy * 1e3 / Wq_eV;
+    Qy = alpha*beta + (gamma - alpha*beta)/pow(p1+p2*pow(energy+0.5, p3), p4) + delta/(p5+DB*pow(energy, LET));
+  }
+  else {
+    double QyLvllowE = 1e3 / Wq_eV + 6.5 * (1. - 1. / (1. + pow(dfield / 47.408, 1.9851)));
+    double HiFieldQy = 1. + 0.4607 / pow(1. + pow(dfield / 621.74, -2.2717), 53.502);
+    double QyLvlmedE = 32.988 - 32.988 / (1. + pow(dfield / (0.026715 * exp(density / 0.33926)), 0.6705));
+    QyLvlmedE *= HiFieldQy;
+    double DokeBirks = 1652.264 + (1.415935e10 - 1652.264) / (1. + pow(dfield / 0.02673144, 1.564691));
+    Nq = energy * 1e3 / Wq_eV;  //( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
+    double LET_power = -2.;
+    if (fdetector->get_inGas()) LET_power = 2.;
+    double QyLvlhighE = 28.;
+    if (density > 3.100) QyLvlhighE = 49.; //SXe effect from Yoo.
+    Qy = QyLvlmedE + (QyLvllowE - QyLvlmedE) / pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) + QyLvlhighE / (1. + DokeBirks * pow(energy, LET_power));
+    if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
+  }
+  
   double Ly = Nq / energy - Qy;
   double Ne = Qy * energy;
   double Nph = Ly * energy;
-
   
   YieldResult result{};
   result.PhotonYield = Nph;
@@ -1742,6 +1752,11 @@ double NESTcalc::CalcElectronLET(double E) {
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   
+  if ( ATOM_NUM == 18. ) {
+    double alpha = 0.21; double Wq_eV = 23.6 / 1.21; // 19.5 eV
+    return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha};
+  }
+  
   double alpha = 0.067366 + density * 0.039693;
   /*double xi_se = 9./(1.+pow(density/2.,2.));
   double I_ion = 9.+(12.13-9.)/(1.+pow(density/2.953,65.));
@@ -1757,6 +1772,7 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
 
 double NESTcalc::NexONi(double energy, double density)
 {
+  if ( ATOM_NUM == 18. ) return 0.21;
   Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double alpha = wvalue.alpha;
   return alpha * erf(0.05 * energy);
@@ -1932,4 +1948,3 @@ std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
   }
   return output;
 }
-

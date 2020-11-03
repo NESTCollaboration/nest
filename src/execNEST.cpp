@@ -34,9 +34,12 @@ int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
   auto* detector = new DetectorExample_LUX_RUN03();
-
+  
   // Custom parameter modification functions
   // detector->ExampleFunction();
+  
+  if ( ATOM_NUM == 18. )
+    cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many features copied over from Xenon wholesale still. Use models at your own risk." << endl;
   
   /* vector<double> eList = { 1., 2., 3. }; // fast example--for PLR, ML train
   vector<vector<double>> pos3dxyz = { {0.,-1.,60.},{-1.,0.,70.},{1.,0.,80.} };

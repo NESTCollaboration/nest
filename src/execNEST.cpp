@@ -1003,7 +1003,10 @@ vector<double> signal1, signal2, signalE, vTable;
         else
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field, driftTime, smearPos[0], smearPos[1],
                  smearPos[2], quanta.photons, quanta.electrons);
-        // if (truthPos[2] < detector->get_cathode() && verbosity) printf("g-X ");
+        if ( truthPos[2] < detector->get_cathode() && verbosity && !BeenHere ) {
+	  BeenHere = true;
+	  fprintf ( stderr, "gamma-X i.e. MSSI may be happening. This may be why even high-E eff is <100%%. Check your cathode position definition.\n\n" );
+	}
         if(keV > 10. * hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
            // switch to exponential notation to make output more readable, if
            // energy is too high (>1 MeV)

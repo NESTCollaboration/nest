@@ -159,7 +159,7 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 {
   if ( ATOM_NUM == 18. )
-    return 0.1; // conflicting reports of 0.107 (Doke) & 0.1115 (Thomas & Imel)
+    return 0.1115; // T&I. conflicting reports of .107 (Doke) & ~0.1 elsewhere
   double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
             0.0057042 *
             pow(density,
@@ -402,9 +402,24 @@ YieldResult NESTcalc::GetYieldNROld ( double energy, int option ) { // possible 
 }
 
 YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, double massNum,
-				 const vector<double>& NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
+				 vector<double> NuisParam/*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/)
 {
 
+  if ( ATOM_NUM == 18. ) { // liquid Ar
+    NuisParam[0] = 12.56; // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
+    NuisParam[1] = 1.101; // +/-0.025
+    NuisParam[2] = 0.1; // +/-0.005
+    NuisParam[3] = -0.0932; // +/-0.0095
+    NuisParam[4] = 2.998; // +/-1.026
+    NuisParam[5] = 0.3; // Fixed
+    NuisParam[6] = 2.94; // +/-0.12
+    NuisParam[7] = W_DEFAULT / 1000.;
+    NuisParam[8] = DBL_MAX;
+    NuisParam[9] = 0.5; // square root
+    NuisParam[10] = 1.0;
+    NuisParam[11] = 1.0;
+    massNum = 40.;
+  }
   if ( NuisParam.size() < 12 )
   {
     throw std::runtime_error("ERROR: You need a minimum of 12 nuisance parameters for the mean yields.");
@@ -1753,7 +1768,7 @@ double NESTcalc::CalcElectronLET(double E) {
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   
   if ( ATOM_NUM == 18. ) {
-    double alpha = 0.21; double Wq_eV = 23.6 / 1.21; // 19.5 eV
+    double alpha = 0.21; double Wq_eV = 1000. / 51.9; //23.6/1.21; // ~19.2-5 eV
     return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha};
   }
   

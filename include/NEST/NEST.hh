@@ -297,9 +297,9 @@ class NESTcalc {
   void SetDetector(VDetector* detector) { fdetector = detector; }
 
   //Access the diffusion coefficient for transverse diffusion in liquid
-  static double GetDiffTran_Liquid(double dfield, bool highFieldModel=false, double T=175.);
+  static double GetDiffTran_Liquid(double dfield, bool highFieldModel=false, double T=175., int Z=54);
   //Access the diffusion coefficient for longitudinal diffusion in liquid
-  static double GetDiffLong_Liquid(double dfield, bool highFieldModel=false, double T=175.);
+  static double GetDiffLong_Liquid(double dfield, bool highFieldModel=false, double T=175., int Z=54);
   //Function helpful for interpolation of the new diffusion coefficient model (Boyle)
   static double interpolateFunction(const std::vector<std::pair<double,double> >& func, double x, bool isLogLog );
   //Read in the Boyle model data for DT

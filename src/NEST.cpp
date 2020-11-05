@@ -1107,8 +1107,8 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       stopPoint = Nee;
     electronstream.resize(stopPoint, dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
-    double Diff_Tran = GetDiffTran_Liquid(dfield,false,fdetector->get_T_Kelvin());
-    double Diff_Long = GetDiffLong_Liquid(dfield,false,fdetector->get_T_Kelvin());
+    double Diff_Tran = GetDiffTran_Liquid(dfield,false,fdetector->get_T_Kelvin(),ATOM_NUM);
+    double Diff_Long = GetDiffLong_Liquid(dfield,false,fdetector->get_T_Kelvin(),ATOM_NUM);
 
     // a good rule of thumb but only for liquids, as gas kind of opposite:
     // Diff_Long ~ 0.15 * Diff_Tran, as it is in LAr, at least as field goes to
@@ -1548,7 +1548,12 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
       0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j;
   double vi, vf, slope, Ti, Tf, offset;
-
+  
+  if ( ATOM_NUM == 18. ) {
+    speed = 0.097384*pow(log10(eField),3.0622)-0.018614*sqrt(eField);
+    if ( speed < 0. ) speed = 0.; return speed;
+  }
+  
   double polyExp[11][7] = {
       {-3.1046, 27.037, -2.1668, 193.27, -4.8024, 646.04, 9.2471},  // 100K
       {-2.7394, 22.760, -1.7775, 222.72, -5.0836, 724.98, 8.7189},  // 120
@@ -1787,7 +1792,7 @@ double NESTcalc::CalcElectronLET ( double E, int Z ) {
     else
       LET = 0.;
   }
-  else {
+  else { //replace with Justin and Prof. Mooney's work
     if ( E >= 1. ) LET = 116.70-162.97*log10(E)+99.361*pow(log10(E),2)-
 		     33.405*pow(log10(E),3)+6.5069*pow(log10(E),4)-
 		     0.69334*pow(log10(E),5)+.031563*pow(log10(E),6);
@@ -1831,10 +1836,15 @@ double NESTcalc::NexONi(double energy, double density)
 //This function returns the transverse diffusion coefficient in liquid. It allows a user
 //to select whether they use the canonical NEST model, or a model modified to accommodate higher
 //field values (from Boyle et al., 2016, arXiv:1603.04157v1)
-double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel, double Kelvin) // for gas: look for Diff_Tran_Gas above
+double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel, double Kelvin, int Z) // for gas: look for Diff_Tran_Gas above
 {
   double output;
-
+  
+  if ( Z == 18 ) {
+    double nDensity = NEST_AVO*DENSITY/40.; // 1 over cm^3
+    return 93.342*pow(dfield/nDensity,0.041322);
+  }
+  
   //Use the standard NEST parametrization
   if( !highFieldModel ){
     output = 37.368 * pow(dfield, .093452) *
@@ -1851,14 +1861,18 @@ double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel, double K
   return output;
 }
 
-
 //This function returns the longitudinal diffusion coefficient in liquid. It allows a user
 //to select whether they use the canonical NEST model, or a model modified to accommodate higher
 //field values (from Boyle et al., 2016, arXiv:1603.04157v1)
-double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel, double Kelvin) // for gas: look for Diff_Long_Gas above
+double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel, double Kelvin, int Z) // for gas: look for Diff_Long_Gas above
 {
   double output;
-
+  
+  if ( Z == 18 ) {
+    double nDensity = NEST_AVO*DENSITY/40.; // 1 over cm^3
+    return 0.15*93.342*pow(dfield/nDensity,0.041322); // lacking data, just assume that D_L = 0.15 * D_T
+  }
+  
   //Use the standard NEST parametrization
   if( !highFieldModel ){
     output = 345.92 * pow(dfield, -0.47880) *
@@ -1876,7 +1890,6 @@ double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel, double K
   }
   return output;
 }
-
 
 //Simple function for interpolating
 double NESTcalc::interpolateFunction(const std::vector<std::pair<double,double> >& func, double x, bool isLogLog )
@@ -1917,12 +1930,8 @@ double NESTcalc::interpolateFunction(const std::vector<std::pair<double,double> 
   }
 }
 
-    
-
-
-//Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
-//all of the size accounting is done nicely downstream without having to pass container
-//sizes around.
+// Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
+// all of the size accounting is done nicely downstream without having to pass container sizes around.
 std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
 {
   std::vector<std::pair<double,double> > output;
@@ -1959,10 +1968,8 @@ std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDT()
   return output;
 }
 
-
-//Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
-//all of the size accounting is done nicely downstream without having to pass container
-//sizes around. Returns cm^2/s
+// Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
+// all of the size accounting is done nicely downstream without having to pass container sizes around. Returns cm^2/s
 std::vector<std::pair<double,double> > NESTcalc::GetBoyleModelDL()
 {
   std::vector<std::pair<double,double> > output;

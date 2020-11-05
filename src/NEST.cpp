@@ -67,6 +67,11 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   }
   // tau1 = 3.5*ns; tau3 = 20.*ns; tauR = 40.*ns for solid Xe from old NEST.
   // Here assuming same as in liquid
+  if ( ATOM_NUM == 18. ) { //copied from 2013 NEST version for LAr on LBNE
+    tau1 = RandomGen::rndm()->rand_gauss(6.5,0.8); // error from weighted average
+    tau3 = RandomGen::rndm()->rand_gauss(1300,50); // ibid.
+    tauR = RandomGen::rndm()->rand_gauss(0.8,0.2); // Kubota 1979
+  }
   
   // if ( dfield > 60. ) dfield = 60. // makes Xed work. 200 for LUX Run04 instead. A mystery! Why no field dep?
   
@@ -418,7 +423,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     NuisParam[9] = 0.5; // square root
     NuisParam[10] = 1.0;
     NuisParam[11] = 1.0;
-    massNum = 40.;
+    massNum = fdetector->get_molarMass();
   }
   if ( NuisParam.size() < 12 )
   {
@@ -1336,8 +1341,8 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   vector<double> g2_params(5);
 
   // Set parameters for calculating EL yield and extraction
-  double alpha = 0.137, beta = 177.,
-         gamma = 45.7;  // note the value of alpha is similar to ~1/7eV. Not
+  double alpha = 0.137, beta = 4.70e-18,
+         gamma = 0.000;  // note the value of alpha is similar to ~1/7eV. Not
                         // coincidence. Noted in Mock et al.
   double epsilonRatio = EPS_LIQ / fabs(EPS_GAS);
   if (fdetector->get_inGas())
@@ -1347,16 +1352,19 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   // Convert gas extraction field to liquid field
   double E_liq = fdetector->get_E_gas() / epsilonRatio;  // kV per cm
   double ExtEff;
-  if ( EPS_GAS > 0. ) {
-    ExtEff = -0.03754 * pow(E_liq, 2.) + 0.52660 * E_liq - 0.84645;  // arXiv:1710.11032 (PIXeY)
-    if ( E_liq > 7. ) ExtEff = 1.;
+  if ( ATOM_NUM == 18. )
+    ExtEff = 1. - 1.1974 * exp ( -1.003 * pow ( E_liq, 1.3849 ) );  // Guschin 1978-79 and 1981-82
+  else {
+    if ( EPS_GAS > 0. ) {
+      ExtEff = -0.03754 * pow(E_liq, 2.) + 0.52660 * E_liq - 0.84645;  // arXiv:1710.11032 (PIXeY)
+      if ( E_liq > 7. ) ExtEff = 1.;
+    }
+    else
+      ExtEff = 1. - 1. / ( 1. + pow ( E_liq / 3.4832, 4.9443 ) );  // arXiv:1904.02885 (Livermore)
   }
-  else
-    ExtEff = 1. - 1. / ( 1. + pow ( E_liq / 3.4832, 4.9443 ) );  // arXiv:1904.02885 (Livermore)
-  
   if (ExtEff > 1. || fdetector->get_inGas()) ExtEff = 1.;
   if (ExtEff < 0. || E_liq <= 0.) ExtEff = 0.;
-
+  
   double gasGap =
       fdetector->get_anode() -
       fdetector
@@ -1371,14 +1379,19 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   //               gasGap * 0.1;  // arXiv:1207.2292 (HA, Vitaly C.)
   double rho = fdetector->get_p_bar() * 1e5 /
     (fdetector->get_T_Kelvin() * 8.314) * fdetector->get_molarMass() * 1e-6;
-  double elYield = (0.137*fdetector->get_E_gas()*1e3-4.70e-18*(NEST_AVO*rho/fdetector->get_molarMass())) * gasGap * 0.1;
+  double elYield;
+  if ( ATOM_NUM == 18. ) {
+    alpha = 0.0813;
+    beta = 1.90e-18;
+  }
+  elYield = (alpha*fdetector->get_E_gas()*1e3-beta*(NEST_AVO*rho/fdetector->get_molarMass())) * gasGap * 0.1;
   // replaced with more accurate version also from 1207.2292, but works for room temperature gas
   if (elYield <= 0.0 && E_liq != 0.) {
     cerr << "\tWARNING, the field in gas must be at least "
-         << 1e-3 * (beta * fdetector->get_p_bar() + gamma) / alpha
+         << 1e-3 * beta * NEST_AVO * rho / ( alpha * fdetector->get_molarMass() )
          << " kV/cm, for S2 to work," << endl;
-    cerr << "\tOR: your pressure for gas must be less than "
-         << (alpha * fdetector->get_E_gas() * 1e3 - gamma) / beta << " bar."
+    cerr << "\tOR: your density for gas must be less than "
+         << fdetector->get_molarMass() * alpha * fdetector->get_E_gas() * 1e3 / ( beta * NEST_AVO ) << " g/cm^3."
          << endl;
   }
   // Calculate single electron size and then g2
@@ -1718,7 +1731,10 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 
 double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
   double wavelength, E_keV;  // wavelength is in nanometers
-
+  
+  if ( ATOM_NUM == 18. )
+    return RandomGen::rndm()->rand_gauss(9.69,0.22);
+  
   if (!state)  // liquid or solid
     wavelength = RandomGen::rndm()->rand_gauss(
         178., 14. / 2.355);  // taken from Jortner JchPh 42 '65

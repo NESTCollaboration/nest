@@ -38,8 +38,10 @@ int main(int argc, char** argv) {
   // Custom parameter modification functions
   // detector->ExampleFunction();
   
-  if ( ATOM_NUM == 18. )
+  if ( ATOM_NUM == 18. ) {
+    detector->set_molarMass(39.948);
     cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many features copied over from Xenon wholesale still. Use models at your own risk." << endl;
+  }
   
   /* vector<double> eList = { 1., 2., 3. }; // fast example--for PLR, ML train
   vector<vector<double>> pos3dxyz = { {0.,-1.,60.},{-1.,0.,70.},{1.,0.,80.} };

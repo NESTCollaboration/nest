@@ -104,6 +104,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) {
     SingTripRatio = 0.1;
     tauR = 0.;
+    if ( ATOM_NUM == 18. ) { tau3 = 1600.; tau1 = 6.; } // from old G4S2Light
   } if ( tauR < 0. ) tauR = 0.; //in case varied with Gaussian earlier
 
   // the recombination time is non-exponential, but approximates
@@ -170,7 +171,7 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 
 double NESTcalc::FanoER(double density, double Nq_mean,double efield)
 {
-  if ( ATOM_NUM == 18. )
+  if ( ATOM_NUM == 18. ) // liquid argon
     return 0.1115; // T&I. conflicting reports of .107 (Doke) & ~0.1 elsewhere
   double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
             0.0057042 *
@@ -280,9 +281,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     return result;
   }
 
-  //set omega (non-binomial recombination fluctuations parameter) according to whether the Lindhard <1, i.e. this is an NR.
+  //set omega (non-binomial recombination fluctuations parameter) according to whether the Lindhard <1, i.e. this is NR.
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac);
-  if ( ATOM_NUM == 18. ) omega = 0.0;
+  if ( ATOM_NUM == 18. ) omega = 0.0; // Ar has no non-binom sauce
   double Variance =
       recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   
@@ -529,6 +530,19 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
   double Ne = Nq - Nph;
   if ( A1 == 206. && Z1 == 82. )
     Ne = RandomGen::rndm()->rand_gauss(Ne/ChargeLoss,2.*sqrt(Ne/(ChargeLoss*ChargeLoss))); // to compensate for accidentally including Q-loss in fits to Xed data
+  
+  if ( Z2 == 18. && Z1 == 2. && A1 == 4. ) { //alphas in argon
+    double factorE = pow((4.71598+pow(dfield,7.72848)),0.109802);
+    double Qy = (1./6200.) *
+      (64478398.7663-(64478398.7663*0.173553719+(64478398.7663/1.21)*(1.-(0.02852*log(1.+(64478398.7663/1.21)*((0.01/factorE)/3.)))/((64478398.7663/1.21)*(0.01/factorE)))));
+    double qu = 1. / ( 1.5 * pow ( dfield, -0.012 ) );
+    factorE = pow(4.98483+pow(dfield/10.0822,1.2076),0.97977);
+    double Ly = qu*(1./6500.)*
+      (278037.250283*0.173553719+(278037.250283/1.21)*(1.-(2.*log(1.+(278037.250283/1.21)*((0.653503/factorE)/3.)))/((278037.250283/1.21)*(0.653503/factorE))));
+    Ne = Qy * energy;
+    Nph = Ly * energy;
+    L = 0.0; NexONi = 0.21; Wq_eV = 19.5;
+  }
   
   YieldResult result{};
   result.PhotonYield = Nph;
@@ -1359,7 +1373,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   // Convert gas extraction field to liquid field
   double E_liq = fdetector->get_E_gas() / epsilonRatio;  // kV per cm
   double ExtEff;
-  if ( ATOM_NUM == 18. )
+  if ( ATOM_NUM == 18. ) // Argon
     ExtEff = 1. - 1.1974 * exp ( -1.003 * pow ( E_liq, 1.3849 ) );  // Guschin 1978-79 and 1981-82
   else {
     if ( EPS_GAS > 0. ) {
@@ -1387,7 +1401,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   double rho = fdetector->get_p_bar() * 1e5 /
     (fdetector->get_T_Kelvin() * 8.314) * fdetector->get_molarMass() * 1e-6;
   double elYield;
-  if ( ATOM_NUM == 18. ) {
+  if ( ATOM_NUM == 18. ) { // Henrique Araujo and Vitaly Chepel again
     alpha = 0.0813;
     beta = 1.90e-18;
   }
@@ -1549,7 +1563,7 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
   int i, j;
   double vi, vf, slope, Ti, Tf, offset;
   
-  if ( ATOM_NUM == 18. ) {
+  if ( ATOM_NUM == 18. ) { //replace eventually with Kate's work
     speed = 0.097384*pow(log10(eField),3.0622)-0.018614*sqrt(eField);
     if ( speed < 0. ) speed = 0.; return speed;
   }
@@ -1744,8 +1758,10 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
   double wavelength, E_keV;  // wavelength is in nanometers
   
-  if ( ATOM_NUM == 18. )
+  if ( ATOM_NUM == 18. ) { // liquid Argon
+    if ( state ) return RandomGen::rndm()->rand_gauss(9.7,0.2);
     return RandomGen::rndm()->rand_gauss(9.69,0.22);
+  }
   
   if (!state)  // liquid or solid
     wavelength = RandomGen::rndm()->rand_gauss(
@@ -1807,7 +1823,7 @@ double NESTcalc::CalcElectronLET ( double E, int Z ) {
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   
-  if ( ATOM_NUM == 18. ) {
+  if ( ATOM_NUM == 18. ) { // Liquid argon
     double alpha = 0.21; double Wq_eV = 1000. / 51.9; //23.6/1.21; // ~19.2-5 eV
     return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha};
   }
@@ -1827,7 +1843,7 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
 
 double NESTcalc::NexONi(double energy, double density)
 {
-  if ( ATOM_NUM == 18. ) return 0.21;
+  if ( ATOM_NUM == 18. ) return 0.21; // https://arxiv.org/pdf/1903.05815.pdf
   Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double alpha = wvalue.alpha;
   return alpha * erf(0.05 * energy);
@@ -1840,7 +1856,7 @@ double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel, double K
 {
   double output;
   
-  if ( Z == 18 ) {
+  if ( Z == 18 ) { // G4S2Light.cc from LUXSim
     double nDensity = NEST_AVO*DENSITY/40.; // 1 over cm^3
     return 93.342*pow(dfield/nDensity,0.041322);
   }
@@ -1869,8 +1885,8 @@ double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel, double K
   double output;
   
   if ( Z == 18 ) {
-    double nDensity = NEST_AVO*DENSITY/40.; // 1 over cm^3
-    return 0.15*93.342*pow(dfield/nDensity,0.041322); // lacking data, just assume that D_L = 0.15 * D_T
+    output = GetDiffTran_Liquid(dfield,false,Kelvin,18);
+    return 0.15 * output; // lacking data, just assume that D_L = 0.15 * D_T
   }
   
   //Use the standard NEST parametrization

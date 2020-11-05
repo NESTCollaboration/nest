@@ -74,7 +74,7 @@
 #include <random>
 #include <vector>
 
-#define W_DEFAULT 13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35. 19.5 eV for LAr
+#define W_DEFAULT 13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35. 19.5-19.6 eV for LAr
 #define W_SCINT 8.5e-3  // the *max* possible energy of 1 scint phot, keV. Make this at least 10 eV for LAr
 #define NEST_AVO 6.0221409e+23
 #define ATOM_NUM 54.         // period to make float. 18 for LAr

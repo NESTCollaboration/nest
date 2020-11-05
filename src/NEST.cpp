@@ -67,33 +67,40 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   }
   // tau1 = 3.5*ns; tau3 = 20.*ns; tauR = 40.*ns for solid Xe from old NEST.
   // Here assuming same as in liquid
+  
+  // if ( dfield > 60. ) dfield = 60. // makes Xed work. 200 for LUX Run04 instead. A mystery! Why no field dep?
+  
+  double LET = CalcElectronLET ( energy, ATOM_NUM );
   if ( ATOM_NUM == 18. ) { //copied from 2013 NEST version for LAr on LBNE
     tau1 = RandomGen::rndm()->rand_gauss(6.5,0.8); // error from weighted average
     tau3 = RandomGen::rndm()->rand_gauss(1300,50); // ibid.
     tauR = RandomGen::rndm()->rand_gauss(0.8,0.2); // Kubota 1979
+    if ( species <= Cf ) SingTripRatio = 0.22218 * pow ( energy, 0.48211 );
+    else if ( species == ion ) //really only alphas here
+      SingTripRatio = (-0.065492+1.9996*exp(-energy/1e3))/(1.+0.082154/pow(energy/1e3,2.))+2.1811; //uses energy in MeV not keV
+    else {
+      SingTripRatio = 0.2701+0.003379*LET-4.7338e-5*pow(LET,2.)+8.1449e-6*pow(LET,3.);
+      if (LET < 3. && !exciton) SingTripRatio=RandomGen::rndm()->rand_gauss(0.5,0.2);
+      if (LET < 3. && exciton) SingTripRatio=RandomGen::rndm()->rand_gauss(0.36,0.06);
+    } //lastly is ER for LAr
   }
-  
-  // if ( dfield > 60. ) dfield = 60. // makes Xed work. 200 for LUX Run04 instead. A mystery! Why no field dep?
-  
-  if (species <= Cf)                           // NR
-    SingTripRatio = (0.21-0.0001*dfield) * pow(energy, 0.21-0.0001*dfield ); //arXiv:1803.07935. LUX:0.15*E^0.15
-  else if (species == ion)                     // e.g., alphas
-    SingTripRatio =
-        0.065 *
-        pow(energy,
-            0.416);  // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
-  else {             // ER
-    if (!exciton) {
-      if ( energy > 1e3 ) energy = 1e3; // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
-      tauR = exp(-0.00900 * dfield) *
-	(7.3138 + 3.8431 * log10(energy));    // arXiv:1310.1117
-      if ( tauR < 3.5 ) tauR = 3.5; //used to be for gammas only but helpful for matching beta data better
-      if ( dfield > 8e2 ) dfield = 8e2; //to match Kubota's 4,000 V/cm
-      SingTripRatio = 1.00 * pow(energy, -0.45+0.0005*dfield);  // see comment below; also, dfield may need to be fixed at ~100-200 V/cm (for NR too)
-    } else
-      SingTripRatio = 0.20 * pow(energy, -0.45+0.0005*dfield);  // mixing arXiv:1807.07121 with Kubota 1979
+  else {
+    if ( species <= Cf ) // NR
+      SingTripRatio = (0.21-0.0001*dfield) * pow(energy, 0.21-0.0001*dfield); //arXiv:1803.07935. LUX:0.15*E^0.15
+    else if ( species == ion ) // e.g., alphas
+      SingTripRatio = 0.065 * pow ( energy, 0.416 ); // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
+    else { // ER
+      if ( !exciton ) {
+	if ( energy > 1e3 ) energy = 1e3; // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
+	tauR = exp(-0.00900 * dfield) * (7.3138 + 3.8431 * log10(energy)); // arXiv:1310.1117
+	if ( tauR < 3.5 ) tauR = 3.5; //used to be for gammas only but helpful for matching beta data better
+	if ( dfield > 8e2 ) dfield = 8e2; //to match Kubota's 4,000 V/cm
+	SingTripRatio = 1.00 * pow(energy, -0.45+0.0005*dfield); // see comment below; also, dfield may need to be fixed at ~100-200 V/cm (for NR too)
+      }
+      else
+	SingTripRatio = 0.20 * pow(energy, -0.45+0.0005*dfield); // mixing arXiv:1807.07121 with Kubota 1979
+    }
   }
-  
   if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) {
     SingTripRatio = 0.1;
     tauR = 0.;
@@ -1759,26 +1766,38 @@ double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
                          // dependence
 }
 
-double NESTcalc::CalcElectronLET(double E) {
+double NESTcalc::CalcElectronLET ( double E, int Z ) {
+  
   double LET;
-
+  
   // use a spline fit to online ESTAR data
-  if (E >= 1.)
-    LET = 58.482 - 61.183 * log10(E) + 19.749 * pow(log10(E), 2) +
-          2.3101 * pow(log10(E), 3) - 3.3469 * pow(log10(E), 4) +
-          0.96788 * pow(log10(E), 5) - 0.12619 * pow(log10(E), 6) +
-          0.0065108 * pow(log10(E), 7);
-  // at energies <1 keV, use a different spline, determined manually by
-  // generating sub-keV electrons in Geant4 and looking at their ranges, since
-  // ESTAR does not go this low (4.9.4)
-  else if (E > 0. && E < 1.)
-    LET = 6.9463 + 815.98 * E - 4828 * pow(E, 2) + 17079 * pow(E, 3) -
-          36394 * pow(E, 4) + 44553 * pow(E, 5) - 28659 * pow(E, 6) +
-          7483.8 * pow(E, 7);
-  else
-    LET = 0.;
-
+  if ( ATOM_NUM == 54. ) {
+    if ( E >= 1. )
+      LET = 58.482 - 61.183 * log10(E) + 19.749 * pow(log10(E), 2) +
+	2.3101 * pow(log10(E), 3) - 3.3469 * pow(log10(E), 4) +
+	0.96788 * pow(log10(E), 5) - 0.12619 * pow(log10(E), 6) +
+	0.0065108 * pow(log10(E), 7);
+    // at energies <1 keV, use a different spline, determined manually by
+    // generating sub-keV electrons in Geant4 and looking at their ranges, since
+    // ESTAR does not go this low (4.9.4)
+    else if ( E > 0. && E < 1. )
+      LET = 6.9463 + 815.98 * E - 4828 * pow(E, 2) + 17079 * pow(E, 3) -
+	36394 * pow(E, 4) + 44553 * pow(E, 5) - 28659 * pow(E, 6) +
+	7483.8 * pow(E, 7);
+    else
+      LET = 0.;
+  }
+  else {
+    if ( E >= 1. ) LET = 116.70-162.97*log10(E)+99.361*pow(log10(E),2)-
+		     33.405*pow(log10(E),3)+6.5069*pow(log10(E),4)-
+		     0.69334*pow(log10(E),5)+.031563*pow(log10(E),6);
+    else if ( E > 0. && E < 1. ) LET = 100.;
+    else
+      LET = 0.;
+  }
+  
   return LET;
+  
 }
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {

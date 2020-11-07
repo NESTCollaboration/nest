@@ -481,7 +481,7 @@ vector<double> signal1, signal2, signalE, vTable;
   if ( type_num == Kr83m ) massNum = maxTimeSep; 
       //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
-  for (unsigned long int j = 0; j < numEvts; j++) {
+  for (unsigned long int j = 0; j < numEvts; ++j) {
 
     try {
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));

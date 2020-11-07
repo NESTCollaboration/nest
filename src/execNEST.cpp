@@ -227,7 +227,7 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
   vector<double> g2_params = n.CalculateG2(verbosity);
   double rho = n.SetDensity(detector->get_T_Kelvin(),detector->get_p_bar());
   
-  for ( long i = 0; i < eList.size(); i++ ) {
+  for ( long i = 0; i < eList.size(); ++i ) {
     x = pos3dxyz[i][0];
     y = pos3dxyz[i][1];
     z = pos3dxyz[i][2];
@@ -568,7 +568,7 @@ vector<double> signal1, signal2, signalE, vTable;
           else
             pos_y = stof(token);
           position.erase(0, loc + delimiter.length());
-          i++;
+          ++i;
         }
         if(sqrt(pos_x * pos_x + pos_y * pos_y) > detector->get_radius() && j == 0 && pos_x != -999. && pos_y != -999.)
           cerr << "WARNING: outside fiducial radius." << endl;
@@ -613,7 +613,7 @@ vector<double> signal1, signal2, signalE, vTable;
           // just Z you need to do more coding
           vTable = n.SetDriftVelocity_NonUniform(rho, z_step, pos_x, pos_y);
           vD_middle = vTable[int(floor(centralZ / z_step + 0.5))];
-          // for ( int jj = 0; jj < vTable.size(); jj++ ) //DEBUG
+          // for ( int jj = 0; jj < vTable.size(); ++jj ) //DEBUG
           // cerr << double(jj)*z_step << "\t" << vTable[jj] << endl;
         } else {
           vD_middle = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, inField);
@@ -708,7 +708,7 @@ vector<double> signal1, signal2, signalE, vTable;
             else
               yi = stof(token);
             position.erase(0, loc + delimiter.length());
-            ii++;
+            ++ii;
           }
           yi = stof(position);
         }
@@ -1047,7 +1047,7 @@ vector<double> signal1, signal2, signalE, vTable;
       fprintf(stderr,
               "Bin Center\tBin Actual\tHist Mean\tMean Error\tHist "
               "Sigma\tSkewness\t\tEff[%%>thr]\n");
-      for (int j = 0; j < numBins; j++) {
+      for (int j = 0; j < numBins; ++j) {
         fprintf(stderr,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t\t%lf\n", band[j][0],
                 band[j][1], band[j][2], band[j][4], band[j][3], band[j][6],
                 band[j][5] * 100.);
@@ -1083,7 +1083,7 @@ vector<double> signal1, signal2, signalE, vTable;
                 "S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc "
                 "Res[%%]\tEff[%%>thr]\n");  // the C here refers to the combined
       // (S1+S2) energy scale
-      for (int j = 0; j < numBins; j++) {
+      for (int j = 0; j < numBins; ++j) {
         fprintf(stderr, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t", band[j][0],
                 band[j][1] / band[j][0] * 100., band[j][2],
                 band[j][3] / band[j][2] * 100., energies[0],
@@ -1145,8 +1145,8 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
   double ReqS1 = 0.;
   if ( nFold == 0 )
     ReqS1 = -DBL_MAX;
-  for (i = 0; i < S1s.size(); i++) {
-    for (j = 0; j < numBins; j++) {
+  for (i = 0; i < S1s.size(); ++i) {
+    for (j = 0; j < numBins; ++j) {
       s1c = border + binWidth / 2. + double(j) * binWidth;
       if (i == 0 && !resol) band[j][0] = s1c;
       if ( (fabs(S1s[i]) > (s1c - binWidth / 2.) &&
@@ -1181,19 +1181,19 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
           else
             band[j][1] += S1s[i];
         } else
-          reject[j]++;
+          ++reject[j];
         break;
       }
     }
   }
 
-  for (j = 0; j < numBins; j++) {
+  for (j = 0; j < numBins; ++j) {
     if (band[j][0] <= 0. && !resol)
       band[j][0] = border + binWidth / 2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
     if (numPts <= 0 && resol) {
-      for (i = 0; i < S1s.size(); i++) band[j][0] += fabs(S1s[i]);
+      for (i = 0; i < S1s.size(); ++i) band[j][0] += fabs(S1s[i]);
       numPts = S1s.size();
     }
     if (resol) band[j][0] /= numPts;
@@ -1201,11 +1201,11 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
     band[j][2] /= numPts;
     if ( numPts > signals[j].size() )
       numPts = signals[j].size();  // seg fault prevention line
-    for (i = 0; i < (int)numPts; i++) {
+    for (i = 0; i < (int)numPts; ++i) {
       if (signals[j][i] != -999.)
         band[j][3] += pow(signals[j][i] - band[j][2], 2.);  // std dev calc
     }
-    for (i = 0; i < S1s.size(); i++) {
+    for (i = 0; i < S1s.size(); ++i) {
       if (resol && S1s[i] > ReqS1 && S2s[i] > 0.0)
         band[j][1] += pow(S1s[i] - band[j][0], 2.);  // std dev calc
     }
@@ -1217,7 +1217,7 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
     }
     band[j][4] = band[j][3] / sqrt(numPts);
     band[j][5] = numPts / (numPts + double(reject[j]));
-    for ( i = 0; i < (int)numPts; i++ ) {
+    for ( i = 0; i < (int)numPts; ++i ) {
       if ( signals[j][i] != -999. )
 	band[j][6] += pow ( ( signals[j][i] - band[j][2] ) / band[j][3], 3. ); // skew calc
     }
@@ -1231,16 +1231,16 @@ void GetEnergyRes(vector<double> Es) {
   int i, numPts = Es.size();
   double numerator = 0.;
 
-  for (i = 0; i < numPts; i++) {
+  for (i = 0; i < numPts; ++i) {
     if (Es[i] > 0.) {
       energies[0] += Es[i];
-      numerator++;
+      ++numerator;
     }
   }
 
   energies[0] /= numerator;
 
-  for (i = 0; i < numPts; i++) {
+  for (i = 0; i < numPts; ++i) {
     if (Es[i] > 0.) energies[1] += pow(energies[0] - Es[i], 2.);
   }
 

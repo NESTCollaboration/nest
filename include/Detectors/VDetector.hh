@@ -138,7 +138,7 @@ class VDetector {
   virtual double FitS2(double, double, LCE) { return 1.; }
 
   virtual std::vector<double> FitTBA(double, double, double) {
-    std::vector<double> TopBotAsym;
+    std::vector<double> TopBotAsym = {0.5, 0.5};
     return TopBotAsym;
   }
 
@@ -146,7 +146,7 @@ class VDetector {
     return 0.;
   }
   virtual std::vector<double> SinglePEWaveForm(double, double) {
-    std::vector<double> PEperBin;
+    std::vector<double> PEperBin = {0.};
     return PEperBin;
   }
 

@@ -85,6 +85,7 @@
 #define DENSITY 2.90         // g/cm^3, ref density for dependent effects. ~1.4 for LAr
 
 #define EPS_GAS 1.00126  // poly-morphic: make negative to use LLNL instead of PIXeY's e- ext eff
+// for GAr it is 1.000574 at least at room T (doi.org/10.1103/PhysRev.34.615)
 #define EPS_LIQ 1.85  // LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan M. LAr 1.325
 
 #define SAMPLE_SIZE 10  // nano-seconds

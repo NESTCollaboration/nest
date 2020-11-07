@@ -64,7 +64,7 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
   vector<double> T0X(NUMEVT,0.);
   vector<double> driftT(NUMEVT,0.);
   
-  for ( i = 0; i < num.size(); i++ ) {
+  for ( i = 0; i < num.size(); ++i ) {
     T0X[num[i]] = MaxPossibleTime;
     if ( tns[i] < S2BORD ) S1tot[num[i]] += top[i] + bot[i];
     else { S2tot[num[i]] += ( top[i] + bot[i] ) * LOSTAREA;
@@ -73,7 +73,7 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
       }
       else ; }
   } double fraction = 0.0225, soFar = 0.; //default Confidence Interval is 95.5% (~2-sigma)
-  for ( i = 0; i < num.size(); i++ ) {
+  for ( i = 0; i < num.size(); ++i ) {
     if ( tns[i] >= S2BORD && S2width[num[i]] == 0. ) {
       soFar += ( top[i] + bot[i] ) * LOSTAREA;
       if ( soFar > fraction*S2tot[num[i]] && CI_left[num[i]] == 0. && CI_right[num[i]]== 0. ) CI_left[num[i]] = tns[i];
@@ -83,7 +83,7 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
     }
   }
   soFar = 0.00; normal_distribution<double> distribution2(RISEDEF,RISEDEF*UNC);
-  for ( i = 0; i < num.size(); i++ ) {
+  for ( i = 0; i < num.size(); ++i ) {
     if ( tns[i] < S2BORD && T0X[num[i]] >= MaxPossibleTime ) {
       soFar += top[i] + bot[i];
       fraction = distribution2(generator); if ( fraction < 0. ) fraction = 0.;
@@ -93,7 +93,7 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
   }
   
   double area[2] = {0.0,0.0}; double range[4] = {-14.,134.,-8.,32.}; double rRange[4]={range[0],range[1],range[2],range[3]}; // Dahl: -50,300,-50,10
-  for ( i = 0; i < num.size(); i++ ) {
+  for ( i = 0; i < num.size(); ++i ) {
     if ( T0X[num[i]] < MaxPossibleTime ) tns[i] -= T0X[num[i]];
     if ( tns[i] < (S2BORD-T0X[num[i]]) && win[i] == 1 ) {
       if ( tns[i] > rRange[0] && tns[i] < rRange[1] ) {
@@ -115,10 +115,10 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
   
   double mean = 0.0; int j = 0; vector<double> NonBlank;
   cout << "evt#\tS1, pe\tpromptFrac\tdrift [ms]\tS2, pe\tWidth [ns]\n";
-  for ( i = 0; i < NUMEVT; i++ ) {
+  for ( i = 0; i < NUMEVT; ++i ) {
     //cerr << T0X[i] << endl;
     if ( S1tot[i] > S1LimPE[0] && S2tot[i] > 0. && S1f30[i] > 0. && S1f30[i] < 1. && S1tot[i] < S1LimPE[1] )
-      { mean += S1f30[i]; j++; cout << i << "\t" << S1tot[i] << "\t" << S1f30[i] << "\t" << driftT[i]/1e6 << "\t" <<
+      { mean += S1f30[i]; ++j; cout << i << "\t" << S1tot[i] << "\t" << S1f30[i] << "\t" << driftT[i]/1e6 << "\t" <<
 				 S2tot[i] << "\t" << S2width[i] << endl; NonBlank.push_back(S1f30[i]); }
     else
       cout << i << endl;
@@ -129,10 +129,10 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
   double median = NonBlank[j/2];
   
   double sigma = 0.0;
-  for ( i = 0; i < NUMEVT; i++ )
+  for ( i = 0; i < NUMEVT; ++i )
     if ( S1f30[i] != 0. && S1tot[i] > S1LimPE[0] && S1tot[i] < S1LimPE[1] ) sigma += ( mean - S1f30[i] ) * ( mean - S1f30[i] );
   sigma /= (double(j)-1.); sigma = sqrt(sigma); double skew = 0.0;
-  for ( i = 0; i < NUMEVT; i++ )
+  for ( i = 0; i < NUMEVT; ++i )
     if ( S1f30[i] != 0. && S1tot[i] > S1LimPE[0] && S1tot[i] < S1LimPE[1] ) skew += pow ( ( S1f30[i] - mean ) / sigma, 3. );
   skew /= double(j);
   cerr << "MEDIAN\t\tSIGMA\t\tSKEWNESS\n";

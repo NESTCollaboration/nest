@@ -361,20 +361,20 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
     numberPoints = int(100. / eStep);
   }
   int nZeros = 0; //keep track of the number of zeros in a row
-  for (int i = 0; i < (numberPoints + 1); i++) {
+  for (int i = 0; i < (numberPoints + 1); ++i) {
     EnergySpec.push_back( WIMP_dRate(double(i) / divisor, mass, dayNum) );
-    if ( EnergySpec[i] == 0. ) nZeros++;
+    if ( EnergySpec[i] == 0. ) ++nZeros;
     else nZeros = 0; //reset the count if EnergySpec[i] != zero
     if ( nZeros == 100 ) break; //quit the for-loop once we're sure we're only getting zeros
   }
 
-  for (long i = 0; i < 1000000; i++) {
+  for (long i = 0; i < 1000000; ++i) {
     spectrum.integral += WIMP_dRate(double(i) / 1e4, mass, dayNum) / 1e4;
   }
   spectrum.xMax = ( (double) EnergySpec.size() - 1. )/divisor;
                 //defualt value -- will be overwritten if 
                 //xMax is acutally smaller
-  for (int i = 0; i < (int) EnergySpec.size() - 1; i++) {
+  for (int i = 0; i < (int) EnergySpec.size() - 1; ++i) {
     x1 = double(i) / divisor;
     x2 = double(i + 1) / divisor;
     spectrum.base[i] = EnergySpec[i + 1] *
@@ -428,7 +428,7 @@ double TestSpectra::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum,
     xyTry = RandomGen::rndm()->VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax,
                                           xyTry[0], xyTry[1], FuncValue);
     
-    count++; // for avoiding an infinite loop
+    ++count; // for avoiding an infinite loop
     if ( count >= 100 ) { xyTry[0] = 0.; break; }
     
   }

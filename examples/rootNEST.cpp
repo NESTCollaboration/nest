@@ -122,11 +122,11 @@ if ( mode == 2 ) {
   FILE* ifp = fopen(argv[1], "r");
   int ch, nLines = -1;
   while (EOF != (ch = getc(ifp))) {
-    if ('\n' == ch) nLines++;
+    if ('\n' == ch) ++nLines;
   }
   double input[9][nLines-SKIP];
   rewind(ifp);
-  for (i = -1; i < nLines; i++) {
+  for (i = -1; i < nLines; ++i) {
     if ( i <= (-1+SKIP) ) {
       char line[180];
       fgets ( line, 180, ifp );
@@ -148,7 +148,7 @@ if ( mode == 2 ) {
   fclose(ifp); nLines -= SKIP;
   TGraph* gr1 = new TGraph(nLines, input[0], input[7]);
   double start; int jj = 0;
-  while ( input[0][jj] <= 0.00000 ) { start = input[0][jj]; jj++; }
+  while ( input[0][jj] <= 0.00000 ) { start = input[0][jj]; ++jj; }
   double loE = start, hiE = input[0][nLines-1];
   cout << "Minimum energy (keV) for detection: ";
   cin >> loE;
@@ -183,7 +183,7 @@ if ( mode == 2 ) {
     dd = fitf->GetParameter(3);
     ee = fitf->GetParameter(4);
     ff = fitf->GetParameter(5);
-    jj++;
+    ++jj;
     if ( jj > 10 ) {
       cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
       return EXIT_FAILURE;
@@ -234,7 +234,7 @@ if ( mode == 2 ) {
   if (numBGeventsExp == 0.) {
     for (v = 0.; v < 1e3; v += VSTEP) {
       double sum = 0.0;
-      for (i = 0; i < (numBGeventsObs + 1.); i++)
+      for (i = 0; i < (numBGeventsObs + 1.); ++i)
         sum += exp(-v) * pow(v, i) / TMath::Factorial(i);   // using Poisson
                                                             // statistics as the
                                                             // probability
@@ -307,7 +307,7 @@ if ( mode == 2 ) {
       if (atof(argv[2]) == 1.) xSect[i] *= 1.66e5;
       if (atof(argv[2]) == 2.) xSect[i] *= 5.64e6;
     }  // end spin-dep. code block
-    i++;
+    ++i;
     if (xSect[i - 1] < DBL_MAX && xSect[i - 1] > 0. &&
         !std::isnan(xSect[i - 1]))  // Print the results, skipping any weirdness
                                     // (low WIMP masses prone)
@@ -316,7 +316,7 @@ if ( mode == 2 ) {
   int iMax = i;
 
   printf("{[");  // DM tools format (i.e. Matlab)
-  for (i = 0; i < (iMax - 1); i++) {
+  for (i = 0; i < (iMax - 1); ++i) {
     if (xSect[i] < DBL_MAX && xSect[i] > 0. && !std::isnan(xSect[i]))
       printf("%.1f %e; ", mass[i], xSect[i]);
   }
@@ -336,7 +336,7 @@ if ( mode == 1 ) {
   
   int DoF = numBins - abs(freeParam);
   FILE* ifp = fopen(argv[2], "r");
-  for (i = 0; i < numBins; i++) {
+  for (i = 0; i < numBins; ++i) {
     fscanf(ifp, "%lf %lf %lf %lf %lf %lf", &band2[i][0], &band2[i][1],
            &band2[i][2], &band2[i][5], &band2[i][3], &band2[i][6]);
   }
@@ -354,7 +354,7 @@ if ( mode == 1 ) {
       }
       GetFile(argv[1]);
       double error, chi2[4] = {0., 0., 0., 0.};
-      for (i = 0; i < numBins; i++) {
+      for (i = 0; i < numBins; ++i) {
 	if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
 	  cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
 	  return 1;
@@ -391,8 +391,8 @@ if ( mode == 1 ) {
   if (leak) {
     cout << endl << "Calculating band for first dataset" << endl;
     GetFile(argv[2]);
-    for (i = 0; i < numBins; i++) {
-      for ( int j = 0; j < 17; j++ ) {
+    for (i = 0; i < numBins; ++i) {
+      for ( int j = 0; j < 17; ++j ) {
 	band2[i][j] = band[i][j]; }
     }
   }
@@ -416,7 +416,7 @@ if ( mode == 1 ) {
               "error\tDiscrim[%%]\tLeak Frac Raw\t+ error  - "
               "error\tDiscrim[%%]\tRaw-Fit Leak\n");
     }
-    for (i = 0; i < numBins; i++) {
+    for (i = 0; i < numBins; ++i) {
       
       if ( skewness <= 1 ) {
         if ( ERis2nd ) {
@@ -512,7 +512,7 @@ if ( mode == 1 ) {
       discrim[i] = 1. - leakage[i];
     }
     if ( NRbandCenter < 0 ) {
-      for ( int nb; nb < numBins; nb++ ) NRbandY[nb] = medians[nb];
+      for ( int nb; nb < numBins; ++nb ) NRbandY[nb] = medians[nb];
     }
     TGraph* gr1 = new TGraph(numBins, NRbandX, NRbandY);
     TF1* fitf =
@@ -540,9 +540,9 @@ if ( mode == 1 ) {
     }
     long below[NUMBINS_MAX] = {0};
     double NRbandGCentroid, leakTotal, poisErr[2];
-    for (i = 0; i < numBins; i++) {
+    for (i = 0; i < numBins; ++i) {
       below[i] = 0;
-      for (long j = 0; j < inputs[i].size(); j++) {
+      for (long j = 0; j < inputs[i].size(); ++j) {
         NRbandGCentroid =
             fitf->GetParameter(0) / (inputs[i][j] + fitf->GetParameter(1)) +
             fitf->GetParameter(2) * inputs[i][j] +
@@ -552,7 +552,7 @@ if ( mode == 1 ) {
 	if ( abs(NRbandCenter) == 2 )
 	  NRbandGCentroid = fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
         // compromise
-        if (outputs[i][j] < NRbandGCentroid) below[i]++;
+        if (outputs[i][j] < NRbandGCentroid) ++below[i];
       }
       leakTotal = double(below[i]) / (double)outputs[i].size();
       poisErr[0] =
@@ -620,7 +620,7 @@ void GetFile(char* fileName) {
 	break;
       else
 	nLines = 0;
-      if (']' == ch && nLines == 0) nLines++; }
+      if (']' == ch && nLines == 0) ++nLines; }
   }
   
   while (1) {
@@ -684,10 +684,10 @@ void GetFile(char* fileName) {
         "S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc "
         "Res[%%]\n");
 
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < 3; ++j) {
       switch (j) {
         case 0:
-          for (i = 0; i < numPts; i++) {
+          for (i = 0; i < numPts; ++i) {
             if (usePD == 0)
               holder[i] = S1cor_phe[i];
             else if (usePD == 1)
@@ -704,7 +704,7 @@ void GetFile(char* fileName) {
           }
           break;
         case 1:
-          for (i = 0; i < numPts; i++) {
+          for (i = 0; i < numPts; ++i) {
             if (usePD == 0)
               holder[i] = S2cor_phe[i];
             else
@@ -721,7 +721,7 @@ void GetFile(char* fileName) {
         default:
           minimum = eMin;
           maximum = eMax;
-          for (i = 0; i < numPts; i++) holder[i] = E_keV[i];
+          for (i = 0; i < numPts; ++i) holder[i] = E_keV[i];
           break;
       }
       TString HistName;
@@ -729,7 +729,7 @@ void GetFile(char* fileName) {
       HistogramArray[j].SetName(HistName.Data());
     REFIT:
       HistogramArray[j].SetBins(2 * NUMBINS_MAX, minimum, maximum);
-      for (i = 0; i < numPts; i++) HistogramArray[j].Fill(holder[i]);
+      for (i = 0; i < numPts; ++i) HistogramArray[j].Fill(holder[i]);
       // HistogramArray[j].Draw();
       TF1* f = new TF1("peak", "gaus");
       average = 0.5 * (minimum + maximum);
@@ -785,20 +785,20 @@ void GetFile(char* fileName) {
   outputs.resize(numBins, vector<double>(1, -999.));
   if (usePD <= 0) {
     inputs = GetBand(S1cor_phe, S2cor_phe, true);
-    for (o = 0; o < numBins; o++) {
-      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
+    for (o = 0; o < numBins; ++o) {
+      for ( int j = 0; j < 17; ++j ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_phe, S2cor_phe, false));
   } else if (usePD == 1) {
     inputs = GetBand(S1cor_phd, S2cor_phd, true);
-    for (o = 0; o < numBins; o++) {
-      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
+    for (o = 0; o < numBins; ++o) {
+      for ( int j = 0; j < 17; ++j ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_phd, S2cor_phd, false));
   } else {
     inputs = GetBand(S1cor_spike, S2cor_phd, true);
-    for (o = 0; o < numBins; o++) {
-      for ( int j = 0; j < 17; j++ ) { band[o][j] = 0.; }
+    for (o = 0; o < numBins; ++o) {
+      for ( int j = 0; j < 17; ++j ) { band[o][j] = 0.; }
     }
     outputs = GetBand_Gaussian(GetBand(S1cor_spike, S2cor_phd, false));
   }
@@ -807,7 +807,7 @@ void GetFile(char* fileName) {
     if ( verbosity ) {
       if ( skewness == 2 ) {
 	fprintf(stdout,"Bin Center\tBand Xi\t\tXi Err\t\tBand Omega\tOmega Err\tBand Alpha\tAlpha Err\tBand Cov Xi-Om\tBand Cov Xi-Al\tBand Cov Om-Al\tBand Mean\tMean Err\tBand Stddev\tStddev Err\n");
-	for (o = 0; o < numBins; o++) {
+	for (o = 0; o < numBins; ++o) {
 	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 		  band[o][0], band[o][9], band[o][10], band[o][11], band[o][12], band[o][4], band[o][7], band[o][13], band[o][14], band[o][15],
 		  band[o][2], band[o][5], band[o][3], band[o][6]);
@@ -815,7 +815,7 @@ void GetFile(char* fileName) {
       }
       else {
 	fprintf(stdout, "Bin Center\tBin Actual\tGaus Mean\tMean Error\tGaus Sigma\tSig Error\tGaus Skew\tSkew Error\tX^2/DOF\n");
-	for (o = 0; o < numBins; o++) {
+	for (o = 0; o < numBins; ++o) {
 	  fprintf(stdout, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", band[o][0], band[o][1], band[o][2], band[o][5], band[o][3], band[o][6],
 		  band[o][4], band[o][7], band[o][8]);
 	}
@@ -849,15 +849,15 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
   }
 
   if (loop) {
-    for (i = 0; i < S1s.size(); i++) S1s[i] *= g1x;
-    for (i = 0; i < S2s.size(); i++) S2s[i] *= g2x;
+    for (i = 0; i < S1s.size(); ++i) S1s[i] *= g1x;
+    for (i = 0; i < S2s.size(); ++i) S2s[i] *= g2x;
   }
 
-  for (i = 0; i < S1s.size(); i++) {
-    for (j = 0; j < numBins; j++) {
+  for (i = 0; i < S1s.size(); ++i) {
+    for (j = 0; j < numBins; ++j) {
       s1c = border + binWidth / 2. + double(j) * binWidth;
       if (i == 0 && !resol) band[j][0] = s1c;
-      if ((S1s[i] == 0. || S2s[i] == 0.) && j == 0) reject[j]++;
+      if ((S1s[i] == 0. || S2s[i] == 0.) && j == 0) ++reject[j];
       if (fabs(S1s[i]) > (s1c - binWidth / 2.) &&
           fabs(S1s[i]) <= (s1c + binWidth / 2.)) {
         if (S1s[i] >= 0. && S2s[i] >= 0.) {
@@ -888,19 +888,19 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
           else
             band[j][1] += S1s[i];
         } else
-          reject[j]++;
+          ++reject[j];
         break;
       }
     }
   }
 
-  for (j = 0; j < numBins; j++) {
+  for (j = 0; j < numBins; ++j) {
     if (band[j][0] <= 0. && !resol)
       band[j][0] = border + binWidth / 2. + double(j) * binWidth;
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
     if (numPts <= 0 && resol) {
-      for (i = 0; i < S1s.size(); i++) band[j][0] += fabs(S1s[i]);
+      for (i = 0; i < S1s.size(); ++i) band[j][0] += fabs(S1s[i]);
       numPts = S1s.size();
     }
     if (resol) band[j][0] /= numPts;
@@ -911,11 +911,11 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
       medians[j] = signals[j][int(floor(double(numPts)/2.+0.5))];
       //band[j][2] = medians[j];
     }
-    for (i = 0; i < (int)numPts; i++) {
+    for (i = 0; i < (int)numPts; ++i) {
       if (signals[j][i] != -999.)
         band[j][3] += pow(signals[j][i] - band[j][2], 2.);  // std dev calc
     }
-    for (i = 0; i < S1s.size(); i++) {
+    for (i = 0; i < S1s.size(); ++i) {
       if (resol && S1s[i] > 0.0 && S2s[i] > 0.0)
         band[j][1] += pow(S1s[i] - band[j][0], 2.);  // std dev calc
     }
@@ -939,7 +939,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
   int j = 0; bool wings = false;
   TH1F* HistogramArray = new TH1F[numBins];
 
-  for (j = 0; j < numBins; j++) {
+  for (j = 0; j < numBins; ++j) {
     TString HistName;
     HistName.Form("%i", j);
     HistogramArray[j].SetName(HistName.Data());
@@ -949,7 +949,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     }
     if ( wings ) { logMin -= 0.5; logMax += 0.5; }
     HistogramArray[j].SetBins ( logBins, logMin, logMax ); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
-    for (unsigned long i = 0; i < signals[j].size(); i++)
+    for (unsigned long i = 0; i < signals[j].size(); ++i)
       HistogramArray[j].Fill(signals[j][i]);
     HistogramArray[j].Draw();
     if ( !skewness ) {
@@ -963,7 +963,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
       band[j][6] = f->GetParError(2);
       band[j][7] = 0.;
       band[j][8] = 0.0; double denom, modelValue, xValue;
-      for ( int k = 0; k < logBins; k++ ) {
+      for ( int k = 0; k < logBins; ++k ) {
 	xValue = logMin + k * ( logMax - logMin ) / logBins;
 	modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter("Mean"),2.)/(f->GetParameter("Sigma")*f->GetParameter("Sigma")));
 	denom = max(float(modelValue+HistogramArray[j][k]),(float)1.);
@@ -1066,7 +1066,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 
       // Calculate reduced chi2 manually
       double chiSq = 0.00, modelValue, xValue, denom;
-      for ( int k = 0; k < logBins; k++ ) {
+      for ( int k = 0; k < logBins; ++k ) {
         xValue = logMin + k * ( logMax - logMin ) / logBins;
         modelValue = f->GetParameter(0)*exp(-0.5*pow(xValue-f->GetParameter(1),2.)/(f->GetParameter(2)*f->GetParameter(2)))*
           (1.+erf(f->GetParameter(3)*(xValue-f->GetParameter(1))/(f->GetParameter(2)*sqrt(2.)))) / (f->GetParameter(2)*sqrt(2.*TMath::Pi()));
@@ -1104,7 +1104,7 @@ double expectedUlFc(double mub, TFeldmanCousins fc)
 {
   double cumProb = 0.0;
   double expectedUl = 0.0;
-  for (int i = 0; i < (20 + 3 * mub); i++) {
+  for (int i = 0; i < (20 + 3 * mub); ++i) {
     double prob = TMath::Poisson(i, mub);
     cumProb += prob;
     double lim = fc.CalculateUpperLimit(i, mub);
@@ -1157,7 +1157,7 @@ double EstimateSkew ( double mean, double sigma, vector<double> data ) {
   double xi = mean;
   double omega = sigma;
   double skew = 0.0;
-  for ( int i = 0; i < (int)data.size(); i++ )
+  for ( int i = 0; i < (int)data.size(); ++i )
     skew += pow((data[i]-xi)/omega,3.);
   skew /= (double)data.size();
   skew = skew / fabs(skew) * std::min(0.7, fabs(skew)); // Sample skewness could theoretically be < -1 or > 1
@@ -1175,7 +1175,7 @@ double owens_t (double h, double a) {
   double x = 0;
   double integrand = 0;
 
-  for (int k = 0; k < nIntSteps; k++) {
+  for (int k = 0; k < nIntSteps; ++k) {
     x = (k + 0.5) * dx;
     integrand = exp(-0.5 * h * h * (1 + x * x)) / (1 + x * x);
     T += (integrand * dx);

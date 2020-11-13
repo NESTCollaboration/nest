@@ -28,11 +28,13 @@ double RandomGen::rand_uniform() {
   return (double)(rng() - rng.min()) / (double)(rng.max() - rng.min());
 }
 
-double RandomGen::rand_gauss(double mean, double sigma) {
-  //  double u = rand_uniform(), v = rand_uniform();
-  std::normal_distribution<double> norm(mean, sigma);
-  return norm(rng);
-  //  return mean + sigma * sqrt(-2. * log(u)) * cos(2. * M_PI * v);
+double RandomGen::rand_gauss ( double mean, double sigma ) {
+  
+  //std::normal_distribution<double> norm(mean, sigma);
+  //return norm(rng);
+  double u = rand_uniform(), v = rand_uniform();
+  return mean + sigma * sqrt(-2. * log(u)) * cos(2. * M_PI * v);
+  
 }
 
 double RandomGen::rand_exponential(double half_life) {

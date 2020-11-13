@@ -17,7 +17,7 @@ matrix:
 # Email notifications
 notifications:
   email:
-    - christopher.douglas.tunnell@gmail.com
+    - matthew.szydagis@gmail.com
 
 # Commands to install
 install:

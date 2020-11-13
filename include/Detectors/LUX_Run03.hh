@@ -20,10 +20,10 @@ public:
     // Call the initialization of all the parameters
     Initialization();
   };
-  virtual ~DetectorExample_LUX_RUN03() {};
+  ~DetectorExample_LUX_RUN03() override = default;;
   
   // Do here the initialization of all the parameters that are not varying as a function of time
-  virtual void Initialization() {
+  void Initialization() override {
     
     // Primary Scintillation (S1) parameters
     g1 = 0.1170; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim
@@ -42,7 +42,7 @@ public:
     
     extraPhot =false; //default
     noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
-    noiseL[1]=5.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[1]=6.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     
     // Ionization and Secondary Scintillation (S2) parameters
     g1_gas = 0.1016; //0.1 in 1910.04211
@@ -52,7 +52,7 @@ public:
     eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown
     
     // Thermodynamic Properties
-    inGas = false; //duh
+    //inGas = false; //duh
     T_Kelvin = 173.; //1910.04211
     p_bar = 1.57; //1910.04211
     
@@ -76,7 +76,7 @@ public:
   
   // S1 PDE custom fit for function of xyz
   // 1712.05696 indirectly, 1708.02566 Figure 10 color map
-  virtual double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm, LCE map ) {
+  double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm, LCE map ) override {
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     double amplitude = 307.9-0.3071*zPos_mm+0.0002257*pow(zPos_mm,2.);
@@ -93,7 +93,7 @@ public:
   
   // Drift electric field as function of Z in mm
   // 1709.00095, 1904.08979, 1708.02566 Fig. 13
-  virtual double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
+  double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) override { // in V/cm
     
     double finalEF = 158.92  // NOTE: DO NOT JUST RETURN A CONSTANT, THAT IS A SILLY USE of FitEF
       -0.2209000 *pow(zPos_mm,1.)
@@ -111,7 +111,7 @@ public:
   
   // S2 PDE custom fit for function of r
   // 1712.05696 & 1710.02752 indirectly. Fig. 13 1708.02566
-  virtual double FitS2 ( double xPos_mm, double yPos_mm, LCE map ) {
+  double FitS2 ( double xPos_mm, double yPos_mm, LCE map ) override {
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     
@@ -133,8 +133,8 @@ public:
     
   }
   
-  virtual vector<double> FitTBA(double xPos_mm, double yPos_mm,
-				double zPos_mm) {
+  vector<double> FitTBA(double xPos_mm, double yPos_mm,
+				double zPos_mm) override {
     vector<double> BotTotRat(2);
     
     double radSq = ( pow(xPos_mm,2.) + pow(yPos_mm,2.) ) / 1e2;
@@ -153,7 +153,7 @@ public:
     return BotTotRat;
   }
   
-  virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+  double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) override {
     
     double phoTravT, approxCenter = ( TopDrift + cathode ) / 2., relativeZ = zPos_mm - approxCenter;
     
@@ -185,7 +185,7 @@ public:
     return phoTravT; //this function follows LUX (arXiv:1802.06162)
   }
   
-  virtual vector<double> SinglePEWaveForm ( double area, double t0 ) {
+  vector<double> SinglePEWaveForm ( double area, double t0 ) override {
     
     vector<double> PEperBin;
     

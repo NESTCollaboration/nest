@@ -157,7 +157,7 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
                 pParticleChange->AddSecondary(onePhoton);
               }
             }
-            photontimes++;
+            ++photontimes;
           }
         }
       }
@@ -172,7 +172,7 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
           hit.result.electrons = round((lineage.result.quanta.electrons - el_cum) * hit.E / (etot - ecum));
           ecum += hit.E;
           el_cum+= hit.result.electrons;
-          for (int i = 0 ; i < hit.result.electrons; i++)
+          for (int i = 0 ; i < hit.result.electrons; ++i)
           {
             if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor))
             {
@@ -351,7 +351,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
         // for comptons/PEs to add in recoil energy in the parent step
         if (sec_type == gammaRay || sec_type == beta) {
           myLinID = --track_lins.end();
-          sec_mylinid++;
+          ++sec_mylinid;
         }
         if (verbose > 1)
           cout << "Reassigned myLindID " << sec_mylinid << " times" << endl;

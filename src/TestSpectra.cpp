@@ -317,8 +317,7 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
       zeta = 0.;
       break;
     default:
-      cerr << "\tThe velocity integral in the WIMP generator broke!!!" << endl;
-      exit(EXIT_FAILURE);
+      throw std::runtime_error("\tThe velocity integral in the WIMP generator broke!!!");
   }
 
   double a = 0.52;                           // in fm
@@ -369,20 +368,20 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
     numberPoints = int(100. / eStep);
   }
   int nZeros = 0; //keep track of the number of zeros in a row
-  for (int i = 0; i < (numberPoints + 1); i++) {
+  for (int i = 0; i < (numberPoints + 1); ++i) {
     EnergySpec.push_back( WIMP_dRate(double(i) / divisor, mass, dayNum) );
-    if ( EnergySpec[i] == 0. ) nZeros++;
+    if ( EnergySpec[i] == 0. ) ++nZeros;
     else nZeros = 0; //reset the count if EnergySpec[i] != zero
     if ( nZeros == 100 ) break; //quit the for-loop once we're sure we're only getting zeros
   }
 
-  for (long i = 0; i < 1000000; i++) {
+  for (long i = 0; i < 1000000; ++i) {
     spectrum.integral += WIMP_dRate(double(i) / 1e4, mass, dayNum) / 1e4;
   }
   spectrum.xMax = ( (double) EnergySpec.size() - 1. )/divisor;
                 //defualt value -- will be overwritten if 
                 //xMax is acutally smaller
-  for (int i = 0; i < (int) EnergySpec.size() - 1; i++) {
+  for (int i = 0; i < (int) EnergySpec.size() - 1; ++i) {
     x1 = double(i) / divisor;
     x2 = double(i + 1) / divisor;
     spectrum.base[i] = EnergySpec[i + 1] *
@@ -393,15 +392,11 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
       ;  // spectrum.integral+=spectrum.base[i]/spectrum.exponent[i]*(exp(-spectrum.exponent[i]*x1)-exp(-spectrum.exponent[i]*x2));
     else {
       if ( EnergySpec[i+1] > 10. ) { //i.e. the calculation stopped before event rate was low
-        cerr << "ERROR: WIMP E_step is too small (or large)! Increase(decrease) it slightly to avoid noise in the calculation." << endl;
-        exit(EXIT_FAILURE); 
+        throw std::runtime_error("ERROR: WIMP E_step is too small (or large)! Increase(decrease) it slightly to avoid noise in the calculation.");
       }
       spectrum.xMax = double(i - 1) / divisor;
       if (spectrum.xMax <= 0.0) {
-        cerr << "ERROR: The maximum possible WIMP recoil is not +-ive, which "
-                "usually means your E_step is too small (OR it is too large)."
-             << endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("ERROR: The maximum possible WIMP recoil is not +-ive, which usually means your E_step is too small (OR it is too large).");
       }
       break;
     }
@@ -440,7 +435,7 @@ double TestSpectra::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum,
     xyTry = RandomGen::rndm()->VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax,
                                           xyTry[0], xyTry[1], FuncValue);
     
-    count++; // for avoiding an infinite loop
+    ++count; // for avoiding an infinite loop
     if ( count >= 100 ) { xyTry[0] = 0.; break; }
     
   }

@@ -8,11 +8,14 @@
         "xenon", 
         "argon"
     ], 
-    "publication_date": "2018-07-18", 
     "creators": [
         {
             "affiliation": "University at Albany", 
             "name": "Szydagis, M."
+        }, 
+        {
+            "affiliation": "Rice University", 
+            "name": "Andaloro, S."
         }, 
         {
             "affiliation": "University of California, Davis", 

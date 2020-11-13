@@ -14,6 +14,7 @@
 #include <iostream>
 #include <random>
 #include <vector>
+#include<string>
 
 #include "RandomGen.hh"
 
@@ -42,6 +43,7 @@ class TestSpectra {
   };
   WIMP_spectrum_prep wimp_spectrum_prep;
 
+  double Gamma_spectrum(double xMin, double xMax, string source);
   double CH3T_spectrum(double emin, double emax);
   double C14_spectrum(double emin, double emax);
   double B8_spectrum(double emin, double emax);

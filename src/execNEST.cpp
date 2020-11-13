@@ -321,6 +321,8 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
   }
 
   INTERACTION_TYPE type_num;
+  string gamma_source;
+
   TestSpectra spec;
   if (type == "NR" || type == "neutron" || type == "-1")
     type_num = NR;  //-1: default particle type is also NR
@@ -378,8 +380,18 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
   else if ( type == "atmNu" || type == "AtmNu" || type == "atm_Nu" || type == "Atm_Nu" || type == "atm-Nu" || type == "Atm-Nu" || type == "atm_nu" || type == "atm-nu" ) {
     type_num = atmNu; numEvts = RandomGen::rndm()->
 			poisson_draw(1.5764e-7*double(numEvts));
-  }
-  else {
+  }else if (type == "newGamma") {
+        //cerr << "You have chosen the new gamma model. This will not work yet." << endl;
+        type_num = fullGamma;
+        cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
+        cin >> gamma_source;
+        if(gamma_source == "Co60") {
+          cerr  << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some"
+          <<"scintilations may go unaccounted for." << endl;
+        }
+        // cerr << "Branching ratio: ";
+        // cin >> branchRatio;
+  }else {
     cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
     cerr << "NR or neutron," << endl;
     cerr << "WIMP," << endl;
@@ -398,6 +410,8 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
     cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
     cerr << "atmNu, and" << endl;
     cerr << "muon or MIP or LIP or mu or mu-" << endl;
+    cerr << "newGamma" << endl;
+
     return 1;
   }
   
@@ -510,6 +524,13 @@ int execNEST(VDetector* detector, unsigned long int numEvts, string type,
         case atmNu:
 	  keV = spec.atmNu_spectrum(eMin, eMax);
 	  break;
+    case fullGamma:
+          {
+              
+              keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
+
+            }
+            break;
         default:
           if (eMin < 0.) return 1;
           if (eMax > 0.)

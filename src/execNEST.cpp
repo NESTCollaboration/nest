@@ -495,67 +495,7 @@ vector<double> signal1, signal2, signalE, vTable;
   if ( type_num == Kr83m ) massNum = maxTimeSep; 
       //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
-<<<<<<< HEAD
-  for (unsigned long int j = 0; j < numEvts; j++) {
-    //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
-    //for E-recon when you've changed g1,g2-related stuff, redo line 341+
-    if ( (eMin == eMax && eMin >= 0. && eMax > 0.) || type_num == Kr83m ) {
-      keV = eMin;
-    } else {
-      switch (type_num) {
-        case CH3T:
-          keV = spec.CH3T_spectrum(eMin, eMax);
-          break;
-        case C14:
-          keV = spec.C14_spectrum(eMin, eMax);
-          break;
-        case B8:  // normalize this to ~3500 / 10-ton / year, for E-threshold of
-          // 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
-          keV = spec.B8_spectrum(eMin, eMax);
-          break;
-        case AmBe:  // for ZEPLIN-III FSR from HA (Pal '98)
-          keV = spec.AmBe_spectrum(eMin, eMax);
-          break;
-        case Cf:
-          keV = spec.Cf_spectrum(eMin, eMax);
-          break;
-        case DD:
-          keV = spec.DD_spectrum(eMin, eMax);
-          break;
-        case WIMP:
-          keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, eMin, timeStamp);
-	  break;
-        case ppSolar:
-	  keV = spec.ppSolar_spectrum(eMin, eMax);
-	  break;
-        case atmNu:
-	  keV = spec.atmNu_spectrum(eMin, eMax);
-	  break;
-    case fullGamma:
-          {
-              
-              keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
-
-            }
-            break;
-        default:
-          if (eMin < 0.) return 1;
-          if (eMax > 0.)
-            keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
-          else {  // negative eMax signals to NEST that you want to use an
-            // exponential energy spectrum profile
-            if (eMin == 0.) return 1;
-            keV = 1e100;  // eMin will be used in place of eMax as the maximum
-            // energy in exponential scenario
-            while (keV > eMin)
-              keV = eMax * log(RandomGen::rndm()->rand_uniform());
-          }
-          break;
-      }
-    }
-=======
   for (unsigned long int j = 0; j < numEvts; ++j) {
->>>>>>> ac341c73f9ed6a015d6385b8a3f2ad99348fd92c
 
     try {
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
@@ -591,6 +531,9 @@ vector<double> signal1, signal2, signalE, vTable;
             break;
           case atmNu:
             keV = TestSpectra::atmNu_spectrum(eMin, eMax);
+            break;
+           case fullGamma:
+              keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
             break;
           default:
             if(eMin < 0.) return 1;

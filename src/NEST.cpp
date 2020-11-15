@@ -1504,8 +1504,12 @@ double NESTcalc::GetDensity(double Kelvin,
                             double bara, bool &inGas, double molarMass) {  // currently only for fixed pressure
                                             // (saturated vapor pressure); will
                                             // add pressure dependence later
-  if ( ATOM_NUM == 18. && DENSITY > 2. )
-    { inGas = false; return 1.4; }
+  if ( ATOM_NUM == 18. ) {
+    inGas = false;
+    if ( DENSITY > 2. ) return 1.4;
+    else 
+      return DENSITY;
+  }
   
   //if (MOLAR_MASS > 134.5) //enrichment for 0vBB expt (~0.8 Xe-136)
   //return 3.0305; // ±0.0077 g/cm^3, EXO-200 @167K: arXiv:1908.04128

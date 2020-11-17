@@ -285,7 +285,6 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
   
   delete detector;
   return OutputResults;
-  
 }
 
 int execNEST(VDetector* detector, unsigned long int numEvts, const string& type,
@@ -496,7 +495,6 @@ vector<double> signal1, signal2, signalE, vTable;
       //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
   for (unsigned long int j = 0; j < numEvts; ++j) {
-
     try {
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
       //for E-recon when you've changed g1,g2-related stuff, redo line 341+

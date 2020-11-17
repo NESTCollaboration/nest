@@ -14,25 +14,6 @@
 //#include "GammaContainer.hh"
 using namespace std;
 
-//class GammaContainer;
-
-class GammaContainer {
-public:
-	GammaContainer(double e, double br, double pec, double cc, double ppc);
-	double getEnergy();
-	double getBR();
-	double getPECoef();
-	double getCcoef();
-	double getPPCoef();
-	double getTotalAttenCoef();
-private:
-	double energy;
-	double branchRatio;
-	double PEcoef;
-	double Ccoef;
-	double PPcoef;
-};
-
 class GammaHandler {
 public:
 	GammaHandler() {};

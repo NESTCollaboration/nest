@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
   
   if ( ATOM_NUM == 18. ) {
     detector->set_molarMass(39.948);
-    cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many features copied over from Xenon wholesale still. Use models at your own risk." << endl;
+    cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many features copied over from Xenon wholesale still. Use models at your own risk.\n" << endl;
   }
   
   /* vector<double> eList = { 1., 2., 3. }; // fast example--for PLR, ML train
@@ -451,7 +451,7 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "ERR: Unphysical thermodynamic property!";
     return 1;
   }
-  if (rho < 1.75) detector->set_inGas(true);
+  if ( rho < 1.75 && ATOM_NUM == 54. ) detector->set_inGas(true);
 
   double Wq_eV = NESTcalc::WorkFunction(rho,detector->get_molarMass()).Wq_eV;
   //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
@@ -1003,7 +1003,12 @@ vector<double> signal1, signal2, signalE, vTable;
       // adjusted for 2-PE effect (LUX phd units)
       // scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in
       // gas gap (from CalculateG2)
-
+      
+      if ( truthPos[2] < detector->get_cathode() && verbosity && !BeenHere ) {
+	BeenHere = true;
+	fprintf ( stderr, "gamma-X i.e. MSSI may be happening. This may be why even high-E eff is <100%%. Check your cathode position definition.\n\n" );
+      }
+      
       if(PrintSubThr || (
               scint[0] > PHE_MIN && scint[1] > PHE_MIN && scint[2] > PHE_MIN && scint[3] > PHE_MIN &&
               scint[4] > PHE_MIN &&
@@ -1025,10 +1030,6 @@ vector<double> signal1, signal2, signalE, vTable;
         else
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field, driftTime, smearPos[0], smearPos[1],
                  smearPos[2], quanta.photons, quanta.electrons);
-        if ( truthPos[2] < detector->get_cathode() && verbosity && !BeenHere ) {
-	  BeenHere = true;
-	  fprintf ( stderr, "gamma-X i.e. MSSI may be happening. This may be why even high-E eff is <100%%. Check your cathode position definition.\n\n" );
-	}
         if(keV > 10. * hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
            // switch to exponential notation to make output more readable, if
            // energy is too high (>1 MeV)

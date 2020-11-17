@@ -30,7 +30,6 @@ vector<vector<double>> GammaHandler::sourceLookupTable(string source) {
 		returnInfo.push_back(e1);
 		returnInfo.push_back(e2);
 		return returnInfo;
-
 	}
 	cerr << source << " Is not a valid option!" << endl;
 	exit(1);
@@ -48,24 +47,18 @@ double GammaHandler::combineSpectra(double emin, double emax, string source) {
       emin + (emax - emin) * RandomGen::rndm()->rand_uniform(),
       yMax * RandomGen::rndm()->rand_uniform(), 1.};
 
-     while(xyTry[2] > 0.) {
-     	
+     while(xyTry[2] > 0.) {	
      		fValue = GammaHandler::photoIonization(sourceInfo, xyTry) + 
      		GammaHandler::compton(sourceInfo, xyTry) + 
      		GammaHandler::pairProduction(sourceInfo, xyTry);
-     	
-
-     	xyTry = RandomGen::rndm()->VonNeumann(emin, emax, 0., yMax, xyTry[0],
+     		xyTry = RandomGen::rndm()->VonNeumann(emin, emax, 0., yMax, xyTry[0],
                                           xyTry[1], fValue);
      }
 
      return xyTry[0];
-
 }
 
-
 double GammaHandler::photoIonization(vector<vector<double>> sourceInfo, vector<double> xyTry) {
-
 	//implement simple delta function to the spectrum
 	double fValue = 0.0;
 	for(int i = 0; i < sourceInfo.size(); i++) {
@@ -79,7 +72,6 @@ double GammaHandler::photoIonization(vector<vector<double>> sourceInfo, vector<d
 		}
 	}
 	return fValue;
-
 }
 
 double GammaHandler::compton(vector<vector<double>> sourceInfo, vector<double> xyTry) {
@@ -95,7 +87,6 @@ double GammaHandler::compton(vector<vector<double>> sourceInfo, vector<double> x
 	double a = 1.0/137.04;
 	double re = pow(0.38616, -12);
 
-
 	//loop over gamma energies
 	for(int i = 0; i < sourceInfo.size(); i++) {
 		double initialEnergy = sourceInfo[i][0];
@@ -109,7 +100,6 @@ double GammaHandler::compton(vector<vector<double>> sourceInfo, vector<double> x
     	    rPsi = pi * RandomGen::rndm()->rand_uniform();
     		rY =  10* RandomGen::rndm()->rand_uniform();
 
-
     		B = 1.0/(1.0+initialEnergy/energyScaleFactor*(1-cos(rPsi)));
     		kn = pi*pow(B,2)*(B+1.0/B-pow(sin(rPsi),2))*sin(rPsi); //klien nishina
     		if(rY<kn) draw = false;
@@ -118,11 +108,8 @@ double GammaHandler::compton(vector<vector<double>> sourceInfo, vector<double> x
   		if(abs(xyTry[0]-shiftedEnergy) < brThresh) {
   			return kn*yMax*br*(co/(pe+co+pp));
   		}
-
-		
 	}
 	return 0.0;
-
 }
 
 double GammaHandler::pairProduction(vector<vector<double>> sourceInfo, vector<double> xyTry) {
@@ -139,8 +126,6 @@ double GammaHandler::pairProduction(vector<vector<double>> sourceInfo, vector<do
 		if(abs(xyTry[0]-shiftedEnergy) < brThresh) {
   			return yMax*br*(pp/(pe+co+pp));
   		}
-
-
 	}
 	return 0.0;
 }

@@ -8,7 +8,7 @@ double brThresh = 0.1;
 
 
 vector<vector<double>> GammaHandler::sourceLookupTable(string source) {
-	//energy container vector orginized as {energy, branch ratio, PE mass attenuation coef, Compton coef, PP coef}
+	//energy container vector orginized as {energy, branch ratio, PE mass attenuation coef, Compton coef, Pair Production coef}
 	vector<vector<double>> returnInfo;
 	if(source == "Co57") {
 		vector<double> e1 = {122.0, 0.856, 1.793, 0.1081, 0.00};

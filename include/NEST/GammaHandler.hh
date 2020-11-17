@@ -38,7 +38,6 @@ public:
 
 	/*return energies, branching ratios, and mass attenuation coefficients for a given source*/
 	vector<vector<double>> sourceLookupTable(string source);
-
 };
  
 

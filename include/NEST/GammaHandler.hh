@@ -17,7 +17,6 @@ using namespace std;
 //class GammaContainer;
 
 class GammaContainer {
-
 public:
 	GammaContainer(double e, double br, double pec, double cc, double ppc);
 	double getEnergy();
@@ -32,8 +31,6 @@ private:
 	double PEcoef;
 	double Ccoef;
 	double PPcoef;
-
-
 };
 
 class GammaHandler {

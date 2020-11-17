@@ -36,7 +36,6 @@ vector<vector<double>> GammaHandler::sourceLookupTable(string source) {
 	return returnInfo;
 }
 
-
 double GammaHandler::combineSpectra(double emin, double emax, string source) {
 	double brSum = 0.0;
 	double fValue = 0.0;

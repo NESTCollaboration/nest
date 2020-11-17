@@ -33,7 +33,7 @@ public:
 	/*Return compton spectrum from KN formula and shifted energies */
 	double compton(vector<vector<double>> sourceInfo, vector<double> xyTry);
 
-	/*Return pair production spectrum from PP energy equation */
+	/*Return pair production spectrum from pair production energy equation */
 	double pairProduction(vector<vector<double>> sourceInfo, vector<double> xyTry);
 
 	/*return energies, branching ratios, and mass attenuation coefficients for a given source*/

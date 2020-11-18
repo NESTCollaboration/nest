@@ -626,7 +626,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double Qy, Nq;
   double Wq_eV = wvalue.Wq_eV;
-  double alpha = wvalue.alpha;
+  //double alpha = wvalue.alpha; // duplicate definition below. We don't even need this here (it is Nex/Ni)
   
   if ( ATOM_NUM == 18. ) { // Liquid Argon
     double alpha = 32.988 - 552.988/(15.5578+pow(dfield/(-4.7+0.025115*exp(1.3954/0.265360653)), 0.208889));
@@ -1380,8 +1380,10 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
       ExtEff = -0.03754 * pow(E_liq, 2.) + 0.52660 * E_liq - 0.84645;  // arXiv:1710.11032 (PIXeY)
       if ( E_liq > 7. ) ExtEff = 1.;
     }
-    else
+    else {
       ExtEff = 1. - 1. / ( 1. + pow ( E_liq / 3.4832, 4.9443 ) );  // arXiv:1904.02885 (Livermore)
+      //ExtEff = 1. - 1.3558 * exp ( -0.074312 * pow ( E_liq, 2.4259 ) );//Gus, favored by RED-100
+    } //the alternative options
   }
   if (ExtEff > 1. || fdetector->get_inGas()) ExtEff = 1.;
   if (ExtEff < 0. || E_liq <= 0.) ExtEff = 0.;
@@ -1507,7 +1509,7 @@ double NESTcalc::GetDensity(double Kelvin,
   if ( ATOM_NUM == 18. ) {
     inGas = false;
     if ( DENSITY > 2. ) return 1.4;
-    else 
+    else
       return DENSITY;
   }
   
@@ -1841,19 +1843,20 @@ double NESTcalc::CalcElectronLET ( double E, int Z ) {
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   
+  double alpha, Wq_eV;
   if ( ATOM_NUM == 18. ) { // Liquid argon
-    double alpha = 0.21; double Wq_eV = 1000. / 51.9; //23.6/1.21; // ~19.2-5 eV
+    alpha = 0.21; Wq_eV = 1000. / 51.9; //23.6/1.21; // ~19.2-5 eV
     return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha};
   }
   
-  double alpha = 0.067366 + density * 0.039693;
+  alpha = 0.067366 + density * 0.039693;
   /*double xi_se = 9./(1.+pow(density/2.,2.));
   double I_ion = 9.+(12.13-9.)/(1.+pow(density/2.953,65.));
   double I_exc = I_ion / 1.46;
   double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
   +xi_se/(1.+alpha);*/
   double eDensity = ( density / MolarMass ) * NEST_AVO * ATOM_NUM;
-  double Wq_eV = 20.7 - 1.01e-23 * eDensity;
+  Wq_eV = 20.7 - 1.01e-23 * eDensity;
   
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together
   

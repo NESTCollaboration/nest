@@ -11,8 +11,11 @@
  * Created on December 11, 2017, 10:27 AM
  */
 
+#include <exception>
 #include "TestSpectra.hh"
 #include "GammaHandler.hh"
+#include <stdexcept>
+
 
 using namespace std;
 

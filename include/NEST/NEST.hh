@@ -73,6 +73,7 @@
 #include <iostream>
 #include <random>
 #include <vector>
+#include <string>
 
 #define W_DEFAULT 13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35. 19.5-19.6 eV for LAr
 #define W_SCINT 8.5e-3  // the *max* possible energy of 1 scint phot, keV. Make this at least 10 eV for LAr
@@ -115,7 +116,8 @@ typedef enum {
   Kr83m = 11,
   ppSolar = 12,
   atmNu = 13,
-  NoneType =14
+  fullGamma = 14,
+  NoneType =15
 
 } INTERACTION_TYPE;
 

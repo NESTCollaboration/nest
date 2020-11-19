@@ -13,12 +13,19 @@
 
 #include <exception>
 #include "TestSpectra.hh"
+#include "GammaHandler.hh"
 #include <stdexcept>
 
 using namespace std;
 
 double power =
     3.7488;  // this is a global variable because it is for both AmBe and 252Cf
+
+double TestSpectra::Gamma_spectrum(double xMin, double xMax, string source) {
+  GammaHandler gh;
+
+  return gh.combineSpectra(xMin, xMax, source);
+}
 
 double TestSpectra::CH3T_spectrum(double xMin, double xMax) {
   double m_e = 510.9989461;     // e- rest mass-energy [keV]

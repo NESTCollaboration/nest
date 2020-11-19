@@ -1,6 +1,7 @@
 
 #include <exception>
 #include "NEST.hh"
+#include <stdexcept>
 
 #define InfraredER 1.35
 #define InfraredNR 7.00
@@ -1382,6 +1383,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     }
     else {
       ExtEff = 1. - 1. / ( 1. + pow ( E_liq / 3.4832, 4.9443 ) );  // arXiv:1904.02885 (Livermore)
+      //ExtEff = -0.0012052 + 0.1638 * fdetector->get_E_gas() - 0.0063782 * pow ( fdetector->get_E_gas(), 2. );  // Aprile 2004 IEEE No. 5
       //ExtEff = 1. - 1.3558 * exp ( -0.074312 * pow ( E_liq, 2.4259 ) );//Gus, favored by RED-100
     } //the alternative options
   }

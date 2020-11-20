@@ -80,7 +80,7 @@ double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, c
   double co = sourceInfo[index][3];
   double pp = sourceInfo[index][4];
   if(found) return yMax * br * (pe / (pe + co + pp));
-  return 1.0;
+  return 0.0;
 }
 
 double GammaHandler::compton(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {

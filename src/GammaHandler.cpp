@@ -1,39 +1,44 @@
 #include "GammaHandler.hh"
 
-
 using namespace std;
 
 double yMax = 1.0; //arbitrary y max, might need to change
 double brThresh = 0.1;
 
+const vector<vector<double>>& GammaHandler::sourceLookupTable(const std::string& source)
+{
+  // energy container vector orginized as {energy, branch ratio, PE mass attenuation coef, Compton coef, Pair Production
+  // coef}
+  typedef vector<vector<double>> LookupTable;
+  static const LookupTable co57Info {
+    { 122.0, 0.856, 1.793, 0.1081, 0.00 }, //
+    { 136.0, 0.1068, 0.5651, 0.1019, 0.00 }, //
+    { 14.0, 0.0916, 55.5, 0.0744, 0.00 }, //
+  };
+  static const LookupTable co60Info {
+    { 1332.0, 0.9998, 0.001991, 0.04244, 0.0008853 }, //
+    { 1173.0, 0.9985, 0.004126, 0.05156, 0.00 }, //
+  };
+  static const LookupTable cs137Info {
+    { 662.0, 0.851, 0.01338, 0.06559, 0.00 }, //
+    { 284.0, 0.0006, 0.08009, 0.08495, 0.00 }, //
+  };
 
-const vector<vector<double>> GammaHandler::sourceLookupTable(string source) {
-	//energy container vector orginized as {energy, branch ratio, PE mass attenuation coef, Compton coef, Pair Production coef}
-	vector<vector<double>> returnInfo;
-	if(source == "Co57") {
-		vector<double> e1 = {122.0, 0.856, 1.793, 0.1081, 0.00};
-		vector<double> e2 = {136.0, 0.1068, 0.5651, 0.1019, 0.00};
-		vector<double> e3 = {14.0, 0.0916, 55.5, 0.0744, 0.00};
-		returnInfo.push_back(e1);
-		returnInfo.push_back(e2);
-		returnInfo.push_back(e3);
-		return returnInfo;
-	}else if(source == "Co60") {
-		vector<double> e1 = {1332.0, 0.9998, 0.001991, 0.04244, 0.0008853};
-		vector<double> e2 = {1173.0, 0.9985, 0.004126, 0.05156, 0.00};
-		returnInfo.push_back(e1);
-		returnInfo.push_back(e2);
-		return returnInfo;
-	 }else if(source == "Cs137") {
-		vector<double> e1 = {662.0, 0.851, 0.01338, 0.06559, 0.00};
-		vector<double> e2 = {284.0, 0.0006, 0.08009, 0.08495, 0.00};
-		returnInfo.push_back(e1);
-		returnInfo.push_back(e2);
-		return returnInfo;
-	}
-	cerr << source << " Is not a valid option!" << endl;
-	exit(1);
-	return returnInfo;
+  if (source == "Co57")
+  {
+    return co57Info;
+  }
+  else if (source == "Co60")
+  {
+    return co60Info;
+  }
+  else if (source == "Cs137")
+  {
+    return cs137Info;
+  }
+  cerr << source << " Is not a valid option!" << endl;
+  throw std::invalid_argument { source + " is not a valid option!" };
+  return co57Info;
 }
 
 double GammaHandler::combineSpectra(double emin, double emax, string source) {

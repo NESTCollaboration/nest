@@ -391,7 +391,6 @@ vector<double> signal1, signal2, signalE, vTable;
     type_num = atmNu; numEvts = RandomGen::rndm()->
 			poisson_draw(1.5764e-7*double(numEvts));
   }else if (type == "newGamma") {
-        //cerr << "You have chosen the new gamma model. This will not work yet." << endl;
         type_num = fullGamma;
         cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
         cin >> gamma_source;
@@ -399,8 +398,6 @@ vector<double> signal1, signal2, signalE, vTable;
           cerr  << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some"
           <<"scintilations may go unaccounted for." << endl;
         }
-        // cerr << "Branching ratio: ";
-        // cin >> branchRatio;
   }else {
     cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
     cerr << "NR or neutron," << endl;

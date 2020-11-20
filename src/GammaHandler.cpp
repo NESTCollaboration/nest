@@ -65,19 +65,22 @@ double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, c
 {
   // implement simple delta function to the spectrum
   std::size_t index { 0 };
+  bool found = false;
   for (int i = 0; i < sourceInfo.size(); i++)
   {
     double initialEnergy = sourceInfo[i][0];
     if (abs(xyTry[0] - initialEnergy) < brThresh)
     {
       index = i;
+      found = true;
     }
   }
   double br = sourceInfo[index][1];
   double pe = sourceInfo[index][2];
   double co = sourceInfo[index][3];
   double pp = sourceInfo[index][4];
-  return yMax * br * (pe / (pe + co + pp));
+  if(found) return yMax * br * (pe / (pe + co + pp));
+  return 0.0;
 }
 
 double GammaHandler::compton(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {

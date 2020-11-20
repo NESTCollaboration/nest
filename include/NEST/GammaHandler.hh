@@ -37,8 +37,12 @@ public:
 	double pairProduction(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry);
   
   /*return energies, branching ratios, and mass attenuation coefficients for a given source*/
+<<<<<<< HEAD
 	const vector<vector<double>> sourceLookupTable(string source);
 
+=======
+	const vector<vector<double>>& sourceLookupTable(const std::string& source);
+>>>>>>> 6463adfdb37ffd80af0a051a855b6bffaa11dcc5
 };
  
 

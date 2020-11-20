@@ -163,7 +163,7 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac)
   double cntr = 0.5; //0.41 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E)
   //for gamma-rays larger than 100 keV at least in XENON10 use 0.43 as the best fit. 0.62-0.37 for LUX Run03
   double skew = -0.2;
-  double mode = cntr + sqrt(2./M_PI)*skew*wide/sqrt(1.+skew*skew);
+  //double mode = cntr + sqrt(2./M_PI)*skew*wide/sqrt(1.+skew*skew);
   double norm = 0.988;//1./(exp(-0.5*pow(mode-cntr,2.)/(wide*wide))*(1.+erf(skew*(mode-cntr)/(wide*sqrt(2.))))); //makes sure omega never exceeds ampl
   double omega = norm*ampl*exp(-0.5*pow(elecFrac-cntr,2.)/(wide*wide))*(1.+erf(skew*(elecFrac-cntr)/(wide*sqrt(2.))));
   if ( omega < 0. )
@@ -738,7 +738,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
       return GetYieldKr83m(energy,density,dfield,massNum);
       //not actually massNumber, but a place holder for maxTime
     break;
-    default:  // beta, CH3T, 14C, and the pp solar neutrino background
+    default:  // beta, CH3T, 14C, the pp solar neutrino background, and Grant B's new or full gamma
       return GetYieldBeta(energy,density,dfield);
       //return GetYieldBetaGR(energy,density,dfield);
     break;

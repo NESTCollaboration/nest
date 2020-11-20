@@ -7,7 +7,7 @@ double yMax = 1.0; //arbitrary y max, might need to change
 double brThresh = 0.1;
 
 
-vector<vector<double>> GammaHandler::sourceLookupTable(string source) {
+const vector<vector<double>> GammaHandler::sourceLookupTable(string source) {
 	//energy container vector orginized as {energy, branch ratio, PE mass attenuation coef, Compton coef, Pair Production coef}
 	vector<vector<double>> returnInfo;
 	if(source == "Co57") {
@@ -57,8 +57,8 @@ double GammaHandler::combineSpectra(double emin, double emax, string source) {
      return xyTry[0];
 }
 
-double GammaHandler::photoIonization(vector<vector<double>> sourceInfo, vector<double> xyTry) {
-	//implement simple delta function to the spectrum
+double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {
+  //implement simple delta function to the spectrum
 	double fValue = 0.0;
 	for(int i = 0; i < sourceInfo.size(); i++) {
 		double initialEnergy = sourceInfo[i][0];
@@ -73,8 +73,8 @@ double GammaHandler::photoIonization(vector<vector<double>> sourceInfo, vector<d
 	return fValue;
 }
 
-double GammaHandler::compton(vector<vector<double>> sourceInfo, vector<double> xyTry) {
-	double pi = 3.1415926535897;
+double GammaHandler::compton(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {
+  double pi = 3.1415926535897;
 	double energyScaleFactor = 511; //mc^2 for electron mass in keV
 	double thetaMin = 0.0;
 	double thetaMax = pi;
@@ -111,8 +111,8 @@ double GammaHandler::compton(vector<vector<double>> sourceInfo, vector<double> x
 	return 0.0;
 }
 
-double GammaHandler::pairProduction(vector<vector<double>> sourceInfo, vector<double> xyTry) {
-	double energyScaleFactor = 511; //mc^2 for electron mass in keV
+double GammaHandler::pairProduction(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {
+  double energyScaleFactor = 511; //mc^2 for electron mass in keV
 	double initialEnergy, shiftedEnergy;
 	//loop over allowed gamma energies
 	for(int i = 0; i < sourceInfo.size(); i++) {

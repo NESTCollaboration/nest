@@ -62,20 +62,23 @@ double GammaHandler::combineSpectra(double emin, double emax, string source) {
      return xyTry[0];
 }
 
-double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {
-  //implement simple delta function to the spectrum
-	double fValue = 0.0;
-	for(int i = 0; i < sourceInfo.size(); i++) {
-		double initialEnergy = sourceInfo[i][0];
-		double br = sourceInfo[i][1];
-		double pe = sourceInfo[i][2];
-		double co = sourceInfo[i][3];
-		double pp = sourceInfo[i][4];
-		if(abs(xyTry[0]-initialEnergy) < brThresh) {
-			fValue = yMax*br*(pe/(pe+co+pp));
-		}
-	}
-	return fValue;
+double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry)
+{
+  // implement simple delta function to the spectrum
+  std::size_t index { 0 };
+  for (int i = 0; i < sourceInfo.size(); i++)
+  {
+    double initialEnergy = sourceInfo[i][0];
+    if (abs(xyTry[0] - initialEnergy) < brThresh)
+    {
+      index = i;
+    }
+  }
+  double br = sourceInfo[index][1];
+  double pe = sourceInfo[index][2];
+  double co = sourceInfo[index][3];
+  double pp = sourceInfo[index][4];
+  return yMax * br * (pe / (pe + co + pp));
 }
 
 double GammaHandler::compton(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {

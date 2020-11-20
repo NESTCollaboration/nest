@@ -14,28 +14,6 @@
 //#include "GammaContainer.hh"
 using namespace std;
 
-//class GammaContainer;
-
-class GammaContainer {
-
-public:
-	GammaContainer(double e, double br, double pec, double cc, double ppc);
-	double getEnergy();
-	double getBR();
-	double getPECoef();
-	double getCcoef();
-	double getPPCoef();
-	double getTotalAttenCoef();
-private:
-	double energy;
-	double branchRatio;
-	double PEcoef;
-	double Ccoef;
-	double PPcoef;
-
-
-};
-
 class GammaHandler {
 public:
 	GammaHandler() {};
@@ -50,19 +28,20 @@ public:
 	Get y value for given x value in xyTry. Function is just delta functions at the gammaEnergies with amplitudes given
 	by yMax*branchRatio at that energy
 	*/
-	double photoIonization(vector<vector<double>> sourceInfo, vector<double> xyTry);
+	double photoIonization(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry);
 
-	/*Return compton spectrum from KN formula and shifted energies */
-	double compton(vector<vector<double>> sourceInfo, vector<double> xyTry);
+  /*Return compton spectrum from KN formula and shifted energies */
+	double compton(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry);
 
-	/*Return pair production spectrum from PP energy equation */
-	double pairProduction(vector<vector<double>> sourceInfo, vector<double> xyTry);
-
-	/*return energies, branching ratios, and mass attenuation coefficients for a given source*/
-	vector<vector<double>> sourceLookupTable(string source);
+  /*Return pair production spectrum from pair production energy equation */
+	double pairProduction(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry);
+  
+  /*return energies, branching ratios, and mass attenuation coefficients for a given source*/
+	const vector<vector<double>> sourceLookupTable(string source);
 
 };
  
+
 
 
 #endif 

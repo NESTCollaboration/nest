@@ -14,7 +14,7 @@
 #include <iostream>
 #include <random>
 #include <vector>
-#include<string>
+#include <string>
 #include <exception>
 
 #include "RandomGen.hh"

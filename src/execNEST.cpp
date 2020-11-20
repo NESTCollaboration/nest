@@ -389,18 +389,15 @@ vector<double> signal1, signal2, signalE, vTable;
   else if ( type == "atmNu" || type == "AtmNu" || type == "atm_Nu" || type == "Atm_Nu" || type == "atm-Nu" || type == "Atm-Nu" || type == "atm_nu" || type == "atm-nu" ) {
     type_num = atmNu; numEvts = RandomGen::rndm()->
 			poisson_draw(1.5764e-7*double(numEvts));
-  }else if (type == "newGamma") {
-        //cerr << "You have chosen the new gamma model. This will not work yet." << endl;
-        type_num = fullGamma;
-        cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
-        cin >> gamma_source;
-        if(gamma_source == "Co60") {
-          cerr  << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some"
-          <<"scintilations may go unaccounted for." << endl;
-        }
-        // cerr << "Branching ratio: ";
-        // cin >> branchRatio;
-  }else {
+  } else if ( type == "newGamma" ) {
+    type_num = fullGamma;
+    cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
+    cin >> gamma_source;
+    if ( gamma_source == "Co60" ) {
+      cerr << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some"
+	   << "photons and electrons may go unaccounted." << endl;
+    }
+  } else {
     cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
     cerr << "NR or neutron," << endl;
     cerr << "WIMP," << endl;
@@ -417,8 +414,8 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "Carbon14 or 14C or C14 or C-14 or Carbon-14," << endl;
     cerr << "beta or ER or Compton or compton or electron or e-," << endl;
     cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
-    cerr << "atmNu, and" << endl;
-    cerr << "muon or MIP or LIP or mu or mu-" << endl;
+    cerr << "atmNu," << endl;
+    cerr << "muon or MIP or LIP or mu or mu-, and" << endl;
     cerr << "newGamma" << endl;
 
     return 1;

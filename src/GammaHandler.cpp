@@ -62,27 +62,29 @@ double GammaHandler::combineSpectra(double emin, double emax, string source) {
      return xyTry[0];
 }
 
-double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {
-  //implement simple delta function to the spectrum
-	double fValue = 0.0;
-	for(int i = 0; i < sourceInfo.size(); i++) {
-		double initialEnergy = sourceInfo[i][0];
-		double br = sourceInfo[i][1];
-		double pe = sourceInfo[i][2];
-		double co = sourceInfo[i][3];
-		double pp = sourceInfo[i][4];
-		if(abs(xyTry[0]-initialEnergy) < brThresh) {
-			fValue = yMax*br*(pe/(pe+co+pp));
-		}
-	}
-	return fValue;
+double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry)
+{
+  // implement simple delta function to the spectrum
+  std::size_t index { 0 };
+  for (int i = 0; i < sourceInfo.size(); i++)
+  {
+    double initialEnergy = sourceInfo[i][0];
+    if (abs(xyTry[0] - initialEnergy) < brThresh)
+    {
+      index = i;
+    }
+  }
+  double br = sourceInfo[index][1];
+  double pe = sourceInfo[index][2];
+  double co = sourceInfo[index][3];
+  double pp = sourceInfo[index][4];
+  return yMax * br * (pe / (pe + co + pp));
 }
 
 double GammaHandler::compton(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry) {
-  double pi = 3.1415926535897;
 	double energyScaleFactor = 511; //mc^2 for electron mass in keV
 	double thetaMin = 0.0;
-	double thetaMax = pi;
+	double thetaMax = M_PI;
 	int simpIterations = 100;
 	double simpStep = (thetaMax - thetaMin)/simpIterations;
 	double simpCurrentStep = thetaMin;
@@ -101,11 +103,11 @@ double GammaHandler::compton(const vector<vector<double>>& sourceInfo, const vec
 		//get shifted energy with MC
 		bool draw = true;
   		while(draw){
-    	    rPsi = pi * RandomGen::rndm()->rand_uniform();
+    	    rPsi = M_PI * RandomGen::rndm()->rand_uniform();
     		rY =  10* RandomGen::rndm()->rand_uniform();
 
     		B = 1.0/(1.0+initialEnergy/energyScaleFactor*(1-cos(rPsi)));
-    		kn = pi*pow(B,2)*(B+1.0/B-pow(sin(rPsi),2))*sin(rPsi); //klien nishina
+    		kn = M_PI*pow(B,2)*(B+1.0/B-pow(sin(rPsi),2))*sin(rPsi); //klien nishina
     		if(rY<kn) draw = false;
   		}
   		shiftedEnergy = initialEnergy * (1.0-1.0/(1.0+initialEnergy/energyScaleFactor*(1.0-cos(rPsi)))); //shifted ebergy formula

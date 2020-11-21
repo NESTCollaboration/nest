@@ -16,6 +16,7 @@
 #include "GammaHandler.hh"
 #include <stdexcept>
 
+
 using namespace std;
 
 double power =

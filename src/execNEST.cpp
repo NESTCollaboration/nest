@@ -16,7 +16,8 @@
 #include "analysis.hh"
 #include "execNEST.hh"
 
-#include "LUX_Run03.hh"
+//#include "LUX_Run03.hh"
+#include "DetectorExample_XENON10.hh"
 
 #define tZero 0.00 //day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03
@@ -33,7 +34,8 @@ bool BeenHere = false;
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  auto* detector = new DetectorExample_LUX_RUN03();
+//  auto* detector = new DetectorExample_LUX_RUN03();
+  DetectorExample_XENON10* detector = new DetectorExample_XENON10();
   
   // Custom parameter modification functions
   // detector->ExampleFunction();
@@ -450,9 +452,10 @@ vector<double> signal1, signal2, signalE, vTable;
   if ( rho < 1.75 && ATOM_NUM == 54. ) detector->set_inGas(true);
 
   double Wq_eV = NESTcalc::WorkFunction(rho,detector->get_molarMass()).Wq_eV;
-  //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
-  if ( detector->get_extraPhot() )
-    Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO
+  //if ( rho > 3. ) detector->set_rmQuanta(true); //solid OR enriched. Units of g/mL
+  if ( detector->get_rmQuanta() )
+//    Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO
+    Wq_eV = 13.5426; //reverting back to match all other experiments
   
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
@@ -783,8 +786,9 @@ vector<double> signal1, signal2, signalE, vTable;
                                               double(massNum), double(atomNum), NuisParam);
             YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
                                               double(massNum), double(atomNum), NuisParam);
-            double weightG =
-                    FreeParam[0] + FreeParam[1] * erf(FreeParam[2] * (log(keV) + FreeParam[3])); // Xe10:1,.55,-1.6,-1.0
+//            double weightG =
+//                    FreeParam[0] + FreeParam[1] * erf(FreeParam[2] * (log(keV) + FreeParam[3])); // Xe10:1,.55,-1.6,-1.0
+            double weightG = 1 + .55 * erf ( -1.6 * ( log ( keV ) + -1.0 ) );
             double weightB = 1. - weightG;
             yields.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
             yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;
@@ -792,12 +796,15 @@ vector<double> signal1, signal2, signalE, vTable;
             yields.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
             yields.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
             yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
-            FudgeFactor[0] = FreeParam[4];//0.99;
-            FudgeFactor[1] = FreeParam[5];//1.04;
+//            FudgeFactor[0] = FreeParam[4];//0.99;
+//            FudgeFactor[1] = FreeParam[5];//1.04;
+            FudgeFactor[0] = 0.99;//Xe10;
+            FudgeFactor[1] = 1.04;//Xe10;
             yields.PhotonYield *= FudgeFactor[0];
             yields.ElectronYield *= FudgeFactor[1];
-            detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
-          } else {
+//            detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
+            detector->set_noiseL(1.0, 1.0); //Xe10 
+            } else {
             if(seed < 0 && seed != -1) massNum = detector->get_molarMass();
             yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
           }
@@ -907,7 +914,7 @@ vector<double> signal1, signal2, signalE, vTable;
         if(signal2.back() <= 0.) Ne = 0.;
         if(detector->get_coinLevel() <= 0 && Nph <= PHE_MIN) Nph = DBL_MIN;
         if(yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
-          if(detector->get_extraPhot()) yields.Lindhard = 1.;
+          if(detector->get_rmQuanta()) yields.Lindhard = 1.;
           if(yields.Lindhard == 1.)
             keV = (Nph / FudgeFactor[0] + Ne / FudgeFactor[1]) * Wq_eV * 1e-3;
           else {

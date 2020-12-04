@@ -29,7 +29,7 @@ class VDetector {
   const double* get_noiseL() { return &noiseL[0]; }
   double get_P_dphe() const { return P_dphe; }
   
-  bool get_extraPhot() const{ return extraPhot; }
+  bool get_rmQuanta() const{ return rmQuanta; }
   double get_coinWind() const { return coinWind; }
   int get_coinLevel() const { return coinLevel; }
   int get_numPMTs() const { return numPMTs; }
@@ -82,7 +82,7 @@ class VDetector {
   }
   void set_P_dphe(double param) { P_dphe = param; }
 
-  void set_extraPhot(bool param){ extraPhot = param;}
+  void set_rmQuanta(bool param){ rmQuanta = param;}
   void set_coinWind(double param) { coinWind = param; }
   void set_coinLevel(int param) { coinLevel = param; }
   void set_numPMTs(int param) { numPMTs = param; }
@@ -168,7 +168,7 @@ protected:
   int coinLevel = 2;   // how many PMTs have to fire for an S1 to count
   int numPMTs = 89;    // For coincidence calculation
 
-  bool extraPhot=false;  // for matching EXO-200's W measurement
+  bool rmQuanta=false;  // for matching EXO-200's W measurement
   //"Linear noise" terms as defined in Dahl thesis and by D. McK
   double noiseL[2] = {3e-2,3e-2}; // S1->S1 Gaussian-smeared w/ noiseL[0]*S1. Ditto S2
 

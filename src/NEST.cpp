@@ -268,12 +268,13 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   if (recombProb > 1.) recombProb = 1.;
   if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
       recombProb == 0.0)  {
-    if ( fdetector->get_extraPhot() )
+    if ( fdetector->get_rmQuanta() )
     {
       if ( yields.Lindhard != 1. )
         Nph = int(floor(double(Nph)*InfraredNR + 0.5)); //IR photons for NR
       else
-        Nph = int(floor(double(Nph)*InfraredER + 0.5)); //EXO
+//        Nph = int(floor(double(Nph)*InfraredER + 0.5)); //EXO
+        Nph = int(floor((double(Nph)/InfraredER) + 0.5)); //Converting back from EXO to all others
     }
     result.photons = Nex;
     result.electrons =Ni;
@@ -334,11 +335,12 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     throw std::runtime_error("ERROR: Quanta not conserved. Tell Matthew Immediately!");
   }
   
-  if ( fdetector->get_extraPhot() ) {
+  if ( fdetector->get_rmQuanta() ) {
     if ( yields.Lindhard != 1. )
       Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR
     else
-      Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
+//      Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
+      Nph = int(floor((double(Nph)/InfraredER) + 0.5)); //Converting back from EXO to all others
   }
   result.Variance=Variance;
   result.recombProb=recombProb;
@@ -1858,7 +1860,8 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
   +xi_se/(1.+alpha);*/
   double eDensity = ( density / MolarMass ) * NEST_AVO * ATOM_NUM;
-  Wq_eV = 20.7 - 1.01e-23 * eDensity;
+//  Wq_eV = 20.7 - 1.01e-23 * eDensity;
+  Wq_eV = (18.7263 - 1.01e-23 * eDensity);
   
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together
   

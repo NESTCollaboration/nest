@@ -531,9 +531,13 @@ vector<double> signal1, signal2, signalE, vTable;
               keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
             break;
           default:
-            if(eMin < 0.) return 1;
-            if(eMax > 0.)
-              keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
+            if ( eMin < 0. ) return 1;
+            if ( eMax > 0. ) {
+              if ( eMax > eMin )
+		keV = eMin + ( eMax - eMin ) * RandomGen::rndm()->rand_uniform();
+	      else //polymorphic feature: Gauss E distribution
+		keV = RandomGen::rndm()->rand_gauss(eMin,eMax); if ( keV < 0. ) keV = 1e-3 * Wq_eV;
+	    }
             else {  // negative eMax signals to NEST that you want to use an
               // exponential energy spectrum profile
               if(eMin == 0.) return 1;
@@ -546,7 +550,8 @@ vector<double> signal1, signal2, signalE, vTable;
         }
       }
 
-      if(type_num != WIMP && type_num != B8 && type_num != ppSolar && type_num != atmNu && eMax > 0.) {
+      if(type_num != WIMP && type_num != B8 && type_num != ppSolar && type_num != atmNu && eMax > 0. &&
+	 eMin < eMax) {
         if(keV > eMax) keV = eMax;
         if(keV < eMin) keV = eMin;
       }
@@ -1074,11 +1079,12 @@ vector<double> signal1, signal2, signalE, vTable;
                  (g2 * yieldsMax.ElectronYield) < maxS2) &&
                 j != 0)
               cerr << "WARNING: Insufficient number of high-energy events to "
-                      "populate highest bins is likely.\n";
+		      "populate highest bins is likely. Decrease maxS1 and/or "
+		      "increase maxS2. Also: up the stats, change E range\n";
             else
               cerr << "WARNING: Insufficient number of low-energy events to "
                       "populate lowest bins is likely. Increase minS1 and/or "
-                      "minS2.\n";
+                      "decrease minS2,s2_thr. Up the stats, change E range\n";
           }
           eMax = -999.;
         }

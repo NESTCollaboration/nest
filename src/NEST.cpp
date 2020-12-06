@@ -156,15 +156,15 @@ double NESTcalc::RecombOmegaNR(double elecFrac,const vector<double>& FreeParam/*
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac)
 {
-  double ampl = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25));
+  double ampl = 0.14+(0.043-0.14)/(1.+pow(efield/1210.,1.25)); //0.14+(0.05-0.14)/(1.+pow(efield/500.,6.)); //pair with GregR mean yields model
   if ( ampl < 0. )
     ampl = 0.;
   double wide = 0.205;
-  double cntr = 0.5; //0.41 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E)
+  double cntr = 0.5; //0.41 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E). Also works with GregR LUX Run04 model
   //for gamma-rays larger than 100 keV at least in XENON10 use 0.43 as the best fit. 0.62-0.37 for LUX Run03
   double skew = -0.2;
-  //double mode = cntr + sqrt(2./M_PI)*skew*wide/sqrt(1.+skew*skew);
-  double norm = 0.988;//1./(exp(-0.5*pow(mode-cntr,2.)/(wide*wide))*(1.+erf(skew*(mode-cntr)/(wide*sqrt(2.))))); //makes sure omega never exceeds ampl
+  double mode = cntr + sqrt(2./M_PI)*skew*wide/sqrt(1.+skew*skew);
+  double norm = 1./(exp(-0.5*pow(mode-cntr,2.)/(wide*wide))*(1.+erf(skew*(mode-cntr)/(wide*sqrt(2.))))); //makes sure omega never exceeds ampl
   double omega = norm*ampl*exp(-0.5*pow(elecFrac-cntr,2.)/(wide*wide))*(1.+erf(skew*(elecFrac-cntr)/(wide*sqrt(2.))));
   if ( omega < 0. )
     omega = 0;
@@ -675,13 +675,15 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 
 YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfield ) {
   
+  if ( RecombOmegaER ( 0.0, 0.5 ) > 0.042 )
+    cerr << "WARNING! You need to change RecombOmegaER to go along with GetYieldBetaGR" << endl;
+  
   Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   
   double Nq = energy * 1e3 / Wq_eV;
-  double m1 = (14.10181492*log10(dfield) -13.1164354516);
-  if ( m1 > 30.66 ) { m1 = 30.66; }
+  double m1 = 35.*(1.-1./(1.+(dfield/160.)));//(14.10181492*log10(dfield)-13.1164354516); if ( m1 > 30.66 ) { m1 = 30.66; }
   double m5 = Nq/energy/(1 + alpha*erf(0.05 * energy))-m1;
   double m10 = (0.0508273937+(0.1166087199-0.0508273937)/(1+pow(dfield/1.39260460e+02,-0.65763592)));
   
@@ -973,7 +975,9 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
       // TimeTable[0][ii]+24., TimeTable[1][ii] ); pulseFile << line << endl;
     }
   }
-
+  
+  if ( fdetector->get_noiseL()[0] >= 0.1 )
+    cerr << " !!WARNING!! S1 linear noise term is greater than or equal to 10% (i.e. 0.1) Did you mistake fraction for percent??" << endl;
   pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[0] * pulseArea);
   pulseArea -= ( subtract[0] + subtract[1] );
@@ -1297,7 +1301,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
     pulseArea = RandomGen::rndm()->rand_gauss(
         Nphe, fdetector->get_sPEres() * sqrt(Nphe));
   }
-
+  
+  if ( fdetector->get_noiseL()[1] >= 0.1 )
+    cerr << " !!WARNING!! S2 linear noise term is greater than or equal to 10% (i.e. 0.1) Did you mistake fraction for percent??" << endl;
   pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[1] * pulseArea);
   pulseArea -= (subtract[0]+subtract[1]);

@@ -270,8 +270,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
       recombProb == 0.0)  {
     if ( fdetector->get_extraPhot() )
     {
-      if ( yields.Lindhard != 1. )
-        Nph = int(floor(double(Nph)*InfraredNR + 0.5)); //IR photons for NR
+      if ( yields.Lindhard != 1. ) {
+        if ( density >= 3.10 ) Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe)
+      }
       else
         Nph = int(floor(double(Nph)*InfraredER + 0.5)); //EXO
     }
@@ -335,8 +336,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   }
   
   if ( fdetector->get_extraPhot() ) {
-    if ( yields.Lindhard != 1. )
-      Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR
+    if ( yields.Lindhard != 1. ) {
+      if ( density >= 3.10 ) Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe)
+    }
     else
       Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
   }
@@ -826,15 +828,25 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   // (some phe will be below threshold)
   if ( useTiming != -1 ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
     
+    // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
+    double TruncGaussAlpha = -1. / fdetector->get_sPEres();
+    double TruncGaussBeta = DBL_MAX;
+    double LittlePhi_Alpha=(1./sqrt(2.*M_PI))*exp(-0.5*TruncGaussAlpha*TruncGaussAlpha);
+    double LittlePhi_Beta  = (1./sqrt(2.*M_PI))*exp(-0.5*TruncGaussBeta*TruncGaussBeta);
+    double BigPhi_Alpha=0.5*(1.+erf(TruncGaussAlpha/sqrt(2.)));
+    double BigPhi_Beta = 0.5*(1.+erf(TruncGaussBeta/sqrt(2.)));
+    double CapitalZ = BigPhi_Beta - BigPhi_Alpha;
+    double NewMean = 1. + ( ( LittlePhi_Alpha - LittlePhi_Beta ) / CapitalZ ) * fdetector->get_sPEres();
+    
     // Step through the pmt hits
     for (int i = 0; i < nHits; ++i) {
       // generate photo electron, integer count and area
-      double phe1 = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres()) +
+      double phe1 = RandomGen::rndm()->rand_gauss(1./NewMean, fdetector->get_sPEres()) +
                     RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
                                                   fdetector->get_noiseB()[1]);
       ++Nphe;
       if (phe1 > DBL_MAX) phe1 = 1.;
-      if (phe1 < -DBL_MAX) phe1 = 0.;
+      if (phe1 < 0.00000) phe1 = 0.;
       prob = RandomGen::rndm()->rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
       if (prob > eff) {
@@ -844,12 +856,12 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
       double phe2 = 0.;
       if (RandomGen::rndm()->rand_uniform() < fdetector->get_P_dphe()) {
         // generate area and increment the photo-electron counter
-        phe2 = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres()) +
+        phe2 = RandomGen::rndm()->rand_gauss(1./NewMean, fdetector->get_sPEres()) +
                RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
                                              fdetector->get_noiseB()[1]);
         ++Nphe;
         if (phe2 > DBL_MAX) phe2 = 1.;
-        if (phe2 < -DBL_MAX) phe2 = 0.;
+        if (phe2 < 0.00000) phe2 = 0.;
         // zero the area if phe wouldn't have been observed
         if (RandomGen::rndm()->rand_uniform() > eff &&
             prob > eff) {
@@ -884,6 +896,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     pulseArea = RandomGen::rndm()->rand_gauss(
         BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())),
         fdetector->get_sPEres() * sqrt(Nphe));
+    //proper truncation not done here because this is meant to be approximation, quick and dirty
     spike = (double)nHits;
   }
 

@@ -270,11 +270,11 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
       recombProb == 0.0)  {
     if ( fdetector->get_extraPhot() )
     {
-      if ( yields.Lindhard != 1. ) {
-        if ( density >= 3.10 ) Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe)
+      if ( yields.Lindhard != 1. && density >= 3.10 ) {
+        Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe) but happens for alphas/ions too
       }
-      else
-        Nph = int(floor(double(Nph)*InfraredER + 0.5)); //EXO
+      else if ( yields.Lindhard == 1. )
+        Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
     }
     result.photons = Nex;
     result.electrons =Ni;
@@ -336,10 +336,10 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   }
   
   if ( fdetector->get_extraPhot() ) {
-    if ( yields.Lindhard != 1. ) {
-      if ( density >= 3.10 ) Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe)
+    if ( yields.Lindhard != 1. && density >= 3.10 ) {
+      Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe) but happens for alphas/ions too
     }
-    else
+    else if ( yields.Lindhard == 1. )
       Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
   }
   result.Variance=Variance;
@@ -798,7 +798,11 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
 
   // Add some variability in g1 drawn from a polynomial spline fit
   double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2], VDetector::fold);
-  double posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
+  double posDepSm;
+  if ( XYcorr == 1 || XYcorr == 3 )
+    posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
+  else
+    posDepSm = fdetector->FitS1(0, 0, smearPos[2], VDetector::unfold);
   double dt = (fdetector->get_TopDrift() - truthPos[2]) / driftVelocity;
   double dz_center = fdetector->get_TopDrift() -
                      dV_mid * fdetector->get_dtCntr();  // go from t to z
@@ -1115,7 +1119,11 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
   // Add some variability in g1_gas drawn from a polynomial spline fit
   double posDep = fdetector->FitS2(
 				   truthPos[0], truthPos[1], VDetector::fold);  // XY is always in mm now, never cm
-  double posDepSm = fdetector->FitS2(smearPos[0], smearPos[1], VDetector::unfold);
+  double posDepSm;
+  if ( XYcorr == 2 || XYcorr == 3 )
+    posDepSm = fdetector->FitS2(smearPos[0], smearPos[1], VDetector::unfold);
+  else
+    posDepSm = fdetector->FitS2(0, 0, VDetector::unfold);
   posDep /= fdetector->FitS2(0., 0., VDetector::fold);
   posDepSm /= fdetector->FitS2(0., 0., VDetector::unfold);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
@@ -1507,6 +1515,7 @@ vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
   newSpike[0] = RandomGen::rndm()->rand_gauss(
       newSpike[0], (fdetector->get_sPEres() / 4.) * sqrt(newSpike[0]));
   if (newSpike[0] < 0.0) newSpike[0] = 0.0;
+  if ( XYcorr == 0 || XYcorr == 2 ) { dx = 0.; dy = 0.; }
   newSpike[1] = newSpike[0] / fdetector->FitS1(dx, dy, dz, VDetector::unfold) *
                 fdetector->FitS1(0., 0., fdetector->get_TopDrift() -
 				 dS_mid * fdetector->get_dtCntr(), VDetector::unfold);

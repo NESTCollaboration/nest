@@ -96,6 +96,8 @@
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
 #define PHE_MAX 180 // saturation threshold, in PE per bin i.e. sample
 
+static const int XYcorr = 3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both
+
 namespace NEST {
 
 typedef enum {

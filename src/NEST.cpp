@@ -273,8 +273,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
       if ( yields.Lindhard != 1. && density >= 3.10 ) {
         Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe) but happens for alphas/ions too
       }
-      else if ( yields.Lindhard == 1. )
+      else if ( yields.Lindhard == 1. ) {
         Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
+      }
     }
     result.photons = Nex;
     result.electrons =Ni;
@@ -339,8 +340,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     if ( yields.Lindhard != 1. && density >= 3.10 ) {
       Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe) but happens for alphas/ions too
     }
-    else if ( yields.Lindhard == 1. )
+    else if ( yields.Lindhard == 1. ) {
       Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
+    }
   }
   result.Variance=Variance;
   result.recombProb=recombProb;
@@ -850,7 +852,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
                                                   fdetector->get_noiseB()[1]);
       ++Nphe;
       if (phe1 > DBL_MAX) phe1 = 1.;
-      if (phe1 < 0.00000) phe1 = 0.;
+      if (phe1 < 0.00000) phe1 = 0.; // real pcathodes can't make negative phe
       prob = RandomGen::rndm()->rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
       if (prob > eff) {
@@ -865,7 +867,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
                                              fdetector->get_noiseB()[1]);
         ++Nphe;
         if (phe2 > DBL_MAX) phe2 = 1.;
-        if (phe2 < 0.00000) phe2 = 0.;
+        if (phe2 < 0.00000) phe2 = 0.; // real pcathodes can't make negative phe
         // zero the area if phe wouldn't have been observed
         if (RandomGen::rndm()->rand_uniform() > eff &&
             prob > eff) {
@@ -1168,8 +1170,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
         10. * sqrt(2. * Diff_Long * dt *
                    1e-6);  // sqrt of cm^2/s * s = cm; times 10 for mm.
     double sigmaDT = 10. * sqrt(2. * Diff_Tran * dt * 1e-6);
-    double rho = fdetector->get_p_bar() * 1e5 /
-                 (fdetector->get_T_Kelvin() * 8.314) * fdetector->get_molarMass() * 1e-6;
+    bool YesGas = true; double rho = GetDensity(fdetector->get_T_Kelvin(),fdetector->get_p_bar(),YesGas,fdetector->get_molarMass());
     double driftVelocity_gas =
         GetDriftVelocity_MagBoltz(rho, fdetector->get_E_gas() * 1000.);
     double dt_gas = gasGap / driftVelocity_gas;
@@ -1429,8 +1430,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   //double elYield = (alpha * fdetector->get_E_gas() * 1e3 -
   //                beta * fdetector->get_p_bar() - gamma) *
   //               gasGap * 0.1;  // arXiv:1207.2292 (HA, Vitaly C.)
-  double rho = fdetector->get_p_bar() * 1e5 /
-    (fdetector->get_T_Kelvin() * 8.314) * fdetector->get_molarMass() * 1e-6;
+  bool YesGas = true; double rho = GetDensity(fdetector->get_T_Kelvin(),fdetector->get_p_bar(),YesGas,fdetector->get_molarMass());
   double elYield;
   if ( ATOM_NUM == 18. ) { // Henrique Araujo and Vitaly Chepel again
     alpha = 0.0813;
@@ -1559,8 +1559,8 @@ double NESTcalc::GetDensity(double Kelvin,
   else
     VaporP_bar = DBL_MAX;
   if (bara < VaporP_bar || inGas) {
-    double density =
-        bara * 1e5 / (Kelvin * 8.314);  // ideal gas law approximation, mol/m^3
+    double p_Pa = bara * 1e5;
+    double density = 1./(pow(RidealGas*Kelvin,3.)/(p_Pa*pow(RidealGas*Kelvin,2.)+RealGasA*p_Pa*p_Pa)+RealGasB);  // Van der Waals equation, mol/m^3
     density *= molarMass * 1e-6;
     cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
     inGas = true;

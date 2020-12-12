@@ -1536,7 +1536,7 @@ double NESTcalc::GetDensity(double Kelvin,
                             double bara, bool &inGas, double molarMass) {  // currently only for fixed pressure
                                             // (saturated vapor pressure); will
                                             // add pressure dependence later
-  if ( ATOM_NUM == 18. ) {
+  if ( ATOM_NUM == 18. && !inGas ) {
     inGas = false;
     if ( DENSITY > 2. ) return 1.4;
     else
@@ -1562,7 +1562,7 @@ double NESTcalc::GetDensity(double Kelvin,
     double p_Pa = bara * 1e5;
     double density = 1./(pow(RidealGas*Kelvin,3.)/(p_Pa*pow(RidealGas*Kelvin,2.)+RealGasA*p_Pa*p_Pa)+RealGasB);  // Van der Waals equation, mol/m^3
     density *= molarMass * 1e-6;
-    cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
+    if ( bara < VaporP_bar ) cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
     inGas = true;
     return density;  // in g/cm^3
   }

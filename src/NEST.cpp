@@ -1546,16 +1546,16 @@ double NESTcalc::GetDensity(double Kelvin,
   //if (MOLAR_MASS > 134.5) //enrichment for 0vBB expt (~0.8 Xe-136)
   //return 3.0305; // ±0.0077 g/cm^3, EXO-200 @167K: arXiv:1908.04128
   
-  if (Kelvin < 161.40) {  // solid Xenon
-    cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n";
-    return 3.41;  // from Yoo at 157K
-    // other sources say 3.1 (Wikipedia, 'minimum') and 3.640g/mL at an unknown
-    // temperature
+  if ( Kelvin < 161.40 && ATOM_NUM == 54. ) {  // solid Xenon
+    cerr << "\nWARNING: SOLID PHASE. IS THAT WHAT YOU WANTED?\n"; return 3.41;  // from Yoo at 157K
+    // other sources say 3.1 (Wikipedia, 'minimum') and 3.640g/mL at an unknown temperature
   }
-
+  
   double VaporP_bar;  // we will calculate using NIST
-  if (Kelvin < 289.7)
-    VaporP_bar = pow(10., 4.0519 - 667.16 / Kelvin);
+  if (Kelvin < 289.7) {
+    if ( ATOM_NUM == 54. ) VaporP_bar = pow(10., 4.0519 - 667.16 / Kelvin);
+    else VaporP_bar = 1.;
+  }
   else
     VaporP_bar = DBL_MAX;
   if (bara < VaporP_bar || inGas) {

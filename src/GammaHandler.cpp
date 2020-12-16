@@ -1,4 +1,6 @@
+#include <exception>
 #include "GammaHandler.hh"
+#include <stdexcept>
 
 using namespace std;
 

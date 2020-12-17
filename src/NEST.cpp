@@ -1432,7 +1432,6 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r,x,y; int Nph, nHits;
 	
   if (verbosity) {
-	  
     for ( int i = 0; i < 10000; ++i ) { // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
       phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
@@ -1838,7 +1837,6 @@ double NESTcalc::CalcElectronLET ( double E, int Z ) {
   }
   
   return LET;
-  
 }
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {

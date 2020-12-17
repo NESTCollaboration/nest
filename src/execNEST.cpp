@@ -540,7 +540,6 @@ vector<double> signal1, signal2, signalE, vTable;
                 }else {
                   keV = keV_vec[2];
                 }
-
               }
               break;
             case fullGamma_PE:
@@ -555,7 +554,6 @@ vector<double> signal1, signal2, signalE, vTable;
                 }else {
                   keV = keV_vec[2];
                 }
-
               }
               break;
             case fullGamma_Compton_PP:
@@ -571,7 +569,6 @@ vector<double> signal1, signal2, signalE, vTable;
                 }else {
                   keV = keV_vec[2];
                 }
-
               }
               break;
           default:

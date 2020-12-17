@@ -1465,7 +1465,6 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   g2_params[2] = SE;
   g2_params[3] = g2;
   g2_params[4] = gasGap;
-
   return g2_params;
 }
 

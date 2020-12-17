@@ -55,7 +55,7 @@ class TestSpectra {
   static double WIMP_dRate(double ER, double mWimp, double day);
   static WIMP_spectrum_prep WIMP_prep_spectrum(double mass, double eStep, double day);
   static double WIMP_spectrum(WIMP_spectrum_prep wprep, double mass, double day);
-  static double Gamma_spectrum(double xMin, double xMax, string source);
+  static const vector<double> Gamma_spectrum(double xMin, double xMax, string source);
 
   double ZeplinBackground();  // an example of how to do a better (non-flat) ER
                               // BG spectrum for a WS, from Henrique Araujo

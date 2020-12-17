@@ -22,7 +22,7 @@ public:
 	Takes min and max energies, a vector of monoenergetic gamma energies and a vector of their branching ratios.
 	The index of the gamma energy must correspond with the index of the branch ratio
 	*/
-	double combineSpectra(double emin, double emax, string source);
+	const vector<double> combineSpectra(double emin, double emax, string source);
 
 	/*
 	Get y value for given x value in xyTry. Function is just delta functions at the gammaEnergies with amplitudes given

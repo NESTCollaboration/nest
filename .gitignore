@@ -1,2 +1,5 @@
 /fastNEST.exe
 nbproject/*
+include/Detectors/EXO200.hh
+include/Detectors/LUX_Run02.hh
+include/NEST/analysis.hh

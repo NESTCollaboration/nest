@@ -847,12 +847,14 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     // Step through the pmt hits
     for (int i = 0; i < nHits; ++i) {
       // generate photo electron, integer count and area
-      double phe1 = RandomGen::rndm()->rand_gauss(1./NewMean, fdetector->get_sPEres()) +
+      double TruncGauss = 0.;
+      while ( TruncGauss <= 0. ) // real photo cathodes can't make negative phe
+	TruncGauss = RandomGen::rndm()->rand_gauss(1./NewMean,fdetector->get_sPEres());
+      double phe1 = TruncGauss +
                     RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
                                                   fdetector->get_noiseB()[1]);
       ++Nphe;
-      if (phe1 > DBL_MAX) phe1 = 1.;
-      if (phe1 < 0.00000) phe1 = 0.; // real pcathodes can't make negative phe
+      if ( phe1 > DBL_MAX ) phe1 = 1.; // for Box-Mueller fuck-ups
       prob = RandomGen::rndm()->rand_uniform();
       // zero the area if random draw determines it wouldn't have been observed.
       if (prob > eff) {
@@ -862,12 +864,14 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
       double phe2 = 0.;
       if (RandomGen::rndm()->rand_uniform() < fdetector->get_P_dphe()) {
         // generate area and increment the photo-electron counter
-        phe2 = RandomGen::rndm()->rand_gauss(1./NewMean, fdetector->get_sPEres()) +
+	TruncGauss = 0.;
+	while ( TruncGauss <= 0. )
+	  TruncGauss = RandomGen::rndm()->rand_gauss(1./NewMean,fdetector->get_sPEres());
+        phe2 = TruncGauss +
                RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
                                              fdetector->get_noiseB()[1]);
         ++Nphe;
-        if (phe2 > DBL_MAX) phe2 = 1.;
-        if (phe2 < 0.00000) phe2 = 0.; // real pcathodes can't make negative phe
+        if ( phe2 > DBL_MAX ) phe2 = 1.;
         // zero the area if phe wouldn't have been observed
         if (RandomGen::rndm()->rand_uniform() > eff &&
             prob > eff) {

@@ -803,11 +803,13 @@ vector<double> signal1, signal2, signalE, vTable;
             yields.ElectronYield *= FudgeFactor[1];
             detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
           } else {
-            if(seed < 0 && seed != -1) massNum = detector->get_molarMass();
+            if ( seed < 0 && seed != -1 && type_num <= 5 ) massNum = detector->get_molarMass();
             yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
           }
-          //FreeParam.clear();
-          //FreeParam = { 1.00, 1.00, 0.100, 0.50, 0.19, 2.25 };
+	  if ( type_num == ion ) { //alphas +other nuclei, lighter/heavier than medium's default nucleus
+	    FreeParam.clear();
+	    FreeParam = { 1.00, 1.00, 0., 0.50, 0.19, 0. }; //zero out non-binom recomb fluct & skew (NR)
+	  }
           quanta = n.GetQuanta(yields, rho, FreeParam);
         } else {
           yields.PhotonYield = 0.;
@@ -921,12 +923,17 @@ vector<double> signal1, signal2, signalE, vTable;
               Ne *= 1. - 1. / pow(1. + pow((keV / NuisParam[5]), NuisParam[6]), NuisParam[10]);
               Nph *= 1. - 1. / pow(1. + pow((keV / NuisParam[7]), NuisParam[8]), NuisParam[11]);
               keV = pow((Ne + Nph) / NuisParam[0], 1. / NuisParam[1]);
-            } else
-              keV = (Nph + Ne) * Wq_eV * 1e-3 / yields.Lindhard; // cheating :-)
+            } else {
+	      const double logden = log10(rho);
+	      const double Wq_eV_alpha = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
+		123.73 * pow(logden, 3.) - 136.47 * pow(logden, 4.) -
+		74.194 * pow(logden, 5.) - 20.276 * pow(logden, 6.) -
+		2.2352 * pow(logden, 7.);
+              keV = (Nph + Ne) * Wq_eV_alpha * 1e-3 / yields.Lindhard; // cheat
+	    } //nuclear recoil other than "NR" (Xe-Xe)
           }
           keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
-          // both places, but will not account
-          // for density dependence
+          // both places, but will not account for density dependence
         } else
           keV = 0.;
       }

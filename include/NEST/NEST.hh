@@ -119,7 +119,7 @@ typedef enum {
   fullGamma = 14,
   fullGamma_PE = 15,
   fullGamma_Compton_PP = 16,
-  NoneType =15
+  NoneType =17
 
 } INTERACTION_TYPE;
 

@@ -26,7 +26,7 @@
 using namespace std;
 using namespace NEST;
 
-vector<double> FreeParam,  NuisParam;
+vector<double> FreeParam,  NuisParam;//
 double band[NUMBINS_MAX][7];
 double energies[3];
 bool BeenHere = false;
@@ -557,7 +557,6 @@ vector<double> signal1, signal2, signalE, vTable;
               }
               break;
             case fullGamma_Compton_PP:
-              //keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
               keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
               if(keV_vec[0] > -1) {
                 type_num = fullGamma_PE;

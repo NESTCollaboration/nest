@@ -17,8 +17,6 @@
 #include "execNEST.hh"
 
 #include "LUX_Run03.hh"
-#include "EXO200.hh"
-
 
 #define tZero 0.00 //day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03

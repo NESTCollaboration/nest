@@ -17,6 +17,7 @@
 #include "execNEST.hh"
 
 #include "LUX_Run03.hh"
+#include "EXO200.hh"
 
 
 #define tZero 0.00 //day{of the year, 0 is ~Jan. 1}
@@ -34,7 +35,8 @@ bool BeenHere = false;
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  auto* detector = new DetectorExample_LUX_RUN03();
+  //auto* detector = new DetectorExample_LUX_RUN03();
+  auto* detector = new EXO200();
   // Custom parameter modification functions
   // detector->ExampleFunction();
   
@@ -389,7 +391,7 @@ vector<double> signal1, signal2, signalE, vTable;
   else if ( type == "atmNu" || type == "AtmNu" || type == "atm_Nu" || type == "Atm_Nu" || type == "atm-Nu" || type == "Atm-Nu" || type == "atm_nu" || type == "atm-nu" ) {
     type_num = atmNu; numEvts = RandomGen::rndm()->
 			poisson_draw(1.5764e-7*double(numEvts));
-  } else if ( type == "newGamma" ) {
+  } else if ( type == "fullGamma" ) {
     type_num = fullGamma;
     cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
     cin >> gamma_source;
@@ -416,7 +418,7 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
     cerr << "atmNu," << endl;
     cerr << "muon or MIP or LIP or mu or mu-, and" << endl;
-    cerr << "newGamma" << endl;
+    cerr << "fullGamma" << endl;
 
     return 1;
   }
@@ -557,7 +559,6 @@ vector<double> signal1, signal2, signalE, vTable;
               }
               break;
             case fullGamma_Compton_PP:
-              //keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
               keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
               if(keV_vec[0] > -1) {
                 type_num = fullGamma_PE;

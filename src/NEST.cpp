@@ -1430,7 +1430,11 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     SE *= fdetector->FitTBA(0., 0., fdetector->get_TopDrift() / 2.)[1];
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r,x,y; int Nph, nHits;
+<<<<<<< HEAD
   
+=======
+	
+>>>>>>> 2828fc6a181a3b440510f9441829049caeb93330
   if (verbosity) {
     for ( int i = 0; i < 10000; ++i ) { // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
@@ -1466,7 +1470,6 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   g2_params[2] = SE;
   g2_params[3] = g2;
   g2_params[4] = gasGap;
-
   return g2_params;
 }
 
@@ -1838,7 +1841,6 @@ double NESTcalc::CalcElectronLET ( double E, int Z ) {
   }
   
   return LET;
-  
 }
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {

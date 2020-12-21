@@ -27,7 +27,7 @@
 using namespace std;
 using namespace NEST;
 
-vector<double> FreeParam,  NuisParam;//
+vector<double> FreeParam,  NuisParam;
 double band[NUMBINS_MAX][7];
 double energies[3];
 bool BeenHere = false;

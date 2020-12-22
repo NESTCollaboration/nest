@@ -81,7 +81,6 @@
 #define ATOM_NUM 54.         // period to make float. 18 for LAr. If changed here go to TestSpectra.hh too
 
 #define PHE_MIN 1e-6         // area
-#define ELEC_MASS 9.109e-31  // kg
 #define FIELD_MIN 1.         // min elec field to make S2 (in V/cm)
 #define DENSITY 2.90         // g/cm^3, ref density for dependent effects. ~1.4 for LAr
 

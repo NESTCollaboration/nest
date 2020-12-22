@@ -530,10 +530,10 @@ vector<double> signal1, signal2, signalE, vTable;
            case fullGamma:
               keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
               if(keV_vec[0] > -1) {
-                type_num = fullGamma_PE;
+                type_num = fullGamma_PE; //here PE means photo-electric (effect) and not photo-electrons :-)
                 keV = keV_vec[0];
               }else {
-                type_num = fullGamma_Compton_PP;
+                type_num = fullGamma_Compton_PP; //PP = pair production
                 if(keV_vec[1] > -1) {
                   keV = keV_vec[1];
                 }else {

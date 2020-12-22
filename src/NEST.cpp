@@ -1212,7 +1212,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       Nph += long(SE);
       SE = (double)BinomFluct(long(SE), fdetector->get_g1_gas() * posDep);
       nHits += long(SE);
-      double KE = 0.5 * ELEC_MASS * driftVelocity_gas * driftVelocity_gas *
+      double KE = 0.5 * 9.109e-31 * driftVelocity_gas * driftVelocity_gas *
                   1e6 / 1.602e-16;
       double origin = fdetector->get_TopDrift() + gasGap / 2.;
       QuantaResult quanta{};
@@ -1696,7 +1696,8 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
   
   if ( speed <= 0. ) {
     cerr << "\nWARNING: DRIFT SPEED NON-POSITIVE. Setting to 0.1 mm/us\t" <<
-      "Line Number 1551 of NEST.cpp, in function NESTcalc::GetDriftVelocity_Liquid\n";
+      "Line Number ~1700 of NEST.cpp, in function NESTcalc::GetDriftVelocity_Liquid\t" <<
+      "Stop bothering Matthew about this, and fix underlying cause in your code!\n";
     if ( eField < 1e2 && eField >= FIELD_MIN ) {
       cerr << "FIELD MAY BE TOO LOW. ";
     }

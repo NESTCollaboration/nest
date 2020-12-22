@@ -29,7 +29,7 @@ const vector<double> TestSpectra::Gamma_spectrum(double xMin, double xMax, strin
 }
 
 double TestSpectra::CH3T_spectrum(double xMin, double xMax) {
-  double m_e = 510.9989461;     // e- rest mass-energy [keV]
+  double m_e = ElectronRestMassEnergy;     // e- rest mass-energy [keV]
   double aa = 0.0072973525664;  // fine structure constant
   double ZZ = 2.;
   double qValue = 18.5898;  // tritium beta decay endpoint [keV]
@@ -58,7 +58,7 @@ double TestSpectra::CH3T_spectrum(double xMin, double xMax) {
 }
 
 double TestSpectra::C14_spectrum(double xMin, double xMax) {
-  double m_e = 510.9989461;     // e- rest mass-energy [keV]
+  double m_e = ElectronRestMassEnergy;     // e- rest mass-energy [keV]
   double aa = 0.0072973525664;  // fine structure constant
   double ZZ = 7.;
   double V0 = 0.495;  // effective offset in T due to screening of the nucleus

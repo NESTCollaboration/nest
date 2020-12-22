@@ -31,6 +31,8 @@
 
 #define NUMBINS_MAX 1000
 
+static const double ElectronRestMassEnergy = 510.9989461;
+
 class TestSpectra {
  public:
   TestSpectra()= default;;  // private so that it cannot be manually called

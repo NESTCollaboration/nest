@@ -34,7 +34,6 @@ int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
   auto* detector = new DetectorExample_LUX_RUN03();
-  
   // Custom parameter modification functions
   // detector->ExampleFunction();
   
@@ -389,7 +388,7 @@ vector<double> signal1, signal2, signalE, vTable;
   else if ( type == "atmNu" || type == "AtmNu" || type == "atm_Nu" || type == "Atm_Nu" || type == "atm-Nu" || type == "Atm-Nu" || type == "atm_nu" || type == "atm-nu" ) {
     type_num = atmNu; numEvts = RandomGen::rndm()->
 			poisson_draw(1.5764e-7*double(numEvts));
-  } else if ( type == "newGamma" ) {
+  } else if ( type == "fullGamma" ) {
     type_num = fullGamma;
     cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
     cin >> gamma_source;
@@ -416,7 +415,7 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
     cerr << "atmNu," << endl;
     cerr << "muon or MIP or LIP or mu or mu-, and" << endl;
-    cerr << "newGamma" << endl;
+    cerr << "fullGamma" << endl;
 
     return 1;
   }
@@ -491,6 +490,7 @@ vector<double> signal1, signal2, signalE, vTable;
   if ( type_num == Kr83m ) massNum = maxTimeSep; 
       //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
+  vector<double> keV_vec;
   for (unsigned long int j = 0; j < numEvts; ++j) {
     try {
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
@@ -528,12 +528,55 @@ vector<double> signal1, signal2, signalE, vTable;
             keV = TestSpectra::atmNu_spectrum(eMin, eMax);
             break;
            case fullGamma:
-              keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
-            break;
+              keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
+              if(keV_vec[0] > -1) {
+                type_num = fullGamma_PE; //here PE means photo-electric (effect) and not photo-electrons :-)
+                keV = keV_vec[0];
+              }else {
+                type_num = fullGamma_Compton_PP; //PP = pair production
+                if(keV_vec[1] > -1) {
+                  keV = keV_vec[1];
+                }else {
+                  keV = keV_vec[2];
+                }
+              }
+              break;
+            case fullGamma_PE:
+              keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
+              if(keV_vec[0] > -1) {
+                type_num = fullGamma_PE;
+                keV = keV_vec[0];
+              }else {
+                type_num = fullGamma_Compton_PP;
+                if(keV_vec[1] > -1) {
+                  keV = keV_vec[1];
+                }else {
+                  keV = keV_vec[2];
+                }
+              }
+              break;
+            case fullGamma_Compton_PP:
+              keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
+              if(keV_vec[0] > -1) {
+                type_num = fullGamma_PE;
+                keV = keV_vec[0];
+              }else {
+                type_num = fullGamma_Compton_PP;
+                if(keV_vec[1] > -1) {
+                  keV = keV_vec[1];
+                }else {
+                  keV = keV_vec[2];
+                }
+              }
+              break;
           default:
-            if(eMin < 0.) return 1;
-            if(eMax > 0.)
-              keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
+            if ( eMin < 0. ) return 1;
+            if ( eMax > 0. ) {
+              if ( eMax > eMin )
+		keV = eMin + ( eMax - eMin ) * RandomGen::rndm()->rand_uniform();
+	      else //polymorphic feature: Gauss E distribution
+		keV = RandomGen::rndm()->rand_gauss(eMin,eMax); if ( keV < 0. ) keV = 1e-3 * Wq_eV;
+	    }
             else {  // negative eMax signals to NEST that you want to use an
               // exponential energy spectrum profile
               if(eMin == 0.) return 1;
@@ -546,7 +589,8 @@ vector<double> signal1, signal2, signalE, vTable;
         }
       }
 
-      if(type_num != WIMP && type_num != B8 && type_num != ppSolar && type_num != atmNu && eMax > 0.) {
+      if(type_num != WIMP && type_num != B8 && type_num != ppSolar && type_num != atmNu && eMax > 0. &&
+	 eMin < eMax) {
         if(keV > eMax) keV = eMax;
         if(keV < eMin) keV = eMin;
       }
@@ -798,11 +842,13 @@ vector<double> signal1, signal2, signalE, vTable;
             yields.ElectronYield *= FudgeFactor[1];
             detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
           } else {
-            if(seed < 0 && seed != -1) massNum = detector->get_molarMass();
+            if ( seed < 0 && seed != -1 && type_num <= 5 ) massNum = detector->get_molarMass();
             yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
           }
-          //FreeParam.clear();
-          //FreeParam = { 1.00, 1.00, 0.100, 0.50, 0.19, 2.25 };
+	  if ( type_num == ion ) { //alphas +other nuclei, lighter/heavier than medium's default nucleus
+	    FreeParam.clear();
+	    FreeParam = { 1.00, 1.00, 0., 0.50, 0.19, 0. }; //zero out non-binom recomb fluct & skew (NR)
+	  }
           quanta = n.GetQuanta(yields, rho, FreeParam);
         } else {
           yields.PhotonYield = 0.;
@@ -916,12 +962,17 @@ vector<double> signal1, signal2, signalE, vTable;
               Ne *= 1. - 1. / pow(1. + pow((keV / NuisParam[5]), NuisParam[6]), NuisParam[10]);
               Nph *= 1. - 1. / pow(1. + pow((keV / NuisParam[7]), NuisParam[8]), NuisParam[11]);
               keV = pow((Ne + Nph) / NuisParam[0], 1. / NuisParam[1]);
-            } else
-              keV = (Nph + Ne) * Wq_eV * 1e-3 / yields.Lindhard; // cheating :-)
+            } else {
+	      const double logden = log10(rho);
+	      const double Wq_eV_alpha = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
+		123.73 * pow(logden, 3.) - 136.47 * pow(logden, 4.) -
+		74.194 * pow(logden, 5.) - 20.276 * pow(logden, 6.) -
+		2.2352 * pow(logden, 7.);
+              keV = (Nph + Ne) * Wq_eV_alpha * 1e-3 / yields.Lindhard; // cheat
+	    } //nuclear recoil other than "NR" (Xe-Xe)
           }
           keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
-          // both places, but will not account
-          // for density dependence
+          // both places, but will not account for density dependence
         } else
           keV = 0.;
       }
@@ -1074,11 +1125,12 @@ vector<double> signal1, signal2, signalE, vTable;
                  (g2 * yieldsMax.ElectronYield) < maxS2) &&
                 j != 0)
               cerr << "WARNING: Insufficient number of high-energy events to "
-                      "populate highest bins is likely.\n";
+		      "populate highest bins is likely. Decrease maxS1 and/or "
+		      "increase maxS2. Also: up the stats, change E range\n";
             else
               cerr << "WARNING: Insufficient number of low-energy events to "
                       "populate lowest bins is likely. Increase minS1 and/or "
-                      "minS2.\n";
+                      "decrease minS2,s2_thr. Up the stats, change E range\n";
           }
           eMax = -999.;
         }

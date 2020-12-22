@@ -81,7 +81,6 @@
 #define ATOM_NUM 54.         // period to make float. 18 for LAr. If changed here go to TestSpectra.hh too
 
 #define PHE_MIN 1e-6         // area
-#define ELEC_MASS 9.109e-31  // kg
 #define FIELD_MIN 1.         // min elec field to make S2 (in V/cm)
 #define DENSITY 2.90         // g/cm^3, ref density for dependent effects. ~1.4 for LAr
 
@@ -95,6 +94,12 @@
   0.005                 // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
 #define PHE_MAX 180 // saturation threshold, in PE per bin i.e. sample
+
+static const int XYcorr = 3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both
+
+static const double RidealGas= 8.31446261815324;  // Joules/mole/Kelvin
+static const double RealGasA = 0.4250;  // m^6*Pa/mol^2 or m^4*N/mol^2. For Ar: 0.1355
+static const double RealGasB = 5.105e-5;  // m^3/mol. For Ar: 3.201e-5
 
 namespace NEST {
 
@@ -117,7 +122,9 @@ typedef enum {
   ppSolar = 12,
   atmNu = 13,
   fullGamma = 14,
-  NoneType =15
+  fullGamma_PE = 15,
+  fullGamma_Compton_PP = 16,
+  NoneType =17
 
 } INTERACTION_TYPE;
 

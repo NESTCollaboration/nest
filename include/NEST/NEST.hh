@@ -123,7 +123,9 @@ typedef enum {
   ppSolar = 12,
   atmNu = 13,
   fullGamma = 14,
-  NoneType =15
+  fullGamma_PE = 15,
+  fullGamma_Compton_PP = 16,
+  NoneType =17
 
 } INTERACTION_TYPE;
 

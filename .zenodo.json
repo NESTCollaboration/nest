@@ -20,6 +20,10 @@
         {
             "affiliation": "University of California, Davis", 
             "name": "Balajthy, J."
+        },
+        {
+            "affiliation": "Rensselaer Polytechnic Institute",
+            "name": "Block, G.A."
         }, 
         {
             "affiliation": "Lawrence Livermore National Laboratory", 
@@ -81,11 +85,7 @@
         {
             "affiliation": "University of California, San Diego", 
             "name": "Zhao, Z."
-        },
-        {
-            "affiliation": "Rensselaer Polytechnic Institute",
-            "name": "Block, G.A."
-        }
+        } 
     ], 
     "access_right": "open", 
     "description": "<p>Fast C++ simulation of different particle types in liquid, gaseous, and solid xenon</p>\n\n<ul>\n\t<li>Mean scintillation light and ionization charge yields</li>\n\t<li>Variation in total quanta, and recombination fluctuations</li>\n\t<li>Dependencies on energy, electric field strength, and density</li>\n\t<li>Pulse shape models for both S1 and S2, including e-trains</li>\n\t<li>Additional tools, for calculating leakage and limits</li>\n</ul>\n\n<p>Not a complete list, please see the exhaustive README file included.</p>"

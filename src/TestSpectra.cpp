@@ -22,7 +22,7 @@ using namespace std;
 double power =
     3.7488;  // this is a global variable because it is for both AmBe and 252Cf
 
-double TestSpectra::Gamma_spectrum(double xMin, double xMax, string source) {
+const vector<double> TestSpectra::Gamma_spectrum(double xMin, double xMax, string source) {
   GammaHandler gh;
 
   return gh.combineSpectra(xMin, xMax, source);

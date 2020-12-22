@@ -744,7 +744,10 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
       return GetYieldKr83m(energy,density,dfield,massNum);
       //not actually massNumber, but a place holder for maxTime
     break;
-    default:  // beta, CH3T, 14C, the pp solar neutrino background, and Grant B's new or full gamma
+    case fullGamma_PE:
+      return GetYieldGamma(energy,density,dfield); //PE of the full gamma spectrum
+    break;
+    default:  // beta, CH3T, 14C, the pp solar neutrino background, and Compton/PP spectra of fullGamma
       return GetYieldBeta(energy,density,dfield);
       //return GetYieldBetaGR(energy,density,dfield);
     break;
@@ -1458,9 +1461,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     SE *= fdetector->FitTBA(0., 0., fdetector->get_TopDrift() / 2.)[1];
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r,x,y; int Nph, nHits;
-
   if (verbosity) {
-    
     for ( int i = 0; i < 10000; ++i ) { // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield,sqrt(fdetector->get_s2Fano()*elYield))+0.5));
       phi = 2.*M_PI*RandomGen::rndm()->rand_uniform();
@@ -1495,7 +1496,6 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   g2_params[2] = SE;
   g2_params[3] = g2;
   g2_params[4] = gasGap;
-
   return g2_params;
 }
 
@@ -1590,16 +1590,13 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField){
 }
 
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas){
-  
   if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
   else
     return GetDriftVelocity_Liquid ( Kelvin, Density, eField );
-  
 }
 
 double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
                                   double eField) {  // for liquid and solid only
-  
   double speed =
       0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j;
@@ -1842,7 +1839,6 @@ double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
 }
 
 double NESTcalc::CalcElectronLET ( double E, int Z ) {
-  
   double LET;
   
   // use a spline fit to online ESTAR data
@@ -1872,17 +1868,14 @@ double NESTcalc::CalcElectronLET ( double E, int Z ) {
   }
   
   return LET;
-  
 }
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
-  
   double alpha, Wq_eV;
   if ( ATOM_NUM == 18. ) { // Liquid argon
     alpha = 0.21; Wq_eV = 1000. / 51.9; //23.6/1.21; // ~19.2-5 eV
     return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha};
   }
-  
   alpha = 0.067366 + density * 0.039693;
   /*double xi_se = 9./(1.+pow(density/2.,2.));
   double I_ion = 9.+(12.13-9.)/(1.+pow(density/2.953,65.));
@@ -1892,8 +1885,7 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   double eDensity = ( density / MolarMass ) * NEST_AVO * ATOM_NUM;
   Wq_eV = 20.7 - 1.01e-23 * eDensity;
   
-  return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together
-  
+  return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together 
 }
 
 double NESTcalc::NexONi(double energy, double density)

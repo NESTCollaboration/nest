@@ -42,9 +42,12 @@ const vector<vector<double>>& GammaHandler::sourceLookupTable(const std::string&
   return co57Info;
 }
 
-double GammaHandler::combineSpectra(double emin, double emax, string source) {
+const vector<double> GammaHandler::combineSpectra(double emin, double emax, string source) {
 	double brSum = 0.0;
 	double fValue = 0.0;
+	double pe = 0.0;
+	double compton = 0.0;
+	double pp = 0.0;
 
 	vector<vector<double>> sourceInfo = GammaHandler::sourceLookupTable(source);
 
@@ -53,14 +56,30 @@ double GammaHandler::combineSpectra(double emin, double emax, string source) {
       yMax * RandomGen::rndm()->rand_uniform(), 1.};
 
      while(xyTry[2] > 0.) {	
-     		fValue = GammaHandler::photoIonization(sourceInfo, xyTry) + 
-     		GammaHandler::compton(sourceInfo, xyTry) + 
-     		GammaHandler::pairProduction(sourceInfo, xyTry);
+     		pe = GammaHandler::photoIonization(sourceInfo, xyTry);
+     		compton = GammaHandler::compton(sourceInfo, xyTry);
+     		pp =  GammaHandler::pairProduction(sourceInfo, xyTry);
+     		// fValue = GammaHandler::photoIonization(sourceInfo, xyTry) + 
+     		// GammaHandler::compton(sourceInfo, xyTry) + 
+     		// GammaHandler::pairProduction(sourceInfo, xyTry);
+     		fValue = pe + compton + pp;
      		xyTry = RandomGen::rndm()->VonNeumann(emin, emax, 0., yMax, xyTry[0],
                                           xyTry[1], fValue);
      }
 
-     return xyTry[0];
+     //return xyTry[0];
+     vector<double> keV_vec = {-1, -1, -1};
+
+     if( pe > 0.0) {
+     	keV_vec[0] = xyTry[0];
+     }
+     if(compton > 0.0) {
+     	keV_vec[1] = xyTry[0];
+     }
+     if(pp > 0.0) {
+     	keV_vec[2] = xyTry[0];
+     }
+     return keV_vec;
 }
 
 double GammaHandler::photoIonization(const vector<vector<double>>& sourceInfo, const vector<double>& xyTry)

@@ -34,7 +34,6 @@ int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
   auto* detector = new DetectorExample_LUX_RUN03();
-  
   // Custom parameter modification functions
   // detector->ExampleFunction();
   
@@ -389,7 +388,7 @@ vector<double> signal1, signal2, signalE, vTable;
   else if ( type == "atmNu" || type == "AtmNu" || type == "atm_Nu" || type == "Atm_Nu" || type == "atm-Nu" || type == "Atm-Nu" || type == "atm_nu" || type == "atm-nu" ) {
     type_num = atmNu; numEvts = RandomGen::rndm()->
 			poisson_draw(1.5764e-7*double(numEvts));
-  } else if ( type == "newGamma" ) {
+  } else if ( type == "fullGamma" ) {
     type_num = fullGamma;
     cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
     cin >> gamma_source;
@@ -416,7 +415,7 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
     cerr << "atmNu," << endl;
     cerr << "muon or MIP or LIP or mu or mu-, and" << endl;
-    cerr << "newGamma" << endl;
+    cerr << "fullGamma" << endl;
 
     return 1;
   }
@@ -491,6 +490,7 @@ vector<double> signal1, signal2, signalE, vTable;
   if ( type_num == Kr83m ) massNum = maxTimeSep; 
       //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
+  vector<double> keV_vec;
   for (unsigned long int j = 0; j < numEvts; ++j) {
     try {
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
@@ -528,8 +528,47 @@ vector<double> signal1, signal2, signalE, vTable;
             keV = TestSpectra::atmNu_spectrum(eMin, eMax);
             break;
            case fullGamma:
-              keV = spec.Gamma_spectrum(eMin, eMax, gamma_source);
-            break;
+              keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
+              if(keV_vec[0] > -1) {
+                type_num = fullGamma_PE;
+                keV = keV_vec[0];
+              }else {
+                type_num = fullGamma_Compton_PP;
+                if(keV_vec[1] > -1) {
+                  keV = keV_vec[1];
+                }else {
+                  keV = keV_vec[2];
+                }
+              }
+              break;
+            case fullGamma_PE:
+              keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
+              if(keV_vec[0] > -1) {
+                type_num = fullGamma_PE;
+                keV = keV_vec[0];
+              }else {
+                type_num = fullGamma_Compton_PP;
+                if(keV_vec[1] > -1) {
+                  keV = keV_vec[1];
+                }else {
+                  keV = keV_vec[2];
+                }
+              }
+              break;
+            case fullGamma_Compton_PP:
+              keV_vec = TestSpectra::Gamma_spectrum(eMin, eMax, gamma_source);
+              if(keV_vec[0] > -1) {
+                type_num = fullGamma_PE;
+                keV = keV_vec[0];
+              }else {
+                type_num = fullGamma_Compton_PP;
+                if(keV_vec[1] > -1) {
+                  keV = keV_vec[1];
+                }else {
+                  keV = keV_vec[2];
+                }
+              }
+              break;
           default:
             if ( eMin < 0. ) return 1;
             if ( eMax > 0. ) {

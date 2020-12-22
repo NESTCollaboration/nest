@@ -425,8 +425,8 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
 {
 
   if ( ATOM_NUM == 18. ) { // liquid Ar
-    NuisParam[0] = 12.56; // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
-    NuisParam[1] = 1.101; // +/-0.025
+    NuisParam[0] = 11.1025; // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
+    NuisParam[1] = 1.087399; // +/-0.025
     NuisParam[2] = 0.1; // +/-0.005
     NuisParam[3] = -0.0932; // +/-0.0095
     NuisParam[4] = 2.998; // +/-1.026

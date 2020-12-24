@@ -30,7 +30,7 @@ public:
     sPEres = 0.37; //arXiv:1910.04211
     sPEthr = (0.3*1.173)/0.915; //arXiv:1910.04211
     sPEeff = 1.00; //arXiv:1910.04211
-    noiseB[0] =-0.01; //arXiv:1910.04211
+    noiseB[0] = 0.00; //arXiv:1910.04211 says -0.01
     noiseB[1] = 0.08; //arXiv:1910.04211
     noiseB[2] = 0.;
     noiseB[3] = 0.;
@@ -42,10 +42,10 @@ public:
     
     extraPhot =false; //default
     noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
-    noiseL[1]=6.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[1]=5.5e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.1016; //0.1 in 1910.04211
+    g1_gas = 0.1033; //0.1 in 1910.04211
     s2Fano = 2.2; //3.7 in 1910.04211; this matches 1608.05381 better
     s2_thr = 165.;//(150.*1.173)/0.915; //65-194 pe in 1608.05381
     E_gas = 6.23; //6.55 in 1910.04211

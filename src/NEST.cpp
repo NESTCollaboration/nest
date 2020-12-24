@@ -1516,9 +1516,10 @@ vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
     return newSpike;
   }
   newSpike[0] = fabs(oldScint[6]);
-  newSpike[0] = RandomGen::rndm()->rand_gauss(
-      newSpike[0], (fdetector->get_sPEres() / 4.) * sqrt(newSpike[0]));
-  if (newSpike[0] < 0.0) newSpike[0] = 0.0;
+  double TruncGauss = 0.;
+  while ( TruncGauss <= 0. )
+    TruncGauss = RandomGen::rndm()->rand_gauss(newSpike[0],(fdetector->get_sPEres()/4.)*sqrt(newSpike[0]));
+  newSpike[0] = TruncGauss;
   if ( XYcorr == 0 || XYcorr == 2 ) { dx = 0.; dy = 0.; }
   newSpike[1] = newSpike[0] / fdetector->FitS1(dx, dy, dz, VDetector::unfold) *
                 fdetector->FitS1(0., 0., fdetector->get_TopDrift() -

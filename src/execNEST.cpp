@@ -928,11 +928,12 @@ vector<double> signal1, signal2, signalE, vTable;
           if(detector->get_sPEthr() >= 0. && detector->get_sPEres() > 0. && eff > 0.) {
             MultFact = 0.5 * (1. + erf((detector->get_sPEthr() - 1.) / (detector->get_sPEres() * sqrt(2.)))) /
                        (detector->get_sPEres() * sqrt(2. * M_PI));
-            MultFact = 1. / (1. - MultFact);
-            MultFact =
-                    1.02 + (MultFact - 1.02) / (1. + pow(scint[0] / detector->get_numPMTs(), 2.)); //2% by Emily Mangus
+	    if ( usePD == 2 && scint[7] < SPIKES_MAXM )
+	      MultFact = 1.04; //see p. 5 Phys. Rev. D 97, 112002 (2018). Everything else here is just made up (empirical)
+	    else
+	      MultFact = 1. + MultFact * detector->get_P_dphe(); //correction factor discovered by UA student Emily Mangus
             if(eff < 1.)
-              eff += ((1. - eff) / (1. * double(detector->get_numPMTs()))) * scint[0];
+              eff += ((1. - eff) / (2. * double(detector->get_numPMTs()))) * scint[0];
             if(eff > 1.) eff = 1.;
             if(eff < 0.) eff = 0.;
             MultFact /= eff; //for smaller detectors leave it as 1.00

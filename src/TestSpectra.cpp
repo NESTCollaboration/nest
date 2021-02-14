@@ -373,7 +373,7 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
   int nZeros = 0; //keep track of the number of zeros in a row
   for (int i = 0; i < (numberPoints + 1); ++i) {
     EnergySpec.push_back( WIMP_dRate(double(i) / divisor, mass, dayNum) );
-    if ( EnergySpec[i] == 0. ) ++nZeros;
+    if ( ValidityTests::nearlyEqual(EnergySpec[i], 0.) ) ++nZeros;
     else nZeros = 0; //reset the count if EnergySpec[i] != zero
     if ( nZeros == 100 ) break; //quit the for-loop once we're sure we're only getting zeros
   }

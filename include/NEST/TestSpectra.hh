@@ -17,6 +17,7 @@
 #include <string>
 #include <exception>
 
+#include "ValidityTests.hh"
 #include "RandomGen.hh"
 
 #define NEST_AVO \

@@ -1384,7 +1384,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
 
   if (pulseArea < fabs(fdetector->get_s2_thr())) {
     for (i = 0; i < 8; ++i) {
-      if ((ValidityTests::nearlyEqual(ionization[i], 0.)) ionization[i] = PHE_MIN;
+      if (ValidityTests::nearlyEqual(ionization[i], 0.)) ionization[i] = PHE_MIN;
       ionization[i] = -1.*fabs(ionization[i]);
     }
   }

@@ -2,6 +2,7 @@
 #define VALIDITYTESTS_HH 1
 
 #include <cfloat>
+#include <math.h>  
 #include <iostream>
 using namespace std;
 

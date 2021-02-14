@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
   // Custom parameter modification functions
   // detector->ExampleFunction();
   
-  if ( ATOM_NUM == 18. ) {
+  if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) ) {
     detector->set_molarMass(39.948);
     cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many features copied over from Xenon wholesale still. Use models at your own risk.\n" << endl;
   }
@@ -319,11 +319,11 @@ vector<double> signal1, signal2, signalE, vTable;
     }
   }
 
-  if (eMin == -1.) eMin = 0.;
+  if (ValidityTests::nearlyEqual(eMin, -1.)) eMin = 0.;
 
-  if (eMax == -1. && eMin == 0.)
+  if (ValidityTests::nearlyEqual(eMax, -1.) && ValidityTests::nearlyEqual(eMin, 0.))
     eMax = hiEregime;  // the default energy max
-  if (eMax == 0.) {
+  if (ValidityTests::nearlyEqual(eMax, 0.)) {
     cerr << "ERROR: The maximum energy (or Kr time sep) cannot be 0 keV (or 0 ns)!" << endl;
     return 1;
   }
@@ -422,7 +422,7 @@ vector<double> signal1, signal2, signalE, vTable;
   
   double maxTimeSep = DBL_MAX;
   if (type_num == Kr83m) {
-    if ( (eMin == 9.4 || eMin == 32.1 || eMin == 41.5 || eMin == 41.55 || eMin == 41.6) && eMin != eMax ) {
+    if ( ValidityTests::nearlyEqual(eMin, 9.4) || ValidityTests::nearlyEqual(eMin, 32.1) || ValidityTests::nearlyEqual(eMin, 41.5) || ValidityTests::nearlyEqual(eMin, 41.55) ||ValidityTests::nearlyEqual(eMin, 41.6) && eMin != eMax ) {
       maxTimeSep = eMax;
       if ( eMax <= 0. ) { cerr << "Max t sep must be +." << endl; return 1; }
     } else {
@@ -446,7 +446,7 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "ERR: Unphysical thermodynamic property!";
     return 1;
   }
-  if ( rho < 1.75 && ATOM_NUM == 54. ) detector->set_inGas(true);
+  if ( rho < 1.75 && ValidityTests::nearlyEqual(ATOM_NUM, 54.) ) detector->set_inGas(true);
 
   double Wq_eV = NESTcalc::WorkFunction(rho,detector->get_molarMass()).Wq_eV;
   //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
@@ -495,7 +495,7 @@ vector<double> signal1, signal2, signalE, vTable;
     try {
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
       //for E-recon when you've changed g1,g2-related stuff, redo line 341+
-      if((eMin == eMax && eMin >= 0. && eMax > 0.) || type_num == Kr83m) {
+      if((ValidityTests::nearlyEqual(eMin, eMax) && eMin >= 0. && eMax > 0.) || type_num == Kr83m) {
         keV = eMin;
       } else {
         switch(type_num) {
@@ -579,7 +579,7 @@ vector<double> signal1, signal2, signalE, vTable;
 	    }
             else {  // negative eMax signals to NEST that you want to use an
               // exponential energy spectrum profile
-              if(eMin == 0.) return 1;
+              if(ValidityTests::nearlyEqual(eMin, 0.)) return 1;
               keV = 1e100;  // eMin will be used in place of eMax as the maximum
               // energy in exponential scenario
               while(keV > eMin)
@@ -599,13 +599,13 @@ vector<double> signal1, signal2, signalE, vTable;
         cerr << "ERROR: Get ready for time travel or FTL--negative energy!" << endl;
         return 1;
       }
-      if(keV == 0.) {
+      if(ValidityTests::nearlyEqual(keV, 0.)) {
         cerr << "WARNING: Zero energy has occurred, and this is not normal" << endl;
       }
 
       double FudgeFactor[2] = {1., 1.};
       Z_NEW:
-      if(fPos == -1.) {  // -1 means default, random location mode
+      if(ValidityTests::nearlyEqual(fPos, -1.)) {  // -1 means default, random location mode
         pos_z = 0. +
                 (detector->get_TopDrift() - 0.) *
                 RandomGen::rndm()->rand_uniform();  // initial guess
@@ -633,11 +633,11 @@ vector<double> signal1, signal2, signalE, vTable;
           return EXIT_FAILURE;
         }
         pos_z = stof(position);
-        if(stof(position) == -1.)
+        if(ValidityTests::nearlyEqual(stof(position), -1.))
           pos_z =
                   0. +
                   (detector->get_TopDrift() - 0.) * RandomGen::rndm()->rand_uniform();
-        if(stof(token) == -999.) {
+        if(ValidityTests::nearlyEqual(stof(token), -999.) ) {
           r = detector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());
           phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
           pos_x = r * cos(phi);
@@ -646,7 +646,7 @@ vector<double> signal1, signal2, signalE, vTable;
         // if ( j == 0 ) { origX = pos_x; origY = pos_y; }
       }
 
-      if(inField == -1.) {  // -1 means use poly position dependence
+      if(ValidityTests::nearlyEqual(inField, -1.)) {  // -1 means use poly position dependence
         field = detector->FitEF(pos_x, pos_y, pos_z);
       } else
         field = inField;  // no fringing
@@ -656,15 +656,15 @@ vector<double> signal1, signal2, signalE, vTable;
                 "dir (yet). Put in magnitude.\n";
         return 1;
       }
-      if(field == 0. || std::isnan(field))
+      if(ValidityTests::nearlyEqual(field, 0.) || std::isnan(field))
         cerr << "\nWARNING: A LITERAL ZERO (or undefined) FIELD MAY YIELD WEIRD "
                 "RESULTS. USE A SMALL VALUE INSTEAD.\n";
       if(field > 12e3 || detector->get_E_gas() > 17e3)
         cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are "
                 "you sure about this?\n";
 
-      if(j == 0 && vD_middle == 0.) {
-        if(inField == -1.) {
+      if(j == 0 && ValidityTests::nearlyEqual(vD_middle, 0.) ) {
+        if(ValidityTests::nearlyEqual(inField, -1.)) {
           // build a vD table for non-uniform field, but if field varies in XY not
           // just Z you need to do more coding
           vTable = n.SetDriftVelocity_NonUniform(rho, z_step, pos_x, pos_y);
@@ -689,7 +689,7 @@ vector<double> signal1, signal2, signalE, vTable;
           if(type_num == WIMP && timeStamp > (tZero + tStep))
             fprintf(stdout,
                     "dayNum\t");
-          if ( (eMax == eMin || type_num == Kr83m) && numBins == 1 && MCtruthE ) {
+          if ( (ValidityTests::nearlyEqual(eMax, eMin) || type_num == Kr83m) && numBins == 1 && MCtruthE ) {
             MCtruthE = false;
             fprintf(stderr, "Simulating a mono-E peak; setting MCtruthE false.\n");
           }
@@ -706,7 +706,7 @@ vector<double> signal1, signal2, signalE, vTable;
                   "[phd]\n");
         }
       }
-      if(inField == -1.) {
+      if(ValidityTests::nearlyEqual(inField, -1.)) {
         index = int(floor(pos_z / z_step + 0.5));
         vD = vTable[index];
       }
@@ -720,7 +720,7 @@ vector<double> signal1, signal2, signalE, vTable;
       }
       if((driftTime > detector->get_dt_max() ||
           driftTime < detector->get_dt_min()) &&
-         (fPos == -1. || stof(position) == -1.) && field >= FIELD_MIN)
+         (ValidityTests::nearlyEqual(fPos, -1.) || ValidityTests::nearlyEqual(stof(position), -1.)) && field >= FIELD_MIN)
         goto Z_NEW;
       if(detector->get_dt_max() > (detector->get_TopDrift() - 0.) / vD && !j &&
          field >= FIELD_MIN) {
@@ -747,7 +747,7 @@ vector<double> signal1, signal2, signalE, vTable;
       if(type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
          type == "mu-") {
         double xi = -999., yi = -999.;
-        if(eMax == -1.) {
+        if(ValidityTests::nearlyEqual(eMax, -1.)) {
           r = detector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());
           phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
           xi = r * cos(phi);
@@ -913,7 +913,7 @@ vector<double> signal1, signal2, signalE, vTable;
       else
         signal2.push_back(-999.);
 
-      if ( eMin == eMax || type_num == Kr83m ) {
+      if ( ValidityTests::nearlyEqual(eMin, eMax) || type_num == Kr83m ) {
         if((scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1) && j < 10)
           cerr << "WARNING: Some S1 pulse areas are greater than maxS1" << endl;
         if((scint2[5] > maxS2 || scint2[7] > maxS2) &&
@@ -955,7 +955,7 @@ vector<double> signal1, signal2, signalE, vTable;
         if(detector->get_coinLevel() <= 0 && Nph <= PHE_MIN) Nph = DBL_MIN;
         if(yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
           if(detector->get_extraPhot()) yields.Lindhard = 1.;
-          if(yields.Lindhard == 1.)
+          if(ValidityTests::nearlyEqual(yields.Lindhard, 1.) )
             keV = (Nph / FudgeFactor[0] + Ne / FudgeFactor[1]) * Wq_eV * 1e-3;
           else {
             if(type_num <= NEST::INTERACTION_TYPE::Cf) {
@@ -982,7 +982,7 @@ vector<double> signal1, signal2, signalE, vTable;
       else
         signalE.push_back(keV);
 
-      if((Ne + Nph == 0.00 || std::isnan(keVee)) && eMin == eMax && eMin > hiEregime &&
+      if((ValidityTests::nearlyEqual(Ne + Nph, 0.00) || std::isnan(keVee)) && eMin == eMax && eMin > hiEregime &&
          !BeenHere) { //efficiency is zero?
         minS1 = -999.;
         minS2 = -999.;
@@ -1169,7 +1169,7 @@ vector<double> signal1, signal2, signalE, vTable;
           else
             cerr << "CAUTION: Poor stats. You must have at least 2 events to "
                     "calculate S1 and S2 and E resolutions.\n";
-        } else if ((energies[0] == eMin || energies[0] == eMax ||
+        } else if ((ValidityTests::nearlyEqual(energies[0], eMin) || ValidityTests::nearlyEqual(energies[0], eMax) ||
                     energies[1] <= 1E-6) &&
                    field >= FIELD_MIN)
           cerr << "If your energy resolution is 0% then you probably still "

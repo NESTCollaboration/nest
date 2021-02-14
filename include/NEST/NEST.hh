@@ -64,6 +64,7 @@
 
 #include "RandomGen.hh"
 #include "VDetector.hh"
+#include "ValidityTests.hh"
 
 #include <cassert>
 #include <cfloat>

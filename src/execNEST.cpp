@@ -17,7 +17,6 @@
 #include "execNEST.hh"
 
 #include "LUX_Run03.hh"
-#include "EXO200.hh"
 
 #define tZero 0.00 //day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03
@@ -34,8 +33,7 @@ bool BeenHere = false;
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  //auto* detector = new DetectorExample_LUX_RUN03();
-  auto* detector = new EXO200(); 
+  auto* detector = new DetectorExample_LUX_RUN03();
   // Custom parameter modification functions
   // detector->ExampleFunction();
   

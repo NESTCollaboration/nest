@@ -17,6 +17,7 @@
 #include "execNEST.hh"
 
 #include "LUX_Run03.hh"
+#include "EXO200.hh"
 
 #define tZero 0.00 //day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03
@@ -33,7 +34,8 @@ bool BeenHere = false;
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  auto* detector = new DetectorExample_LUX_RUN03();
+  //auto* detector = new DetectorExample_LUX_RUN03();
+  auto* detector = new EXO200(); 
   // Custom parameter modification functions
   // detector->ExampleFunction();
   
@@ -393,7 +395,7 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
     cin >> gamma_source;
     if ( gamma_source == "Co60" ) {
-      cerr << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some"
+      cerr << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some "
 	   << "photons and electrons may go unaccounted." << endl;
     }
   } else {

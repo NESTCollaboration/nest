@@ -5,7 +5,7 @@ bool verbosity = true;
 unsigned loopNEST = 0;
 //0 for no or off, 1 for ER, 2 for NR
 // an executable bash script was created in the build directory
-bool PrintSubThr = false;
+bool PrintSubThr = true;
 // include or exclude the infamous negative S1 & S2 pulses (and 0's)
 
 // General parameters of importance changing the global behavior
@@ -21,29 +21,19 @@ int usePD = 2;
 // band style: log(S2) with 1, while 0 means log(S2/S1)
 int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
 
-//double minS1 = 0.0;//1.5; //units are controlled by the usePE flag
-double minS1 = 1.5;
+double minS1 = 1.5; //units are controlled by the usePE flag
 // this is separate from S1 thresholds controlled by detector
-//double minS1 = 100.0;
-//double maxS1 = 99.5;
-//double maxS1 = 1e10;//1e5;
-double maxS1 = 1e5;
+double maxS1 = 99.5;
 int numBins = 98; //for LUXRun03 DD, change these to 1.7,110.6,99
 
 // for efficiency calculation
 // minS2 need not match S2 threshold in detector.hh
 // you can treat as trigger vs. analysis thresholds
-//double minS2 = 0;//42.;
 double minS2 = 42.;
-//double minS2 = 1000.0;
-//double maxS2 = 1e4; //5e3 for DD. At least 2e5 for post-Run04 14C
-//double maxS2 = 1e10;//1e6;
-double maxS2 = 1e6;
+double maxS2 = 1e4; //5e3 for DD. At least 2e5 for post-Run04 14C
 
 // log(S2/S1) or log(S2) admitted into analysis incl. limit
-//double logMax = 1e10;//3.6; //when skewness=1 or 2 ROOT ignores these and does raw mean +/- 3-sigma
-double logMax = 3.6;
-//double logMin = 0.1;//0.6;
+double logMax = 3.6; //when skewness=1 or 2 ROOT ignores these and does raw mean +/- 3-sigma
 double logMin = 0.6;
 int logBins = 30; //#bins in between logMin & logMax for fits
 

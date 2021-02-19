@@ -27,6 +27,7 @@ class VDetector {
   double get_sPEeff() const { return sPEeff; }
   const double* get_noiseB() { return &noiseB[0]; }
   const double* get_noiseL() { return &noiseL[0]; }
+  const double* get_noiseQ() { return &noiseQ[0]; }
   double get_P_dphe() const { return P_dphe; }
   
   bool get_extraPhot() const{ return extraPhot; }
@@ -79,6 +80,10 @@ class VDetector {
   void set_noiseL(double p1, double p2) {
     noiseL[0] = p1;
     noiseL[1] = p2;
+  }
+  void set_noiseQ(double p1, double p2) {
+    noiseQ[0] = p1;
+    noiseQ[1] = p2;
   }
   void set_P_dphe(double param) { P_dphe = param; }
 
@@ -171,6 +176,7 @@ protected:
   bool extraPhot=false;  // for matching EXO-200's W measurement
   //"Linear noise" terms as defined in Dahl thesis and by D. McK
   double noiseL[2] = {3e-2,3e-2}; // S1->S1 Gaussian-smeared w/ noiseL[0]*S1. Ditto S2
+  double noiseQ[2] = {0.0, 0.0}; //(n)EXO quadratic noise term
 
   // Ionization and Secondary Scintillation (S2) parameters
   double g1_gas = 0.06;  // phd per S2 photon in gas, used to get SE size

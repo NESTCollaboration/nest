@@ -1902,9 +1902,6 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   +xi_se/(1.+alpha);*/
   double eDensity = ( density / MolarMass ) * NEST_AVO * ATOM_NUM;
   Wq_eV = 20.7 - 1.01e-23 * eDensity;
-  //Wq_eV = 18.7 - 1.01e-23 * eDensity;
-
-  
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together 
 }
 

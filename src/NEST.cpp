@@ -1004,8 +1004,14 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   
   if ( fdetector->get_noiseL()[0] >= 0.1 )
     cerr << " !!WARNING!! S1 linear noise term is greater than or equal to 10% (i.e. 0.1) Did you mistake fraction for percent??" << endl;
-  pulseArea = RandomGen::rndm()->rand_gauss(
+  
+  if(fdetector->get_noiseQ()[0] != 0) {
+    pulseArea = RandomGen::rndm()->rand_gauss(
+      pulseArea, sqrt(pow(fdetector->get_noiseQ()[0] * pow(pulseArea, 2), 2) + pow(fdetector->get_noiseL()[0] * pulseArea, 2)));
+  }else {
+    pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[0] * pulseArea);
+  }
   pulseArea -= ( subtract[0] + subtract[1] );
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
   if (spike < 0) spike = 0;
@@ -1333,8 +1339,13 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
   
   if ( fdetector->get_noiseL()[1] >= 0.1 )
     cerr << " !!WARNING!! S2 linear noise term is greater than or equal to 10% (i.e. 0.1) Did you mistake fraction for percent??" << endl;
-  pulseArea = RandomGen::rndm()->rand_gauss(
+  if(fdetector->get_noiseQ()[1] != 0) {
+    pulseArea = RandomGen::rndm()->rand_gauss(
+      pulseArea, sqrt(pow(fdetector->get_noiseQ()[1] * pow(pulseArea, 2), 2) + pow(fdetector->get_noiseL()[1] * pulseArea, 2)));
+  }else {
+    pulseArea = RandomGen::rndm()->rand_gauss(
       pulseArea, fdetector->get_noiseL()[1] * pulseArea);
+  }
   pulseArea -= (subtract[0]+subtract[1]);
   double pulseAreaC =
       pulseArea / exp(-dt / fdetector->get_eLife_us()) / posDepSm;
@@ -1472,7 +1483,13 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
       nHits = BinomFluct ( Nph, fdetector->get_g1_gas() * posDep );
       Nphe = nHits+BinomFluct(nHits,fdetector->get_P_dphe());
       pulseArea = RandomGen::rndm()->rand_gauss(Nphe,fdetector->get_sPEres()*sqrt(Nphe));
-      pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,fdetector->get_noiseL()[1]*pulseArea);
+       if(fdetector->get_noiseQ()[1] != 0) {
+        pulseArea = RandomGen::rndm()->rand_gauss(
+          pulseArea, sqrt(pow(fdetector->get_noiseQ()[1] * pow(pulseArea, 2), 2) + pow(fdetector->get_noiseL()[1] * pulseArea, 2)));
+      }else {
+        pulseArea = RandomGen::rndm()->rand_gauss(
+          pulseArea, fdetector->get_noiseL()[1] * pulseArea);
+      }
       if ( fdetector->get_s2_thr() < 0. )
 	pulseArea = RandomGen::rndm()->rand_gauss(fdetector->FitTBA(0.0,0.0,fdetector->get_TopDrift()/2.)[1]*pulseArea,sqrt
 						 (fdetector->FitTBA(0.0,0.0,fdetector->get_TopDrift()/2.)[1]*
@@ -1886,7 +1903,6 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   +xi_se/(1.+alpha);*/
   double eDensity = ( density / MolarMass ) * NEST_AVO * ATOM_NUM;
   Wq_eV = 20.7 - 1.01e-23 * eDensity;
-  
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together 
 }
 

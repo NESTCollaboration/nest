@@ -393,7 +393,7 @@ vector<double> signal1, signal2, signalE, vTable;
     cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
     cin >> gamma_source;
     if ( gamma_source == "Co60" ) {
-      cerr << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some"
+      cerr << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some "
 	   << "photons and electrons may go unaccounted." << endl;
     }
   } else {

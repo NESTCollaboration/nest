@@ -442,7 +442,7 @@ vector<double> signal1, signal2, signalE, vTable;
   
   double maxTimeSep = DBL_MAX;
   if (type_num == Kr83m) {
-    if ( ValidityTests::nearlyEqual(eMin, 9.4) || ValidityTests::nearlyEqual(eMin, 32.1) || ValidityTests::nearlyEqual(eMin, 41.5) || ValidityTests::nearlyEqual(eMin, 41.55) ||ValidityTests::nearlyEqual(eMin, 41.6) && eMin != eMax ) {
+    if ( (ValidityTests::nearlyEqual(eMin, 9.4) || ValidityTests::nearlyEqual(eMin, 32.1) || ValidityTests::nearlyEqual(eMin, 41.5) || ValidityTests::nearlyEqual(eMin, 41.55) || ValidityTests::nearlyEqual(eMin, 41.6)) && eMin != eMax ) {
       maxTimeSep = eMax;
       if ( eMax <= 0. ) { cerr << "Max t sep must be +." << endl; return 1; }
     } else {
@@ -1122,7 +1122,7 @@ vector<double> signal1, signal2, signalE, vTable;
            type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
            type == "mu-") {
           printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
-          printf("%li\t%e\t%e\n", (int64_t) scint2[0], scint2[4], scint2[7]);
+          printf("%lli\t%e\t%e\n", (int64_t) scint2[0], scint2[4], scint2[7]);
         } else {
           printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5],
                  scint[7]);  // see GetS1 inside of NEST.cpp for full explanation

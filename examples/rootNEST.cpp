@@ -570,7 +570,7 @@ int main(int argc, char** argv) {
       cerr << outputs[i].size();
       fprintf(
           stderr,
-          "\t%.2f\t%.6f\t%.6f\t%e\t%.2e\t%.2e\t%.6f\t%e\t%.2e\t%.2e\t%.6f\t",
+          "\t%.2f\t%f\t%f\t%e\t%e\t%e\t%f\t%e\t%e\t%e\t%f\t",
           0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
           numSigma[i], leakage[i], fabs(errorBars[i][0] - leakage[i]),
           fabs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,

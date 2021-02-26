@@ -452,17 +452,17 @@ int main(int argc, char** argv) {
 	  errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
 	}
 	else {
-	  if ( ERis2nd ) { //this block & next -> quick+dirty approx for skew leak errs. Focused on mean i.e. [2]
-	    errorBars[i][0] = 0.5 + 0.5 * erf((band[i][2] - band[i][5] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
-	      2. * owens_t((band[i][2] - band[i][5] - band2[i][9]) / band2[i][11], band2[i][4]);
-	    errorBars[i][1] = 0.5 + 0.5 * erf((band[i][2] + band[i][5] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
-	      2. * owens_t((band[i][2] + band[i][5] - band2[i][9]) / band2[i][11], band2[i][4]);
+	  if ( ERis2nd ) { //this block & next -> quick+dirty approx for skew leak err. Focused on omega i.e. [11]
+	    errorBars[i][0] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / (band2[i][11]+band2[i][12]) / sqrt(2.)) -
+	      2. * owens_t((band[i][2] - band2[i][9]) / (band2[i][11]+band2[i][12]), band2[i][4]);
+	    errorBars[i][1] = 0.5 + 0.5 * erf((band[i][2] - band2[i][9]) / (band2[i][11]-band2[i][12]) / sqrt(2.)) -
+	      2. * owens_t((band[i][2] - band2[i][9]) / (band2[i][11]-band2[i][12]), band2[i][4]);
 	  }
 	  else {
-	    errorBars[i][0] = 0.5 + 0.5 * erf((band2[i][2] - band2[i][5] - band[i][9]) / band[i][11] / sqrt(2.)) -
-	      2. * owens_t((band2[i][2] - band2[i][5] - band[i][9]) / band[i][11], band[i][4]);
-	    errorBars[i][1] = 0.5 + 0.5 * erf((band2[i][2] + band2[i][5] - band[i][9]) / band[i][11] / sqrt(2.)) -
-	      2. * owens_t((band2[i][2] + band2[i][5] - band[i][9]) / band[i][11], band[i][4]);
+	    errorBars[i][0] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / (band[i][11]+band[i][12]) / sqrt(2.)) -
+	      2. * owens_t((band2[i][2] - band[i][9]) / (band[i][11]+band[i][12]), band[i][4]);
+	    errorBars[i][1] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / (band[i][11]-band[i][12]) / sqrt(2.)) -
+	      2. * owens_t((band2[i][2] - band[i][9]) / (band[i][11]-band[i][12]), band[i][4]);
 	  }
 	} //skewness = 1
       } //end of skewness = 0 or 1 'if' conditional statement.

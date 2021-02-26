@@ -147,8 +147,7 @@ class NESTProc : public G4VRestDiscreteProcess {
   std::unique_ptr<NEST::NESTcalc> fNESTcalc = NULL;
   std::vector<NEST::Lineage> lineages;
   std::vector<NEST::Lineage> lineages_prevEvent;
-  std::map<std::tuple<int, CLHEP::Hep3Vector, CLHEP::Hep3Vector>,
-           long unsigned int> track_lins;
+  std::map<std::tuple<int, CLHEP::Hep3Vector, CLHEP::Hep3Vector>, uint64_t> track_lins;
   std::unique_ptr<VDetector> fDetector;
   NoTimeParticleChange fParticleChange;
   

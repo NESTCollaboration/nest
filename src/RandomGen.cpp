@@ -19,8 +19,8 @@ std::uint64_t splitmix64(std::uint64_t z) {
   return z ^ (z >> 31);
 }
 
-void RandomGen::SetSeed(unsigned long int s) {
-  unsigned long int s1 = splitmix64(s);
+void RandomGen::SetSeed(uint64_t s) {
+  uint64_t s1 = splitmix64(s);
   rng = xoroshiro128plus64(s1, splitmix64(s1));
 }
 

@@ -25,10 +25,10 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
   default_random_engine generator;
   uniform_real_distribution<double> distribution(0.,20.); //ns for ran offset. 2 bin default. For Case: -7,0
   //for LUX Run03: better results with -4 to 16. Still 2 samples-wide, but different centering
-  vector<long> num, win; char line[60];
+  vector<uint64_t> num, win; char line[60];
   vector<double> tns, bot, top;
   FILE* ifp = fopen ( "photon_times.txt", "r" );
-  double a, b, c, d, e; long i = 0;
+  double a, b, c, d, e; uint64_t i = 0;
   
   while ( 1 ) {
     if ( i == 0 ) {
@@ -43,13 +43,13 @@ int main ( int argc, char** argv ) { //compile with g++ -Ofast pulseShape.cpp -o
     sscanf ( line, "%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &d, &e );
     if ( feof ( ifp ) )
       break;
-    num.push_back(long(a));
+    num.push_back(uint64_t(a));
     tns.push_back(b);
     if ( b > S2BORD )
       e = 0;
     bot.push_back(c);
     top.push_back(d);
-    win.push_back(long(e));
+    win.push_back(uint64_t(e));
     //cerr << a << " " << b << " " << c << " " << d << " " << e << endl;
   }
   fclose ( ifp );

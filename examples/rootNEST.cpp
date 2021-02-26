@@ -111,153 +111,153 @@ int main(int argc, char** argv) {
     leak = false;
   else
     leak = true;
-
-if ( mode == 2 ) {
-
-  if (argc < 3) {
-    cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
-    return 1;
-  }
-
-  FILE* ifp = fopen(argv[1], "r");
-  int ch, nLines = -1;
-  while (EOF != (ch = getc(ifp))) {
-    if ('\n' == ch) ++nLines;
-  }
-  double input[9][nLines-SKIP];
-  rewind(ifp);
-  for (i = -1; i < nLines; ++i) {
-    if ( i <= (-1+SKIP) ) {
-      char line[180];
-      fgets ( line, 180, ifp );
-      continue;
+  
+  if ( mode == 2 ) {
+    
+    if (argc < 3) {
+      cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
+      return 1;
     }
-    fscanf ( ifp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-             &input[0][i-SKIP], &input[1][i-SKIP], &input[2][i-SKIP], &input[3][i-SKIP], &input[4][i-SKIP],
-	     &input[5][i-SKIP], &input[6][i-SKIP], &input[7][i-SKIP], &input[8][i-SKIP] );
-    input[7][i-SKIP] /= 1e2;
-    if ( input[7][i-SKIP] > 1.02 ) //2% margin of error is allowed
-      { cerr << "eff should be frac not %" << endl; return 1; }
-    if ( input[7][i-SKIP] < -.02 ) //allowing for digitization err
-      { cerr << "eff must not be negative" << endl; return 1; }
-    if ( input[7][i-SKIP] > 0.00 && !std::isnan(input[7][i-SKIP]) )
-      input[7][i-SKIP] = log10(input[7][i-SKIP]);
-    else
-      input[7][i-SKIP] = -6.;
-  }
-  fclose(ifp); nLines -= SKIP;
-  TGraph* gr1 = new TGraph(nLines, input[0], input[7]);
-  double start; int jj = 0;
-  while ( input[0][jj] <= 0.00000 ) { start = input[0][jj]; ++jj; }
-  double loE = start, hiE = input[0][nLines-1];
-  cout << "Minimum energy (keV) for detection: ";
-  cin >> loE;
-  cout << "Maximum energy (keV) for detection: ";
-  cin >> hiE;
-  TF1* fitf =
+    
+    FILE* ifp = fopen(argv[1], "r");
+    int ch, nLines = -1;
+    while (EOF != (ch = getc(ifp))) {
+      if ('\n' == ch) ++nLines;
+    }
+    double input[9][nLines-SKIP];
+    rewind(ifp);
+    for (i = -1; i < nLines; ++i) {
+      if ( i <= (-1+SKIP) ) {
+	char line[180];
+	char* Line = fgets ( line, 180, ifp );
+	continue;
+      }
+      int scan1 = fscanf ( ifp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+			   &input[0][i-SKIP], &input[1][i-SKIP], &input[2][i-SKIP], &input[3][i-SKIP], &input[4][i-SKIP],
+			   &input[5][i-SKIP], &input[6][i-SKIP], &input[7][i-SKIP], &input[8][i-SKIP] );
+      input[7][i-SKIP] /= 1e2;
+      if ( input[7][i-SKIP] > 1.02 ) //2% margin of error is allowed
+	{ cerr << "eff should be frac not %" << endl; return 1; }
+      if ( input[7][i-SKIP] < -.02 ) //allowing for digitization err
+	{ cerr << "eff must not be negative" << endl; return 1; }
+      if ( input[7][i-SKIP] > 0.00 && !std::isnan(input[7][i-SKIP]) )
+	input[7][i-SKIP] = log10(input[7][i-SKIP]);
+      else
+	input[7][i-SKIP] = -6.;
+    }
+    fclose(ifp); nLines -= SKIP;
+    TGraph* gr1 = new TGraph(nLines, input[0], input[7]);
+    double start; int jj = 0;
+    while ( input[0][jj] <= 0.00000 ) { start = input[0][jj]; ++jj; }
+    double loE = start, hiE = input[0][nLines-1];
+    cout << "Minimum energy (keV) for detection: ";
+    cin >> loE;
+    cout << "Maximum energy (keV) for detection: ";
+    cin >> hiE;
+    TF1* fitf =
       new TF1("FracEffVkeVEnergy",
               "-[0]*exp(-[1]*x^[2])-[3]*exp(-[4]*x^[5])",
               loE, hiE);  // eqn inspired by Alex Murphy
-  fitf->SetParameters(17.1, 1.82, 0.659, 18.3, 20869., -2.35);
-  TFitResultPtr fitr = gr1->Fit(fitf, "nqrs");  // remove the quiet option if you want to see all
-  // the parameters' values for Fractional Efficiency versus Energy in keV. Prints to the screen
-  int status = int ( fitr );
-  double aa = fitf->GetParameter(0);
-  double bb = fitf->GetParameter(1);
-  double cc = fitf->GetParameter(2);
-  double dd = fitf->GetParameter(3);
-  double ee = fitf->GetParameter(4);
-  double ff = fitf->GetParameter(5);
-  jj = 0;
-  while ( status != 0 || fitf->GetChisquare() > 1.4 ) {
-    fitf->SetParameters(aa, bb, cc, dd, ee, ff);
-    fitf->SetRange ( loE + 0.1 * jj, hiE - 1. * jj );
-    fitr = gr1->Fit(fitf, "nrs");
-    if ( aa == fitf->GetParameter(0) || bb == fitf->GetParameter(1) || cc == fitf->GetParameter(2) ||
-	 dd == fitf->GetParameter(3) || ee == fitf->GetParameter(4) || ff == fitf->GetParameter(5) )
-      break;
-    status = int ( fitr );
-    aa = fitf->GetParameter(0);
-    bb = fitf->GetParameter(1);
-    cc = fitf->GetParameter(2);
-    dd = fitf->GetParameter(3);
-    ee = fitf->GetParameter(4);
-    ff = fitf->GetParameter(5);
-    ++jj;
-    if ( jj > 10 ) {
-      cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
-      return EXIT_FAILURE;
+    fitf->SetParameters(17.1, 1.82, 0.659, 18.3, 20869., -2.35);
+    TFitResultPtr fitr = gr1->Fit(fitf, "nqrs");  // remove the quiet option if you want to see all
+    // the parameters' values for Fractional Efficiency versus Energy in keV. Prints to the screen
+    int status = int ( fitr );
+    double aa = fitf->GetParameter(0);
+    double bb = fitf->GetParameter(1);
+    double cc = fitf->GetParameter(2);
+    double dd = fitf->GetParameter(3);
+    double ee = fitf->GetParameter(4);
+    double ff = fitf->GetParameter(5);
+    jj = 0;
+    while ( status != 0 || fitf->GetChisquare() > 1.4 ) {
+      fitf->SetParameters(aa, bb, cc, dd, ee, ff);
+      fitf->SetRange ( loE + 0.1 * jj, hiE - 1. * jj );
+      fitr = gr1->Fit(fitf, "nrs");
+      if ( aa == fitf->GetParameter(0) || bb == fitf->GetParameter(1) || cc == fitf->GetParameter(2) ||
+	   dd == fitf->GetParameter(3) || ee == fitf->GetParameter(4) || ff == fitf->GetParameter(5) )
+	break;
+      status = int ( fitr );
+      aa = fitf->GetParameter(0);
+      bb = fitf->GetParameter(1);
+      cc = fitf->GetParameter(2);
+      dd = fitf->GetParameter(3);
+      ee = fitf->GetParameter(4);
+      ff = fitf->GetParameter(5);
+      ++jj;
+      if ( jj > 10 ) {
+	cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
+	return EXIT_FAILURE;
+      }
     }
-  }
-  if ( fitf->GetChisquare() > 1.3 )
-    cerr << "WARNING: The efficiency curve is poorly fit. chi^2 = "
-	 << fitf->GetChisquare() << endl;
-  delete gr1;
-  delete fitf;  // it is always important to clear the memory in ROOT
-
-  // Get input parameters for sensitivity or limit calculation
-  double time, fidMass, xEff, NRacc, numBGeventsExp = 0.,
-                                               numBGeventsObs;
-  cout << "Target Mass (kilograms): ";
-  cin >> fidMass;
-  cout << "Run Time (provide days): ";
-  cin >> time;
-  cout << "Multiplicative factor on the efficiency of NR event detection from "
-          "file (usually ~>0.9): ";
-  cin >> xEff;  // unitless fraction of one
-  cout << "Acceptance for NR events post electron recoil background "
-          "discrimination (usually ~ 50%): ";
-  cin >> NRacc;  // unitless fraction of one
-  cout << "Number of BG events observed: ";
-  cin >> numBGeventsObs;
-  if (numBGeventsObs > 0.) {
-    cout << "Number of BG events expected: ";
-    cin >> numBGeventsExp;  // for FC stats
-  }
-  // Make sure inputs were valid.
-  if (cin.fail() || fidMass <= 0. || time <= 0. || xEff <= 0. || NRacc <= 0. ||
-      loE < 0. || hiE <= 0. || numBGeventsExp < 0. || numBGeventsObs < 0.) {
-    cerr << endl
-         << "Input error. Make sure all inputs were numbers (most also "
-            "positive or at least 0)" << endl;
-    return 1;
-  }
-  if ( xEff > 1. || NRacc > 1. ) {
-    cerr << endl
-	 << "You entered an efficiency or acceptance for NR greater than 100%"
-	 << endl;
-  return 1;
-  }
-  
-  double Ul,
+    if ( fitf->GetChisquare() > 1.3 )
+      cerr << "WARNING: The efficiency curve is poorly fit. chi^2 = "
+	   << fitf->GetChisquare() << endl;
+    delete gr1;
+    delete fitf;  // it is always important to clear the memory in ROOT
+    
+    // Get input parameters for sensitivity or limit calculation
+    double time, fidMass, xEff, NRacc, numBGeventsExp = 0.,
+      numBGeventsObs;
+    cout << "Target Mass (kilograms): ";
+    cin >> fidMass;
+    cout << "Run Time (provide days): ";
+    cin >> time;
+    cout << "Multiplicative factor on the efficiency of NR event detection from "
+      "file (usually ~>0.9): ";
+    cin >> xEff;  // unitless fraction of one
+    cout << "Acceptance for NR events post electron recoil background "
+      "discrimination (usually ~ 50%): ";
+    cin >> NRacc;  // unitless fraction of one
+    cout << "Number of BG events observed: ";
+    cin >> numBGeventsObs;
+    if (numBGeventsObs > 0.) {
+      cout << "Number of BG events expected: ";
+      cin >> numBGeventsExp;  // for FC stats
+    }
+    // Make sure inputs were valid.
+    if (cin.fail() || fidMass <= 0. || time <= 0. || xEff <= 0. || NRacc <= 0. ||
+	loE < 0. || hiE <= 0. || numBGeventsExp < 0. || numBGeventsObs < 0.) {
+      cerr << endl
+	   << "Input error. Make sure all inputs were numbers (most also "
+	"positive or at least 0)" << endl;
+      return 1;
+    }
+    if ( xEff > 1. || NRacc > 1. ) {
+      cerr << endl
+	   << "You entered an efficiency or acceptance for NR greater than 100%"
+	   << endl;
+      return 1;
+    }
+    
+    double Ul,
       v;  // Start of code block to evaluate upper limit on # of events to use
-  if (numBGeventsExp == 0.) {
-    for (v = 0.; v < 1e3; v += VSTEP) {
-      double sum = 0.0;
-      for (i = 0; i < (numBGeventsObs + 1.); ++i)
-        sum += exp(-v) * pow(v, i) / TMath::Factorial(i);   // using Poisson
-                                                            // statistics as the
-                                                            // probability
-                                                            // distribution
-      if (sum <= (1. - CL)) break;
-    }
-    Ul = 0.5 * (2. * v - VSTEP);  // should result in 2.3 events as the UL (0
-                                  // BG)
-  } else {
-    TFeldmanCousins fc(CL);
-    if (numBGeventsExp != numBGeventsObs ||
-        numBGeventsObs == int(numBGeventsObs))
-      Ul = fc.CalculateUpperLimit(numBGeventsObs, numBGeventsExp);
-    else
-      Ul = expectedUlFc(numBGeventsExp, fc);
-    double powCon =
+    if (numBGeventsExp == 0.) {
+      for (v = 0.; v < 1e3; v += VSTEP) {
+	double sum = 0.0;
+	for (i = 0; i < (numBGeventsObs + 1.); ++i)
+	  sum += exp(-v) * pow(v, i) / TMath::Factorial(i);   // using Poisson
+	// statistics as the
+	// probability
+	// distribution
+	if (sum <= (1. - CL)) break;
+      }
+      Ul = 0.5 * (2. * v - VSTEP);  // should result in 2.3 events as the UL (0
+      // BG)
+    } else {
+      TFeldmanCousins fc(CL);
+      if (numBGeventsExp != numBGeventsObs ||
+	  numBGeventsObs == int(numBGeventsObs))
+	Ul = fc.CalculateUpperLimit(numBGeventsObs, numBGeventsExp);
+      else
+	Ul = expectedUlFc(numBGeventsExp, fc);
+      double powCon =
         fc.CalculateUpperLimit(0., 0.);  // can't do better than 2.44 ever!
-    if (Ul < powCon) Ul = powCon;
-  }
-
-  const int masses = NUMBINS_MAX;
-  double massMax = 1e5;
-  double mass[masses] = {
+      if (Ul < powCon) Ul = powCon;
+    }
+    
+    const int masses = NUMBINS_MAX;
+    double massMax = 1e5;
+    double mass[masses] = {
       // list of masses to run
       2.0,  2.1,  2.2,  2.3,  2.4,  2.5,    2.6,  2.7,  2.8,  2.9,  3.0,  3.1,
       3.2,  3.3,  3.4,  3.5,  3.6,  3.7,    3.8,  3.9,  4.0,  4.1,  4.2,  4.3,
@@ -272,122 +272,126 @@ if ( mode == 2 ) {
       1700, 1800, 1900, 2000, 2200, 2400,   2600, 2800, 3000, 3200, 3400, 3600,
       3800, 4000, 4200, 4400, 4600, 4800,   5000, 5500, 6000, 6500, 7000, 7500,
       8000, 8500, 9000, 9500, 1E+4, massMax};  // in GeV
-  double sigAboveThr[masses], xSect[masses];  // arrays for the fraction of WIMP
-                                              // signal events above threshold
-                                              // and for the cross-sections
-  cout << "\nWIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
-
-  i = 0;
-  while (mass[i] < massMax) {  // Iterate across each sample wimp Mass
-    sigAboveThr[i] = 0.;
-    for (double j = VSTEP; j < hiE;
-         j += VSTEP) {  // Iterate across energies within each sample wimp mass
-      double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) -
-                                dd * exp(-ee * pow(j, ff))) /
-                   100.;
-      //cerr << j << " " << eff << endl;
-      if ( eff > 1. || eff < 0. )
-	{ cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
-      if (j > loE)
-        sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNumber) * eff * xEff *
-                          NRacc;  // integrating (Riemann, left sum)
-                                  // mass-dependent differential rate with
-                                  // effxacc and step size
+    double sigAboveThr[masses], xSect[masses];  // arrays for the fraction of WIMP
+    // signal events above threshold
+    // and for the cross-sections
+    cout << "\nWIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
+    
+    i = 0;
+    while (mass[i] < massMax) {  // Iterate across each sample wimp Mass
+      sigAboveThr[i] = 0.;
+      for (double j = VSTEP; j < hiE;
+	   j += VSTEP) {  // Iterate across energies within each sample wimp mass
+	double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) -
+			 dd * exp(-ee * pow(j, ff))) /
+	  100.;
+	//cerr << j << " " << eff << endl;
+	if ( eff > 1. || eff < 0. )
+	  { cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
+	if (j > loE)
+	  sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNumber) * eff * xEff *
+	    NRacc;  // integrating (Riemann, left sum)
+	// mass-dependent differential rate with
+	// effxacc and step size
+      }
+      xSect[i] = 1e-36 * Ul / (sigAboveThr[i] * fidMass *
+			       time);  // derive the cross-section based upon the
+      // desired upper limit, calculated above
+      // (aka "Ul"). Relative to 1pb
+      if (atof(argv[2]) > 0.) {  // uses arXiv:1602.03489 (LUX Run03 SD) which in
+	// turn uses Klos et al.
+	xSect[i] *= (1. - 2.9592 / pow(mass[i], 1.) + 352.53 / pow(mass[i], 2.) -
+		     14808. / pow(mass[i], 3.) + 2.7368e+5 / pow(mass[i], 4.) -
+		     2.5154e+6 / pow(mass[i], 5.) + 1.2301e+7 / pow(mass[i], 6.) -
+		     3.0769e+7 / pow(mass[i], 7.) + 3.1065e+7 / pow(mass[i], 8.));
+	if (atof(argv[2]) == 1.) xSect[i] *= 1.66e5;
+	if (atof(argv[2]) == 2.) xSect[i] *= 5.64e6;
+      }  // end spin-dep. code block
+      ++i;
+      if (xSect[i - 1] < DBL_MAX && xSect[i - 1] > 0. &&
+	  !std::isnan(xSect[i - 1]))  // Print the results, skipping any weirdness
+	// (low WIMP masses prone)
+	cout << mass[i - 1] << "\t\t\t" << xSect[i - 1] << endl;  // final answer
     }
-    xSect[i] = 1e-36 * Ul / (sigAboveThr[i] * fidMass *
-                             time);  // derive the cross-section based upon the
-                                     // desired upper limit, calculated above
-                                     // (aka "Ul"). Relative to 1pb
-    if (atof(argv[2]) > 0.) {  // uses arXiv:1602.03489 (LUX Run03 SD) which in
-                               // turn uses Klos et al.
-      xSect[i] *= (1. - 2.9592 / pow(mass[i], 1.) + 352.53 / pow(mass[i], 2.) -
-                   14808. / pow(mass[i], 3.) + 2.7368e+5 / pow(mass[i], 4.) -
-                   2.5154e+6 / pow(mass[i], 5.) + 1.2301e+7 / pow(mass[i], 6.) -
-                   3.0769e+7 / pow(mass[i], 7.) + 3.1065e+7 / pow(mass[i], 8.));
-      if (atof(argv[2]) == 1.) xSect[i] *= 1.66e5;
-      if (atof(argv[2]) == 2.) xSect[i] *= 5.64e6;
-    }  // end spin-dep. code block
-    ++i;
-    if (xSect[i - 1] < DBL_MAX && xSect[i - 1] > 0. &&
-        !std::isnan(xSect[i - 1]))  // Print the results, skipping any weirdness
-                                    // (low WIMP masses prone)
-      cout << mass[i - 1] << "\t\t\t" << xSect[i - 1] << endl;  // final answer
-  }
-  int iMax = i;
-
-  printf("{[");  // DM tools format (i.e. Matlab)
-  for (i = 0; i < (iMax - 1); ++i) {
-    if (xSect[i] < DBL_MAX && xSect[i] > 0. && !std::isnan(xSect[i]))
-      printf("%.1f %e; ", mass[i], xSect[i]);
-  }
-  printf("%.1f %e", mass[iMax - 1], xSect[iMax - 1]);  // last bin special
-  printf("]}\n");
-
-  return 0;
-
-}
-
-if ( mode == 1 ) {
-
-  if (numBins == 1) {
-    GetFile(argv[1]);
+    int iMax = i;
+    
+    printf("{[");  // DM tools format (i.e. Matlab)
+    for (i = 0; i < (iMax - 1); ++i) {
+      if (xSect[i] < DBL_MAX && xSect[i] > 0. && !std::isnan(xSect[i]))
+	printf("%.1f %e; ", mass[i], xSect[i]);
+    }
+    printf("%.1f %e", mass[iMax - 1], xSect[iMax - 1]);  // last bin special
+    printf("]}\n");
+    
     return 0;
+    
   }
   
-  int DoF = numBins - abs(freeParam);
-  FILE* ifp = fopen(argv[2], "r");
-  for (i = 0; i < numBins; ++i) {
-    fscanf(ifp, "%lf %lf %lf %lf %lf %lf", &band2[i][0], &band2[i][1],
-           &band2[i][2], &band2[i][5], &band2[i][3], &band2[i][6]);
-  }
-  fclose(ifp);
-  // comment in the next 3 lines for g1 and g2 variation loops. Use 2> /dev/null
-  // when running to suppress empty data warnings from low g1 sending things out
-  // of bounds
-  for (g1x = 0.90; g1x <= 1.10; g1x += 0.01) {
-    for (g2x = 0.90; g2x <= 1.10; g2x += 0.01) {
-      if (loop)
-        printf("%.2f\t%.2f\t", g1x, g2x);
-      else {
-        g1x = 1.;
-        g2x = 1.;
-      }
+  if ( mode == 1 ) {
+    
+    if ( argc < 3 ) {
+      cerr << "ERROR: mode 1 requires *2* input files. 1 is not enough" << endl; return 1;
+    }
+    
+    if (numBins == 1) {
       GetFile(argv[1]);
-      double error, chi2[4] = {0., 0., 0., 0.};
-      for (i = 0; i < numBins; ++i) {
-	if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
-	  cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
-	  return 1;
+      return 0;
+    }
+    
+    int DoF = numBins - abs(freeParam);
+    FILE* ifp = fopen(argv[2], "r");
+    for (i = 0; i < numBins; ++i) {
+      int scan2 = fscanf(ifp, "%lf %lf %lf %lf %lf %lf", &band2[i][0], &band2[i][1],
+			 &band2[i][2], &band2[i][5], &band2[i][3], &band2[i][6]);
+    }
+    fclose(ifp);
+    // comment in the next 3 lines for g1 and g2 variation loops. Use 2> /dev/null
+    // when running to suppress empty data warnings from low g1 sending things out
+    // of bounds
+    for (g1x = 0.90; g1x <= 1.10; g1x += 0.01) {
+      for (g2x = 0.90; g2x <= 1.10; g2x += 0.01) {
+	if (loop)
+	  printf("%.2f\t%.2f\t", g1x, g2x);
+	else {
+	  g1x = 1.;
+	  g2x = 1.;
 	}
-        error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
-        chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
-        error = sqrt(pow(band[i][6], 2.) + pow(band2[i][6], 2.));
-        chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
-	chi2[2] += 100. * ( band2[i][2] - band[i][2] ) / band2[i][2];
-	chi2[3] += 100. * ( band2[i][3] - band[i][3] ) / band2[i][3];
-      }
-      chi2[0] /= double(DoF - 1); chi2[2] /= numBins;
-      chi2[1] /= double(DoF - 1); chi2[3] /= numBins;
-      //cout.precision(3);
-      //if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
-      //if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
-      if ( loopNEST ) { //abbreviated #only version
-	cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << "\t" << chi2[2] << "\t" << chi2[3] << "\t"
-	     << band[0][2] << "\t" << band[0][3] << endl;
-      }
-      else {
-	cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width. ";
-	cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width and mean*width)"<<endl;
-	cout << "%-errors of the form (1/N)*sum{(data-NEST)/data} for mean and width are " << chi2[2] << " and " << chi2[3] << " (averages)" << endl;
+	GetFile(argv[1]);
+	double error, chi2[4] = {0., 0., 0., 0.};
+	for (i = 0; i < numBins; ++i) {
+	  if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
+	    cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
+	    return 1;
+	  }
+	  error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
+	  chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
+	  error = sqrt(pow(band[i][6], 2.) + pow(band2[i][6], 2.));
+	  chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
+	  chi2[2] += 100. * ( band2[i][2] - band[i][2] ) / band2[i][2];
+	  chi2[3] += 100. * ( band2[i][3] - band[i][3] ) / band2[i][3];
+	}
+	chi2[0] /= double(DoF - 1); chi2[2] /= numBins;
+	chi2[1] /= double(DoF - 1); chi2[3] /= numBins;
+	//cout.precision(3);
+	//if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
+	//if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
+	if ( loopNEST ) { //abbreviated #only version
+	  cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << "\t" << chi2[2] << "\t" << chi2[3] << "\t"
+	       << band[0][2] << "\t" << band[0][3] << endl;
+	}
+	else {
+	  cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width. ";
+	  cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width and mean*width)"<<endl;
+	  cout << "%-errors of the form (1/N)*sum{(data-NEST)/data} for mean and width are " << -chi2[2] << " and " << -chi2[3] << " (averages)" << endl;
+	}
+	if (!loop) break;
       }
       if (!loop) break;
-    }
-    if (!loop) break;
-  }  // double curly bracket goes with g1x and g2x loops above
-  return 0;
-
-}
-
+    }  // double curly bracket goes with g1x and g2x loops above
+    return 0;
+    
+  }
+  
   if (leak) {
     cout << endl << "Calculating band for first dataset" << endl;
     GetFile(argv[2]);
@@ -404,17 +408,14 @@ if ( mode == 1 ) {
     if (band2[0][2] > band[0][2]) {
       ERis2nd = true;
       fprintf(stderr,
-              "\n#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ error  - "
-              "error\tDiscrim[%%]\tLower ''Half''\t+ error  - "
-              "error\tUpperHf[%%]\n");
+	      "\n#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ errBar\t- "
+	      "errBar\tDiscrim[%%]\tLower ''Half''\t+ errBar\t- errBar\tUpperHf[%%]\n");
     } else {
       ERis2nd = false;
+      //fprintf(stderr,"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t- => Fit more\n");
       fprintf(stderr,
-              "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t- => Fit more\n");
-      fprintf(stderr,
-              "#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ error  - "
-              "error\tDiscrim[%%]\tLeak Frac Raw\t+ error  - "
-              "error\tDiscrim[%%]\tRaw-Fit Leak\n");
+	      "\n#evts\tBinCen\tBin Actual\t#StdDev's\tLeak Frac Fit\t+ errBar\t- "
+	      "errBar\tDiscrim[%%]\tLeak Frac Raw\t+ errBar\t- errBar\tDiscrim[%%]\n");//Raw-Fit Leak\n");
     }
     for (i = 0; i < numBins; ++i) {
       
@@ -445,21 +446,26 @@ if ( mode == 1 ) {
 	  leakage[i] = 0.5 + 0.5 * erf((band2[i][2] - band[i][9]) / band[i][11] / sqrt(2.)) -
 	    2. * owens_t((band2[i][2] - band[i][9]) / band[i][11], band[i][4]);
         }
-	if ( skewness == 0 )
+	if ( skewness == 0 ) {
+	  errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
 	  leakage[i] = (1. - erf(numSigma[i] / sqrt(2.))) / 2.;
+	  errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
+	}
 	else {
-	  if ( ERis2nd ) {
-	    errorBars[i][0] = (band2[i][2] - band[i][2]) / (0.5*(band2[i][11]+band2[i][3])); //average of omega and sigma
-	    errorBars[i][1] = (band2[i][2] - band[i][2]) / band2[i][3]; //just plain sigma
+	  if ( ERis2nd ) { //this block & next -> quick+dirty approx for skew leak errs. Focused on mean i.e. [2]
+	    errorBars[i][0] = 0.5 + 0.5 * erf((band[i][2] - band[i][5] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
+	      2. * owens_t((band[i][2] - band[i][5] - band2[i][9]) / band2[i][11], band2[i][4]);
+	    errorBars[i][1] = 0.5 + 0.5 * erf((band[i][2] + band[i][5] - band2[i][9]) / band2[i][11] / sqrt(2.)) -
+	      2. * owens_t((band[i][2] + band[i][5] - band2[i][9]) / band2[i][11], band2[i][4]);
 	  }
 	  else {
-	    errorBars[i][0] = (band[i][2] - band2[i][2]) / (0.5*(band[i][11]+band[i][3]));
-	    errorBars[i][1] = (band[i][2] - band2[i][2]) / band[i][3];
+	    errorBars[i][0] = 0.5 + 0.5 * erf((band2[i][2] - band2[i][5] - band[i][9]) / band[i][11] / sqrt(2.)) -
+	      2. * owens_t((band2[i][2] - band2[i][5] - band[i][9]) / band[i][11], band[i][4]);
+	    errorBars[i][1] = 0.5 + 0.5 * erf((band2[i][2] + band2[i][5] - band[i][9]) / band[i][11] / sqrt(2.)) -
+	      2. * owens_t((band2[i][2] + band2[i][5] - band[i][9]) / band[i][11], band[i][4]);
 	  }
-	}
-	errorBars[i][0] = (1. - erf(errorBars[i][0] / sqrt(2.))) / 2.;
-	errorBars[i][1] = (1. - erf(errorBars[i][1] / sqrt(2.))) / 2.;
-      }
+	} //skewness = 1
+      } //end of skewness = 0 or 1 'if' conditional statement.
       
       if ( skewness == 2 ) {
         if ( ERis2nd ) {
@@ -538,11 +544,11 @@ if ( mode == 1 ) {
         FailedFit = true; //return 1;
       }
     }
-    long below[NUMBINS_MAX] = {0};
+    uint64_t below[NUMBINS_MAX] = {0};
     double NRbandGCentroid, leakTotal, poisErr[2];
     for (i = 0; i < numBins; ++i) {
       below[i] = 0;
-      for (long j = 0; j < inputs[i].size(); ++j) {
+      for (uint64_t j = 0; j < inputs[i].size(); ++j) {
         NRbandGCentroid =
             fitf->GetParameter(0) / (inputs[i][j] + fitf->GetParameter(1)) +
             fitf->GetParameter(2) * inputs[i][j] +
@@ -564,13 +570,14 @@ if ( mode == 1 ) {
       cerr << outputs[i].size();
       fprintf(
           stderr,
-          "\t%.2f\t%.6f\t%.6f\t%e\t%.2e %.2e\t%.6f\t%e\t%.2e %.2e\t%.6f\t",
+          "\t%.2f\t%.6f\t%.6f\t%e\t%.2e\t%.2e\t%.6f\t%e\t%.2e\t%.2e\t%.6f\t",
           0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
           numSigma[i], leakage[i], fabs(errorBars[i][0] - leakage[i]),
           fabs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,
           poisErr[0] - leakTotal, leakTotal - poisErr[1], (1. - leakTotal) * 100.);
-      if ( !ERis2nd ) fprintf ( stderr, "%e\n",leakTotal-leakage[i] );
-      else fprintf(stderr,"\n");
+      //if ( !ERis2nd ) fprintf ( stderr, "%e\n",leakTotal-leakage[i] );
+      //else
+      fprintf(stderr,"\n");
       finalSums[0] += (double)below[i];
       finalSums[1] += (double)outputs[i].size();
     }
@@ -624,7 +631,7 @@ void GetFile(char* fileName) {
   }
   
   while (1) {
-    fscanf(ifp,
+    int scan3 = fscanf(ifp,
            "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
            &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n);
     if (feof(ifp)) break;
@@ -677,7 +684,7 @@ void GetFile(char* fileName) {
   if (numBins == 1) {
     TH1F* HistogramArray = new TH1F[3];
     double minimum, maximum, average;
-    unsigned long int i, numPts = E_keV.size();
+    uint64_t i, numPts = E_keV.size();
     double holder[numPts];
 
     printf(
@@ -841,7 +848,7 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
   }
   int i = 0, j = 0;
   double s1c, numPts;
-  unsigned long reject[NUMBINS_MAX] = {0};
+  uint64_t reject[NUMBINS_MAX] = {0};
 
   if (resol) {
     numBins = 1;
@@ -949,7 +956,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
     }
     if ( wings ) { logMin -= 0.5; logMax += 0.5; }
     HistogramArray[j].SetBins ( logBins, logMin, logMax ); //min and max in log10(S2) or log10(S2/S1) NOT in S1. Y-axis not X.
-    for (unsigned long i = 0; i < signals[j].size(); ++i)
+    for (uint64_t i = 0; i < signals[j].size(); ++i)
       HistogramArray[j].Fill(signals[j][i]);
     HistogramArray[j].Draw();
     if ( !skewness ) {

@@ -16,7 +16,7 @@ using namespace std;
 class RandomGen {
  public:
   static RandomGen* rndm();
-  void SetSeed(unsigned long int s);
+  void SetSeed(uint64_t s);
   double rand_uniform();
   double rand_gauss(double mean, double sigma);
   double rand_exponential(double half_life);

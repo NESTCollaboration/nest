@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   
-  unsigned long int numEvts;
+  uint64_t numEvts;
   string type, position, posiMuon;
   double eMin, eMax, inField, fPos;
   int seed; bool no_seed = false;
@@ -95,6 +95,11 @@ int main(int argc, char** argv) {
     useTiming = 0; //-1 for faster (less accurate)
     
     if ( type == "ER" ) {
+      
+      /*detector->set_g1(atof(argv[1])); //an alternate loop approach
+      detector->set_g1_gas(atof(argv[2]));
+      inField = atof(argv[3]);
+      detector->set_noiseL(atof(argv[4]),atof(argv[5]));*/
       
       FreeParam.push_back(atof(argv[1])); //-0.1 for LUX C-14 ~200V/cm
       FreeParam.push_back(atof(argv[2])); //0.5
@@ -149,9 +154,9 @@ int main(int argc, char** argv) {
   }
   else {
     
-    numEvts = (unsigned long)atof(argv[1]);
+    numEvts = (uint64_t)atof(argv[1]);
     if ( numEvts <= 0 ) {
-      cerr << "ERROR, you must simulate at least 1 event" << endl;
+      cerr << "ERROR, you must simulate at least 1 event, or 1 kg*day" << endl;
       return 1;
     }
     type = argv[2];
@@ -191,20 +196,35 @@ int main(int argc, char** argv) {
       FreeParam.push_back(0.19); // width parameter (Gaussian 1-sigma)
       FreeParam.push_back(2.25); // raw skewness, for NR
     }
-    NuisParam.push_back(11.); //alpha, for NR model. See http://nest.physics.ucdavis.edu
-    NuisParam.push_back(1.1); //beta
-    NuisParam.push_back(0.0480); //gamma
-    NuisParam.push_back(-0.0533); //delta
-    NuisParam.push_back(12.6); //epsilon
-    NuisParam.push_back(0.3); //zeta
-    NuisParam.push_back(2.); //eta
-    NuisParam.push_back(0.3); //theta
-    NuisParam.push_back(2.); //iota
-    // last 3 are the secret extra parameters for additional flexibility
-    NuisParam.push_back(0.5); //changes sqrt in Qy equation
-    NuisParam.push_back(1.0); //makes low-E sigmoid an asymmetric one, for charge
-    NuisParam.push_back(1.0); //makes low-E sigmoid an asymmetric one, for light
-    
+    if ( ValidityTests::nearlyEqual ( ATOM_NUM, 18. ) ) { // liquid Ar
+      NuisParam[0] = 11.1025; // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
+      NuisParam[1] = 1.087399; // +/-0.025
+      NuisParam[2] = 0.1; // +/-0.005
+      NuisParam[3] = -0.0932; // +/-0.0095
+      NuisParam[4] = 2.998; // +/-1.026
+      NuisParam[5] = 0.3; // Fixed
+      NuisParam[6] = 2.94; // +/-0.12
+      NuisParam[7] = W_DEFAULT / 1000.;
+      NuisParam[8] = DBL_MAX;
+      NuisParam[9] = 0.5; // square root
+      NuisParam[10] = 1.0;
+      NuisParam[11] = 1.0;
+    }
+    else {
+      NuisParam.push_back(11.); //alpha, for NR model. See http://nest.physics.ucdavis.edu
+      NuisParam.push_back(1.1); //beta
+      NuisParam.push_back(0.0480); //gamma
+      NuisParam.push_back(-0.0533); //delta
+      NuisParam.push_back(12.6); //epsilon
+      NuisParam.push_back(0.3); //zeta
+      NuisParam.push_back(2.); //eta
+      NuisParam.push_back(0.3); //theta
+      NuisParam.push_back(2.); //iota
+      // last 3 are the secret extra parameters for additional flexibility
+      NuisParam.push_back(0.5); //changes sqrt in Qy equation
+      NuisParam.push_back(1.0); //makes low-E sigmoid an asymmetric one, for charge
+      NuisParam.push_back(1.0); //makes low-E sigmoid an asymmetric one, for light
+    }
   }
   
   auto exec = execNEST ( detector, numEvts, type, eMin, eMax, inField, position, posiMuon, fPos, seed, no_seed, tZero );
@@ -221,12 +241,12 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
   double x, y, z, driftTime, vD; RandomGen::rndm()->SetSeed(seed);
   NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
   FreeParam = {1.,1.,0.10,0.5,0.19,2.25};
-  vector<double> scint, scint2, wf_amp; vector<long int> wf_time;
+  vector<double> scint, scint2, wf_amp; vector<int64_t> wf_time;
   NESTObservableArray OutputResults; double useField;
   vector<double> g2_params = n.CalculateG2(verbosity);
   double rho = n.SetDensity(detector->get_T_Kelvin(),detector->get_p_bar());
   
-  for ( long i = 0; i < eList.size(); ++i ) {
+  for ( uint64_t i = 0; i < eList.size(); ++i ) {
     x = pos3dxyz[i][0];
     y = pos3dxyz[i][1];
     z = pos3dxyz[i][2];
@@ -286,7 +306,7 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
   return OutputResults;
 }
 
-int execNEST(VDetector* detector, unsigned long int numEvts, const string& type,
+int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
              double eMin, double eMax, double inField, string position, const string& posiMuon,
              double fPos, int seed, bool no_seed, double dayNumber ) {
   // Construct NEST class using detector object
@@ -491,7 +511,7 @@ vector<double> signal1, signal2, signalE, vTable;
       //use massNum to input maxTimeSep into GetYields(...)
   double keV = -999.; double timeStamp = dayNumber;
   vector<double> keV_vec;
-  for (unsigned long int j = 0; j < numEvts; ++j) {
+  for (uint64_t j = 0; j < numEvts; ++j) {
     try {
       //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
       //for E-recon when you've changed g1,g2-related stuff, redo line 341+
@@ -570,6 +590,8 @@ vector<double> signal1, signal2, signalE, vTable;
               }
               break;
           default:
+	    //keV = TestSpectra::ZeplinBackground(); //example of continuous ER/beta/gamma BG spec
+	    //break;
             if ( eMin < 0. ) return 1;
             if ( eMax > 0. ) {
               if ( eMax > eMin )
@@ -881,7 +903,7 @@ vector<double> signal1, signal2, signalE, vTable;
         smearPos[1] = xySmeared[1];
       }
 
-      vector<long int> wf_time;
+      vector<int64_t> wf_time;
       vector<double> wf_amp;
       vector<double> scint =
               n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0], smearPos[1], smearPos[2],
@@ -905,7 +927,24 @@ vector<double> signal1, signal2, signalE, vTable;
         signal1.push_back(scint[7]);
       else
         signal1.push_back(-999.);
-
+      
+      double lowest1 = (double)detector->get_coinLevel();
+      double lowest2 = minS2;
+      if ( lowest1 <= 0. ) lowest1 = 1.;
+      if ( lowest2 <= 0. ) lowest2 = 1.;
+      if ( (useS2 == 0 && logMax <= log10(maxS2/maxS1)) ||
+	   (useS2 == 1 && logMax <= log10(maxS2)) ||
+	   (useS2 == 2 && logMax <= log10(maxS2/maxS1)) ) {
+	if ( j == 0 )
+	  cerr << "err: You may be chopping off the upper half of your (ER?) band; increase logMax and/or maxS2" << endl;
+      }
+      if ( (useS2 == 0 && logMin >= log10(lowest2/lowest1)) ||
+           (useS2 == 1 && logMin >= log10(lowest2)) ||
+           (useS2 == 2 && logMin >= log10(lowest2/lowest1)) ) {
+        if ( j == 0 )
+          cerr << "err: You may be chopping off the lower half of your (NR?) band; decrease logMin and/or minS2" << endl;
+      }
+      
       if(usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2)
         signal2.push_back(scint2[5]);
       else if(usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2)
@@ -1083,7 +1122,7 @@ vector<double> signal1, signal2, signalE, vTable;
            type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
            type == "mu-") {
           printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
-          printf("%li\t%e\t%e\n", (long) scint2[0], scint2[4], scint2[7]);
+          printf("%li\t%e\t%e\n", (int64_t) scint2[0], scint2[4], scint2[7]);
         } else {
           printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5],
                  scint[7]);  // see GetS1 inside of NEST.cpp for full explanation
@@ -1201,7 +1240,7 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
   }
   int i = 0, j = 0;
   double s1c, numPts;
-  unsigned long reject[NUMBINS_MAX] = {0};
+  uint64_t reject[NUMBINS_MAX] = {0};
 
   if (resol) {
     numBins = 1;

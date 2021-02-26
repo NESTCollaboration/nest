@@ -25,16 +25,16 @@ do
 for g in 6e-2 7e-2 8e-2
 do
     
-    echo $a $b $c $d $e $f $g
+    #echo $a $b $c $d $e $f $g
     
     #below: run execNEST with the select parameters, and save the output
-    @CMAKE_INSTALL_FULL_BINDIR@/execNEST $a $b $c $d $e $f $g > nest_output.ER 2> /dev/null
+    @CMAKE_INSTALL_FULL_BINDIR@/execNEST $a $b $c $d $e $f $g > nohup.dat 2> nohup.err
     
     #next, use rootNEST in FIT mode to get goodness-of-fit statistic with a data file (See README on rootNEST)
-    @CMAKE_INSTALL_FULL_BINDIR@/rootNEST nest_output.ER fittingTarget_dataFile.dat 2> /dev/null
+    @CMAKE_BINARY_DIR@/examples/rootNEST nohup.dat @CMAKE_SOURCE_DIR@/examples/LUXRun03_CH3TBand_SpikeFull.txt 2>> nohup.err
     
     #then remove the output file and move on to the next parameter set
-    rm nest_output.ER &> /dev/null
+    rm nohup.dat &> /dev/null
     
 done
 done

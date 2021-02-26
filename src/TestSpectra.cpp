@@ -378,7 +378,7 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
     if ( nZeros == 100 ) break; //quit the for-loop once we're sure we're only getting zeros
   }
 
-  for (long i = 0; i < 1000000; ++i) {
+  for (uint64_t i = 0; i < 1000000; ++i) {
     spectrum.integral += WIMP_dRate(double(i) / 1e4, mass, dayNum) / 1e4;
   }
   spectrum.xMax = ( (double) EnergySpec.size() - 1. )/divisor;

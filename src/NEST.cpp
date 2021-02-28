@@ -563,6 +563,12 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
         deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
       }
     }
+    if (deltaT_ns < 100 && energy < 41.5)  {
+      cerr << "\tWARNING! Past Kr83m model fit validity region. Details: "
+      << " deltaT_ns is <100 ns and your input energy is either 32.1 or 9.4 keV. "
+      << " Data for separated Kr83m decays does not yet exist for deltaT_ns <100 ns. "
+      << " 9.4 & 32.1 keV yields are still summed to physically accurate result, but individually will be nonsensical." << endl;
+    }
     Nq = energy * 1e3 / Wq_eV;
     double  medTlevel = 57.462 + (69.201 - 57.462 ) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
     double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield/60, 1), 1); 

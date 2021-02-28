@@ -721,11 +721,10 @@ vector<double> signal1, signal2, signalE, vTable;
             if(MCtruthE) fprintf(stdout, "E_truth [keV]");
             else fprintf(stdout, "E_recon [keV]");
           }
-          fprintf(stdout,
-                  "\tfield [V/cm]\ttDrift [us]\tX,Y,Z "
-                  "[mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor "
-                  "[phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr "
-                  "[phd]\n");
+	  if ( seed == -2 )
+	    printf("\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\t\tNe-\t\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
+	  else
+	    printf("\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea [PE]\tS2_3Dcorr [phd]\n");
         }
       }
       if(ValidityTests::nearlyEqual(inField, -1.)) {

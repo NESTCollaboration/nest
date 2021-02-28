@@ -382,7 +382,7 @@ int main(int argc, char** argv) {
 	else {
 	  cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and " << chi2[1] << " for width. ";
 	  cout << "Arithmetic average= " << (chi2[0]+chi2[1])/2. << " and geo. mean " << sqrt(chi2[0]*chi2[1]) << " (mean+width and mean*width)"<<endl;
-	  cout << "%-errors of the form (1/N)*sum{(data-NEST)/data} for mean and width are " << -chi2[2] << " and " << -chi2[3] << " (averages)" << endl;
+	  cout << "%-errors of the form (1/N)*sum{(NEST-data)/data} for mean and width are " << -chi2[2] << " and " << -chi2[3] << " (averages)" << endl;
 	}
 	if (!loop) break;
       }
@@ -582,7 +582,7 @@ int main(int argc, char** argv) {
       finalSums[1] += (double)outputs[i].size();
     }
     fprintf(stderr,
-            "OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
+            "\nOVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
             "%.12f%%, total: Gaussian & non-Gaussian (tot=counting) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[0] / finalSums[1]) * 100.,

@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
       FreeParam.push_back(2.25); // raw skewness, for NR
     }
     if ( ValidityTests::nearlyEqual ( ATOM_NUM, 18. ) ) { // liquid Ar
-      NuisParam.push_back(1.1025); // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
+      NuisParam.push_back(11.1025); // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
       NuisParam.push_back(1.087399); // +/-0.025
       NuisParam.push_back(0.1); // +/-0.005
       NuisParam.push_back(-0.0932); // +/-0.0095

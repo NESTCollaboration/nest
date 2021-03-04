@@ -197,18 +197,18 @@ int main(int argc, char** argv) {
       FreeParam.push_back(2.25); // raw skewness, for NR
     }
     if ( ValidityTests::nearlyEqual ( ATOM_NUM, 18. ) ) { // liquid Ar
-      NuisParam[0] = 11.1025; // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
-      NuisParam[1] = 1.087399; // +/-0.025
-      NuisParam[2] = 0.1; // +/-0.005
-      NuisParam[3] = -0.0932; // +/-0.0095
-      NuisParam[4] = 2.998; // +/-1.026
-      NuisParam[5] = 0.3; // Fixed
-      NuisParam[6] = 2.94; // +/-0.12
-      NuisParam[7] = W_DEFAULT / 1000.;
-      NuisParam[8] = DBL_MAX;
-      NuisParam[9] = 0.5; // square root
-      NuisParam[10] = 1.0;
-      NuisParam[11] = 1.0;
+      NuisParam.push_back(11.1025); // +/-1.10 Everything from https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
+      NuisParam.push_back(1.087399); // +/-0.025
+      NuisParam.push_back(0.1); // +/-0.005
+      NuisParam.push_back(-0.0932); // +/-0.0095
+      NuisParam.push_back(2.998); // +/-1.026
+      NuisParam.push_back(0.3); // Fixed
+      NuisParam.push_back(2.94); // +/-0.12
+      NuisParam.push_back(W_DEFAULT / 1000.);
+      NuisParam.push_back(DBL_MAX);
+      NuisParam.push_back(0.5); // square root
+      NuisParam.push_back(1.0);
+      NuisParam.push_back(1.0);
     }
     else {
       NuisParam.push_back(11.); //alpha, for NR model. See http://nest.physics.ucdavis.edu

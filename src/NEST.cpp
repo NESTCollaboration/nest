@@ -183,7 +183,9 @@ double NESTcalc::FanoER(double density, double Nq_mean,double efield)
             pow(density,
                    3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
     if (!fdetector->get_inGas())
-      Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
+//      Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5); 
+      Fano += (0.0015 * sqrt((Nq_mean/1.17)) * pow(efield, 0.5));
+      printf("Fano = %f\n",Fano);
     return Fano;
 }
 
@@ -200,6 +202,8 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   
   double excitonRatio = yields.ExcitonRatio;
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
+  printf("Initial Quanta = %f\n",Nq_mean);
+
 
   double elecFrac = yields.ElectronYield / Nq_mean;
   if (elecFrac > 1.) elecFrac = 1.;

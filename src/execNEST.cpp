@@ -803,7 +803,7 @@ vector<double> signal1, signal2, signalE, vTable;
             yields.PhotonYield *= FudgeFactor[0];
             yields.ElectronYield *= FudgeFactor[1];
 //            detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
-            detector->set_noiseL(1.0, 1.0); //Xe10 
+            detector->set_noiseL(1e-2, 1e-2); //Xe10 
             } else {
             if(seed < 0 && seed != -1) massNum = detector->get_molarMass();
             yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);

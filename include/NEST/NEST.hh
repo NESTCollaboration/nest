@@ -283,7 +283,7 @@ class NESTcalc {
   double SetDensity(double T, double P);
   // A simple, approximate but good, density is returned for solid, liquid, or
   // gaseous xenon, as a function of temperature and pressure
-  static double GetDensity(double T, double P, bool &inGas, double molarMass=131.293);
+  static double GetDensity(double T, double P, bool &inGas, uint64_t evtNum=0, double molarMass=131.293);
   // A simple, approximate but good, density is returned for solid, liquid, or
   // gaseous xenon, as a function of temperature and pressure
   std::vector<double> xyResolution(double xPos_mm, double yPos_mm,

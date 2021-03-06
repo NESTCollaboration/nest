@@ -11,6 +11,8 @@
 using namespace std;
 using namespace NEST;
 
+int podLength = 1100; //roughly 100-1,000 ns for S1
+
 const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
 const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19,2.25};
 
@@ -266,17 +268,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     recombProb = yields.PhotonYield / double(Ni);
   if (recombProb < 0.) recombProb = 0.;
   if (recombProb > 1.) recombProb = 1.;
-  if (std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 ||
-      ValidityTests::nearlyEqual(recombProb,0.0))  {
-    if ( fdetector->get_extraPhot() )
-    {
-      if ( yields.Lindhard != 1. && density >= 3.10 ) {
-        Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe) but happens for alphas/ions too
-      }
-      else if ( ValidityTests::nearlyEqual(yields.Lindhard, 1.) ) {
-        Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
-      }
-    }
+  if ( std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 || ValidityTests::nearlyEqual(recombProb,0.0) ) {
     result.photons = Nex;
     result.electrons =Ni;
     elecFrac= 1.0;
@@ -284,7 +276,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     result.Variance = 0.;
     return result;
   }
-
+  
   //set omega (non-binomial recombination fluctuations parameter) according to whether the Lindhard <1, i.e. this is NR.
   double omega = yields.Lindhard <1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac, FreeParam);
   if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) ) omega = 0.0; // Ar has no non-binom sauce
@@ -847,8 +839,8 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
       while ( TruncGauss <= 0. ) // real photo cathodes can't make negative phe
 	TruncGauss = RandomGen::rndm()->rand_gauss(1./NewMean,fdetector->get_sPEres());
       double phe1 = TruncGauss +
-                    RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
-                                                  fdetector->get_noiseB()[1]);
+	RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
+				      fdetector->get_noiseB()[1]);
       ++Nphe;
       if ( phe1 > DBL_MAX ) phe1 = 1.; // for Box-Mueller fuck-ups
       prob = RandomGen::rndm()->rand_uniform();
@@ -864,8 +856,8 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
 	while ( TruncGauss <= 0. )
 	  TruncGauss = RandomGen::rndm()->rand_gauss(1./NewMean,fdetector->get_sPEres());
         phe2 = TruncGauss +
-               RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
-                                             fdetector->get_noiseB()[1]);
+	  RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
+					fdetector->get_noiseB()[1]);
         ++Nphe;
         if ( phe2 > DBL_MAX ) phe2 = 1.;
         // zero the area if phe wouldn't have been observed
@@ -885,54 +877,54 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
           photon_areas[0].push_back(phe1);
           photon_areas[1].push_back(phe2);
         }
-      } else {  // use approximation to find timing
+      }
+      else {  // use approximation to find timing
         if ((phe1 + phe2) > fdetector->get_sPEthr() &&
             (-20. * log(RandomGen::rndm()->rand_uniform()) <
-                 fdetector->get_coinWind() ||
+	     fdetector->get_coinWind() ||
              nHits > fdetector->get_coinLevel())) {
           ++spike;
           pulseArea += phe1 + phe2;
-        } else
-          ;
+        }
+	else ;
       }
     }
-  } else {  // apply just an empirical efficiency by itself, without direct area
-            // threshold
+  }
+  else {  // apply just an empirical efficiency by itself, without direct area threshold
     Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
     pulseArea = RandomGen::rndm()->rand_gauss(
-        BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())),
-        fdetector->get_sPEres() * sqrt(Nphe));
+					      BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())),
+					      fdetector->get_sPEres() * sqrt(Nphe));
     //proper truncation not done here because this is meant to be approximation, quick and dirty
     spike = (double)nHits;
   }
-
+  
   if ( useTiming >= 1 ) {
+    
     vector<double> PEperBin, AreaTable[2], TimeTable[2];
-    int numPts = 1100 - 100 * SAMPLE_SIZE;
+    int numPts = podLength - 100 * SAMPLE_SIZE;
     AreaTable[0].resize(numPts, 0.);
     AreaTable[1].resize(numPts, 0.);
-
+    
     int total_photons = (int)fabs(spike);
-    int excitons =
-        int((double(nHits) / double(quanta.photons)) * double(quanta.excitons) +
-            0.5);
+    int excitons = int(double(total_photons)*double(quanta.excitons)/double(quanta.photons));
     photonstream photon_emission_times =
-        GetPhotonTimes(type_num, total_photons, excitons, dfield, energy);
+      GetPhotonTimes(type_num, total_photons, excitons, dfield, energy);
     photonstream photon_times = AddPhotonTransportTime(
-        photon_emission_times, truthPos[0], truthPos[1], truthPos[2]);
-
+						       photon_emission_times, truthPos[0], truthPos[1], truthPos[2]);
+    
     if (outputTiming && !pulseFile.is_open()) {
       pulseFile.open("photon_times.txt");
       // pulseFile << "Event#\tt [ns]\tA [PE]" << endl;
       pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
     }
-
+    
     int ii, index;
     double min = 1e100, pTime;
     for (ii = 0; ii < (int)fabs(spike); ++ii) {
       PEperBin.clear();
       PEperBin = fdetector->SinglePEWaveForm(
-          photon_areas[0][ii] + photon_areas[1][ii], photon_times[ii]);
+					     photon_areas[0][ii] + photon_areas[1][ii], photon_times[ii]);
       int total = (unsigned int)PEperBin.size() - 1;
       int whichArray;
       if (RandomGen::rndm()->rand_uniform() <
@@ -946,24 +938,23 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
         if (index < 0) index = 0;
         if (index >= numPts) index = numPts - 1;
         AreaTable[whichArray][index] +=
-            10. * (1. + PULSEHEIGHT) *
-            (photon_areas[0][ii] + photon_areas[1][ii]) /
-            (PULSE_WIDTH * sqrt(2. * M_PI)) *
-            exp(-pow(pTime - photon_times[ii], 2.) /
-                (2. * PULSE_WIDTH * PULSE_WIDTH));
+	  10. * (1. + PULSEHEIGHT) *
+	  (photon_areas[0][ii] + photon_areas[1][ii]) /
+	  (PULSE_WIDTH * sqrt(2. * M_PI)) *
+	  exp(-pow(pTime - photon_times[ii], 2.) /
+	      (2. * PULSE_WIDTH * PULSE_WIDTH));
       }
       if (total >= 0) {
         if (PEperBin[0] < min) min = PEperBin[0];
         TimeTable[0].push_back(PEperBin[0]);
       }
       // else
-      // TimeTable[0].push_back(-999.);
-      // TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
+      // TimeTable[0].push_back(-999.); TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
     double tRandOffset = (SAMPLE_SIZE/2.)*(2.*RandomGen::rndm()->rand_uniform()-1.); //-16,20 was good for LUX, but made weird skew in fP
     for (ii = 0; ii < numPts; ++ii) {
       if ((AreaTable[0][ii] + AreaTable[1][ii]) <= PULSEHEIGHT) continue;
-
+      
       wf_time.push_back((ii - numPts / 2) * SAMPLE_SIZE);
       wf_amp.push_back(AreaTable[0][ii] + AreaTable[1][ii]);
       
@@ -977,13 +968,14 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
 		AreaTable[0][ii]-subtract[0], AreaTable[1][ii]-subtract[1]);
         pulseFile << line << flush;
       }
-
+      
       if (((ii - numPts / 2) * SAMPLE_SIZE - (int)min) >
-              fdetector->get_coinWind() &&
+	  fdetector->get_coinWind() &&
           nHits <= fdetector->get_coinLevel()) {
         pulseArea -= (AreaTable[0][ii] + AreaTable[1][ii]);
         pulseFile << "\t0" << endl;
-      } else
+      }
+      else
         pulseFile << "\t1" << endl;
     }
     for (ii = 0; ii < TimeTable[0].size(); ++ii) {
@@ -999,11 +991,10 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     cerr << " !!WARNING!! S1 linear noise term is greater than or equal to 10% (i.e. 0.1) Did you mistake fraction for percent??" << endl;
   
   if(fdetector->get_noiseQ()[0] != 0) {
-    pulseArea = RandomGen::rndm()->rand_gauss(
-      pulseArea, sqrt(pow(fdetector->get_noiseQ()[0] * pow(pulseArea, 2), 2) + pow(fdetector->get_noiseL()[0] * pulseArea, 2)));
-  }else {
-    pulseArea = RandomGen::rndm()->rand_gauss(
-      pulseArea, fdetector->get_noiseL()[0] * pulseArea);
+    pulseArea = RandomGen::rndm()->rand_gauss(pulseArea, sqrt(pow(fdetector->get_noiseQ()[0] * pow(pulseArea, 2), 2) + pow(fdetector->get_noiseL()[0] * pulseArea, 2)));
+  }
+  else {
+    pulseArea = RandomGen::rndm()->rand_gauss(pulseArea, fdetector->get_noiseL()[0] * pulseArea);
   }
   pulseArea -= ( subtract[0] + subtract[1] );
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
@@ -1012,22 +1003,22 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   double Nphd = pulseArea / (1. + fdetector->get_P_dphe());
   double NphdC = pulseAreaC / (1. + fdetector->get_P_dphe());
   double spikeC = spike / posDepSm;
-
+  
   scintillation[0] = nHits;  // MC-true integer hits in same OR different PMTs,
                              // NO double phe effect
   scintillation[1] =
-      Nphe;  // MC-true integer hits WITH double phe effect (Nphe > nHits)
+    Nphe;  // MC-true integer hits WITH double phe effect (Nphe > nHits)
   scintillation[2] = pulseArea;  // floating real# smeared DAQ pulse areas in
                                  // phe, NO XYZ correction
   scintillation[3] =
-      pulseAreaC;  // smeared DAQ pulse areas in phe, WITH XYZ correction
+    pulseAreaC;  // smeared DAQ pulse areas in phe, WITH XYZ correction
   scintillation[4] = Nphd;  // same as pulse area, adjusted/corrected *downward*
                             // for 2-PE effect (LUX phd units)
   scintillation[5] = NphdC;   // same as Nphd, but XYZ-corrected
   scintillation[6] = spike;   // floating real# spike count, NO XYZ correction
   scintillation[7] = spikeC;  // floating real# spike count, WITH XYZ correction
   scintillation[8] = spike;
-
+  
   if (spike < fdetector->get_coinLevel())  // no chance of meeting coincidence
                                            // requirement. Here, spike is still
                                            // "perfect" (integer)
@@ -1043,7 +1034,8 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
           prob = 1.;
         else
           prob = 0.;
-      } else if (fdetector->get_coinLevel() == 2)
+      }
+      else if (fdetector->get_coinLevel() == 2)
         prob = 1. - pow((double)fdetector->get_numPMTs(), 1. - spike);
       else {
         double numer = 0., denom = 0.;
@@ -1056,7 +1048,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
       }  // end of case of coinLevel of 3 or higher
     }    // end of case of spike is equal to 9 or lower
   }      // the end of case of spike >= coinLevel
-
+  
   if (spike >= 1. && spikeC > 0.) {
     // over-write spike with smeared version, ~real data. Last chance to read
     // out digital spike and spikeC in scintillation[6] and [7]
@@ -1066,15 +1058,12 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
                                      // phe effect), IF sufficiently small nHits
                                      // (otherwise = Nphd)
     scintillation[7] =
-        newSpike[1];  // same as newSpike[0], but WITH XYZ correction
+      newSpike[1];  // same as newSpike[0], but WITH XYZ correction
   }
-
-  if (RandomGen::rndm()->rand_uniform() < prob ||
-      prob >= 1.)  // coincidence has to happen in different PMTs
-  {
-    ;
-  } else {  // some of these are set to -1 to flag them as having been below
-            // threshold
+  
+  if (RandomGen::rndm()->rand_uniform() < prob || prob >= 1.)  // coincidence has to happen in different PMTs
+    { ; }
+  else {  // some of these are set to -1 to flag them as having been below threshold
     if (ValidityTests::nearlyEqual(scintillation[0], 0.)) scintillation[0] = PHE_MIN;
     scintillation[0] = -1.*fabs(scintillation[0]);
     if (ValidityTests::nearlyEqual(scintillation[1], 0.)) scintillation[1] = PHE_MIN;
@@ -1092,10 +1081,10 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     if (ValidityTests::nearlyEqual(scintillation[7], 0.)) scintillation[7] = PHE_MIN;
     scintillation[7] = -1.*fabs(scintillation[7]);
   }
-
+  
   // scintillation[8] =
-  //  fdetector->get_g1();  // g1 (light collection efficiency in liquid)
-
+  //fdetector->get_g1();  // g1 (light collection efficiency in liquid)
+  
   return scintillation;
 }
 
@@ -1176,7 +1165,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
         10. * sqrt(2. * Diff_Long * dt *
                    1e-6);  // sqrt of cm^2/s * s = cm; times 10 for mm.
     double sigmaDT = 10. * sqrt(2. * Diff_Tran * dt * 1e-6);
-    bool YesGas = true; double rho = GetDensity(fdetector->get_T_Kelvin(),fdetector->get_p_bar(),YesGas,fdetector->get_molarMass());
+    bool YesGas = true; double rho = GetDensity(fdetector->get_T_Kelvin(),fdetector->get_p_bar(),YesGas,1,fdetector->get_molarMass());
     double driftVelocity_gas =
         GetDriftVelocity_MagBoltz(rho, fdetector->get_E_gas() * 1000.);
     double dt_gas = gasGap / driftVelocity_gas;
@@ -1441,7 +1430,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   //double elYield = (alpha * fdetector->get_E_gas() * 1e3 -
   //                beta * fdetector->get_p_bar() - gamma) *
   //               gasGap * 0.1;  // arXiv:1207.2292 (HA, Vitaly C.)
-  bool YesGas = true; double rho = GetDensity(fdetector->get_T_Kelvin(),fdetector->get_p_bar(),YesGas,fdetector->get_molarMass());
+  bool YesGas = true; double rho = GetDensity(fdetector->get_T_Kelvin(),fdetector->get_p_bar(),YesGas,1,fdetector->get_molarMass());
   double elYield;
   if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) ) { // Henrique Araujo and Vitaly Chepel again
     alpha = 0.0813;
@@ -1541,16 +1530,15 @@ vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
 double NESTcalc::SetDensity(double Kelvin,
                             double bara) {
   bool inGas = false;
-  double density = GetDensity(Kelvin, bara, inGas);
+  double density = GetDensity(Kelvin, bara, inGas, 0);
   fdetector->set_inGas(inGas);
 
   return density;
 }
 
-double NESTcalc::GetDensity(double Kelvin,
-                            double bara, bool &inGas, double molarMass) {  // currently only for fixed pressure
-                                            // (saturated vapor pressure); will
-                                            // add pressure dependence later
+double NESTcalc::GetDensity(double Kelvin, double bara, bool &inGas, uint64_t evtNum, double molarMass) {
+  // currently only for fixed pressure (the saturated vapor pressure); will add pressure dependence later
+  
   if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) && !inGas ) {
     inGas = false;
     if ( DENSITY > 2. ) return 1.4;
@@ -1577,7 +1565,7 @@ double NESTcalc::GetDensity(double Kelvin,
     double p_Pa = bara * 1e5;
     double density = 1./(pow(RidealGas*Kelvin,3.)/(p_Pa*pow(RidealGas*Kelvin,2.)+RealGasA*p_Pa*p_Pa)+RealGasB);  // Van der Waals equation, mol/m^3
     density *= molarMass * 1e-6;
-    if ( bara < VaporP_bar ) cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
+    if ( bara < VaporP_bar && evtNum == 0 ) cerr << "\nWARNING: GAS PHASE. IS THAT WHAT YOU WANTED?\n";
     inGas = true;
     return density;  // in g/cm^3
   }

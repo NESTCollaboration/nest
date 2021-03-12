@@ -37,7 +37,7 @@ class DetectorExample_ZEPLIN : public VDetector {
     coinLevel = 3;  // how many PMTs have to fire for an S1 to count
     numPMTs =  31;  // For coincidence calculation using the nFold defined in previous line
     
-    extraPhot = false;
+    rmQuanta = true;
     noiseL[0] = 0.;
     noiseL[1] = 0.;
     

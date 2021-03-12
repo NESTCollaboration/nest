@@ -468,9 +468,9 @@ vector<double> signal1, signal2, signalE, vTable;
   }
   if ( rho < 1.75 && ValidityTests::nearlyEqual(ATOM_NUM, 54.) ) detector->set_inGas(true);
 
-  double Wq_eV = NESTcalc::WorkFunction(rho,detector->get_molarMass()).Wq_eV;
-  //if ( rho > 3. ) detector->set_extraPhot(true); //solid OR enriched. Units of g/mL
-  if ( detector->get_extraPhot() )
+  double Wq_eV = NESTcalc::WorkFunction(rho,detector->get_molarMass(),detector->get_rmQuanta()).Wq_eV;
+  //if ( rho > 3. ) detector->set_rmQuanta(false); //solid OR enriched. Units of g/mL
+  if ( !detector->get_rmQuanta() )
     Wq_eV = 11.5; //11.5±0.5(syst.)±0.1(stat.) from EXO
   
   // Calculate and print g1, g2 parameters (once per detector)
@@ -992,7 +992,7 @@ vector<double> signal1, signal2, signalE, vTable;
         if(signal2.back() <= 0.) Ne = 0.;
         if(detector->get_coinLevel() <= 0 && Nph <= PHE_MIN) Nph = DBL_MIN;
         if(yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
-          if(detector->get_extraPhot()) yields.Lindhard = 1.;
+          //if(!detector->get_rmQuanta()) yields.Lindhard = 1.;
           if(ValidityTests::nearlyEqual(yields.Lindhard, 1.) )
             keV = (Nph / FudgeFactor[0] + Ne / FudgeFactor[1]) * Wq_eV * 1e-3;
           else {

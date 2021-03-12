@@ -37,7 +37,7 @@ public:
     coinLevel=1; //how many PMTs have to fire for an S1 to count
     numPMTs = 4; //For coincidence calculation
     
-    extraPhot=false;
+    rmQuanta = true;
     noiseL[0]=.0312;
     noiseL[1]=.0395;
 

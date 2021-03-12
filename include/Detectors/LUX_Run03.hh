@@ -40,7 +40,7 @@ public:
     coinLevel=2;  //1512.03506
     numPMTs = 119;// 122 minus 3 off
     
-    extraPhot =false; //default
+    rmQuanta = true; //default
     noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     noiseL[1]=5.5e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     

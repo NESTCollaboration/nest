@@ -3,8 +3,8 @@
 #include "NEST.hh"
 #include <stdexcept>
 
-#define InfraredER 1.35
-#define InfraredNR 7.00
+#define InfraredER 1.1716263232
+//#define InfraredNR 7.
 
 #define ChargeLoss 0.20
 
@@ -202,7 +202,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   
   double excitonRatio = yields.ExcitonRatio;
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
-
+  
   double elecFrac = yields.ElectronYield / Nq_mean;
   if (elecFrac > 1.) elecFrac = 1.;
   if (elecFrac < 0.) elecFrac = 0.;
@@ -288,7 +288,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     skewness = 0.00; //make it a constant 0 when outside the range of Vetri Velan's Run04 models.
   }
   else { // LUX Skewness Model
-    Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+    Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
     double Wq_eV = wvalue.Wq_eV;
     double engy = 1e-3 * Wq_eV * (yields.PhotonYield + yields.ElectronYield);
     double fld = yields.ElectricField;
@@ -328,14 +328,6 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     throw std::runtime_error("ERROR: Quanta not conserved. Tell Matthew Immediately!");
   }
   
-  if ( fdetector->get_extraPhot() ) {
-    if ( yields.Lindhard != 1. && density >= 3.10 ) {
-      Nph = int(floor(double(Nph)*InfraredNR+0.5)); //IR photons for NR (in SXe) but happens for alphas/ions too
-    }
-    else if ( ValidityTests::nearlyEqual(yields.Lindhard, 1.) ) {
-      Nph = int(floor(double(Nph)*InfraredER+0.5)); //EXO
-    }
-  }
   result.Variance=Variance;
   result.recombProb=recombProb;
   result.photons = Nph;
@@ -346,7 +338,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
 
 YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield)
 {
-  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   constexpr double m3 = 2., m4 = 2., m6 = 0.;
@@ -454,7 +446,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   }
   double NexONi = Nex / Ni;
   
-  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double Wq_eV = wvalue.Wq_eV;
   double L = (Nq / energy) * Wq_eV * 1e-3;
   
@@ -544,7 +536,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
   double Nq = -999;
   double Nph = -999;
   double Ne = -999;
-  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   constexpr double deltaT_ns_halflife = 154.4;
@@ -613,7 +605,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
 
 YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 {
-  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double Qy, Nq;
   double Wq_eV = wvalue.Wq_eV;
   //double alpha = wvalue.alpha; // duplicate definition below. We don't even need this here (it is Nex/Ni)
@@ -667,7 +659,7 @@ YieldResult NESTcalc::GetYieldBetaGR ( double energy, double density, double dfi
   if ( RecombOmegaER ( 0.0, 0.5, NuisParam ) < 0.05 )
     cerr << "WARNING! You need to change RecombOmegaER to go along with GetYieldBetaGR" << endl;
   
-  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   
@@ -1870,7 +1862,7 @@ double NESTcalc::CalcElectronLET ( double E, int Z ) {
   return LET;
 }
 
-NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
+NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass, bool rmQuanta) {
   double alpha, Wq_eV;
   if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) ) { // Liquid argon
     alpha = 0.21; Wq_eV = 1000. / 51.9; //23.6/1.21; // ~19.2-5 eV
@@ -1883,14 +1875,15 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass) {
   double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
   +xi_se/(1.+alpha);*/
   double eDensity = ( density / MolarMass ) * NEST_AVO * ATOM_NUM;
-  Wq_eV = 20.7 - 1.01e-23 * eDensity;
+  Wq_eV = 18.7263 - 1.01e-23 * eDensity;
+  if ( rmQuanta ) Wq_eV *= InfraredER; //EXO
   return Wvalue{.Wq_eV=Wq_eV,.alpha=alpha}; //W and Nex/Ni together 
 }
 
 double NESTcalc::NexONi(double energy, double density)
 {
   if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) ) return 0.21; // https://arxiv.org/pdf/1903.05815.pdf
-  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass());
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double alpha = wvalue.alpha;
   return alpha * erf(0.05 * energy);
 }

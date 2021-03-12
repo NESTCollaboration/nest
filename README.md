@@ -569,8 +569,8 @@ For these functions and for all the #'s if you're confused or don't know somethi
 Just stick with the LUX or XENON10 defaults. Why? They are there because even though they're old detectors now,
 their numbers are ~ representative of detectors past/present/future, big/small even.
 
-There is an additional boolean detector parameter called **extraPhot**. In order to incorporate the new measurement 
-of the work function in LXe by EXO-200 (arXiv:1908.04128), the extraPhot flag (if true) will boost light yields 
+There is an additional boolean detector parameter called **rmQuanta**. In order to incorporate the new measurement
+of the work function in LXe by EXO-200 (arXiv:1908.04128), the rmQuanta flag (if false) will boost yields
 to reconcile the discrepancy. This does not serve to solve the discrepancy, but provides NEST the flexibility to match
 this new result.
 

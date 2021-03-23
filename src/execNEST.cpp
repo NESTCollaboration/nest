@@ -20,15 +20,15 @@
 
 #define tZero 0.00 //day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03
+#define tMax 365
 #define hiEregime 1E+2 //keV
 
 using namespace std;
 using namespace NEST;
 
 vector<double> FreeParam,  NuisParam;
-double band[NUMBINS_MAX][7];
-double energies[3];
-bool BeenHere = false;
+double band[NUMBINS_MAX][7], energies[3], AnnModERange[2] = { 1.5, 6.5 }; //keVee or nr (recon)
+bool BeenHere = false; uint SaveTheDates[tMax] = {0};
 
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
@@ -512,9 +512,9 @@ vector<double> signal1, signal2, signalE, vTable;
   double keV = -999.; double timeStamp = dayNumber;
   vector<double> keV_vec;
   for (uint64_t j = 0; j < numEvts; ++j) {
+    //timeStamp = tMax * RandomGen::rndm()->rand_uniform(); /*OR: += tStep*/ detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
+    //for E-recon when you've changed g1,g2-related stuff, redo g1 and g2 calculations in line 477+
     try {
-      //timeStamp += tStep; //detector->set_eLife_us(5e1+1e3*(timeStamp/3e2));
-      //for E-recon when you've changed g1,g2-related stuff, redo line 341+
       if((ValidityTests::nearlyEqual(eMin, eMax) && eMin >= 0. && eMax > 0.) || type_num == Kr83m) {
         keV = eMin;
       } else {
@@ -708,9 +708,7 @@ vector<double> signal1, signal2, signalE, vTable;
           if(type_num == Kr83m && eMin != 32.1)
             fprintf(stdout,
                     "t [ns]\t\t");
-          if(type_num == WIMP && timeStamp > (tZero + tStep))
-            fprintf(stdout,
-                    "dayNum\t");
+          if ( timeStamp > tZero ) fprintf ( stdout, "dayNum\t\t" );
           if ( (ValidityTests::nearlyEqual(eMax, eMin) || type_num == Kr83m) && numBins == 1 && MCtruthE ) {
             MCtruthE = false;
             fprintf(stderr, "Simulating a mono-E peak; setting MCtruthE false.\n");
@@ -988,8 +986,8 @@ vector<double> signal1, signal2, signalE, vTable;
         else
           Ne = fabs(scint2[7]) / g2;
         Nph *= MultFact;
-        if(signal1.back() <= 0.) Nph = 0.;
-        if(signal2.back() <= 0.) Ne = 0.;
+        if ( signal1.back() <= 0. && timeStamp == tZero ) Nph= 0.;
+        if ( signal2.back() <= 0. && timeStamp == tZero ) Ne = 0.;
         if(detector->get_coinLevel() <= 0 && Nph <= PHE_MIN) Nph = DBL_MIN;
         if(yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
           //if(!detector->get_rmQuanta()) yields.Lindhard = 1.;
@@ -1012,14 +1010,15 @@ vector<double> signal1, signal2, signalE, vTable;
           }
           keVee += (Nph + Ne) * Wq_eV * 1e-3;  // as alternative, use W_DEFAULT in
           // both places, but will not account for density dependence
-        } else
+        }
+	else
           keV = 0.;
       }
-      if((signal1.back() <= 0. || signal2.back() <= 0.) && field >= FIELD_MIN && detector->get_coinLevel() != 0)
+      if ( (signal1.back() <= 0. || signal2.back() <= 0.) && field >= FIELD_MIN && detector->get_coinLevel() != 0 && timeStamp == tZero )
         signalE.push_back(0.);
       else
         signalE.push_back(keV);
-
+      
       if((ValidityTests::nearlyEqual(Ne + Nph, 0.00) || std::isnan(keVee)) && eMin == eMax && eMin > hiEregime &&
          !BeenHere) { //efficiency is zero?
         minS1 = -999.;
@@ -1107,9 +1106,11 @@ vector<double> signal1, signal2, signalE, vTable;
         // and using max's too, pinching both ends
         if ( type_num == Kr83m && eMin != 32.1 && verbosity )
           printf("%.6f\t", yields.DeltaT_Scint);
-        if ( type_num == WIMP && timeStamp > (tZero + tStep) && verbosity )
-          printf("%.0f\t", timeStamp);
-        if(seed < 0 && seed != -1) //for when you want means
+        if ( timeStamp > tZero && verbosity ) {
+	  printf ( "%.6f\t", timeStamp );
+	  if ( keV > AnnModERange[0] && keV < AnnModERange[1] ) SaveTheDates[int(timeStamp)%tMax]++;
+	}
+        if ( seed < 0 && seed != -1 ) //for when you want means
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t", keV, field, driftTime, smearPos[0], smearPos[1],
                  smearPos[2], yields.PhotonYield, yields.ElectronYield);
         else
@@ -1139,6 +1140,10 @@ vector<double> signal1, signal2, signalE, vTable;
       cerr << e.what() << endl;
       return 1;
     }
+  } //end of the gigantic primary event number loop
+  
+  if ( timeStamp > tZero ) {
+    for ( uint j = 0; j < tMax; ++j ) { cerr << j << "\t" << SaveTheDates[j] << endl; }
   }
   
   if (verbosity) {

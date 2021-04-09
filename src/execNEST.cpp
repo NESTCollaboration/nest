@@ -30,6 +30,7 @@ vector<double> FreeParam,  NuisParam;
 double band[NUMBINS_MAX][7], energies[3], AnnModERange[2] = { 1.5, 6.5 }; //keVee or nr (recon)
 bool BeenHere = false;
 uint SaveTheDates[tMax] = {0};
+bool dEOdxBasis = false;
 
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
@@ -400,8 +401,10 @@ vector<double> signal1, signal2, signalE, vTable;
   else if (type == "beta" || type == "ER" || type == "Compton" ||
            type == "compton" || type == "electron" || type == "e-" ||
            type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
-           type == "mu-")
+           type == "mu-") {
+    dEOdxBasis = true;
     type_num = NEST::beta;  // default electron recoil model
+  }
   else if ( type == "pp" || type == "ppsolar" || type == "ppSolar" || type == "pp_Solar" || type == "pp_solar" || type == "pp-Solar" || type == "pp-solar" ) {
     type_num = ppSolar;
     numEvts = RandomGen::rndm()->poisson_draw(0.0011794 * double(numEvts)); //normalization: counts per kg-day from 0-250 keV(ee)
@@ -594,7 +597,7 @@ vector<double> signal1, signal2, signalE, vTable;
 	    //keV = TestSpectra::ZeplinBackground(); //example of continuous ER/beta/gamma BG spec
 	    //break;
             if ( eMin < 0. ) {
-	      if ( type != "muon" && type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" ) return 1;
+	      if ( !dEOdxBasis ) return 1;
 	      else break;
 	    }
             if ( eMax > 0. ) {
@@ -621,8 +624,8 @@ vector<double> signal1, signal2, signalE, vTable;
         if(keV < eMin) keV = eMin;
       }
       
-      if ( type != "muon" && type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" ) {
-	if ( keV < 0. ) {
+      if ( !dEOdxBasis ) {
+	if ( keV < 0 ) {
 	  cerr << "ERROR: Get ready for time travel or FTL--negative energy!" << endl;
 	  return 1;
 	}
@@ -655,7 +658,7 @@ vector<double> signal1, signal2, signalE, vTable;
           position.erase(0, loc + delimiter.length());
           ++i;
         }
-	if ( type != "muon" && type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" ) {
+	if ( !dEOdxBasis ) {
 	  if ( pos_x != -999. && pos_y != -999. && (pos_x * pos_x + pos_y * pos_y) > detector->get_radius()*detector->get_radius() && j == 0 )
 	    cerr << "WARNING: outside fiducial radius." << endl;
 	  if ( pos_x != -999. && pos_y != -999. && (pos_x * pos_x + pos_y * pos_y) > detector->get_radmax()*detector->get_radmax() ) {
@@ -760,8 +763,8 @@ vector<double> signal1, signal2, signalE, vTable;
 
       // The following should never happen: this is simply a just-in-case
       // code-block dealing with user error (rounding another possible culprit)
-      if ( type != "muon" && type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" ) {
-	if(pos_z <= 0.) {
+      if ( !dEOdxBasis ) {
+	if(pos_z <= 0) {
 	  cerr << "WARNING: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl; //warn user on screen
 	  pos_z = z_step;
 	}
@@ -773,7 +776,7 @@ vector<double> signal1, signal2, signalE, vTable;
       }
       
       YieldResult yields; QuantaResult quanta;
-      if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
+      if ( dEOdxBasis ) {
         double xi = -999., yi = -999., zi = detector->get_TopDrift();
 	double xf, yf, zf;
 	if ( j == 0 || fPos == -1. ) { xf = pos_x; yf = pos_y; zf = pos_z; }
@@ -800,10 +803,11 @@ vector<double> signal1, signal2, signalE, vTable;
           zi = stof(position);
         }
 	if ( zi <= 0. ) zi = detector->get_TopDrift();
-	double dEOdx, eStep, refEnergy;
+	double dEOdx, eStep, refEnergy, kludge = 1.;
 	if ( eMin < 0. ) {
 	  refEnergy = -eMin;
-	  dEOdx = n.CalcElectronLET(-eMin, ATOM_NUM) / 2.;
+	  kludge = 2.;
+	  dEOdx = n.CalcElectronLET(-eMin, ATOM_NUM) / kludge;
 	  eStep = dEOdx*rho * z_step * 1e2;
 	  while ( eStep > refEnergy )
 	    { z_step /= 10.; eStep = dEOdx * rho * z_step * 1e2; }
@@ -833,7 +837,7 @@ vector<double> signal1, signal2, signalE, vTable;
 	  if ( eMin > 0. )
 	    Nph += quanta.photons * ( eStep / refEnergy );
 	  else
-	    Nph += quanta.photons / 2.;
+	    Nph += quanta.photons / kludge;
 	  index = int ( floor ( zz / z_step + 0.5 ) );
           if ( index >= vTable.size() ) index = vTable.size() - 1;
 	  if ( vTable.size() == 0 )
@@ -843,7 +847,7 @@ vector<double> signal1, signal2, signalE, vTable;
           driftTime = ( detector->get_TopDrift() - zz ) / vD;
           if ( zz >= detector->get_cathode() ) {
 	    if ( eMin > 0. ) Ne += quanta.electrons * ( eStep / refEnergy ) * exp ( -driftTime / detector->get_eLife_us() );
-	    else Ne += quanta.electrons * exp ( -driftTime / detector->get_eLife_us() ) / 2.;
+	    else Ne += quanta.electrons * exp ( -driftTime / detector->get_eLife_us() ) / kludge;
 	  }
 	  keV += eStep;
           xx += norm[0] * z_step;
@@ -945,16 +949,17 @@ vector<double> signal1, signal2, signalE, vTable;
                       vD, vD_middle, type_num, j, field,
                       keV, useTiming, verbosity, wf_time, wf_amp);
       if ( truthPos[2] < detector->get_cathode() &&
-	   type != "muon" && type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" )
-	quanta.electrons = 0;
+	   !dEOdxBasis )
+	quanta.electrons=0;
       vector<double> scint2;
 
       scint2 =
                 n.GetS2(quanta.electrons, truthPos[0], truthPos[1], truthPos[2], smearPos[0], smearPos[1], smearPos[2],
                         driftTime, vD, j, field,
                         useTiming, verbosity, wf_time, wf_amp, g2_params);
-      if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
-	driftTime = (detector->get_TopDrift()-pos_z)/vD_middle; scint2[7] *= exp(driftTime/detector->get_eLife_us());
+      if ( dEOdxBasis ) {
+	driftTime = (detector->get_TopDrift()-pos_z)/vD_middle;
+	scint2[7] *= exp(driftTime/detector->get_eLife_us());
       }
       
     NEW_RANGES:
@@ -1131,8 +1136,8 @@ vector<double> signal1, signal2, signalE, vTable;
       // scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL in
       // gas gap (from CalculateG2)
       
-      if ( truthPos[2] < detector->get_cathode() && verbosity && !BeenHere && type != "muon" &&
-	   type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" ) {
+      if ( truthPos[2] < detector->get_cathode() && verbosity && !BeenHere &&
+	   !dEOdxBasis ) {
 	BeenHere = true;
 	fprintf ( stderr, "gamma-X i.e. MSSI may be happening. This may be why even high-E eff is <100%%. Check your cathode position definition.\n\n" );
       }
@@ -1160,11 +1165,10 @@ vector<double> signal1, signal2, signalE, vTable;
         else
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field, driftTime, smearPos[0], smearPos[1],
                  smearPos[2], quanta.photons, quanta.electrons);
-        if(keV > 10. * hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
-           // switch to exponential notation to make output more readable, if
-           // energy is too high (>1 MeV)
-           type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
-           type == "mu-") {
+        if ( keV > 10. * hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
+	     //switch to exponential notation to make output more readable, if
+	     //energy is too high (>1 MeV)
+	     (dEOdxBasis && eMin > 0.) ) {
           printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
           printf("%lli\t%e\t%e\n", (int64_t) scint2[0], scint2[4], scint2[7]);
         } else {

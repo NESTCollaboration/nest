@@ -300,7 +300,7 @@ class NESTcalc {
   // density can provide the dE/dx, as a function of energy in keV. Will be more
   // useful in the future
   struct Wvalue {double Wq_eV; double alpha;};
-  static Wvalue WorkFunction(double rho, double MolarMass, bool rmQuanta);
+  static Wvalue WorkFunction(double rho, double MolarMass, bool rmQuanta=true);
   //the W-value as a func of density in g/cm^3
   virtual double NexONi(double energy, double density);
   //calculate exciton/ion 

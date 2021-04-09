@@ -11,7 +11,7 @@
 using namespace std;
 using namespace NEST;
 
-int podLength = 1100; //roughly 100-1,000 ns for S1
+const int podLength = 1100; //roughly 100-1,000 ns for S1
 
 const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
 const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19,2.25};
@@ -1053,9 +1053,8 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
       newSpike[1];  // same as newSpike[0], but WITH XYZ correction
   }
   
-  if (RandomGen::rndm()->rand_uniform() < prob || prob >= 1.)  // coincidence has to happen in different PMTs
-    { ; }
-  else {  // some of these are set to -1 to flag them as having been below threshold
+  if ( RandomGen::rndm()->rand_uniform() > prob && prob < 1. ) {  // coincidence has to happen in different PMTs
+    // some of these are set to -1 to flag them as having been below threshold
     if (ValidityTests::nearlyEqual(scintillation[0], 0.)) scintillation[0] = PHE_MIN;
     scintillation[0] = -1.*fabs(scintillation[0]);
     if (ValidityTests::nearlyEqual(scintillation[1], 0.)) scintillation[1] = PHE_MIN;

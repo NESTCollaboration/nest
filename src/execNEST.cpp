@@ -28,7 +28,8 @@ using namespace NEST;
 
 vector<double> FreeParam,  NuisParam;
 double band[NUMBINS_MAX][7], energies[3], AnnModERange[2] = { 1.5, 6.5 }; //keVee or nr (recon)
-bool BeenHere = false; uint SaveTheDates[tMax] = {0};
+bool BeenHere = false;
+uint SaveTheDates[tMax] = {0};
 
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
@@ -655,9 +656,9 @@ vector<double> signal1, signal2, signalE, vTable;
           ++i;
         }
 	if ( type != "muon" && type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" ) {
-	  if(sqrt(pos_x * pos_x + pos_y * pos_y) > detector->get_radius() && j == 0 && pos_x != -999. && pos_y != -999.)
+	  if ( pos_x != -999. && pos_y != -999. && (pos_x * pos_x + pos_y * pos_y) > detector->get_radius()*detector->get_radius() && j == 0 )
 	    cerr << "WARNING: outside fiducial radius." << endl;
-	  if(sqrt(pos_x * pos_x + pos_y * pos_y) > detector->get_radmax() && pos_x != -999. && pos_y != -999.) {
+	  if ( pos_x != -999. && pos_y != -999. && (pos_x * pos_x + pos_y * pos_y) > detector->get_radmax()*detector->get_radmax() ) {
 	    cerr << "\nERROR: outside physical radius!!!" << endl;
 	    return EXIT_FAILURE;
 	  }
@@ -821,7 +822,7 @@ vector<double> signal1, signal2, signalE, vTable;
         norm[1] = (yf - yi) / distance;
         norm[2] = (zf - zi) / distance;
         while ( zz > zf && sqrt ( xx * xx + yy * yy ) < detector->get_radmax() && fabs(refEnergy) > PHE_MIN ) {
-	  // stop making S1 and S2 if particle exits Xe volume
+	  // stop making S1 and S2 if particle exits Xe volume, OR runs out of energy (in case of beta)
 	  if ( eMin < 0. ) {
 	    if ( (keV+eStep) > -eMin ) eStep = -eMin - keV;
 	    yields = n.GetYields(NEST::beta, 2.0*eStep, rho, detector->FitEF(xx, yy, zz), double(massNum), double(atomNum), NuisParam);
@@ -1379,7 +1380,8 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
   return signals;
 }
 
-void GetEnergyRes(vector<double> Es) {
+void GetEnergyRes ( vector<double> Es ) {
+  
   int i, numPts = Es.size();
   double numerator = 0.;
 
@@ -1400,4 +1402,5 @@ void GetEnergyRes(vector<double> Es) {
   energies[1] = sqrt(energies[1]);
 
   energies[2] = numerator / double(numPts);
+  
 }

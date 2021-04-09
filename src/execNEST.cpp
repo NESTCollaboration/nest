@@ -399,11 +399,11 @@ vector<double> signal1, signal2, signalE, vTable;
   else if (type == "C14" || type == "Carbon14" || type == "14C" || type == "C-14" || type == "Carbon-14")
     type_num = C14;
   else if (type == "beta" || type == "ER" || type == "Compton" ||
-           type == "compton" || type == "electron" || type == "e-" ||
-           type == "muon" || type == "MIP" || type == "LIP" || type == "mu" ||
-           type == "mu-") {
-    dEOdxBasis = true;
+           type == "compton" || type == "electron" || type == "e-")
     type_num = NEST::beta;  // default electron recoil model
+  else if ( type == "muon" || type == "MIP" || type == "LIP" || type == "mu" || type == "mu-" ) {
+    dEOdxBasis = true;
+    type_num = NEST::beta;
   }
   else if ( type == "pp" || type == "ppsolar" || type == "ppSolar" || type == "pp_Solar" || type == "pp_solar" || type == "pp-Solar" || type == "pp-solar" ) {
     type_num = ppSolar;
@@ -825,7 +825,7 @@ vector<double> signal1, signal2, signalE, vTable;
         norm[0] = (xf - xi) / distance;
         norm[1] = (yf - yi) / distance;
         norm[2] = (zf - zi) / distance;
-        while ( zz > zf && sqrt ( xx * xx + yy * yy ) < detector->get_radmax() && fabs(refEnergy) > PHE_MIN ) {
+        while ( zz > zf && ( xx * xx + yy * yy ) < detector->get_radmax()*detector->get_radmax() && fabs(refEnergy) > PHE_MIN ) {
 	  // stop making S1 and S2 if particle exits Xe volume, OR runs out of energy (in case of beta)
 	  if ( eMin < 0. ) {
 	    if ( (keV+eStep) > -eMin ) eStep = -eMin - keV;

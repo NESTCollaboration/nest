@@ -1582,11 +1582,11 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField){
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas){
   if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
   else
-    return GetDriftVelocity_Liquid ( Kelvin, Density, eField );
+    return GetDriftVelocity_Liquid ( Kelvin, eField, Density);
 }
 
-double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double Density,
-                                  double eField) {  // for liquid and solid only
+double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,  
+					 double Density,) {  // for liquid and solid only
   double speed =
       0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j;

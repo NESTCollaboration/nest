@@ -211,7 +211,7 @@ void PassTransportInfo(std::ofstream & outFile, std::vector<double> fieldList_V_
     
   for( int iF = 0; iF < fieldList_V_cm.size(); ++iF ){
     double field = fieldList_V_cm[iF]; //Note that this is reduced field, in V/cm/torr
-    double driftVel_CmperUs = n.GetDriftVelocity_Liquid(temperature_K, 1,field*reducedFieldCorrectionFactor)/10.;
+    double driftVel_CmperUs = n.GetDriftVelocity_Liquid(temperature_K, field*reducedFieldCorrectionFactor, 1)/10.;
     double DT_cm2_s = n.GetDiffTran_Liquid(field*reducedFieldCorrectionFactor,true);
     double DL_cm2_s = n.GetDiffLong_Liquid(field*reducedFieldCorrectionFactor,true);
     

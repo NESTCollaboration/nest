@@ -1586,7 +1586,7 @@ double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, 
 }
 
 double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,  
-					 double Density,) {  // for liquid and solid only
+					 double Density) {  // for liquid and solid only
   double speed =
       0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j;

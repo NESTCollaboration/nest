@@ -267,10 +267,10 @@ class NESTcalc {
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below
-  static double GetDriftVelocity_Liquid(double T, double D, double F);
+  static double GetDriftVelocity_Liquid(double T, double F, double D=2.9);
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
-  // the next function below
+  // the next function below. NOTE: Density default implies liquid
   static double GetDriftVelocity_MagBoltz(double D, double F, double molarMass=131.293);
   // Gas electron drift speed for S2 gas gap in 2-phase TPCs or the whole
   // detector for all gas. Based on simple fits to complicated MagBoltz software

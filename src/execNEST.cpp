@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
   /* vector<double> eList = { 1., 2., 3. }; // fast example--for PLR, ML train
   vector<vector<double>> pos3dxyz = { {0.,-1.,60.},{-1.,0.,70.},{1.,0.,80.} };
   runNESTvec ( detector, NEST::beta, eList, pos3dxyz );
+  delete detector;
   return EXIT_SUCCESS; */
   
   if (argc < 7) {
@@ -304,7 +305,6 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
     }
   }
   
-  delete detector;
   return OutputResults;
 }
 

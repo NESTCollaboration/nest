@@ -804,6 +804,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   double eff = fdetector->get_sPEeff();
   if ( eff < 1. )
     eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits);
+  //this functional form is just linear approximation taking us from sPEeff at ~few PMTs firing to 100% when there are enough photons detected for there to be *2* in each PMT
   if ( eff > 1. ) eff = 1.;
   if ( eff < 0. ) eff = 0.;
   
@@ -816,13 +817,9 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     
     // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
     double TruncGaussAlpha = -1. / fdetector->get_sPEres();
-    double TruncGaussBeta = DBL_MAX;
     double LittlePhi_Alpha=(1./sqrt(2.*M_PI))*exp(-0.5*TruncGaussAlpha*TruncGaussAlpha);
-    double LittlePhi_Beta  = (1./sqrt(2.*M_PI))*exp(-0.5*TruncGaussBeta*TruncGaussBeta);
     double BigPhi_Alpha=0.5*(1.+erf(TruncGaussAlpha/sqrt(2.)));
-    double BigPhi_Beta = 0.5*(1.+erf(TruncGaussBeta/sqrt(2.)));
-    double CapitalZ = BigPhi_Beta - BigPhi_Alpha;
-    double NewMean = 1. + ( ( LittlePhi_Alpha - LittlePhi_Beta ) / CapitalZ ) * fdetector->get_sPEres();
+    double NewMean = 1. + ( LittlePhi_Alpha / ( 1. - BigPhi_Alpha ) ) * fdetector->get_sPEres();
     
     // Step through the pmt hits
     for (int i = 0; i < nHits; ++i) {
@@ -884,9 +881,13 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   }
   else {  // apply just an empirical efficiency by itself, without direct area threshold
     Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
-    pulseArea = RandomGen::rndm()->rand_gauss(
-					      BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())),
-					      fdetector->get_sPEres() * sqrt(Nphe));
+    eff = fdetector->get_sPEeff();
+    if ( eff < 1. )
+      eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(Nphe);
+    if ( eff > 1. ) eff = 1.;
+    if ( eff < 0. ) eff = 0.;
+    double Nphe_det = BinomFluct ( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe() ) );
+    pulseArea = RandomGen::rndm()->rand_gauss ( Nphe_det, fdetector->get_sPEres() * sqrt(Nphe_det) );
     //proper truncation not done here because this is meant to be approximation, quick and dirty
     spike = (double)nHits;
   }

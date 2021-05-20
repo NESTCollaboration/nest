@@ -13,7 +13,7 @@ using namespace NEST;
 
 const int podLength = 1100; //roughly 100-1,000 ns for S1
 
-kr83m_reported_low_deltaT = false; //to aid in verbosity 
+bool kr83m_reported_low_deltaT = false; //to aid in verbosity 
 
 const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
 const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19,2.25};

@@ -24,7 +24,7 @@ int64_t NESTcalc::BinomFluct(int64_t N0, double prob) {
   if (prob <= 0.00) return N1;
   if (prob >= 1.00) return N0;
 
-  if ( N0 < 5 || fabs(1.-2.*prob)/sqrt(N0*prob*(1.-prob)) > (1./3.) ) {
+  if ( N0 <= 9.*(1.-prob)/prob || N0 <= 9.*prob/(1.-prob) ){
     //https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation
     for (int i = 0; i < N0; ++i) {
       if (RandomGen::rndm()->rand_uniform() < prob) ++N1;

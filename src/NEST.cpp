@@ -13,6 +13,8 @@ using namespace NEST;
 
 const int podLength = 1100; //roughly 100-1,000 ns for S1
 
+kr83m_reported_low_deltaT = false; //to aid in verbosity 
+
 const std::vector<double> NESTcalc::default_NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.};
 const std::vector<double> NESTcalc::default_FreeParam = {1.,1.,0.1,0.5,0.19,2.25};
 
@@ -547,7 +549,8 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
         deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
       }
     }
-    if (deltaT_ns < 100 && energy < 41.5)  {
+    if (deltaT_ns < 100. && energy < 41.5 && kr83m_reported_low_deltaT==false)  {
+      kr83m_reported_low_deltaT = true;
       cerr << "\tWARNING! Past Kr83m model fit validity region. Details: "
       << " deltaT_ns is <100 ns and your input energy is either 32.1 or 9.4 keV. "
       << " Data for separated Kr83m decays does not yet exist for deltaT_ns <100 ns. "

@@ -1018,8 +1018,7 @@ vector<double> signal1, signal2, signalE, vTable;
 	      MultFact = 1. + MultFact * detector->get_P_dphe(); //correction factor discovered by UA student Emily Mangus
             if(eff < 1.)
               eff += ((1. - eff) / (2. * double(detector->get_numPMTs()))) * scint[0];
-            if(eff > 1.) eff = 1.;
-            if(eff < 0.) eff = 0.;
+	    eff = max ( 0., min ( eff, 1. ) );
             MultFact /= eff; //for smaller detectors leave it as 1.00
           } else MultFact = 1.;
         }

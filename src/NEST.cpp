@@ -205,10 +205,8 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   double excitonRatio = yields.ExcitonRatio;
   double Nq_mean = yields.PhotonYield + yields.ElectronYield;
   
-  double elecFrac = yields.ElectronYield / Nq_mean;
-  if (elecFrac > 1.) elecFrac = 1.;
-  if (elecFrac < 0.) elecFrac = 0.;
-
+  double elecFrac = max ( 0., min ( yields.ElectronYield / Nq_mean, 1. ) );
+  
   if (excitonRatio < 0.) {
     excitonRatio = 0.;
     HighE = true;
@@ -266,10 +264,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   result.ions = Ni;
   result.excitons = Nex;
 
-  if (Nex <= 0 && HighE)
-    recombProb = yields.PhotonYield / double(Ni);
-  if (recombProb < 0.) recombProb = 0.;
-  if (recombProb > 1.) recombProb = 1.;
+  if ( Nex <= 0 && HighE )
+    recombProb = yields.PhotonYield / double ( Ni );
+  recombProb = max ( 0., min ( recombProb, 1. ) );
   if ( std::isnan(recombProb) || std::isnan(elecFrac) || Ni == 0 || ValidityTests::nearlyEqual(recombProb,0.0) ) {
     result.photons = Nex;
     result.electrons =Ni;
@@ -744,10 +741,9 @@ YieldResult NESTcalc::YieldResultValidity(YieldResult& res, const double energy,
   if (res.ElectronYield > energy / W_SCINT) res.ElectronYield = energy / W_SCINT;
   if (res.PhotonYield < 0.) res.PhotonYield = 0.;
   if (res.ElectronYield < 0.) res.ElectronYield = 0.;
-  if (res.Lindhard < 0.) res.Lindhard = 0.;
-  if (res.Lindhard > 1.) res.Lindhard = 1.;  // Lindhard Factor
+  res.Lindhard = max ( 0., min ( res.Lindhard, 1. ) );  // Lindhard Factor
   if (energy < 0.001 * Wq_eV / res.Lindhard)
-  {
+    {
     res.PhotonYield = 0.;
     res.ElectronYield = 0.;
   }
@@ -794,9 +790,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   posDep /=
     fdetector->FitS1(0., 0., dz_center, VDetector::fold);  // XYZ always in mm now never cm
   posDepSm /= fdetector->FitS1(0., 0., dz_center, VDetector::unfold);
-  double g1_XYZ = fdetector->get_g1() * posDep;
-  if ( g1_XYZ > 1. ) g1_XYZ = 1.;
-  if ( g1_XYZ < 0. ) g1_XYZ = 0.;
+  double g1_XYZ = max ( 0., min ( fdetector->get_g1() * posDep, 1. ) );
   if ( ValidityTests::nearlyEqual(fdetector->get_g1(), 1.) ) { g1_XYZ = 1.; posDep = 1.; posDepSm = 1.; }
   if ( ValidityTests::nearlyEqual(fdetector->get_g1(), 0.) ) { g1_XYZ = 0.; posDep = 0.; posDepSm = 0.; }
 
@@ -808,8 +802,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   if ( eff < 1. )
     eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits);
   //this functional form is just linear approximation taking us from sPEeff at ~few PMTs firing to 100% when there are enough photons detected for there to be *2* in each PMT
-  if ( eff > 1. ) eff = 1.;
-  if ( eff < 0. ) eff = 0.;
+  eff = max ( 0., min ( eff, 1. ) );
   
   // Initialize the pulse area and spike count variables
   double pulseArea = 0., spike = 0., prob;
@@ -887,8 +880,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     eff = fdetector->get_sPEeff();
     if ( eff < 1. )
       eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(Nphe);
-    if ( eff > 1. ) eff = 1.;
-    if ( eff < 0. ) eff = 0.;
+    eff = max ( 0., min ( eff, 1. ) );
     double Nphe_det = BinomFluct ( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe() ) );
     pulseArea = RandomGen::rndm()->rand_gauss ( Nphe_det, fdetector->get_sPEres() * sqrt(Nphe_det) );
     //proper truncation not done here because this is meant to be approximation, quick and dirty

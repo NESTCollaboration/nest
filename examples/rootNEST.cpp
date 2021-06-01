@@ -1143,9 +1143,7 @@ int modBinom(int nTot, double prob, double preFactor) {
   int randomNumber, nTotp;
 
   if (preFactor >= 1.) {
-    prob = r.Gaus(prob, sqrt((preFactor - 1.) * prob * nTot) / double(nTot));
-    if (prob < 0.) prob = 0.;
-    if (prob > 1.) prob = 1.;
+    prob = max ( 0., min ( r.Gaus(prob, sqrt((preFactor - 1.) * prob * nTot) / double(nTot)), 1. ) );
     randomNumber = r.Binomial(nTot, prob);
   } else {
     nTotp = int(floor(double(nTot) / preFactor + r.Rndm()));

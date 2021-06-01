@@ -611,17 +611,17 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
   //double alpha = wvalue.alpha; // duplicate definition below. We don't even need this here (it is Nex/Ni)
   
   if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) ) { // Liquid Argon
-    double alpha = 32.988 - 552.988/(15.5578+pow(dfield/(-4.7+0.025115*exp(1.3954/0.265360653)), 0.208889));
-    double beta = 2.01952 + 20.9/pow(1.105 + pow(dfield/0.4, 4.55), 7.502);
-    double gamma = 0.642039*(1000/19.5 +6.5*(5 - 0.5/pow(dfield/1047.408, 0.01851)));
-    double delta  =10.3842;
-    double DB = 1052.264+(14159350000 - 1652.264)/(-5+pow(dfield/0.328038, 1.74654));
+    double alpha = 32.988 - 552.988/(17.2346+pow(dfield/(-4.7+0.025115*exp(1.3954/0.265360653)), 0.242671));
+    double beta = 0.778482 + 25.9/pow(1.105 + pow(dfield/0.4, 4.55), 7.502);
+    double gamma = 0.659509*(1000/19.5 +6.5*(5 - 0.5/pow(dfield/1047.408, 0.01851)));
+    double delta  =15.7489;
+    double DB = 1052.264+(14159350000 - 1652.264)/(-5+pow(dfield/0.157933, 1.83894));
     double p1 = 1;
     double p2 = 10.304;
-    double p3 = 24.3509;
+    double p3 = 13.0654;
     double p4 = 0.10535;
     double p5 = 0.7;
-    double LET = -2.11259;
+    double LET = -2.07763;
     Nq = energy * 1e3 / Wq_eV;
     Qy = alpha*beta + (gamma - alpha*beta)/pow(p1+p2*pow(energy+0.5, p3), p4) + delta/(p5+DB*pow(energy, LET));
   }

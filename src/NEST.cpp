@@ -435,15 +435,16 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Nph = Ly * energy * ScaleFactor[0] *
           (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]), NuisParam[11]));
   Nq = Nph + Ne;
-  double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
-  double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) -
-          (Ne + Nph) * ThomasImel - 4.);
+  
+  double NexONi = 1.;
+  double Ni = Nq / ( 1. + NexONi );
+  double Nex = Nq - Ni;
+  
   if ( Nex <= 0. ) cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy (OR, for LOW) NR, or are beyond it, at " << energy << " keV." << endl;
   if ( fabs(Nex + Ni -Nq) > 2. * PHE_MIN )
   {
     throw std::runtime_error("ERROR: Quanta not conserved. Tell Matthew Immediately!");
   }
-  double NexONi = Nex / Ni;
   
   Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double Wq_eV = wvalue.Wq_eV;

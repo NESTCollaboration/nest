@@ -79,11 +79,10 @@ int main(int argc, char** argv) {
     if (eMin == 9.4 && eMax == 9.4) {
     } else if (eMin == 32.1 && eMax == 32.1) {
     } else {
-      cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV "
-              "please." << endl;
+      if ( verbosity ) cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV please." << endl;
       return 1;
     }
-  } else if (type_num == gammaRay) {
+  } else if (type_num == gammaRay && verbosity) {
     if (eMin < 10. || eMax < 10.) {
       cerr << "WARNING: Typically beta model works better for ER BG at low "
               "energies as in a WS." << endl;

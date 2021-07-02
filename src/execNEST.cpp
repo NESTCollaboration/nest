@@ -41,7 +41,8 @@ int main(int argc, char** argv) {
   
   if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) ) {
     detector->set_molarMass(39.948);
-    cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many features copied over from Xenon wholesale still. Use models at your own risk.\n" << endl;
+    if ( verbosity )
+      cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many features copied over from Xenon wholesale still. Use models at your own risk.\n" << endl;
   }
   
   /* vector<double> eList = { 1., 2., 3. }; // fast example--for PLR, ML train
@@ -159,7 +160,7 @@ int main(int argc, char** argv) {
     
     numEvts = (uint64_t)atof(argv[1]);
     if ( numEvts <= 0 ) {
-      cerr << "ERROR, you must simulate at least 1 event, or 1 kg*day" << endl;
+      if ( verbosity ) cerr << "ERROR, you must simulate at least 1 event, or 1 kg*day" << endl;
       return 1;
     }
     type = argv[2];
@@ -316,8 +317,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
   
   if (detector->get_TopDrift() <= 0. || detector->get_anode() <= 0. ||
       detector->get_gate() <= 0.) {
-    cerr << "ERROR, unphysical value(s) of position within the detector "
-            "geometry.";  // negative or 0 for cathode position is OK (e.g., LZ)
+    if ( verbosity ) cerr << "ERROR, unphysical value(s) of position within the detector geometry.";  // negative or 0 for cathode position is OK (e.g., LZ)
     return 1;
   }
 
@@ -346,7 +346,7 @@ vector<double> signal1, signal2, signalE, vTable;
     eMax = hiEregime;  // the default energy max
   if ( ValidityTests::nearlyEqual(eMax, 0.) &&
        type != "muon" && type != "MIP" && type != "LIP" && type != "mu" && type != "mu-" ) {
-    cerr << "ERROR: The maximum energy (or Kr time sep) cannot be 0 keV (or 0 ns)!" << endl;
+    if ( verbosity ) cerr << "ERROR: The maximum energy (or Kr time sep) cannot be 0 keV (or 0 ns)!" << endl;
     return 1;
   }
 
@@ -358,7 +358,7 @@ vector<double> signal1, signal2, signalE, vTable;
     type_num = NR;  //-1: default particle type is also NR
   else if (type == "WIMP") {
     if (eMin < 0.44) { //here eMin is WIMP mass
-      cerr << "WIMP mass too low, you're crazy!" << endl;
+      if ( verbosity ) cerr << "WIMP mass too low, you're crazy!" << endl;
       return 1;
     }
     type_num = WIMP;
@@ -414,33 +414,34 @@ vector<double> signal1, signal2, signalE, vTable;
 			poisson_draw(1.5764e-7*double(numEvts));
   } else if ( type == "fullGamma" ) {
     type_num = fullGamma;
-    cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
+    if ( verbosity ) cerr << "Please choose gamma source. The allowed sources are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
     cin >> gamma_source;
-    if ( gamma_source == "Co60" ) {
+    if ( gamma_source == "Co60" && verbosity ) {
       cerr << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some "
 	   << "photons and electrons may go unaccounted." << endl;
     }
   } else {
-    cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
-    cerr << "NR or neutron," << endl;
-    cerr << "WIMP," << endl;
-    cerr << "B8 or Boron8 or 8Boron or 8B or Boron-8," << endl;
-    cerr << "DD or D-D," << endl;
-    cerr << "AmBe," << endl;
-    cerr << "Cf or Cf252 or 252Cf or Cf-252," << endl;
-    cerr << "ion or nucleus," << endl;
-    cerr << "alpha," << endl;
-    cerr << "gamma or gammaRay," << endl;
-    cerr << "x-ray or xray or xRay or X-ray or Xray or XRay," << endl;
-    cerr << "Kr83m or 83mKr or Kr83," << endl;
-    cerr << "CH3T or tritium," << endl;
-    cerr << "Carbon14 or 14C or C14 or C-14 or Carbon-14," << endl;
-    cerr << "beta or ER or Compton or compton or electron or e-," << endl;
-    cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
-    cerr << "atmNu," << endl;
-    cerr << "muon or MIP or LIP or mu or mu-, and" << endl;
-    cerr << "fullGamma" << endl;
-
+    if ( verbosity ) {
+      cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
+      cerr << "NR or neutron," << endl;
+      cerr << "WIMP," << endl;
+      cerr << "B8 or Boron8 or 8Boron or 8B or Boron-8," << endl;
+      cerr << "DD or D-D," << endl;
+      cerr << "AmBe," << endl;
+      cerr << "Cf or Cf252 or 252Cf or Cf-252," << endl;
+      cerr << "ion or nucleus," << endl;
+      cerr << "alpha," << endl;
+      cerr << "gamma or gammaRay," << endl;
+      cerr << "x-ray or xray or xRay or X-ray or Xray or XRay," << endl;
+      cerr << "Kr83m or 83mKr or Kr83," << endl;
+      cerr << "CH3T or tritium," << endl;
+      cerr << "Carbon14 or 14C or C14 or C-14 or Carbon-14," << endl;
+      cerr << "beta or ER or Compton or compton or electron or e-," << endl;
+      cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
+      cerr << "atmNu," << endl;
+      cerr << "muon or MIP or LIP or mu or mu-, and" << endl;
+      cerr << "fullGamma" << endl;
+    }
     return 1;
   }
   
@@ -448,16 +449,14 @@ vector<double> signal1, signal2, signalE, vTable;
   if (type_num == Kr83m) {
     if ( (ValidityTests::nearlyEqual(eMin, 9.4) || ValidityTests::nearlyEqual(eMin, 32.1) || ValidityTests::nearlyEqual(eMin, 41.5) || ValidityTests::nearlyEqual(eMin, 41.55) || ValidityTests::nearlyEqual(eMin, 41.6)) && eMin != eMax ) {
       maxTimeSep = eMax;
-      if ( eMax <= 0. ) { cerr << "Max t sep must be +." << endl; return 1; }
+      if ( eMax <= 0. ) { if ( verbosity ) cerr << "Max t sep must be +." << endl; return 1; }
     } else {
-      cerr << "ERROR: For Kr83m, put E_min as 9.4, 32.1, or 41.5 keV "
-              "and E_max as the max time-separation [ns] between the two decays "
-	      "please." << endl;
+      if ( verbosity ) cerr << "ERROR: For Kr83m, put E_min as 9.4, 32.1, or 41.5 keV and E_max as the max time-separation [ns] between the two decays please." << endl;
       return 1;
     }
   }
 
-  if ((eMin < 10. || eMax < 10.) && type_num == gammaRay) {
+  if ((eMin < 10. || eMax < 10.) && type_num == gammaRay && verbosity) {
     cerr << "WARNING: Typically beta model works better for ER BG at low "
             "energies as in a WS." << endl;
     cerr << "ER data is often best matched by a weighted average of the beta & "
@@ -467,7 +466,7 @@ vector<double> signal1, signal2, signalE, vTable;
   double rho = n.SetDensity(detector->get_T_Kelvin(), detector->get_p_bar());
   if (rho <= 0. || detector->get_T_Kelvin() <= 0. ||
       detector->get_p_bar() <= 0.) {
-    cerr << "ERR: Unphysical thermodynamic property!";
+    if ( verbosity ) cerr << "ERR: Unphysical thermodynamic property!";
     return 1;
   }
   if ( rho < 1.75 && ValidityTests::nearlyEqual(ATOM_NUM, 54.) ) detector->set_inGas(true);
@@ -507,7 +506,7 @@ vector<double> signal1, signal2, signalE, vTable;
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum), NuisParam);
   }
-  if ( ( g1 * yieldsMax.PhotonYield ) > ( 2. * maxS1 ) && eMin != eMax && type_num != Kr83m )
+  if ( ( g1 * yieldsMax.PhotonYield ) > ( 2. * maxS1 ) && eMin != eMax && type_num != Kr83m && verbosity )
     cerr << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   
   if ( type_num < 6 ) massNum = 0;
@@ -626,10 +625,10 @@ vector<double> signal1, signal2, signalE, vTable;
       
       if ( !dEOdxBasis ) {
 	if ( keV < 0 ) {
-	  cerr << "ERROR: Get ready for time travel or FTL--negative energy!" << endl;
+	  if ( verbosity ) cerr << "ERROR: Get ready for time travel or FTL--negative energy!" << endl;
 	  return 1;
 	}
-	if ( ValidityTests::nearlyEqual ( keV, 0. ) ) {
+	if ( ValidityTests::nearlyEqual ( keV, 0. ) && verbosity ) {
 	  cerr << "WARNING: Zero energy has occurred, and this is not normal" << endl;
 	}
       }
@@ -659,10 +658,10 @@ vector<double> signal1, signal2, signalE, vTable;
           ++i;
         }
 	if ( !dEOdxBasis ) {
-	  if ( pos_x != -999. && pos_y != -999. && (pos_x * pos_x + pos_y * pos_y) > detector->get_radius()*detector->get_radius() && j == 0 )
+	  if ( pos_x != -999. && pos_y != -999. && (pos_x * pos_x + pos_y * pos_y) > detector->get_radius()*detector->get_radius() && j == 0 && verbosity )
 	    cerr << "WARNING: outside fiducial radius." << endl;
 	  if ( pos_x != -999. && pos_y != -999. && (pos_x * pos_x + pos_y * pos_y) > detector->get_radmax()*detector->get_radmax() ) {
-	    cerr << "\nERROR: outside physical radius!!!" << endl;
+	    if ( verbosity ) cerr << "\nERROR: outside physical radius!!!" << endl;
 	    return EXIT_FAILURE;
 	  }
 	  pos_z = stof(position);
@@ -689,14 +688,13 @@ vector<double> signal1, signal2, signalE, vTable;
         field = inField;  // no fringing
 
       if(field < 0. || detector->get_E_gas() < 0.) {
-        cerr << "\nERROR: Neg field is not permitted. We don't simulate field "
-                "dir (yet). Put in magnitude.\n";
+        if ( verbosity ) cerr << "\nERROR: Neg field is not permitted. We don't simulate field dir (yet). Put in magnitude.\n";
         return 1;
       }
-      if(ValidityTests::nearlyEqual(field, 0.) || std::isnan(field))
+      if((ValidityTests::nearlyEqual(field, 0.) || std::isnan(field)) && verbosity)
         cerr << "\nWARNING: A LITERAL ZERO (or undefined) FIELD MAY YIELD WEIRD "
                 "RESULTS. USE A SMALL VALUE INSTEAD.\n";
-      if(field > 12e3 || detector->get_E_gas() > 17e3)
+      if((field > 12e3 || detector->get_E_gas() > 17e3) && verbosity)
         cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are "
                 "you sure about this?\n";
 
@@ -726,7 +724,7 @@ vector<double> signal1, signal2, signalE, vTable;
           if ( timeStamp > tZero ) fprintf ( stdout, "dayNum\t\t" );
           if ( (ValidityTests::nearlyEqual(eMax, eMin) || type_num == Kr83m) && numBins == 1 && MCtruthE ) {
             MCtruthE = false;
-            fprintf(stderr, "Simulating a mono-E peak; setting MCtruthE false.\n");
+            if ( verbosity ) fprintf(stderr, "Simulating a mono-E peak; setting MCtruthE false.\n");
           }
           if(eMax > hiEregime)
             fprintf(stdout, "Energy [keV]");
@@ -749,7 +747,7 @@ vector<double> signal1, signal2, signalE, vTable;
       if(inField != -1. &&
          detector->get_dt_min() > (detector->get_TopDrift() - 0.) / vD &&
          field >= FIELD_MIN) {
-        cerr << "ERROR: dt_min is too restrictive (too large)" << endl;
+        if ( verbosity ) cerr << "ERROR: dt_min is too restrictive (too large)" << endl;
         return 1;
       }
       if((driftTime > detector->get_dt_max() ||
@@ -757,7 +755,7 @@ vector<double> signal1, signal2, signalE, vTable;
          (ValidityTests::nearlyEqual(fPos, -1.) || ValidityTests::nearlyEqual(stof(position), -1.)) && field >= FIELD_MIN)
         goto Z_NEW;
       if(detector->get_dt_max() > (detector->get_TopDrift() - 0.) / vD && !j &&
-         field >= FIELD_MIN) {
+         field >= FIELD_MIN && verbosity) {
         cerr << "WARNING: dt_max is greater than max possible" << endl;
       }
 
@@ -765,11 +763,11 @@ vector<double> signal1, signal2, signalE, vTable;
       // code-block dealing with user error (rounding another possible culprit)
       if ( !dEOdxBasis ) {
 	if(pos_z <= 0) {
-	  cerr << "WARNING: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl; //warn user on screen
+	  if ( verbosity ) cerr << "WARNING: unphysically low Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl; //warn user on screen
 	  pos_z = z_step;
 	}
 	if((pos_z > (detector->get_TopDrift() + z_step) || driftTime < 0.0) && field >= FIELD_MIN) {
-	  cerr << "WARNING: unphysically big Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl; // give the specifics
+	  if ( verbosity ) cerr << "WARNING: unphysically big Z coordinate (vertical axis of detector) of " << pos_z << " mm" << endl; // give the specifics
 	  driftTime = 0.0;
 	  pos_z = detector->get_TopDrift() - z_step; //just fix it and move on
 	}
@@ -980,13 +978,13 @@ vector<double> signal1, signal2, signalE, vTable;
       if ( (useS2 == 0 && logMax <= log10(maxS2/maxS1)) ||
 	   (useS2 == 1 && logMax <= log10(maxS2)) ||
 	   (useS2 == 2 && logMax <= log10(maxS2/maxS1)) ) {
-	if ( j == 0 )
+	if ( j == 0 && verbosity )
 	  cerr << "err: You may be chopping off the upper half of your (ER?) band; increase logMax and/or maxS2" << endl;
       }
       if ( (useS2 == 0 && logMin >= log10(lowest2/lowest1)) ||
            (useS2 == 1 && logMin >= log10(lowest2)) ||
            (useS2 == 2 && logMin >= log10(lowest2/lowest1)) ) {
-        if ( j == 0 )
+        if ( j == 0 && verbosity )
           cerr << "err: You may be chopping off the lower half of your (NR?) band; decrease logMin and/or minS2" << endl;
       }
       
@@ -998,10 +996,10 @@ vector<double> signal1, signal2, signalE, vTable;
         signal2.push_back(-999.);
 
       if ( ValidityTests::nearlyEqual(eMin, eMax) || type_num == Kr83m ) {
-        if((scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1) && j < 10)
+        if((scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1) && j < 10 && verbosity)
           cerr << "WARNING: Some S1 pulse areas are greater than maxS1" << endl;
         if((scint2[5] > maxS2 || scint2[7] > maxS2) &&
-           j < 10) //don't repeat too much: only if within first 10 events then show (+above)
+           j < 10 && verbosity) //don't repeat too much: only if within first 10 events then show (+above)
           cerr << "WARNING: Some S2 pulse areas are greater than maxS2" << endl;
       }
 
@@ -1080,11 +1078,13 @@ vector<double> signal1, signal2, signalE, vTable;
         signal1.pop_back();
         signal2.pop_back();
         signalE.pop_back();
-        cerr << endl << "CAUTION: Efficiency seems to have been zero, so trying again with full S1 and S2 ranges."
-             << endl;
-        cerr
-                << "OR, you tried to simulate a mono-energetic peak with MC truth E turned on. Silly! Setting MCtruthE to false."
-                << endl;
+	if ( verbosity ) {
+	  cerr << endl << "CAUTION: Efficiency seems to have been zero, so trying again with full S1 and S2 ranges."
+	       << endl;
+	  cerr
+	    << "OR, you tried to simulate a mono-energetic peak with MC truth E turned on. Silly! Setting MCtruthE to false."
+	    << endl;
+	}
         goto NEW_RANGES;
       }
 
@@ -1138,7 +1138,7 @@ vector<double> signal1, signal2, signalE, vTable;
       if ( truthPos[2] < detector->get_cathode() && verbosity && !BeenHere &&
 	   !dEOdxBasis ) {
 	BeenHere = true;
-	fprintf ( stderr, "gamma-X i.e. MSSI may be happening. This may be why even high-E eff is <100%%. Check your cathode position definition.\n\n" );
+	if ( verbosity ) fprintf ( stderr, "gamma-X i.e. MSSI may be happening. This may be why even high-E eff is <100%%. Check your cathode position definition.\n\n" );
       }
       
       if(PrintSubThr || (
@@ -1184,7 +1184,7 @@ vector<double> signal1, signal2, signalE, vTable;
       // in case you want to drop all sub-threshold data
     }
     catch(exception &e) {
-      cerr << e.what() << endl;
+      if ( verbosity ) cerr << e.what() << endl;
       return 1;
     }
   } //end of the gigantic primary event number loop
@@ -1211,7 +1211,7 @@ vector<double> signal1, signal2, signalE, vTable;
             std::isnan(band[j][0]) || std::isnan(band[j][1]) ||
             std::isnan(band[j][2]) || std::isnan(band[j][3]) ||
             std::isnan(band[j][4]) || std::isnan(band[j][5])) {
-          if (eMax != -999.) {
+          if (eMax != -999. && verbosity) {
             if (((g1 * yieldsMax.PhotonYield) < maxS1 ||
                  (g2 * yieldsMax.ElectronYield) < maxS2) &&
                 j != 0)
@@ -1262,8 +1262,7 @@ vector<double> signal1, signal2, signalE, vTable;
         } else if ((ValidityTests::nearlyEqual(energies[0], eMin) || ValidityTests::nearlyEqual(energies[0], eMax) ||
                     energies[1] <= 1E-6) &&
                    field >= FIELD_MIN)
-          cerr << "If your energy resolution is 0% then you probably still "
-                  "have MC truth energy on." << endl;
+          if ( verbosity ) cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
         else
           ;
       }
@@ -1275,7 +1274,7 @@ vector<double> signal1, signal2, signalE, vTable;
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
                                bool resol, int nFold) {
   if ( numBins > NUMBINS_MAX ) {
-    cerr << "ERROR: Too many bins. Decrease numBins (analysis.hh) or increase NUMBINS_MAX (TestSpectra.hh)" << endl;
+    if ( verbosity ) cerr << "ERROR: Too many bins. Decrease numBins (analysis.hh) or increase NUMBINS_MAX (TestSpectra.hh)" << endl;
     exit ( EXIT_FAILURE );
   }
   

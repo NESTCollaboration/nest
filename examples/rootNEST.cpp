@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
   if ( mode == 2 ) {
     
     if (argc < 3) {
-      cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
+      if ( verbosity ) cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
       return 1;
     }
     
@@ -137,9 +137,9 @@ int main(int argc, char** argv) {
 			   &input[5][i-SKIP], &input[6][i-SKIP], &input[7][i-SKIP], &input[8][i-SKIP] );
       input[7][i-SKIP] /= 1e2;
       if ( input[7][i-SKIP] > 1.02 ) //2% margin of error is allowed
-	{ cerr << "eff should be frac not %" << endl; return 1; }
+	{ if ( verbosity ) cerr << "eff should be frac not %" << endl; return 1; }
       if ( input[7][i-SKIP] < -.02 ) //allowing for digitization err
-	{ cerr << "eff must not be negative" << endl; return 1; }
+	{ if ( verbosity ) cerr << "eff must not be negative" << endl; return 1; }
       if ( input[7][i-SKIP] > 0.00 && !std::isnan(input[7][i-SKIP]) )
 	input[7][i-SKIP] = log10(input[7][i-SKIP]);
       else
@@ -185,11 +185,11 @@ int main(int argc, char** argv) {
       ff = fitf->GetParameter(5);
       ++jj;
       if ( jj > 10 ) {
-	cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
+	if ( verbosity ) cerr << "ERR: The fit to the efficiency curve failed to converge to a good Chi2." << endl;
 	return EXIT_FAILURE;
       }
     }
-    if ( fitf->GetChisquare() > 1.3 )
+    if ( fitf->GetChisquare() > 1.3 && verbosity )
       cerr << "WARNING: The efficiency curve is poorly fit. chi^2 = "
 	   << fitf->GetChisquare() << endl;
     delete gr1;
@@ -217,13 +217,13 @@ int main(int argc, char** argv) {
     // Make sure inputs were valid.
     if (cin.fail() || fidMass <= 0. || time <= 0. || xEff <= 0. || NRacc <= 0. ||
 	loE < 0. || hiE <= 0. || numBGeventsExp < 0. || numBGeventsObs < 0.) {
-      cerr << endl
+      if ( verbosity ) cerr << endl
 	   << "Input error. Make sure all inputs were numbers (most also "
 	"positive or at least 0)" << endl;
       return 1;
     }
     if ( xEff > 1. || NRacc > 1. ) {
-      cerr << endl
+      if ( verbosity ) cerr << endl
 	   << "You entered an efficiency or acceptance for NR greater than 100%"
 	   << endl;
       return 1;
@@ -287,7 +287,7 @@ int main(int argc, char** argv) {
 	  100.;
 	//cerr << j << " " << eff << endl;
 	if ( eff > 1. || eff < 0. )
-	  { cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
+	  { if ( verbosity ) cerr << "Eff cannot be greater than 100% or <0%" << endl; return 1; }
 	if (j > loE)
 	  sigAboveThr[i] += VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNumber) * eff * xEff *
 	    NRacc;  // integrating (Riemann, left sum)
@@ -330,7 +330,7 @@ int main(int argc, char** argv) {
   if ( mode == 1 ) {
     
     if ( argc < 3 ) {
-      cerr << "ERROR: mode 1 requires *2* input files. 1 is not enough" << endl; return 1;
+      if ( verbosity ) cerr << "ERROR: mode 1 requires *2* input files. 1 is not enough" << endl; return 1;
     }
     
     if (numBins == 1) {
@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
 	double error, chi2[4] = {0., 0., 0., 0.};
 	for (i = 0; i < numBins; ++i) {
 	  if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
-	    cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
+	    if ( verbosity ) cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
 	    return 1;
 	  }
 	  error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
@@ -530,7 +530,7 @@ int main(int argc, char** argv) {
     double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
     bool FailedFit = false;
     if (chi2 > 1.5 || chi2 <= 0. || std::isnan(chi2) ) {
-      cerr << "WARNING: Poor fit to NR Gaussian band centroids i.e. means of "
+      if ( verbosity ) cerr << "WARNING: Poor fit to NR Gaussian band centroids i.e. means of "
               "log(S2) or log(S2/S1) histograms in S1 bins. Investigate please!"
            << endl;
       fitf = new TF1("NRbandGCentroid", "[0]+([1]-[0])/(1+(x/[2])^[3])", minS1,
@@ -539,7 +539,7 @@ int main(int argc, char** argv) {
       gr1->Fit(fitf, "nrq", "", minS1, maxS1);
       chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
       if (chi2 > 2. || chi2 < 0. || std::isnan(chi2) ) {
-        cerr << "ERROR: Even the backup plan to use sigmoid failed as well!"
+        if ( verbosity ) cerr << "ERROR: Even the backup plan to use sigmoid failed as well!"
              << endl;
         FailedFit = true; //return 1;
       }
@@ -1093,7 +1093,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 	xiEstimate = fit_xi;
 	omegaEstimate = fit_omega;
 	alphaEstimate = 0.0;
-	cerr << "Re-fitting... (stats, more? and/or logBins, fewer? might help)\n";
+	if ( verbosity ) cerr << "Re-fitting... (stats, more? and/or logBins, fewer? might help)\n";
 	if ( mode != 0 ) goto RETRY;
       }
       

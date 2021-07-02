@@ -413,7 +413,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   {
     throw std::runtime_error("ERROR: You need a minimum of 12 nuisance parameters for the mean yields.");
   }
-  if ( energy > 330. )
+  if ( energy > HIGH_E_NR )
     cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of about 300 keV.\n";
   int massNumber;
   double ScaleFactor[2] ={1., 1.};
@@ -435,18 +435,27 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   double Nph = Ly * energy * ScaleFactor[0] *
           (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]), NuisParam[11]));
   Nq = Nph + Ne;
+  double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
+  double Nex = (-1. / ThomasImel) * (4. * exp(Ne * ThomasImel / 4.) - (Ne + Nph) * ThomasImel - 4.);
   
-  double NexONi = 1.;
-  double Ni = Nq / ( 1. + NexONi );
-  double Nex = Nq - Ni;
+  double NexONi = Nex / Ni;
+  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
+  if ( NexONi < wvalue.alpha && energy > 1e2 ) {
+    NexONi = wvalue.alpha;
+    Ni = Nq / ( 1. + NexONi ); Nex = Nq - Ni;
+  }
+  if ( NexONi > 1.0 && energy < 1. ) {
+    NexONi = 1.00;
+    Ni = Nq / ( 1. + NexONi ); Nex = Nq - Ni;
+  }
   
-  if ( Nex <= 0. ) cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy (OR, for LOW) NR, or are beyond it, at " << energy << " keV." << endl;
-  if ( fabs(Nex + Ni -Nq) > 2. * PHE_MIN )
+  if ( Nex <= 0. )
+    cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy (OR, for LOW) NR, or are beyond it, at " << energy << " keV." << endl;
+  if ( fabs ( Nex + Ni - Nq ) > 2. * PHE_MIN )
   {
     throw std::runtime_error("ERROR: Quanta not conserved. Tell Matthew Immediately!");
   }
   
-  Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   double Wq_eV = wvalue.Wq_eV;
   double L = (Nq / energy) * Wq_eV * 1e-3;
   
@@ -785,7 +794,6 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
   else
     posDepSm = fdetector->FitS1(0, 0, smearPos[2], VDetector::unfold);
-  double dt = (fdetector->get_TopDrift() - truthPos[2]) / driftVelocity;
   double dz_center = fdetector->get_TopDrift() -
                      dV_mid * fdetector->get_dtCntr();  // go from t to z
   posDep /=

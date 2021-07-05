@@ -7,7 +7,7 @@ language: cpp
 # are tested.
 matrix:
   include:
-      - os: osx
+      - os: osx  # Note: we pay extra for OSX for Travis
         compiler: clang
       - os: linux
         compiler: gcc

@@ -302,7 +302,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
     if (ValidityTests::nearlyEqual(yields.Lindhard, 1.) ) {
       skewness = 1. / (1. + exp((engy - E2) / E3)) * (alpha0 + cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
         1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 * exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
-      //if ( fabs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
+      //if ( std::abs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
     }
     else {
       skewness = FreeParam[5]; //2.25 but ~5-20 also good (for NR). All better than zero, but 0 is OK too
@@ -311,7 +311,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult& yields, double density,
   
   double widthCorrection = sqrt( 1. - (2./M_PI) * skewness*skewness/(1. + skewness*skewness));
   double muCorrection = (sqrt(Variance)/widthCorrection)*(skewness/sqrt(1.+skewness*skewness))*sqrt(2./M_PI);
-  if ( fabs(skewness) > DBL_MIN && ValidityTests::nearlyEqual(ATOM_NUM, 54.) ) //skewness model only for Xenon!
+  if ( std::abs(skewness) > DBL_MIN && ValidityTests::nearlyEqual(ATOM_NUM, 54.) ) //skewness model only for Xenon!
     Ne = int(floor(RandomGen::rndm()->rand_skewGauss((1.-recombProb)*Ni-muCorrection,sqrt(Variance)/widthCorrection,skewness)+0.5));
   else
     Ne = int(floor(RandomGen::rndm()->rand_gauss((1.-recombProb)*Ni,sqrt(Variance))+0.5));
@@ -442,16 +442,18 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
   Wvalue wvalue = WorkFunction(density,fdetector->get_molarMass(),fdetector->get_rmQuanta());
   if ( NexONi < wvalue.alpha && energy > 1e2 ) {
     NexONi = wvalue.alpha;
-    Ni = Nq / ( 1. + NexONi ); Nex = Nq - Ni;
+    Ni = Nq / ( 1. + NexONi );
+    Nex = Nq - Ni;
   }
   if ( NexONi > 1.0 && energy < 1. ) {
     NexONi = 1.00;
-    Ni = Nq / ( 1. + NexONi ); Nex = Nq - Ni;
+    Ni = Nq / ( 1. + NexONi );
+    Nex = Nq - Ni;
   }
   
   if ( Nex <= 0. )
     cerr << "\nCAUTION: You are approaching the border of NEST's validity for high-energy (OR, for LOW) NR, or are beyond it, at " << energy << " keV." << endl;
-  if ( fabs ( Nex + Ni - Nq ) > 2. * PHE_MIN )
+  if ( std::abs ( Nex + Ni - Nq ) > 2. * PHE_MIN )
   {
     throw std::runtime_error("ERROR: Quanta not conserved. Tell Matthew Immediately!");
   }
@@ -903,7 +905,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     AreaTable[0].resize(numPts, 0.);
     AreaTable[1].resize(numPts, 0.);
     
-    int total_photons = (int)fabs(spike);
+    int total_photons = (int)std::abs(spike);
     int excitons = int(double(total_photons)*double(quanta.excitons)/double(quanta.photons));
     photonstream photon_emission_times =
       GetPhotonTimes(type_num, total_photons, excitons, dfield, energy);
@@ -918,7 +920,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
     
     int ii, index;
     double min = 1e100, pTime;
-    for (ii = 0; ii < (int)fabs(spike); ++ii) {
+    for (ii = 0; ii < (int)std::abs(spike); ++ii) {
       PEperBin.clear();
       PEperBin = fdetector->SinglePEWaveForm(
 					     photon_areas[0][ii] + photon_areas[1][ii], photon_times[ii]);
@@ -1061,21 +1063,21 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
   if ( RandomGen::rndm()->rand_uniform() > prob && prob < 1. ) {  // coincidence has to happen in different PMTs
     // some of these are set to -1 to flag them as having been below threshold
     if (ValidityTests::nearlyEqual(scintillation[0], 0.)) scintillation[0] = PHE_MIN;
-    scintillation[0] = -1.*fabs(scintillation[0]);
+    scintillation[0] = -1.*std::abs(scintillation[0]);
     if (ValidityTests::nearlyEqual(scintillation[1], 0.)) scintillation[1] = PHE_MIN;
-    scintillation[1] = -1.*fabs(scintillation[1]);
+    scintillation[1] = -1.*std::abs(scintillation[1]);
     if (ValidityTests::nearlyEqual(scintillation[2], 0.)) scintillation[2] = PHE_MIN;
-    scintillation[2] = -1.*fabs(scintillation[2]);
+    scintillation[2] = -1.*std::abs(scintillation[2]);
     if (ValidityTests::nearlyEqual(scintillation[3], 0.)) scintillation[3] = PHE_MIN;
-    scintillation[3] = -1.*fabs(scintillation[3]);
+    scintillation[3] = -1.*std::abs(scintillation[3]);
     if (ValidityTests::nearlyEqual(scintillation[4], 0.)) scintillation[4] = PHE_MIN;
-    scintillation[4] = -1.*fabs(scintillation[4]);
+    scintillation[4] = -1.*std::abs(scintillation[4]);
     if (ValidityTests::nearlyEqual(scintillation[5], 0.)) scintillation[5] = PHE_MIN;
-    scintillation[5] = -1.*fabs(scintillation[5]);
+    scintillation[5] = -1.*std::abs(scintillation[5]);
     if (ValidityTests::nearlyEqual(scintillation[6], 0.)) scintillation[6] = PHE_MIN;
-    scintillation[6] = -1.*fabs(scintillation[6]);
+    scintillation[6] = -1.*std::abs(scintillation[6]);
     if (ValidityTests::nearlyEqual(scintillation[7], 0.)) scintillation[7] = PHE_MIN;
-    scintillation[7] = -1.*fabs(scintillation[7]);
+    scintillation[7] = -1.*std::abs(scintillation[7]);
   }
   
   // scintillation[8] =
@@ -1173,7 +1175,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
     for (i = 0; i < stopPoint; ++i) {
       elecTravT = 0.;  // resetting for the current electron
       DL = RandomGen::rndm()->rand_gauss(0., sigmaDL);
-      DT = fabs(RandomGen::rndm()->rand_gauss(0., sigmaDT));
+      DT = std::abs(RandomGen::rndm()->rand_gauss(0., sigmaDT));
       phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
       sigX = DT * cos(phi);
       sigY = DT * sin(phi);
@@ -1220,7 +1222,7 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       DL_time = DL / driftVelocity_gas;
       electronstream[i] += DL_time;
       if ( i >= Nee && eTrain ) {  // exponential based on arXiv:1711.07025, power on 2004.07791
-        E_liq = fdetector->get_E_gas() / (EPS_LIQ / fabs(EPS_GAS));
+        E_liq = fdetector->get_E_gas() / (EPS_LIQ / std::abs(EPS_GAS));
         tau2 = ( fdetector->get_TopDrift() / driftVelocity );//0.58313 * exp(0.20929 * E_liq) * 1e3;
         tau1 = 1.40540 * exp(0.15578 * E_liq) * 1e3 * 1e-2;
         amp2 = 0.38157 * exp(0.21177 * E_liq) * 1e-2;
@@ -1371,10 +1373,10 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
                                                             // units)
   }
 
-  if (pulseArea < fabs(fdetector->get_s2_thr())) {
+  if (pulseArea < std::abs(fdetector->get_s2_thr())) {
     for (i = 0; i < 8; ++i) {
       if (ValidityTests::nearlyEqual(ionization[i], 0.)) ionization[i] = PHE_MIN;
-      ionization[i] = -1.*fabs(ionization[i]);
+      ionization[i] = -1.*std::abs(ionization[i]);
     }
   }
 
@@ -1390,7 +1392,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   // Set parameters for calculating EL yield and extraction
   double alpha = 0.137, beta = 4.70e-18, gamma = 0;  // note the value of alpha is similar to ~1/7eV. Not coincidence. Noted in Mock et al.
   // actually listed as 'a' and 'b' in ref (below). Units 1/V, cm^2
-  double epsilonRatio = EPS_LIQ / fabs(EPS_GAS);
+  double epsilonRatio = EPS_LIQ / std::abs(EPS_GAS);
   if (fdetector->get_inGas())
     epsilonRatio = 1.;  // in an all-gas detector, E_liq variable below simply
                         // becomes the field value between anode and gate
@@ -1510,7 +1512,7 @@ vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
     newSpike[1] = oldScint[5];
     return newSpike;
   }
-  newSpike[0] = fabs(oldScint[6]);
+  newSpike[0] = std::abs(oldScint[6]);
   double TruncGauss = 0.;
   while ( TruncGauss <= 0. )
     TruncGauss = RandomGen::rndm()->rand_gauss(newSpike[0],(fdetector->get_sPEres()/4.)*sqrt(newSpike[0]));
@@ -1736,7 +1738,7 @@ double NESTcalc::GetDriftVelocity_MagBoltz(
   }
   if (gasdep >= 3.8e-17) edrift = 6e21 * gasdep - 32279.;
 
-  return fabs ( edrift ) * 1e-5;  // from cm/s into mm per microsecond
+  return std::abs ( edrift ) * 1e-5;  // from cm/s into mm per microsecond
 }
 
 vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
@@ -1751,7 +1753,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
         if (!fdetector->get_inGas())
           driftTime += zStep / SetDriftVelocity(fdetector->get_T_Kelvin(), rho,
                                                 fdetector->get_E_gas() /
-						(EPS_LIQ / fabs(EPS_GAS)) * 1e3);
+						(EPS_LIQ / std::abs(EPS_GAS)) * 1e3);
         else  // if gate == TopDrift properly set, shouldn't happen
           driftTime += zStep / GetDriftVelocity_MagBoltz(
                                    rho, fdetector->get_E_gas() * 1e3);
@@ -1783,12 +1785,12 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
   double sigmaR = kappa / sqrt(A_top);                   // ibid.
 
   double phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
-  sigmaR = fabs(RandomGen::rndm()->rand_gauss(0.0, sigmaR));
+  sigmaR = std::abs(RandomGen::rndm()->rand_gauss(0.0, sigmaR));
   double sigmaX = sigmaR * cos(phi);
   double sigmaY = sigmaR * sin(phi);
   
   if ( sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
-       fabs(sigmaX) > 1e2 || fabs(sigmaY) > 1e2 ) {
+       std::abs(sigmaX) > 1e2 || std::abs(sigmaY) > 1e2 ) {
     if ( A_top > 20. ) {
       cerr << "WARNING: your position resolution is worse than 10 cm. Is that correct?!" << endl;
       cerr << "Setting resolution to perfect." << endl; sigmaX=0.; sigmaY=0.;

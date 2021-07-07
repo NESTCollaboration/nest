@@ -289,7 +289,7 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   if ((x_e + x_min) < x_esc) {
     thisCase = 1;
   }
-  if ((x_min > fabs(x_esc - x_e)) && ((x_e + x_esc) > x_min)) {
+  if ((x_min > std::abs(x_esc - x_e)) && ((x_e + x_esc) > x_min)) {
     thisCase = 2;
   }
   if (x_e > (x_min + x_esc)) {

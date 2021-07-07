@@ -207,16 +207,16 @@ int main(int argc, char** argv) {
   if (!MCtruthE) {
     double Nph, g1 = detector->get_g1(), Ne;
     if (usePD == 0)
-      Nph = fabs(scint[3]) / (g1 * (1. + detector->get_P_dphe()));
+      Nph = std::abs(scint[3]) / (g1 * (1. + detector->get_P_dphe()));
     else if (usePD == 1)
-      Nph = fabs(scint[5]) / g1;
+      Nph = std::abs(scint[5]) / g1;
     else
-      Nph = fabs(scint[7]) / g1;
+      Nph = std::abs(scint[7]) / g1;
 
     if (usePD == 0)
-      Ne = fabs(scint2[5]) / (g2 * (1. + detector->get_P_dphe()));
+      Ne = std::abs(scint2[5]) / (g2 * (1. + detector->get_P_dphe()));
     else
-      Ne = fabs(scint2[7]) / g2;
+      Ne = std::abs(scint2[7]) / g2;
 
     if (yields.Lindhard > DBL_MIN && Nph > 0. && Ne > 0.) {
       keV = (Nph + Ne) * W_DEFAULT * 1e-3 / yields.Lindhard;

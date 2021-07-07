@@ -11,6 +11,7 @@
  * Created on August 1, 2017, 1:03 PM
  */
 
+#include <iterator>
 #include "NEST.hh"
 #include "TestSpectra.hh"
 #include "analysis.hh"
@@ -267,23 +268,23 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
     scint2= n.GetS2(quanta.electrons,truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2],
 		    driftTime,vD,i,useField,0,verbosity,wf_time,wf_amp,g2_params);
     if ( scint[7] > PHE_MIN && scint2[7] > PHE_MIN ) { //unlike usual, kill (don't skip, just -> 0) sub-thr evts
-      OutputResults.s1_nhits.push_back(abs(int(scint[0])));
-      OutputResults.s1_nhits_thr.push_back(abs(int(scint[8])));
-      OutputResults.s1_nhits_dpe.push_back(abs(int(scint[1])));
-      OutputResults.s1r_phe.push_back(fabs(scint[2]));
-      OutputResults.s1c_phe.push_back(fabs(scint[3]));
-      OutputResults.s1r_phd.push_back(fabs(scint[4]));
-      OutputResults.s1c_phd.push_back(fabs(scint[5]));
-      OutputResults.s1r_spike.push_back(fabs(scint[6]));
-      OutputResults.s1c_spike.push_back(fabs(scint[7])); //default is S1c in units of spikes, 3-D XYZ corr
-      OutputResults.Nee.push_back(abs(int(scint2[0])));
-      OutputResults.Nph.push_back(abs(int(scint2[1])));
-      OutputResults.s2_nhits.push_back(abs(int(scint2[2])));
-      OutputResults.s2_nhits_dpe.push_back(abs(int(scint2[3])));
-      OutputResults.s2r_phe.push_back(fabs(scint2[4]));
-      OutputResults.s2c_phe.push_back(fabs(scint2[5]));
-      OutputResults.s2r_phd.push_back(fabs(scint2[6]));
-      OutputResults.s2c_phd.push_back(fabs(scint2[7])); //default is S2c in terms of phd, not phe a.k.a. PE
+      OutputResults.s1_nhits.push_back(std::abs(int(scint[0])));
+      OutputResults.s1_nhits_thr.push_back(std::abs(int(scint[8])));
+      OutputResults.s1_nhits_dpe.push_back(std::abs(int(scint[1])));
+      OutputResults.s1r_phe.push_back(std::abs(scint[2]));
+      OutputResults.s1c_phe.push_back(std::abs(scint[3]));
+      OutputResults.s1r_phd.push_back(std::abs(scint[4]));
+      OutputResults.s1c_phd.push_back(std::abs(scint[5]));
+      OutputResults.s1r_spike.push_back(std::abs(scint[6]));
+      OutputResults.s1c_spike.push_back(std::abs(scint[7])); //default is S1c in units of spikes, 3-D XYZ corr
+      OutputResults.Nee.push_back(std::abs(int(scint2[0])));
+      OutputResults.Nph.push_back(std::abs(int(scint2[1])));
+      OutputResults.s2_nhits.push_back(std::abs(int(scint2[2])));
+      OutputResults.s2_nhits_dpe.push_back(std::abs(int(scint2[3])));
+      OutputResults.s2r_phe.push_back(std::abs(scint2[4]));
+      OutputResults.s2c_phe.push_back(std::abs(scint2[5]));
+      OutputResults.s2r_phd.push_back(std::abs(scint2[6]));
+      OutputResults.s2c_phd.push_back(std::abs(scint2[7])); //default is S2c in terms of phd, not phe a.k.a. PE
     }
     else {
       OutputResults.s1_nhits.push_back(0);
@@ -420,27 +421,29 @@ vector<double> signal1, signal2, signalE, vTable;
       cerr << "WARNING: This source is in the pair production range. Electron/positron pairs are not accounted for after initial interaction, and some "
 	   << "photons and electrons may go unaccounted." << endl;
     }
-  } else {
+  }
+  else {
     if ( verbosity ) {
-      cerr << "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:" << endl;
-      cerr << "NR or neutron," << endl;
-      cerr << "WIMP," << endl;
-      cerr << "B8 or Boron8 or 8Boron or 8B or Boron-8," << endl;
-      cerr << "DD or D-D," << endl;
-      cerr << "AmBe," << endl;
-      cerr << "Cf or Cf252 or 252Cf or Cf-252," << endl;
-      cerr << "ion or nucleus," << endl;
-      cerr << "alpha," << endl;
-      cerr << "gamma or gammaRay," << endl;
-      cerr << "x-ray or xray or xRay or X-ray or Xray or XRay," << endl;
-      cerr << "Kr83m or 83mKr or Kr83," << endl;
-      cerr << "CH3T or tritium," << endl;
-      cerr << "Carbon14 or 14C or C14 or C-14 or Carbon-14," << endl;
-      cerr << "beta or ER or Compton or compton or electron or e-," << endl;
-      cerr << "pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted," << endl;
-      cerr << "atmNu," << endl;
-      cerr << "muon or MIP or LIP or mu or mu-, and" << endl;
-      cerr << "fullGamma" << endl;
+      string particleTypes = "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:\n"
+	"NR or neutron,\n"
+	"WIMP,\n"
+	"B8 or Boron8 or 8Boron or 8B or Boron-8,\n"
+	"DD or D-D,\n"
+	"AmBe,\n"
+	"Cf or Cf252 or 252Cf or Cf-252,\n"
+	"ion or nucleus,\n"
+	"alpha,\n"
+	"gamma or gammaRay,\n"
+	"x-ray or xray or xRay or X-ray or Xray or XRay,\n"
+	"Kr83m or 83mKr or Kr83,\n"
+	"CH3T or tritium,\n"
+	"Carbon14 or 14C or C14 or C-14 or Carbon-14,\n"
+	"beta or ER or Compton or compton or electron or e-,\n"
+	"pp or ppSolar with many various underscore, hyphen and capitalization permutations permitted,\n"
+	"atmNu,\n"
+	"muon or MIP or LIP or mu or mu-, and\n"
+	"fullGamma\n";
+      copy(particleTypes.begin(),particleTypes.end(),std::ostream_iterator<char>(cerr,""));
     }
     return 1;
   }
@@ -478,7 +481,7 @@ vector<double> signal1, signal2, signalE, vTable;
   
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
-  g2 = fabs(g2_params[3]);
+  g2 = std::abs(g2_params[3]);
   double g1 = detector->get_g1();
   
   double centralZ =
@@ -497,7 +500,7 @@ vector<double> signal1, signal2, signalE, vTable;
   } else {
     double energyMaximum;
     if (eMax < 0.)
-      energyMaximum = 1. / fabs(eMax);
+      energyMaximum = 1. / std::abs(eMax);
     else
       energyMaximum = eMax;
     if ( type_num == Kr83m )
@@ -823,7 +826,7 @@ vector<double> signal1, signal2, signalE, vTable;
         norm[0] = (xf - xi) / distance;
         norm[1] = (yf - yi) / distance;
         norm[2] = (zf - zi) / distance;
-        while ( zz > zf && ( xx * xx + yy * yy ) < detector->get_radmax()*detector->get_radmax() && fabs(refEnergy) > PHE_MIN ) {
+        while ( zz > zf && ( xx * xx + yy * yy ) < detector->get_radmax()*detector->get_radmax() && std::abs(refEnergy) > PHE_MIN ) {
 	  // stop making S1 and S2 if particle exits Xe volume, OR runs out of energy (in case of beta)
 	  if ( eMin < 0. ) {
 	    if ( (keV+eStep) > -eMin ) eStep = -eMin - keV;
@@ -961,11 +964,11 @@ vector<double> signal1, signal2, signalE, vTable;
       }
       
     NEW_RANGES:
-      if(usePD == 0 && fabs(scint[3]) > minS1 && scint[3] < maxS1)
+      if(usePD == 0 && std::abs(scint[3]) > minS1 && scint[3] < maxS1)
         signal1.push_back(scint[3]);
-      else if(usePD == 1 && fabs(scint[5]) > minS1 && scint[5] < maxS1)
+      else if(usePD == 1 && std::abs(scint[5]) > minS1 && scint[5] < maxS1)
         signal1.push_back(scint[5]);
-      else if((usePD >= 2 && fabs(scint[7]) > minS1 && scint[7] < maxS1) ||
+      else if((usePD >= 2 && std::abs(scint[7]) > minS1 && scint[7] < maxS1) ||
               maxS1 >= 998.5) //xtra | handles bizarre bug of ~0eff, S1=999
         signal1.push_back(scint[7]);
       else
@@ -988,9 +991,9 @@ vector<double> signal1, signal2, signalE, vTable;
           cerr << "err: You may be chopping off the lower half of your (NR?) band; decrease logMin and/or minS2" << endl;
       }
       
-      if(usePD == 0 && fabs(scint2[5]) > minS2 && scint2[5] < maxS2)
+      if(usePD == 0 && std::abs(scint2[5]) > minS2 && scint2[5] < maxS2)
         signal2.push_back(scint2[5]);
-      else if(usePD >= 1 && fabs(scint2[7]) > minS2 && scint2[7] < maxS2)
+      else if(usePD >= 1 && std::abs(scint2[7]) > minS2 && scint2[7] < maxS2)
         signal2.push_back(scint2[7]);  // no spike option for S2
       else
         signal2.push_back(-999.);
@@ -1021,15 +1024,15 @@ vector<double> signal1, signal2, signalE, vTable;
           } else MultFact = 1.;
         }
         if(usePD == 0)
-          Nph = fabs(scint[3]) / (g1 * (1. + detector->get_P_dphe()));
+          Nph = std::abs(scint[3]) / (g1 * (1. + detector->get_P_dphe()));
         else if(usePD == 1)
-          Nph = fabs(scint[5]) / g1;
+          Nph = std::abs(scint[5]) / g1;
         else
-          Nph = fabs(scint[7]) / g1;
+          Nph = std::abs(scint[7]) / g1;
         if(usePD == 0)
-          Ne = fabs(scint2[5]) / (g2 * (1. + detector->get_P_dphe()));
+          Ne = std::abs(scint2[5]) / (g2 * (1. + detector->get_P_dphe()));
         else
-          Ne = fabs(scint2[7]) / g2;
+          Ne = std::abs(scint2[7]) / g2;
         Nph *= MultFact;
         if ( signal1.back() <= 0. && timeStamp == tZero ) Nph= 0.;
         if ( signal2.back() <= 0. && timeStamp == tZero ) Ne = 0.;
@@ -1304,8 +1307,8 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
     for (j = 0; j < numBins; ++j) {
       s1c = border + binWidth / 2. + double(j) * binWidth;
       if (i == 0 && !resol) band[j][0] = s1c;
-      if ( (fabs(S1s[i]) > (s1c - binWidth / 2.) &&
-	    fabs(S1s[i]) <=(s1c + binWidth / 2.)) || !nFold ) {
+      if ( (std::abs(S1s[i]) > (s1c - binWidth / 2.) &&
+	    std::abs(S1s[i]) <=(s1c + binWidth / 2.)) || !nFold ) {
         if (S1s[i] >= ReqS1 && S2s[i] >= 0.) {
           if (resol) {
             signals[j].push_back(S2s[i]);
@@ -1348,7 +1351,7 @@ vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
     if (numPts <= 0 && resol) {
-      for (i = 0; i < S1s.size(); ++i) band[j][0] += fabs(S1s[i]);
+      for (i = 0; i < S1s.size(); ++i) band[j][0] += std::abs(S1s[i]);
       numPts = S1s.size();
     }
     if (resol) band[j][0] /= numPts;

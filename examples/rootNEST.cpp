@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
       errorBars[numBins][2];
   int i = 0; if ( loopNEST ) verbosity = false;
   
-  if ( abs(NRbandCenter) != 1 && abs(NRbandCenter) != 2 && abs(NRbandCenter) != 3 )
+  if ( std::abs(NRbandCenter) != 1 && std::abs(NRbandCenter) != 2 && std::abs(NRbandCenter) != 3 )
     NRbandCenter = 3; // default
   
   if (argc < 2) {
@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     
-    int DoF = numBins - abs(freeParam);
+    int DoF = numBins - std::abs(freeParam);
     FILE* ifp = fopen(argv[2], "r");
     for (i = 0; i < numBins; ++i) {
       int scan2 = fscanf(ifp, "%lf %lf %lf %lf %lf %lf", &band2[i][0], &band2[i][1],
@@ -359,7 +359,7 @@ int main(int argc, char** argv) {
 	GetFile(argv[1]);
 	double error, chi2[4] = {0., 0., 0., 0.};
 	for (i = 0; i < numBins; ++i) {
-	  if ( fabs(band[i][0]-band2[i][0]) > 0.05 ) {
+	  if ( std::abs(band[i][0]-band2[i][0]) > 0.05 ) {
 	    if ( verbosity ) cerr << "Binning doesn't match for GoF calculation. Go to analysis.hh and adjust minS1, maxS1, numBins" << endl;
 	    return 1;
 	  }
@@ -373,8 +373,8 @@ int main(int argc, char** argv) {
 	chi2[0] /= double(DoF - 1); chi2[2] /= numBins;
 	chi2[1] /= double(DoF - 1); chi2[3] /= numBins;
 	//cout.precision(3);
-	//if ( fabs(chi2[0]) > 10. ) chi2[0] = 999.;
-	//if ( fabs(chi2[1]) > 10. ) chi2[1] = 999.;
+	//if ( std::abs(chi2[0]) > 10. ) chi2[0] = 999.;
+	//if ( std::abs(chi2[1]) > 10. ) chi2[1] = 999.;
 	if ( loopNEST ) { //abbreviated #only version
 	  cout << chi2[0] << "\t" << chi2[1] << "\t" << 0.5*(chi2[0]+chi2[1]) << "\t" << pow(chi2[0]*chi2[1],0.5) << "\t" << chi2[2] << "\t" << chi2[3] << "\t"
 	       << band[0][2] << "\t" << band[0][3] << endl;
@@ -553,9 +553,9 @@ int main(int argc, char** argv) {
             fitf->GetParameter(0) / (inputs[i][j] + fitf->GetParameter(1)) +
             fitf->GetParameter(2) * inputs[i][j] +
             fitf->GetParameter(3);  // use Woods function
-        if ( FailedFit || abs(NRbandCenter) == 1 ) NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
+        if ( FailedFit || std::abs(NRbandCenter) == 1 ) NRbandGCentroid = NRbandY[i]; // use the center of the bin instead of
         // the fit, to compare to past data that did not use a smoothing spline
-	if ( abs(NRbandCenter) == 2 )
+	if ( std::abs(NRbandCenter) == 2 )
 	  NRbandGCentroid = fitf->GetParameter(0)/(NRbandX[i]+fitf->GetParameter(1))+fitf->GetParameter(2)*NRbandX[i]+fitf->GetParameter(3);
         // compromise
         if (outputs[i][j] < NRbandGCentroid) ++below[i];
@@ -572,8 +572,8 @@ int main(int argc, char** argv) {
           stderr,
           "\t%.2f\t%f\t%f\t%e\t%e\t%e\t%f\t%e\t%e\t%e\t%f\t",
           0.5 * (band[i][0] + band2[i][0]), 0.5 * (band[i][1] + band2[i][1]),
-          numSigma[i], leakage[i], fabs(errorBars[i][0] - leakage[i]),
-          fabs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,
+          numSigma[i], leakage[i], std::abs(errorBars[i][0] - leakage[i]),
+          std::abs(leakage[i] - errorBars[i][1]), discrim[i] * 100., leakTotal,
           poisErr[0] - leakTotal, leakTotal - poisErr[1], (1. - leakTotal) * 100.);
       //if ( !ERis2nd ) fprintf ( stderr, "%e\n",leakTotal-leakage[i] );
       //else
@@ -647,17 +647,17 @@ void GetFile(char* fileName) {
     Nph.push_back(g);
     Ne.push_back(h);
     S1raw_phe.push_back(i);
-    if (usePD <= 0 && fabs(j * 1.2) > minS1 && (j * 1.2) < maxS1) {
+    if (usePD <= 0 && std::abs(j * 1.2) > minS1 && (j * 1.2) < maxS1) {
       S1cor_phe.push_back(j * 1.2);  // here and down below for S2: FIX THIS by
                                      // getting P_dphe (USUALLY ~0.2) from
                                      // detector class
       S1cor_phd.push_back(0);
       S1cor_spike.push_back(0);
-    } else if (usePD == 1 && fabs(j) > minS1 && j < maxS1) {
+    } else if (usePD == 1 && std::abs(j) > minS1 && j < maxS1) {
       S1cor_phe.push_back(0);
       S1cor_phd.push_back(j);
       S1cor_spike.push_back(0);
-    } else if (usePD >= 2 && fabs(k) > minS1 && k < maxS1) {
+    } else if (usePD >= 2 && std::abs(k) > minS1 && k < maxS1) {
       S1cor_phe.push_back(0);
       S1cor_phd.push_back(0);
       S1cor_spike.push_back(k);
@@ -668,10 +668,10 @@ void GetFile(char* fileName) {
     }
     Ne_Extr.push_back(l);
     S2raw_phe.push_back(m);
-    if (usePD <= 0 && fabs(n * 1.2) > minS2 && (n * 1.2) < maxS2) {
+    if (usePD <= 0 && std::abs(n * 1.2) > minS2 && (n * 1.2) < maxS2) {
       S2cor_phe.push_back(n * 1.2);
       S2cor_phd.push_back(0);
-    } else if (usePD >= 1 && fabs(n) > minS2 && n < maxS2) {
+    } else if (usePD >= 1 && std::abs(n) > minS2 && n < maxS2) {
       S2cor_phe.push_back(0);
       S2cor_phd.push_back(n);
     } else {
@@ -865,8 +865,8 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
       s1c = border + binWidth / 2. + double(j) * binWidth;
       if (i == 0 && !resol) band[j][0] = s1c;
       if ((S1s[i] == 0. || S2s[i] == 0.) && j == 0) ++reject[j];
-      if (fabs(S1s[i]) > (s1c - binWidth / 2.) &&
-          fabs(S1s[i]) <= (s1c + binWidth / 2.)) {
+      if (std::abs(S1s[i]) > (s1c - binWidth / 2.) &&
+          std::abs(S1s[i]) <= (s1c + binWidth / 2.)) {
         if (S1s[i] >= 0. && S2s[i] >= 0.) {
           if (save) {
             signals[j].push_back(S1s[i]);
@@ -907,7 +907,7 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
     signals[j].erase(signals[j].begin());
     numPts = (double)signals[j].size();
     if (numPts <= 0 && resol) {
-      for (i = 0; i < S1s.size(); ++i) band[j][0] += fabs(S1s[i]);
+      for (i = 0; i < S1s.size(); ++i) band[j][0] += std::abs(S1s[i]);
       numPts = S1s.size();
     }
     if (resol) band[j][0] /= numPts;
@@ -1088,7 +1088,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
 
       // Retry fit if it does not converge.
       //if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 2. || band[j][7] > 10. || band[j][3] > 1. || band[j][6] > 0.5 || band[j][2] <= 0. ) {
-      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 1. || fabs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
+      if ( chiSq > 10. || band[j][2] > 7. || band[j][5] > 1. || std::abs(band[j][4]) > 3. || band[j][7] > 10. || band[j][3] > 0.5 || band[j][6] > 0.1 ||
 	   band[j][2] <= 0. || band[j][3] <= 0. ) {
 	xiEstimate = fit_xi;
 	omegaEstimate = fit_omega;
@@ -1165,8 +1165,8 @@ double EstimateSkew ( double mean, double sigma, vector<double> data ) {
   for ( int i = 0; i < (int)data.size(); ++i )
     skew += pow((data[i]-xi)/omega,3.);
   skew /= (double)data.size();
-  skew = skew / fabs(skew) * std::min(0.7, fabs(skew)); // Sample skewness could theoretically be < -1 or > 1
-  double delta = skew / fabs(skew) * sqrt(TMath::Pi() / 2. * pow(fabs(skew),(2./3.)) / (pow(fabs(skew),(2./3.)) + pow(((4. - TMath::Pi()) / 2.),(2./3.))));
+  skew = skew / std::abs(skew) * std::min(0.7, std::abs(skew)); // Sample skewness could theoretically be < -1 or > 1
+  double delta = skew / std::abs(skew) * sqrt(TMath::Pi() / 2. * pow(std::abs(skew),(2./3.)) / (pow(std::abs(skew),(2./3.)) + pow(((4. - TMath::Pi()) / 2.),(2./3.))));
   double alpha = delta / sqrt ( 1. - delta * delta );
   return alpha;
 

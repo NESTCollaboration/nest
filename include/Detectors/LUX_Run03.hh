@@ -80,7 +80,7 @@ public:
     
     double radius = sqrt(pow(xPos_mm,2.)+pow(yPos_mm,2.));
     double amplitude = 307.9-0.3071*zPos_mm+0.0002257*pow(zPos_mm,2.);
-    double shape = 1.1525e-7*sqrt(fabs(zPos_mm-318.84));
+    double shape = 1.1525e-7*sqrt(std::abs(zPos_mm-318.84));
     double finalCorr = -shape * pow ( radius, 3. ) + amplitude;
     finalCorr /= 307.9;
     if ( (finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr)) && radius < radmax ) {

@@ -174,7 +174,7 @@ class NESTcalc {
   vector<vector<double>> photon_areas;
   vector<double> scintillation;  // return vector
   vector<double> newSpike;  // for re-doing spike counting more precisely
-
+  vector<double> ionization;
 
 
 public:
@@ -258,7 +258,7 @@ public:
                                const std::vector<double>& origScint);
   // GetSpike takes the extremely basic digital/integer number of spike counts
   // provided by GetS1 and does more realistic smearing
-  std::vector<double> GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+  std::vector<double>& GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                             double dt, double driftSpeed, uint64_t evtNum,
                             double dfield, CalculationMode mode, bool outputTiming,
                             vector<int64_t>& wf_time, vector<double>& wf_amp,

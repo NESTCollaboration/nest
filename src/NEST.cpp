@@ -771,6 +771,8 @@ NESTcalc::NESTcalc(VDetector* detector) {
     scintillation.reserve(9);
     newSpike.reserve(2);
 
+    ionization.reserve(9);
+
 }
 
 NESTcalc::~NESTcalc() {
@@ -1153,7 +1155,7 @@ vector<double>& NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, do
   return scintillation;
 }
 
-vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+vector<double>& NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                                double dt, double driftVelocity, uint64_t evtNum,
                                double dfield, CalculationMode mode, bool outputTiming,
                                vector<int64_t>& wf_time,
@@ -1166,7 +1168,10 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
   double g2 = g2_params[3];
   double gasGap = g2_params[4];
 
-  vector<double> ionization(9); double subtract[2] = { 0., 0. };
+  ionization.clear();
+  ionization.resize(9);
+
+   double subtract[2] = { 0., 0. };
   int i;
   bool eTrain = false;
   if (mode == CalculationMode::WaveformWithEtrain && !fdetector->get_inGas()) {
@@ -1176,7 +1181,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
   if (dfield < FIELD_MIN  //"zero"-drift-field detector has no S2
       || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. ||
       gasGap <= 0.) {
-    for (i = 0; i < 8; ++i) ionization[i] = 0.;
+    for (i = 0; i < 8; ++i) {
+        ionization[i] = 0.;
+    }
     return ionization;
   }
 

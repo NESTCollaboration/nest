@@ -244,7 +244,7 @@ public:
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
   virtual double FanoER(double density, double Nq_mean,double efield);
   //Fano-factor (and Fano-like additional energy resolution model) for gammas and betas (Lindhard==1)
-  std::vector<double>& GetS1(const QuantaResult& quanta, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+  const std::vector<double>& GetS1(const QuantaResult& quanta, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                             double driftSpeed,
                             double dS_mid, INTERACTION_TYPE species,
                             uint64_t evtNum, double dfield, double energy,
@@ -258,7 +258,7 @@ public:
                                const std::vector<double>& origScint);
   // GetSpike takes the extremely basic digital/integer number of spike counts
   // provided by GetS1 and does more realistic smearing
-  std::vector<double>& GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+  const std::vector<double>& GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                             double dt, double driftSpeed, uint64_t evtNum,
                             double dfield, CalculationMode mode, bool outputTiming,
                             vector<int64_t>& wf_time, vector<double>& wf_amp,

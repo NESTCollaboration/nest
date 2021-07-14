@@ -779,7 +779,7 @@ NESTcalc::~NESTcalc() {
   if (pulseFile) pulseFile.close();
 }
 
-vector<double>& NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, double truthPosY, double truthPosZ,
+const vector<double>& NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, double truthPosY, double truthPosZ,
                                double smearPosX, double smearPosY, double smearPosZ, double driftVelocity,
                                double dV_mid, INTERACTION_TYPE type_num,
                                uint64_t evtNum, double dfield, double energy,
@@ -1155,7 +1155,7 @@ vector<double>& NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, do
   return scintillation;
 }
 
-vector<double>& NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+const vector<double>& NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                                double dt, double driftVelocity, uint64_t evtNum,
                                double dfield, CalculationMode mode, bool outputTiming,
                                vector<int64_t>& wf_time,

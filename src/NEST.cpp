@@ -904,7 +904,6 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
 
 
     switch (current_mode) {
-
         case CalculationMode::Full:
         case CalculationMode::Waveform: {
 
@@ -975,7 +974,6 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                     }
                 }
             }
-
             break;
         }
         case CalculationMode::Parametric: {

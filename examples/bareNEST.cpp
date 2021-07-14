@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
   double Nphd_S2 =
       g2 * quanta.electrons * exp(-driftTime / detector->get_eLife_us());
 
-  // Vectors for saving times and amplitudes of waveforms (with useTiming and
+  // Vectors for saving times and amplitudes of waveforms (with calculationMode and
   // verbosity boolean flags both set to true in analysis.hh)
   vector<double> wf_amp;
   vector<int64_t> wf_time;
@@ -194,13 +194,13 @@ int main(int argc, char** argv) {
   // Calculate the S1 based on the quanta generated
   vector<double> scint =
     n.GetS1(quanta, truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2], vD, vD_middle, type_num, 0, field,
-	    keV, useTiming, verbosity, wf_time, wf_amp);
+	    keV, calculationMode, verbosity, wf_time, wf_amp);
 
   // Take care of gamma-X case for positions below cathode
   if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
   vector<double> scint2 =
     n.GetS2(quanta.electrons, truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2], driftTime, vD, 0, field,
-	    useTiming, verbosity, wf_time, wf_amp, g2_params);
+            calculationMode, verbosity, wf_time, wf_amp, g2_params);
 
   // If using the reconstructed energy, back-calculate energy as measured from
   // yields

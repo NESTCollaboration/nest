@@ -130,6 +130,12 @@ typedef enum {
 
 } INTERACTION_TYPE;
 
+
+enum class CalculationMode{
+    Full, Parametric, Hybrid, Waveform, WaveformWithEtrain
+};
+
+
 struct YieldResult {
   double PhotonYield;
   double ElectronYield;
@@ -165,7 +171,13 @@ class NESTcalc {
   static long double Factorial(double x);
   static double nCr(double n, double r);
 
- public:
+  vector<vector<double>> photon_areas;
+  vector<double> scintillation;  // return vector
+  vector<double> newSpike;  // for re-doing spike counting more precisely
+
+
+
+public:
   NESTcalc(const NESTcalc&) = delete;
   NESTcalc& operator=(const NESTcalc&) = delete;
   explicit NESTcalc(VDetector* detector);
@@ -232,11 +244,11 @@ class NESTcalc {
   //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
   virtual double FanoER(double density, double Nq_mean,double efield);
   //Fano-factor (and Fano-like additional energy resolution model) for gammas and betas (Lindhard==1)
-  std::vector<double> GetS1(const QuantaResult& quanta, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+  std::vector<double>& GetS1(const QuantaResult& quanta, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                             double driftSpeed,
                             double dS_mid, INTERACTION_TYPE species,
                             uint64_t evtNum, double dfield, double energy,
-                            int useTiming, bool outputTiming,
+                            CalculationMode mode, bool outputTiming,
                             vector<int64_t>& wf_time, vector<double>& wf_amp);
   // Very comprehensive conversion of the "original" intrinsic scintillation
   // photons into the many possible definitions of S1 as measured by
@@ -248,7 +260,7 @@ class NESTcalc {
   // provided by GetS1 and does more realistic smearing
   std::vector<double> GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                             double dt, double driftSpeed, uint64_t evtNum,
-                            double dfield, int useTiming, bool outputTiming,
+                            double dfield, CalculationMode mode, bool outputTiming,
                             vector<int64_t>& wf_time, vector<double>& wf_amp,
                             const vector<double>& g2_params);
   // Exhaustive conversion of the intrinsic ionization electrons into the many

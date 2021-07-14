@@ -766,36 +766,55 @@ YieldResult NESTcalc::YieldResultValidity(YieldResult& res, const double energy,
 NESTcalc::NESTcalc(VDetector* detector) {
   assert(detector);
   fdetector = detector;
+
+    photon_areas.reserve(2);
+    scintillation.reserve(9);
+    newSpike.reserve(2);
+
 }
 
 NESTcalc::~NESTcalc() {
   if (pulseFile) pulseFile.close();
 }
 
-vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, double truthPosY, double truthPosZ,
+vector<double>& NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, double truthPosY, double truthPosZ,
                                double smearPosX, double smearPosY, double smearPosZ, double driftVelocity,
                                double dV_mid, INTERACTION_TYPE type_num,
                                uint64_t evtNum, double dfield, double energy,
-                               int useTiming, bool outputTiming,
+                               CalculationMode mode, bool outputTiming,
                                vector<int64_t>& wf_time,
                                vector<double>& wf_amp) {
-  double truthPos[3] = { truthPosX, truthPosY, truthPosZ }; double smearPos[3] = { smearPosX, smearPosY, smearPosZ };
-  int Nph = quanta.photons; double subtract[2] = { 0., 0. };
-  
+
+  double truthPos[3] = { truthPosX, truthPosY, truthPosZ };
+  double smearPos[3] = { smearPosX, smearPosY, smearPosZ };
+
+  int Nph = quanta.photons;
+  double subtract[2] = { 0., 0. };
+
+  // This will clear and reset the vector values
+  photon_areas.clear();
+  photon_areas.resize(2);
+  scintillation.clear();
+  scintillation.resize(9);
+  newSpike.clear();
+  newSpike.resize(2);
+
+
   wf_time.clear();
   wf_amp.clear();
 
-  vector<double> photon_areas[2];
-  vector<double> scintillation(9);  // return vector
-  vector<double> newSpike(2);  // for re-doing spike counting more precisely
+
 
   // Add some variability in g1 drawn from a polynomial spline fit
   double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2], VDetector::fold);
   double posDepSm;
-  if ( XYcorr == 1 || XYcorr == 3 )
-    posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
-  else
-    posDepSm = fdetector->FitS1(0, 0, smearPos[2], VDetector::unfold);
+  if ( XYcorr == 1 || XYcorr == 3 ) {
+      posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
+  }
+  else {
+      posDepSm = fdetector->FitS1(0, 0, smearPos[2], VDetector::unfold);
+  }
+
   double dz_center = fdetector->get_TopDrift() -
                      dV_mid * fdetector->get_dtCntr();  // go from t to z
   posDep /=
@@ -807,11 +826,12 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
 
   // generate a number of PMT hits drawn from a binomial distribution.
   // Initialize number of photo-electrons
-  int nHits = BinomFluct ( Nph, g1_XYZ ), Nphe = 0;
+  int nHits = BinomFluct( Nph, g1_XYZ ), Nphe = 0;
   
   double eff = fdetector->get_sPEeff();
-  if ( eff < 1. )
-    eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits);
+  if ( eff < 1. ) {
+      eff += ((1. - eff) / (2. * double(fdetector->get_numPMTs()))) * double(nHits);
+  }
   //this functional form is just linear approximation taking us from sPEeff at ~few PMTs firing to 100% when there are enough photons detected for there to be *2* in each PMT
   eff = max ( 0., min ( eff, 1. ) );
   
@@ -820,85 +840,120 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
 
   // If single photo-electron efficiency is under 1 and the threshold is above 0
   // (some phe will be below threshold)
-  if ( useTiming != -1 ) { // digital nHits eventually becomes spikes (spike++) based upon threshold
-    
-    // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
-    double TruncGaussAlpha = -1. / fdetector->get_sPEres();
-    double LittlePhi_Alpha=(1./sqrt(2.*M_PI))*exp(-0.5*TruncGaussAlpha*TruncGaussAlpha);
-    double BigPhi_Alpha=0.5*(1.+erf(TruncGaussAlpha/sqrt(2.)));
-    double NewMean = 1. + ( LittlePhi_Alpha / ( 1. - BigPhi_Alpha ) ) * fdetector->get_sPEres();
-    
-    // Step through the pmt hits
-    for (int i = 0; i < nHits; ++i) {
-      // generate photo electron, integer count and area
-      double TruncGauss = 0.;
-      while ( TruncGauss <= 0. ) // real photo cathodes can't make negative phe
-	TruncGauss = RandomGen::rndm()->rand_gauss(1./NewMean,fdetector->get_sPEres());
-      double phe1 = TruncGauss +
-	RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
-				      fdetector->get_noiseB()[1]);
-      ++Nphe;
-      if ( phe1 > DBL_MAX ) phe1 = 1.; // for Box-Mueller fuck-ups
-      prob = RandomGen::rndm()->rand_uniform();
-      // zero the area if random draw determines it wouldn't have been observed.
-      if (prob > eff) {
-        phe1 = 0.;
-      }  // add an else with Nphe++ if not doing mc truth
-      // Generate a double photo electron if random draw allows it
-      double phe2 = 0.;
-      if (RandomGen::rndm()->rand_uniform() < fdetector->get_P_dphe()) {
-        // generate area and increment the photo-electron counter
-	TruncGauss = 0.;
-	while ( TruncGauss <= 0. )
-	  TruncGauss = RandomGen::rndm()->rand_gauss(1./NewMean,fdetector->get_sPEres());
-        phe2 = TruncGauss +
-	  RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
-					fdetector->get_noiseB()[1]);
-        ++Nphe;
-        if ( phe2 > DBL_MAX ) phe2 = 1.;
-        // zero the area if phe wouldn't have been observed
-        if (RandomGen::rndm()->rand_uniform() > eff &&
-            prob > eff) {
-          phe2 = 0.;
-        }  // add an else with Nphe++ if not doing mc truth
-        // The dphe occurs simultaneously to the first one from the same source
-        // photon. If the first one is seen, so should be the second one
-      }
-      // Save the phe area and increment the spike count (very perfect spike
-      // count) if area is above threshold
-      if ( useTiming >= 1 ) {
-        if ((phe1 + phe2) > fdetector->get_sPEthr()) {
-          pulseArea += phe1 + phe2;
-          ++spike;
-          photon_areas[0].push_back(phe1);
-          photon_areas[1].push_back(phe2);
-        }
-      }
-      else {  // use approximation to find timing
-        if ((phe1 + phe2) > fdetector->get_sPEthr() &&
-            (-20. * log(RandomGen::rndm()->rand_uniform()) <
-	     fdetector->get_coinWind() ||
-             nHits > fdetector->get_coinLevel())) {
-          ++spike;
-          pulseArea += phe1 + phe2;
-        }
-	else ;
-      }
-    }
+
+
+  CalculationMode current_mode = mode;
+  if(current_mode == CalculationMode::Hybrid && quanta.photons * g1_XYZ < fdetector->get_numPMTs()){
+      current_mode =  CalculationMode::Full;
+  }else if(current_mode == CalculationMode::Hybrid){
+      current_mode =  CalculationMode::Parametric;
   }
-  else {  // apply just an empirical efficiency by itself, without direct area threshold
-    Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
-    eff = fdetector->get_sPEeff();
-    if ( eff < 1. )
-      eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(Nphe);
-    eff = max ( 0., min ( eff, 1. ) );
-    double Nphe_det = BinomFluct ( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe() ) );
-    pulseArea = RandomGen::rndm()->rand_gauss ( Nphe_det, fdetector->get_sPEres() * sqrt(Nphe_det) );
-    //proper truncation not done here because this is meant to be approximation, quick and dirty
-    spike = (double)nHits;
+
+
+  switch (current_mode) {
+
+        case CalculationMode::Full:
+        case CalculationMode::Waveform:
+        {
+
+            // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
+            double TruncGaussAlpha = - 1. / fdetector->get_sPEres();
+            double LittlePhi_Alpha = (1./ sqrt(2. * M_PI)) * exp(-0.5 * TruncGaussAlpha*TruncGaussAlpha);
+            double BigPhi_Alpha    = 0.5 * (1. + erf(TruncGaussAlpha / sqrt(2.)));
+            double NewMean         = 1. + (LittlePhi_Alpha / ( 1. - BigPhi_Alpha)) * fdetector->get_sPEres();
+
+            // Step through the pmt hits
+            for (int i = 0; i < nHits; ++i) {
+                // generate photo electron, integer count and area
+                double TruncGauss = 0.;
+                while ( TruncGauss <= 0. ) { // real photo cathodes can't make negative phe
+                    TruncGauss = RandomGen::rndm()->rand_gauss(1. / NewMean, fdetector->get_sPEres());
+                }
+                double phe1 = TruncGauss +
+                              RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
+                                                            fdetector->get_noiseB()[1]);
+                ++Nphe;
+                if ( phe1 > DBL_MAX ) {
+                    phe1 = 1.; // for Box-Mueller fuck-ups
+                }
+                prob = RandomGen::rndm()->rand_uniform();
+                // zero the area if random draw determines it wouldn't have been observed.
+                if (prob > eff) {
+                    phe1 = 0.;
+                }  // add an else with Nphe++ if not doing mc truth
+                // Generate a double photo electron if random draw allows it
+
+                double phe2 = 0.;
+                if (RandomGen::rndm()->rand_uniform() < fdetector->get_P_dphe()) {
+                    // generate area and increment the photo-electron counter
+                    TruncGauss = 0.;
+                    while ( TruncGauss <= 0. ) {
+                        TruncGauss = RandomGen::rndm()->rand_gauss(1. / NewMean, fdetector->get_sPEres());
+                    }
+                    phe2 = TruncGauss +
+                           RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
+                                                         fdetector->get_noiseB()[1]);
+                    ++Nphe;
+                    if ( phe2 > DBL_MAX ) {
+                        phe2 = 1.;
+                    }
+                    // zero the area if phe wouldn't have been observed
+                    if (RandomGen::rndm()->rand_uniform() > eff &&
+                        prob > eff) {
+                        phe2 = 0.;
+                    }  // add an else with Nphe++ if not doing mc truth
+                    // The dphe occurs simultaneously to the first one from the same source
+                    // photon. If the first one is seen, so should be the second one
+                }
+                // Save the phe area and increment the spike count (very perfect spike
+                // count) if area is above threshold
+                if ( current_mode == CalculationMode::Waveform ) {
+                    if ((phe1 + phe2) > fdetector->get_sPEthr()) {
+                        pulseArea += phe1 + phe2;
+                        ++spike;
+                        photon_areas[0].push_back(phe1);
+                        photon_areas[1].push_back(phe2);
+                    }
+                }
+                else {  // use approximation to find timing
+                    if ((phe1 + phe2) > fdetector->get_sPEthr()
+                        && (-20. * log(RandomGen::rndm()->rand_uniform()) < fdetector->get_coinWind()
+                            || nHits > fdetector->get_coinLevel())) {
+                        ++spike;
+                        pulseArea += phe1 + phe2;
+                    }
+                }
+            }
+
+            break;
+        }
+        case CalculationMode::Parametric:
+        {
+            Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
+            eff = fdetector->get_sPEeff();
+            if ( eff < 1. )
+                eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(Nphe);
+            eff = max ( 0., min ( eff, 1. ) );
+            double Nphe_det = BinomFluct ( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe() ) );
+            pulseArea = RandomGen::rndm()->rand_gauss ( Nphe_det, fdetector->get_sPEres() * sqrt(Nphe_det) );
+            //proper truncation not done here because this is meant to be approximation, quick and dirty
+            spike = (double)nHits;
+
+            break;
+        }
+        case CalculationMode::Hybrid:
+        {
+
+            break;
+        }
+
+
+
   }
+
+
   
-  if ( useTiming >= 1 ) {
+  if ( current_mode == CalculationMode::Waveform ) {
     
     vector<double> PEperBin, AreaTable[2], TimeTable[2];
     int numPts = podLength - 100 * SAMPLE_SIZE;
@@ -934,55 +989,67 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
       for (int kk = 0; kk < total; ++kk) {
         pTime = PEperBin[0] + kk * SAMPLE_SIZE;
         index = int(floor(pTime / SAMPLE_SIZE + 0.5)) + numPts / 2;
-        if (index < 0) index = 0;
-        if (index >= numPts) index = numPts - 1;
-        AreaTable[whichArray][index] +=
-	  10. * (1. + PULSEHEIGHT) *
-	  (photon_areas[0][ii] + photon_areas[1][ii]) /
-	  (PULSE_WIDTH * sqrt(2. * M_PI)) *
-	  exp(-pow(pTime - photon_times[ii], 2.) /
-	      (2. * PULSE_WIDTH * PULSE_WIDTH));
+        if (index < 0) {
+            index = 0;
+        }
+        if (index >= numPts) {
+            index = numPts - 1;
+        }
+        AreaTable[whichArray][index] += 10. * (1. + PULSEHEIGHT)
+	                                     * (photon_areas[0][ii] + photon_areas[1][ii])
+	                                     / (PULSE_WIDTH * sqrt(2. * M_PI))
+	                                     * exp(-pow(pTime - photon_times[ii], 2.)
+	                                     / (2. * PULSE_WIDTH * PULSE_WIDTH));
       }
       if (total >= 0) {
-        if (PEperBin[0] < min) min = PEperBin[0];
+        if (PEperBin[0] < min) {
+            min = PEperBin[0];
+        }
         TimeTable[0].push_back(PEperBin[0]);
       }
-      // else
-      // TimeTable[0].push_back(-999.); TimeTable[1].push_back(photon_areas[0][ii]+photon_areas[1][ii]);
     }
     double tRandOffset = (SAMPLE_SIZE/2.)*(2.*RandomGen::rndm()->rand_uniform()-1.); //-16,20 was good for LUX, but made weird skew in fP
     for (ii = 0; ii < numPts; ++ii) {
-      if ((AreaTable[0][ii] + AreaTable[1][ii]) <= PULSEHEIGHT) continue;
+      if ((AreaTable[0][ii] + AreaTable[1][ii]) <= PULSEHEIGHT) {
+          continue;
+      }
       
       wf_time.push_back((ii - numPts / 2) * SAMPLE_SIZE);
       wf_amp.push_back(AreaTable[0][ii] + AreaTable[1][ii]);
       
       if (outputTiming) {
         char line[80];
-	if ( AreaTable[0][ii] > PHE_MAX ) subtract[0] = AreaTable[0][ii] - PHE_MAX;
-	else subtract[0] = 0.0;
-	if ( AreaTable[1][ii] > PHE_MAX ) subtract[1] = AreaTable[1][ii] - PHE_MAX;
-	else subtract[1] = 0.0;
+	    if ( AreaTable[0][ii] > PHE_MAX ) {
+	        subtract[0] = AreaTable[0][ii] - PHE_MAX;
+	    }
+	    else {
+	        subtract[0] = 0.0;
+	    }
+        if ( AreaTable[1][ii] > PHE_MAX ) {
+            subtract[1] = AreaTable[1][ii] - PHE_MAX; }
+        else {
+            subtract[1] = 0.0;
+        }
         sprintf(line, "%llu\t%lld\t%.3f\t%.3f", evtNum, wf_time.back() + (int64_t)tRandOffset,
 		AreaTable[0][ii]-subtract[0], AreaTable[1][ii]-subtract[1]);
         pulseFile << line << flush;
       }
       
-      if (((ii - numPts / 2) * SAMPLE_SIZE - (int)min) >
-	  fdetector->get_coinWind() &&
-          nHits <= fdetector->get_coinLevel()) {
+      if (((ii - numPts / 2) * SAMPLE_SIZE - (int)min) > fdetector->get_coinWind()
+            && nHits <= fdetector->get_coinLevel())
+      {
         pulseArea -= (AreaTable[0][ii] + AreaTable[1][ii]);
         pulseFile << "\t0" << endl;
       }
-      else
-        pulseFile << "\t1" << endl;
+      else {
+          pulseFile << "\t1" << endl;
+      }
     }
     for (ii = 0; ii < TimeTable[0].size(); ++ii) {
       if ((TimeTable[0][ii] - min) > fdetector->get_coinWind() &&
-          nHits <= fdetector->get_coinLevel())
-        --spike;
-      // char line[80]; sprintf ( line, "%lu\t%.1f\t%.2f", evtNum,
-      // TimeTable[0][ii]+24., TimeTable[1][ii] ); pulseFile << line << endl;
+          nHits <= fdetector->get_coinLevel()) {
+          --spike;
+      }
     }
   }
   
@@ -1088,7 +1155,7 @@ vector<double> NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, dou
 
 vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
                                double dt, double driftVelocity, uint64_t evtNum,
-                               double dfield, int useTiming, bool outputTiming,
+                               double dfield, CalculationMode mode, bool outputTiming,
                                vector<int64_t>& wf_time,
                                vector<double>& wf_amp,
                                const vector<double>& g2_params) {
@@ -1102,7 +1169,9 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
   vector<double> ionization(9); double subtract[2] = { 0., 0. };
   int i;
   bool eTrain = false;
-  if (useTiming >= 2 && !fdetector->get_inGas()) eTrain = true;
+  if (mode == CalculationMode::WaveformWithEtrain && !fdetector->get_inGas()) {
+      eTrain = true;
+  }
 
   if (dfield < FIELD_MIN  //"zero"-drift-field detector has no S2
       || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. ||
@@ -1116,9 +1185,12 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
 				   truthPos[0], truthPos[1], VDetector::fold);  // XY is always in mm now, never cm
   double posDepSm;
   if ( XYcorr == 2 || XYcorr == 3 )
-    posDepSm = fdetector->FitS2(smearPos[0], smearPos[1], VDetector::unfold);
-  else
-    posDepSm = fdetector->FitS2(0, 0, VDetector::unfold);
+  {
+      posDepSm = fdetector->FitS2(smearPos[0], smearPos[1], VDetector::unfold);
+  }
+  else {
+      posDepSm = fdetector->FitS2(0, 0, VDetector::unfold);
+  }
   posDep /= fdetector->FitS2(0., 0., VDetector::fold);
   posDepSm /= fdetector->FitS2(0., 0., VDetector::unfold);
   double dz = fdetector->get_TopDrift() - dt * driftVelocity;
@@ -1132,15 +1204,18 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
   uint64_t Nph = 0, nHits = 0, Nphe = 0;
   double pulseArea = 0.;
   
-  if ( useTiming >= 1 ) {
+  if (mode == CalculationMode::Waveform || mode == CalculationMode::WaveformWithEtrain ) {
+
     uint64_t k;
     int stopPoint;
     double tau1, tau2, E_liq, amp2;
     vector<double> electronstream, AreaTableBot[2], AreaTableTop[2], TimeTable;
-    if (eTrain)
-      stopPoint = BinomFluct(Ne, exp(-dt / fdetector->get_eLife_us()));
-    else
-      stopPoint = Nee;
+    if (eTrain) {
+        stopPoint = BinomFluct(Ne, exp(-dt / fdetector->get_eLife_us()));
+    }
+    else {
+        stopPoint = Nee;
+    }
     electronstream.resize(stopPoint, dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran = GetDiffTran_Liquid(dfield,false,fdetector->get_T_Kelvin(),ATOM_NUM);
@@ -1182,13 +1257,15 @@ vector<double> NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, doubl
       newX = truthPos[0] + sigX;
       newY = truthPos[1] + sigY;
       if (newX * newX + newY * newY >
-          fdetector->get_radmax() * fdetector->get_radmax())
-        continue;  // remove electrons from outside the maximum possible radius
-                   // (alternative is squeeze them, depending on your E-fields)
+          fdetector->get_radmax() * fdetector->get_radmax()) {
+          continue;  // remove electrons from outside the maximum possible radius
+          // (alternative is squeeze them, depending on your E-fields)
+      }
       DL_time = DL / driftVelocity;
       elecTravT += DL_time;
-      if (!fdetector->get_inGas() && fdetector->get_E_gas() != 0.)
-        elecTravT -= tauTrap * log(RandomGen::rndm()->rand_uniform());
+      if (!fdetector->get_inGas() && fdetector->get_E_gas() != 0.) {
+          elecTravT -= tauTrap * log(RandomGen::rndm()->rand_uniform());
+      }
       electronstream[i] += elecTravT;
       // char line[80]; sprintf ( line, "%lu\t%.0f\t%.3f\t%.3f", evtNum,
       // electronstream[i]*1e+3, newX, newY ); pulseFile << line << endl;

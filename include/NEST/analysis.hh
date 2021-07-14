@@ -12,7 +12,8 @@ bool PrintSubThr = true;
 bool MCtruthE = false;    // false means reconstructed energy
 bool MCtruthPos = false;  // false means reconstructed position
 
-int useTiming = 0;  // photon arrival times + pulse shapes (2=eTrains)
+NEST::CalculationMode calculationMode = NEST::CalculationMode::Full;
+// photon arrival times + pulse shapes (2=eTrains)
 // if 1 or 2 but verb off, then timing only saved as vectors
 // if -1 it means a special extra-fast mode for higher energies
 

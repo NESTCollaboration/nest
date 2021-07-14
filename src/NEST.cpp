@@ -845,11 +845,8 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     newSpike.clear();
     newSpike.resize(2);
 
-
     wf_time.clear();
     wf_amp.clear();
-
-
 
     // Add some variability in g1 drawn from a polynomial spline fit
     double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2], VDetector::fold);

@@ -894,7 +894,6 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     // If single photo-electron efficiency is under 1 and the threshold is above 0
     // (some phe will be below threshold)
 
-
     CalculationMode current_mode = mode;
     if (current_mode == CalculationMode::Hybrid && quanta.photons * g1_XYZ < fdetector->get_numPMTs()) {
         current_mode = CalculationMode::Full;
@@ -902,11 +901,9 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
         current_mode = CalculationMode::Parametric;
     }
 
-
     switch (current_mode) {
         case CalculationMode::Full:
         case CalculationMode::Waveform: {
-
             // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
             double TruncGaussAlpha = -1. / fdetector->get_sPEres();
             double LittlePhi_Alpha = (1. / sqrt(2. * M_PI)) * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
@@ -993,8 +990,6 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
 
             break;
         }
-
-
     }
 
 

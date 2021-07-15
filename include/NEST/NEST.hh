@@ -131,8 +131,12 @@ namespace NEST {
     } INTERACTION_TYPE;
 
 
-    enum class CalculationMode {
-        Full, Parametric, Hybrid, Waveform, WaveformWithEtrain
+    enum class S1CalculationMode {
+        Full, Parametric, Hybrid, Waveform
+    };
+
+    enum class S2CalculationMode {
+        Full, Waveform, WaveformWithEtrain
     };
 
 
@@ -280,7 +284,7 @@ namespace NEST {
               double driftSpeed,
               double dS_mid, INTERACTION_TYPE species,
               uint64_t evtNum, double dfield, double energy,
-              CalculationMode mode, bool outputTiming,
+              S1CalculationMode mode, bool outputTiming,
               vector<int64_t> &wf_time, vector<double> &wf_amp);
 
         // Very comprehensive conversion of the "original" intrinsic scintillation
@@ -296,7 +300,7 @@ namespace NEST {
         GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY,
               double smearPosZ,
               double dt, double driftSpeed, uint64_t evtNum,
-              double dfield, CalculationMode mode, bool outputTiming,
+              double dfield, S2CalculationMode mode, bool outputTiming,
               vector<int64_t> &wf_time, vector<double> &wf_amp,
               const vector<double> &g2_params);
 

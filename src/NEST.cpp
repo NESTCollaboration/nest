@@ -827,7 +827,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                                       double smearPosX, double smearPosY, double smearPosZ, double driftVelocity,
                                       double dV_mid, INTERACTION_TYPE type_num,
                                       uint64_t evtNum, double dfield, double energy,
-                                      CalculationMode mode, bool outputTiming,
+                                      S1CalculationMode mode, bool outputTiming,
                                       vector<int64_t> &wf_time,
                                       vector<double> &wf_amp) {
 
@@ -891,16 +891,16 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     // If single photo-electron efficiency is under 1 and the threshold is above 0
     // (some phe will be below threshold)
 
-    CalculationMode current_mode = mode;
-    if (current_mode == CalculationMode::Hybrid && quanta.photons * g1_XYZ < fdetector->get_numPMTs()) {
-        current_mode = CalculationMode::Full;
-    } else if (current_mode == CalculationMode::Hybrid) {
-        current_mode = CalculationMode::Parametric;
+    S1CalculationMode current_mode = mode;
+    if (current_mode == S1CalculationMode::Hybrid && quanta.photons * g1_XYZ < fdetector->get_numPMTs()) {
+        current_mode = S1CalculationMode::Full;
+    } else if (current_mode == S1CalculationMode::Hybrid) {
+        current_mode = S1CalculationMode::Parametric;
     }
 
     switch (current_mode) {
-        case CalculationMode::Full:
-        case CalculationMode::Waveform: {
+        case S1CalculationMode::Full:
+        case S1CalculationMode::Waveform: {
             // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
             double TruncGaussAlpha = -1. / fdetector->get_sPEres();
             double LittlePhi_Alpha = (1. / sqrt(2. * M_PI)) * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
@@ -952,7 +952,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                 }
                 // Save the phe area and increment the spike count (very perfect spike
                 // count) if area is above threshold
-                if (current_mode == CalculationMode::Waveform) {
+                if (current_mode == S1CalculationMode::Waveform) {
                     if ((phe1 + phe2) > fdetector->get_sPEthr()) {
                         pulseArea += phe1 + phe2;
                         ++spike;
@@ -970,7 +970,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
             }
             break;
         }
-        case CalculationMode::Parametric: {
+        case S1CalculationMode::Parametric: {
             Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
             eff = fdetector->get_sPEeff();
             if (eff < 1.)
@@ -983,14 +983,14 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
 
             break;
         }
-        case CalculationMode::Hybrid: {
+        case S1CalculationMode::Hybrid: {
 
             break;
         }
     }
 
 
-    if (current_mode == CalculationMode::Waveform) {
+    if (current_mode == S1CalculationMode::Waveform) {
 
         vector<double> PEperBin, AreaTable[2], TimeTable[2];
         int numPts = podLength - 100 * SAMPLE_SIZE;
@@ -1194,7 +1194,7 @@ const vector<double> &
 NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY,
                 double smearPosZ,
                 double dt, double driftVelocity, uint64_t evtNum,
-                double dfield, CalculationMode mode, bool outputTiming,
+                double dfield, S2CalculationMode mode, bool outputTiming,
                 vector<int64_t> &wf_time,
                 vector<double> &wf_amp,
                 const vector<double> &g2_params) {
@@ -1212,7 +1212,7 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
     double subtract[2] = {0., 0.};
     int i;
     bool eTrain = false;
-    if (mode == CalculationMode::WaveformWithEtrain && !fdetector->get_inGas()) {
+    if (mode == S2CalculationMode::WaveformWithEtrain && !fdetector->get_inGas()) {
         eTrain = true;
     }
 
@@ -1253,7 +1253,7 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
     uint64_t Nph = 0, nHits = 0, Nphe = 0;
     double pulseArea = 0.;
 
-    if (mode == CalculationMode::Waveform || mode == CalculationMode::WaveformWithEtrain) {
+    if (mode == S2CalculationMode::Waveform || mode == S2CalculationMode::WaveformWithEtrain) {
 
         uint64_t k;
         int stopPoint;

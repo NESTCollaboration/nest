@@ -831,9 +831,6 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                                       vector<int64_t> &wf_time,
                                       vector<double> &wf_amp) {
 
-    double truthPos[3] = {truthPosX, truthPosY, truthPosZ};
-    double smearPos[3] = {smearPosX, smearPosY, smearPosZ};
-
     int Nph = quanta.photons;
     double subtract[2] = {0., 0.};
 
@@ -849,12 +846,12 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     wf_amp.clear();
 
     // Add some variability in g1 drawn from a polynomial spline fit
-    double posDep = fdetector->FitS1(truthPos[0], truthPos[1], truthPos[2], VDetector::fold);
+    double posDep = fdetector->FitS1(truthPosX, truthPosY, truthPosZ, VDetector::fold);
     double posDepSm;
     if (XYcorr == 1 || XYcorr == 3) {
-        posDepSm = fdetector->FitS1(smearPos[0], smearPos[1], smearPos[2], VDetector::unfold);
+        posDepSm = fdetector->FitS1(smearPosX, smearPosY, smearPosZ, VDetector::unfold);
     } else {
-        posDepSm = fdetector->FitS1(0, 0, smearPos[2], VDetector::unfold);
+        posDepSm = fdetector->FitS1(0, 0, smearPosZ, VDetector::unfold);
     }
 
     double dz_center = fdetector->get_TopDrift() -
@@ -1002,7 +999,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
         photonstream photon_emission_times =
                 GetPhotonTimes(type_num, total_photons, excitons, dfield, energy);
         photonstream photon_times = AddPhotonTransportTime(
-                photon_emission_times, truthPos[0], truthPos[1], truthPos[2]);
+                photon_emission_times, truthPosX, truthPosY, truthPosZ);
 
         if (outputTiming && !pulseFile.is_open()) {
             pulseFile.open("photon_times.txt");
@@ -1019,7 +1016,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
             int total = (unsigned int) PEperBin.size() - 1;
             int whichArray;
             if (RandomGen::rndm()->rand_uniform() <
-                fdetector->FitTBA(truthPos[0], truthPos[1], truthPos[2])[0])
+                fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[0])
                 whichArray = 0;
             else
                 whichArray = 1;
@@ -1155,7 +1152,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     if (spike >= 1. && spikeC > 0.) {
         // over-write spike with smeared version, ~real data. Last chance to read
         // out digital spike and spikeC in scintillation[6] and [7]
-        newSpike = GetSpike(Nph, smearPos[0], smearPos[1], smearPos[2],
+        newSpike = GetSpike(Nph, smearPosX, smearPosY, smearPosZ,
                             driftVelocity, dV_mid, scintillation);
         scintillation[6] = newSpike[0];  // S1 spike count (NOT adjusted for double
         // phe effect), IF sufficiently small nHits

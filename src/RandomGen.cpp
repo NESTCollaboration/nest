@@ -4,7 +4,7 @@
 using namespace std;
 
 // Global static pointer used to ensure a single instance of the class.
-RandomGen* RandomGen::m_pInstance = NULL;
+RandomGen* RandomGen::m_pInstance = nullptr;
 
 // Only allow one instance of class to be generated.
 RandomGen* RandomGen::rndm() {
@@ -25,7 +25,7 @@ void RandomGen::SetSeed(uint64_t s) {
 }
 
 double RandomGen::rand_uniform() {
-  return (double)(rng() - rng.min()) / (double)(rng.max() - rng.min());
+  return (static_cast<double>(rng()) - xoroshiro128plus64_min) / xoroshiro128plus64_minmax;
 }
 
 double RandomGen::rand_gauss ( double mean, double sigma ) {
@@ -33,13 +33,13 @@ double RandomGen::rand_gauss ( double mean, double sigma ) {
   //std::normal_distribution<double> norm(mean, sigma);
   //return norm(rng);
   double u = rand_uniform(), v = rand_uniform();
-  return mean + sigma * sqrt(-2. * log(u)) * cos(2. * M_PI * v);
+  return mean + sigma * sqrt2 * sqrt(-log(u)) * cos(two_PI * v);
   
 }
 
 double RandomGen::rand_exponential(double half_life) {
   double r = rand_uniform();
-  return log(1 - r) * -1 * half_life / log(2.);
+  return log(1 - r) * -1 * half_life / log2;
 }
 
 double RandomGen::rand_skewGauss(double xi, double omega, double alpha) { 

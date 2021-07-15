@@ -15,6 +15,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+include(cmake/gcem.cmake)
+
 
 
 set(NEST_CORE_SOURCES
@@ -36,6 +38,9 @@ set(NEST_CORE_HEADERS
 
 add_library(Core ${NEST_CORE_SOURCES} ${NEST_CORE_HEADERS})
 add_library(NEST::Core ALIAS Core)
+
+target_link_libraries(Core PUBLIC gcem)
+
 list(APPEND NEST_TARGETS "Core")
 list(APPEND NEST_LIBRARY_TARGETS "NEST::Core")
 

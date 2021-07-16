@@ -65,6 +65,7 @@
 #include "RandomGen.hh"
 #include "VDetector.hh"
 #include "ValidityTests.hh"
+#include "gcem.hpp"
 
 #include <cassert>
 #include <cfloat>
@@ -73,6 +74,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <array>
 #include <vector>
 #include <string>
 
@@ -183,6 +185,17 @@ namespace NEST {
         vector<double> ionization;
 
 
+
+        static constexpr double two_PI = 2. * M_PI;
+        static constexpr double four_minus_PI_div_2 = 0.5*(4. - M_PI);
+        static constexpr double sqrt2 = gcem::sqrt(2.);
+        static constexpr double sqrt2_PI = gcem::sqrt( 2. * M_PI );
+        static constexpr double inv_sqrt2_PI = 1./gcem::sqrt( 2. * M_PI );
+        static constexpr double sqrt2_div_PI =  gcem::sqrt(2./M_PI);
+        static constexpr double log2 = gcem::log(2.);
+
+
+
     public:
         NESTcalc(const NESTcalc &) = delete;
 
@@ -290,7 +303,7 @@ namespace NEST {
         // Very comprehensive conversion of the "original" intrinsic scintillation
         // photons into the many possible definitions of S1 as measured by
         // photo-sensors
-        std::vector<double> GetSpike(int Nph, double dx, double dy, double dz,
+        std::vector<double>& GetSpike(int Nph, double dx, double dy, double dz,
                                      double driftSpeed, double dS_mid,
                                      const std::vector<double> &origScint);
 

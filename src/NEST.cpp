@@ -138,7 +138,7 @@ photonstream NESTcalc::AddPhotonTransportTime(const photonstream &emitted_times,
     photonstream return_photons;
     for (auto t : emitted_times) {
         double newtime = t + fdetector->OptTrans(x, y, z);
-        return_photons.push_back(newtime);
+        return_photons.emplace_back(newtime);
     }
     return return_photons;
 }
@@ -152,7 +152,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
     for (int ip = 0; ip < total_photons; ++ip) {
         bool isExciton = false;
         if (ip < excitons) isExciton = true;
-        return_photons.push_back(PhotonTime(species, isExciton, dfield, energy));
+        return_photons.emplace_back(PhotonTime(species, isExciton, dfield, energy));
     }
 
     return return_photons;
@@ -812,11 +812,7 @@ NESTcalc::NESTcalc(VDetector *detector) {
     fdetector = detector;
 
     photon_areas.reserve(2);
-    scintillation.reserve(9);
-    newSpike.reserve(2);
-
-    ionization.reserve(9);
-
+    photon_areas.resize(2);
 }
 
 NESTcalc::~NESTcalc() {
@@ -835,12 +831,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     double subtract[2] = {0., 0.};
 
     // This will clear and reset the vector values
-    photon_areas.clear();
-    photon_areas.resize(2);
-    scintillation.clear();
-    scintillation.resize(9);
-    newSpike.clear();
-    newSpike.resize(2);
+    std::fill(scintillation.begin(), scintillation.end(), 0);
 
     wf_time.clear();
     wf_amp.clear();
@@ -873,11 +864,12 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
 
     // generate a number of PMT hits drawn from a binomial distribution.
     // Initialize number of photo-electrons
-    int nHits = BinomFluct(Nph, g1_XYZ), Nphe = 0;
+    int nHits = static_cast<int>(BinomFluct(Nph, g1_XYZ));
+    int Nphe = 0;
 
     double eff = fdetector->get_sPEeff();
     if (eff < 1.) {
-        eff += ((1. - eff) / (2. * double(fdetector->get_numPMTs()))) * double(nHits);
+        eff += ((1. - eff) / (2. * static_cast<double>(fdetector->get_numPMTs()))) * static_cast<double>(nHits);
     }
     //this functional form is just linear approximation taking us from sPEeff at ~few PMTs firing to 100% when there are enough photons detected for there to be *2* in each PMT
     eff = max(0., min(eff, 1.));
@@ -900,8 +892,8 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
         case S1CalculationMode::Waveform: {
             // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
             double TruncGaussAlpha = -1. / fdetector->get_sPEres();
-            double LittlePhi_Alpha = (1. / sqrt(2. * M_PI)) * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
-            double BigPhi_Alpha = 0.5 * (1. + erf(TruncGaussAlpha / sqrt(2.)));
+            double LittlePhi_Alpha = inv_sqrt2_PI * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
+            double BigPhi_Alpha = 0.5 * (1. + erf(TruncGaussAlpha / sqrt2));
             double NewMean = 1. + (LittlePhi_Alpha / (1. - BigPhi_Alpha)) * fdetector->get_sPEres();
 
             // Step through the pmt hits
@@ -953,8 +945,8 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                     if ((phe1 + phe2) > fdetector->get_sPEthr()) {
                         pulseArea += phe1 + phe2;
                         ++spike;
-                        photon_areas[0].push_back(phe1);
-                        photon_areas[1].push_back(phe2);
+                        photon_areas[0].emplace_back(phe1);
+                        photon_areas[1].emplace_back(phe2);
                     }
                 } else {  // use approximation to find timing
                     if ((phe1 + phe2) > fdetector->get_sPEthr()
@@ -968,15 +960,16 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
             break;
         }
         case S1CalculationMode::Parametric: {
-            Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
+            Nphe = nHits + static_cast<int>(BinomFluct(nHits, fdetector->get_P_dphe()));
             eff = fdetector->get_sPEeff();
-            if (eff < 1.)
-                eff += ((1. - eff) / (2. * double(fdetector->get_numPMTs()))) * double(Nphe);
+            if (eff < 1.) {
+                eff += ((1. - eff) / (2. * static_cast<double>(fdetector->get_numPMTs()))) * static_cast<double>(Nphe);
+            }
             eff = max(0., min(eff, 1.));
-            double Nphe_det = BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe()));
+            auto Nphe_det = static_cast<double>(BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())));
             pulseArea = RandomGen::rndm()->rand_gauss(Nphe_det, fdetector->get_sPEres() * sqrt(Nphe_det));
             //proper truncation not done here because this is meant to be approximation, quick and dirty
-            spike = (double) nHits;
+            spike = static_cast<double>(nHits);
 
             break;
         }
@@ -1013,13 +1006,15 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
             PEperBin.clear();
             PEperBin = fdetector->SinglePEWaveForm(
                     photon_areas[0][ii] + photon_areas[1][ii], photon_times[ii]);
-            int total = (unsigned int) PEperBin.size() - 1;
+            int total = static_cast<int>(PEperBin.size()) - 1;
             int whichArray;
             if (RandomGen::rndm()->rand_uniform() <
-                fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[0])
+                fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[0]) {
                 whichArray = 0;
-            else
+            }
+            else {
                 whichArray = 1;
+            }
             for (int kk = 0; kk < total; ++kk) {
                 pTime = PEperBin[0] + kk * SAMPLE_SIZE;
                 index = int(floor(pTime / SAMPLE_SIZE + 0.5)) + numPts / 2;
@@ -1031,7 +1026,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                 }
                 AreaTable[whichArray][index] += 10. * (1. + PULSEHEIGHT)
                                                 * (photon_areas[0][ii] + photon_areas[1][ii])
-                                                / (PULSE_WIDTH * sqrt(2. * M_PI))
+                                                / (PULSE_WIDTH * sqrt2_PI)
                                                 * exp(-pow(pTime - photon_times[ii], 2.)
                                                       / (2. * PULSE_WIDTH * PULSE_WIDTH));
             }
@@ -1039,7 +1034,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                 if (PEperBin[0] < min) {
                     min = PEperBin[0];
                 }
-                TimeTable[0].push_back(PEperBin[0]);
+                TimeTable[0].emplace_back(PEperBin[0]);
             }
         }
         double tRandOffset = (SAMPLE_SIZE / 2.) * (2. * RandomGen::rndm()->rand_uniform() -
@@ -1049,8 +1044,8 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                 continue;
             }
 
-            wf_time.push_back((ii - numPts / 2) * SAMPLE_SIZE);
-            wf_amp.push_back(AreaTable[0][ii] + AreaTable[1][ii]);
+            wf_time.emplace_back((ii - numPts / 2) * SAMPLE_SIZE);
+            wf_amp.emplace_back(AreaTable[0][ii] + AreaTable[1][ii]);
 
             if (outputTiming) {
                 char line[80];
@@ -1092,7 +1087,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
 
     if (fdetector->get_noiseQ()[0] != 0) {
         pulseArea = RandomGen::rndm()->rand_gauss(pulseArea,
-                                                  sqrt(pow(fdetector->get_noiseQ()[0] * pow(pulseArea, 2), 2) +
+                                                  sqrt(pow(fdetector->get_noiseQ()[0] * pulseArea * pulseArea, 2) +
                                                        pow(fdetector->get_noiseL()[0] * pulseArea, 2)));
     } else {
         pulseArea = RandomGen::rndm()->rand_gauss(pulseArea, fdetector->get_noiseL()[0] * pulseArea);
@@ -1152,7 +1147,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     if (spike >= 1. && spikeC > 0.) {
         // over-write spike with smeared version, ~real data. Last chance to read
         // out digital spike and spikeC in scintillation[6] and [7]
-        newSpike = GetSpike(Nph, smearPosX, smearPosY, smearPosZ,
+        GetSpike(Nph, smearPosX, smearPosY, smearPosZ,
                             driftVelocity, dV_mid, scintillation);
         scintillation[6] = newSpike[0];  // S1 spike count (NOT adjusted for double
         // phe effect), IF sufficiently small nHits
@@ -1195,17 +1190,15 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
                 vector<int64_t> &wf_time,
                 vector<double> &wf_amp,
                 const vector<double> &g2_params) {
-    double truthPos[3] = {truthPosX, truthPosY, truthPosZ};
-    double smearPos[3] = {smearPosX, smearPosY, smearPosZ};
+
     double elYield = g2_params[0];
     double ExtEff = g2_params[1];
     double SE = g2_params[2];
     double g2 = g2_params[3];
     double gasGap = g2_params[4];
 
-    ionization.clear();
-    ionization.resize(9);
-
+    std::fill(ionization.begin(), ionization.end(), 0);
+    
     double subtract[2] = {0., 0.};
     int i;
     bool eTrain = false;
@@ -1224,10 +1217,10 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
 
     // Add some variability in g1_gas drawn from a polynomial spline fit
     double posDep = fdetector->FitS2(
-            truthPos[0], truthPos[1], VDetector::fold);  // XY is always in mm now, never cm
+            truthPosX, truthPosY, VDetector::fold);  // XY is always in mm now, never cm
     double posDepSm;
     if (XYcorr == 2 || XYcorr == 3) {
-        posDepSm = fdetector->FitS2(smearPos[0], smearPos[1], VDetector::unfold);
+        posDepSm = fdetector->FitS2(smearPosX, smearPosY, VDetector::unfold);
     } else {
         posDepSm = fdetector->FitS2(0, 0, VDetector::unfold);
     }
@@ -1298,11 +1291,11 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
             elecTravT = 0.;  // resetting for the current electron
             DL = RandomGen::rndm()->rand_gauss(0., sigmaDL);
             DT = std::abs(RandomGen::rndm()->rand_gauss(0., sigmaDT));
-            phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+            phi = two_PI * RandomGen::rndm()->rand_uniform();
             sigX = DT * cos(phi);
             sigY = DT * sin(phi);
-            newX = truthPos[0] + sigX;
-            newY = truthPos[1] + sigY;
+            newX = truthPosX + sigX;
+            newY = truthPosY + sigY;
             if (newX * newX + newY * newY >
                 fdetector->get_radmax() * fdetector->get_radmax()) {
                 continue;  // remove electrons from outside the maximum possible radius
@@ -1338,7 +1331,7 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
             Nphe += uint64_t(SE);
             DL = RandomGen::rndm()->rand_gauss(0., sigmaDLg);
             DT = RandomGen::rndm()->rand_gauss(0., sigmaDTg);
-            phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+            phi = two_PI * RandomGen::rndm()->rand_uniform();
             sigX = DT * cos(phi);
             sigY = DT * sin(phi);
             newX += sigX;
@@ -1371,14 +1364,14 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
                                 photon_times[k];
                 if (offset < min) min = offset;
                 if (RandomGen::rndm()->rand_uniform() <
-                    fdetector->FitTBA(truthPos[0], truthPos[1], truthPos[2])[1]) {
-                    AreaTableBot[0].push_back(phe);
-                    AreaTableTop[0].push_back(0.0);
+                    fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1]) {
+                    AreaTableBot[0].emplace_back(phe);
+                    AreaTableTop[0].emplace_back(0.0);
                 } else {
-                    AreaTableBot[0].push_back(0.0);
-                    AreaTableTop[0].push_back(phe);
+                    AreaTableBot[0].emplace_back(0.0);
+                    AreaTableTop[0].emplace_back(phe);
                 }
-                TimeTable.push_back(offset);
+                TimeTable.emplace_back(offset);
                 // char line[80]; sprintf ( line, "%lu\t%.0f\t%.2f\t%i", evtNum, offset,
                 // phe, (int)(i<Nee) ); pulseFile << line << endl;
             }
@@ -1403,20 +1396,20 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
                 if (index >= numPts) index = numPts - 1;
                 if (ValidityTests::nearlyEqual(AreaTableBot[0][k], 0.0))
                     AreaTableTop[1][index] += 10. * AreaTableTop[0][k] /
-                                              (PULSE_WIDTH * sqrt(2. * M_PI)) *
+                                              (PULSE_WIDTH * sqrt2_PI) *
                                               exp(-pow(eTime - TimeTable[k] + min, 2.) /
                                                   (2. * PULSE_WIDTH * PULSE_WIDTH));
                 else
                     AreaTableBot[1][index] += 10. * AreaTableBot[0][k] /
-                                              (PULSE_WIDTH * sqrt(2. * M_PI)) *
+                                              (PULSE_WIDTH * sqrt2_PI) *
                                               exp(-pow(eTime - TimeTable[k] + min, 2.) /
                                                   (2. * PULSE_WIDTH * PULSE_WIDTH));
             }
         }
         for (k = 0; k < numPts; ++k) {
             if ((AreaTableBot[1][k] + AreaTableTop[1][k]) <= PULSEHEIGHT) continue;
-            wf_time.push_back(k * SAMPLE_SIZE + int64_t(min + SAMPLE_SIZE / 2.));
-            wf_amp.push_back(AreaTableBot[1][k] + AreaTableTop[1][k]);
+            wf_time.emplace_back(k * SAMPLE_SIZE + int64_t(min + SAMPLE_SIZE / 2.));
+            wf_amp.emplace_back(AreaTableBot[1][k] + AreaTableTop[1][k]);
 
             if (outputTiming) {
                 char line[80];
@@ -1459,10 +1452,10 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
     double NphdC = pulseAreaC / (1. + fdetector->get_P_dphe());
 
     double S2b = RandomGen::rndm()->rand_gauss(
-            fdetector->FitTBA(truthPos[0], truthPos[1], truthPos[2])[1] * pulseArea,
-            sqrt(fdetector->FitTBA(truthPos[0], truthPos[1], truthPos[2])[1] *
+            fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1] * pulseArea,
+            sqrt(fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1] *
                  pulseArea *
-                 (1. - fdetector->FitTBA(truthPos[0], truthPos[1], truthPos[2])[1])));
+                 (1. - fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1])));
     double S2bc =
             S2b / exp(-dt / fdetector->get_eLife_us()) /
             posDepSm;  // for detectors using S2 bottom-only in their analyses
@@ -1583,7 +1576,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     if (verbosity) {
         for (int i = 0; i < 10000; ++i) { // calculate properly the width (1-sigma std dev) in the SE size
             Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield, sqrt(fdetector->get_s2Fano() * elYield)) + 0.5));
-            phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+            phi = two_PI * RandomGen::rndm()->rand_uniform();
             r = fdetector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());
             x = r * cos(phi);
             y = r * sin(phi);
@@ -1634,10 +1627,11 @@ double NESTcalc::nCr(double n, double r) {
     return Factorial(n) / (Factorial(r) * Factorial(n - r));
 }
 
-vector<double> NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
+vector<double>& NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
                                   double driftSpeed, double dS_mid,
                                   const vector<double> &oldScint) {
-    vector<double> newSpike(2);
+
+    std::fill(newSpike.begin(), newSpike.end(), 0);
 
     if (oldScint[7] > SPIKES_MAXM) {
         newSpike[0] = oldScint[4];
@@ -1903,7 +1897,7 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
                                                  zz));  // update x and y if you want 3-D fields
         }
 
-        speedTable.push_back((zz - pos_z) / driftTime);  // uses highest zz
+        speedTable.emplace_back((zz - pos_z) / driftTime);  // uses highest zz
     }
 
     return speedTable;
@@ -2167,7 +2161,7 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDT() {
                                {220053,  27.9686}};
     for (auto &iP : modelDT) {
         std::pair<double, double> thePair(iP[0], iP[1]);
-        output.push_back(thePair);
+        output.emplace_back(thePair);
     }
     return output;
 }
@@ -2204,7 +2198,7 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDL() {
                                {220053,  0.0900259}};
     for (auto &iP : modelDL) {
         std::pair<double, double> thePair(iP[0], iP[1]);
-        output.push_back(thePair);
+        output.emplace_back(thePair);
     }
     return output;
 }

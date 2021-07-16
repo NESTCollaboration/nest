@@ -813,6 +813,10 @@ NESTcalc::NESTcalc(VDetector *detector) {
 
     photon_areas.reserve(2);
     photon_areas.resize(2);
+    scintillation.resize(9);
+    newSpike.resize(2);
+    ionization.resize(9);
+
 }
 
 NESTcalc::~NESTcalc() {

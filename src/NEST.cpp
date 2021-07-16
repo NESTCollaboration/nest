@@ -1634,7 +1634,6 @@ double NESTcalc::nCr(double n, double r) {
 vector<double>& NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
                                   double driftSpeed, double dS_mid,
                                   const vector<double> &oldScint) {
-
     std::fill(newSpike.begin(), newSpike.end(), 0);
 
     if (oldScint[7] > SPIKES_MAXM) {

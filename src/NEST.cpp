@@ -1245,8 +1245,8 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
     uint64_t Nph = 0, nHits = 0, Nphe = 0;
     double pulseArea = 0.;
 
-    if (mode == S2CalculationMode::Waveform || mode == S2CalculationMode::WaveformWithEtrain) {
-
+    if (mode == S2CalculationMode::Waveform || mode == S2CalculationMode::WaveformWithEtrain)
+    {
         uint64_t k;
         int stopPoint;
         double tau1, tau2, E_liq, amp2;
@@ -1631,7 +1631,8 @@ double NESTcalc::nCr(double n, double r) {
 
 vector<double>& NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
                                   double driftSpeed, double dS_mid,
-                                  const vector<double> &oldScint) {
+                                  const vector<double> &oldScint)
+{
     std::fill(newSpike.begin(), newSpike.end(), 0);
 
     if (oldScint[7] > SPIKES_MAXM) {

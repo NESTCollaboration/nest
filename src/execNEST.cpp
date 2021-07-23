@@ -97,9 +97,6 @@ int main(int argc, char** argv) {
     no_seed = false;
     FreeParam.clear(); NuisParam.clear();
     verbosity = false;
-      s1CalculationMode = S1CalculationMode::Full;
-      s2CalculationMode = S2CalculationMode::Full;
-    
     
     if ( type == "ER" ) {
       
@@ -1014,10 +1011,7 @@ vector<double> signal1, signal2, signalE, vTable;
 
         if( s1CalculationMode == S1CalculationMode::Full
             || s1CalculationMode ==  S1CalculationMode::Hybrid
-            || s1CalculationMode == S1CalculationMode::Waveform
-            || s2CalculationMode == S2CalculationMode::Full
-            || s2CalculationMode == S2CalculationMode::Waveform
-            || s2CalculationMode == S2CalculationMode::WaveformWithEtrain) {
+            || s1CalculationMode == S1CalculationMode::Waveform ) {
 
           if(detector->get_sPEthr() >= 0. && detector->get_sPEres() > 0. && eff > 0.) {
             MultFact = 0.5 * (1. + erf((detector->get_sPEthr() - 1.) / (detector->get_sPEres() * sqrt(2.)))) /

@@ -97,7 +97,6 @@ int main(int argc, char** argv) {
     no_seed = false;
     FreeParam.clear(); NuisParam.clear();
     verbosity = false;
-    useTiming = 0; //-1 for faster (less accurate)
     
     if ( type == "ER" ) {
       
@@ -263,10 +262,10 @@ NESTObservableArray runNESTvec ( VDetector* detector, INTERACTION_TYPE particleT
     quanta = result.quanta;
     vD = n.SetDriftVelocity(detector->get_T_Kelvin(),rho,useField);
     scint = n.GetS1(quanta,truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2],
-		    vD,vD,particleType,i,useField,eList[i],0,verbosity,wf_time,wf_amp); //0 means useTiming = 0
+		    vD,vD,particleType,i,useField,eList[i],NEST::S1CalculationMode::Full,verbosity,wf_time,wf_amp);
     driftTime = (detector->get_TopDrift()-z)/vD; //vD,vDmiddle assumed same (uniform field)
     scint2= n.GetS2(quanta.electrons,truthPos[0],truthPos[1],truthPos[2],smearPos[0],smearPos[1],smearPos[2],
-		    driftTime,vD,i,useField,0,verbosity,wf_time,wf_amp,g2_params);
+		    driftTime,vD,i,useField,S2CalculationMode::Full,verbosity,wf_time,wf_amp,g2_params);
     if ( scint[7] > PHE_MIN && scint2[7] > PHE_MIN ) { //unlike usual, kill (don't skip, just -> 0) sub-thr evts
       OutputResults.s1_nhits.push_back(std::abs(int(scint[0])));
       OutputResults.s1_nhits_thr.push_back(std::abs(int(scint[8])));
@@ -948,7 +947,7 @@ vector<double> signal1, signal2, signalE, vTable;
       vector<double> scint =
               n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0], smearPos[1], smearPos[2],
                       vD, vD_middle, type_num, j, field,
-                      keV, useTiming, verbosity, wf_time, wf_amp);
+                      keV, s1CalculationMode, verbosity, wf_time, wf_amp);
       if ( truthPos[2] < detector->get_cathode() &&
 	   !dEOdxBasis )
 	quanta.electrons=0;
@@ -957,7 +956,7 @@ vector<double> signal1, signal2, signalE, vTable;
       scint2 =
                 n.GetS2(quanta.electrons, truthPos[0], truthPos[1], truthPos[2], smearPos[0], smearPos[1], smearPos[2],
                         driftTime, vD, j, field,
-                        useTiming, verbosity, wf_time, wf_amp, g2_params);
+                        s2CalculationMode, verbosity, wf_time, wf_amp, g2_params);
       if ( dEOdxBasis ) {
 	driftTime = (detector->get_TopDrift()-pos_z)/vD_middle;
 	scint2[7] *= exp(driftTime/detector->get_eLife_us());
@@ -1009,7 +1008,11 @@ vector<double> signal1, signal2, signalE, vTable;
       double Nph = 0.0, Ne = 0.0;
       if(!MCtruthE) {
         double MultFact = 1., eff = detector->get_sPEeff();
-        if(useTiming >= 0) {
+
+        if( s1CalculationMode == S1CalculationMode::Full
+            || s1CalculationMode ==  S1CalculationMode::Hybrid
+            || s1CalculationMode == S1CalculationMode::Waveform ) {
+
           if(detector->get_sPEthr() >= 0. && detector->get_sPEres() > 0. && eff > 0.) {
             MultFact = 0.5 * (1. + erf((detector->get_sPEthr() - 1.) / (detector->get_sPEres() * sqrt(2.)))) /
                        (detector->get_sPEres() * sqrt(2. * M_PI));
@@ -1407,5 +1410,4 @@ void GetEnergyRes ( vector<double> Es ) {
   energies[1] = sqrt(energies[1]);
 
   energies[2] = numerator / double(numPts);
-  
 }

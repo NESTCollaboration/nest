@@ -6,6 +6,7 @@
 #ifndef RANDOMGEN_HH
 #define RANDOMGEN_HH 1
 #include "xoroshiro.hh"
+#include "gcem.hpp"
 #include <math.h>
 #include <stdlib.h>
 #include <random>
@@ -31,6 +32,17 @@ class RandomGen {
   // Random number generator object for this class only
   //  std::ranlux24 rng;
   xoroshiro128plus64 rng;
+
+  static constexpr double   xoroshiro128plus64_min = static_cast<double>(xoroshiro128plus64::min());
+  static constexpr double   xoroshiro128plus64_minmax = static_cast<double>(xoroshiro128plus64::max() - xoroshiro128plus64::min());
+
+  static constexpr double two_PI = 2. * M_PI;
+  static constexpr double four_minus_PI_div_2 = 0.5*(4. - M_PI);
+  static constexpr double sqrt2 = gcem::sqrt(2.);
+  static constexpr double sqrt2_PI = gcem::sqrt( 2. * M_PI );
+  static constexpr double sqrt2_div_PI =  gcem::sqrt(2./M_PI);
+  static constexpr double log2 = gcem::log(2.);
+
 
   RandomGen()= default;                // private so that it cannot be manually called
   RandomGen(RandomGen const&);  // copy constructor is private

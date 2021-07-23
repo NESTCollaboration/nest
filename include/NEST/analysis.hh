@@ -12,11 +12,19 @@ bool PrintSubThr = true;
 bool MCtruthE = false;    // false means reconstructed energy
 bool MCtruthPos = false;  // false means reconstructed position
 
+// Setting the S1 and S2 calculation modes
 NEST::S1CalculationMode s1CalculationMode = NEST::S1CalculationMode::Full;
+// S1 calculation mode options are:
+// Full [Default]: calculating the pulse area by looping over all the pmt hits
+// Parametric: calculating the pulse area by using a parametric equation
+// Hybrid: Using Full and Parametric with a transition point: n_pmt_hits > n_pmts
+// Waveform: calculating the pulse area with the Full calculation mode and the waveform
+
 NEST::S2CalculationMode s2CalculationMode = NEST::S2CalculationMode::Full;
-// photon arrival times + pulse shapes (2=eTrains)
-// if 1 or 2 but verb off, then timing only saved as vectors
-// if -1 it means a special extra-fast mode for higher energies
+// S2 calculation mode options are:
+// Full [Default]: calculate only the pulse area
+// Waveform: calculate the pulse area and the waveform
+// WaveformWithEtrain: calculate the pulse area and the waveform with etrain
 
 // 0 means PE, 1 means phd (PE/~1.2), 2 means spike count
 int usePD = 2;

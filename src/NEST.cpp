@@ -1213,9 +1213,7 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
     if (dfield < FIELD_MIN  //"zero"-drift-field detector has no S2
         || elYield <= 0. || ExtEff <= 0. || SE <= 0. || g2 <= 0. ||
         gasGap <= 0.) {
-        for (i = 0; i < 8; ++i) {
-            ionization[i] = 0.;
-        }
+
         return ionization;
     }
 

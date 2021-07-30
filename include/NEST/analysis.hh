@@ -1,3 +1,4 @@
+#include "NEST.hh"
 
 // Verbosity flag (for limiting output to yields; no timing)
 bool verbosity = true;

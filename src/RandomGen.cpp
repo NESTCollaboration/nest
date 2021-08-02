@@ -29,12 +29,18 @@ double RandomGen::rand_uniform() {
 }
 
 double RandomGen::rand_gauss ( double mean, double sigma ) {
-  
   //std::normal_distribution<double> norm(mean, sigma);
   //return norm(rng);
-  double u = rand_uniform(), v = rand_uniform();
-  return mean + sigma * sqrt2 * sqrt(-log(u)) * cos(two_PI * v);
-  
+  //double u = rand_uniform(), v = rand_uniform();
+  //return mean + sigma * sqrt2 * sqrt(-log(u)) * cos(two_PI * v);
+  return  mean + sigma * sqrt2 * gcem::erf_inv(2 * rand_uniform() - 1);
+}
+
+#include <cmath>
+
+double RandomGen::rand_zero_trunc_gauss ( double mean, double sigma ) {
+    double err_zero = 0.5 * (1 + std::erf((- mean) / sigma));
+    return mean + sigma * sqrt2 * gcem::erf_inv( err_zero + rand_uniform() * (1 - err_zero) );
 }
 
 double RandomGen::rand_exponential(double half_life) {

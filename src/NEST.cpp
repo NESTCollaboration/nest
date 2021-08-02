@@ -903,10 +903,9 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
             // Step through the pmt hits
             for (int i = 0; i < nHits; ++i) {
                 // generate photo electron, integer count and area
-                double TruncGauss = 0.;
-                while (TruncGauss <= 0.) { // real photo cathodes can't make negative phe
-                    TruncGauss = RandomGen::rndm()->rand_gauss(1. / NewMean, fdetector->get_sPEres());
-                }
+                // real photo cathodes can't make negative phe
+                double TruncGauss = RandomGen::rndm()->rand_zero_trunc_gauss(1. / NewMean, fdetector->get_sPEres());
+
                 double phe1 = TruncGauss +
                               RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
                                                             fdetector->get_noiseB()[1]);
@@ -924,10 +923,8 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                 double phe2 = 0.;
                 if (RandomGen::rndm()->rand_uniform() < fdetector->get_P_dphe()) {
                     // generate area and increment the photo-electron counter
-                    TruncGauss = 0.;
-                    while (TruncGauss <= 0.) {
-                        TruncGauss = RandomGen::rndm()->rand_gauss(1. / NewMean, fdetector->get_sPEres());
-                    }
+                    TruncGauss = RandomGen::rndm()->rand_zero_trunc_gauss(1. / NewMean, fdetector->get_sPEres());
+
                     phe2 = TruncGauss +
                            RandomGen::rndm()->rand_gauss(fdetector->get_noiseB()[0],
                                                          fdetector->get_noiseB()[1]);

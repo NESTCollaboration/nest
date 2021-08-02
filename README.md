@@ -242,7 +242,15 @@ An explanation of the various parameters:
 * verbosity: if set to **false**, execNEST **only** outputs the columns of yield data
 * MCtruthE: whether true energy or "reconstructed"/statistically measured energy is expressed
 * MCtruthPos: whether true position or "reconstructed"/statistically fluctuated positions are expressed
-* useTiming: photon arrival times + pulse shapes used
+* s1CalculationMode: set the S1 calculation mode options are: 
+  * `Full` [Default]: calculating the pulse area by looping over all the pmt hits.
+  * `Parametric`: calculating the pulse area by using a parametric equation
+  * `Hybrid`: Using Full and Parametric with a transition point: n_pmt_hits > n_pmts
+  * `Waveform`: calculating the pulse area with the Full calculation mode and the waveform
+* s2CalculationMode: S2 calculation mode options are:
+  * `Full` [Default]: calculate only the pulse area
+  * `Waveform`: calculate the pulse area and the waveform
+  * `WaveformWithEtrain`: calculate the pulse area and the waveform with etrain
 * usePD: whether pulse areas are given in pe, phd, or spike count.
 * useS2: whether bands are expressed in log(S2/S1) or log(S2)
 * min/maxS1, numBins: controls S1 analysis threshold cut and binning
@@ -348,9 +356,9 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 <a name="timing"></a>
 ### Running with Pulse Timing
 
-In include/NEST/analysis.hh, the **useTiming** flag allows users to get S1 and S2 photon arrival times for each simulated event.
-useTiming=0 (default) will not return timing info. If verbosity=true and useTiming=1, running execNEST will create a file called 
-"photon_times.txt" in the user's build directory with S1 and S2 top/bottom PMT arrival times for each event. If useTiming=2, 
+In include/NEST/analysis.hh, the `s1CalculationMode` and `s2CalculationMode` flags allow users to get S1 and S2 photon arrival times for each simulated event.
+`s1CalculationMode=Full` and `s2CalculationMode=Full` (default) will not return timing info. If verbosity=true and `s1CalculationMode=Waveform`/`s2CalculationMode=Waveform`, running execNEST will create a file called 
+"photon_times.txt" in the user's build directory with S1 and S2 top/bottom PMT arrival times for each event. If `s2CalculationMode=WaveformWithEtrain`, 
 approximated e-trains will be included for the output events.
 
 The script, "pulseShape.cpp", in the "examples" directory will take the photon_times.txt output, and calculate pulse shape parameters
@@ -555,7 +563,7 @@ to the execNEST default executable example. If you follow all of these instructi
 least the 0th-order answer. Temperature, pressure, etc. should all be 1st- or 2nd-order.
 
 OptTrans and SinglePEWaveForm involve quick and dirty ray tracing and pulse shaping, to be used with 
-"useTiming = true" in analysis.hh.
+"s1CalculationMode/s2CalculationMode = Waveform" in analysis.hh.
 
 FitS1, FitS2, and FitEF are for 3-D X,Y,Z position dependencies including field fringing. The first two can 
 just return 1 (get corrected out anyhow).

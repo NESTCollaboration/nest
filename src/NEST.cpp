@@ -834,6 +834,9 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     int Nph = quanta.photons;
     double subtract[2] = {0., 0.};
 
+    photon_areas.clear();
+    photon_areas.resize(2);
+
     // This will clear and reset the vector values
     std::fill(scintillation.begin(), scintillation.end(), 0);
 

@@ -32,7 +32,7 @@ double RandomGen::rand_gauss ( double mean, double sigma ) {
   //std::normal_distribution<double> norm(mean, sigma);
   //return norm(rng);
   double u = rand_uniform(), v = rand_uniform();
-  return mean + sigma * sqrt2 * std::sqrt(-std::log(u)) * std::cos(two_PI * v);
+  return mean + sigma * sqrt2 * sqrt(-log(u)) * cos(two_PI * v);
 }
 
 double RandomGen::rand_zero_trunc_gauss ( double mean, double sigma ) {

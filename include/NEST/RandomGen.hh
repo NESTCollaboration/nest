@@ -7,8 +7,8 @@
 #define RANDOMGEN_HH 1
 #include "xoroshiro.hh"
 #include "gcem.hpp"
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdlib>
 #include <random>
 #include <vector>
 

@@ -36,7 +36,6 @@ double RandomGen::rand_gauss ( double mean, double sigma ) {
 }
 
 double RandomGen::rand_zero_trunc_gauss ( double mean, double sigma ) {
-
     double r = rand_gauss(mean, sigma);
     while( r < 0 ){
         r = rand_gauss(mean, sigma);

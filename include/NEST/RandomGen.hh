@@ -38,7 +38,6 @@ class RandomGen {
   static constexpr double   xoroshiro128plus64_minmax = static_cast<double>(xoroshiro128plus64::max() - xoroshiro128plus64::min());
 
   static constexpr double two_PI = 2. * M_PI;
-  static constexpr double PI_div_2 = M_PI / 2.;
   static constexpr double four_minus_PI_div_2 = 0.5*(4. - M_PI);
   static constexpr double sqrt2 = gcem::sqrt(2.);
   static constexpr double sqrt2_PI = gcem::sqrt( 2. * M_PI );

@@ -978,7 +978,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
            double belowThresh_percentile = sPE_belowThresh_percentile * (1. - fdetector->get_P_dphe() )
                                          + dPE_belowThresh_percentile * fdetector->get_P_dphe();
         
-           Nphe = nHits + static_cast<int>BinomFluct(nHits, fdetector->get_P_dphe());
+           Nphe = nHits + static_cast<int>(BinomFluct(nHits, fdetector->get_P_dphe()));
            eff = fdetector->get_sPEeff();
            if ( eff < 1. )
              eff += ((1.-eff)/(2.*static_cast<double>(fdetector->get_numPMTs())))*static_cast<double>(nHits); //same as Full S1CalculationMode case

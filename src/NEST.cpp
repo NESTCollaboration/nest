@@ -894,15 +894,14 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
         current_mode = S1CalculationMode::Parametric;
     }
 
+    // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
+    double TruncGaussAlpha = -1. / fdetector->get_sPEres();
+    double LittlePhi_Alpha = inv_sqrt2_PI * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
+    double BigPhi_Alpha = 0.5 * (1. + erf(TruncGaussAlpha / sqrt2));
+    double NewMean = 1. + (LittlePhi_Alpha / (1. - BigPhi_Alpha)) * fdetector->get_sPEres();
     switch (current_mode) {
         case S1CalculationMode::Full:
         case S1CalculationMode::Waveform: {
-            // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
-            double TruncGaussAlpha = -1. / fdetector->get_sPEres();
-            double LittlePhi_Alpha = inv_sqrt2_PI * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
-            double BigPhi_Alpha = 0.5 * (1. + erf(TruncGaussAlpha / sqrt2));
-            double NewMean = 1. + (LittlePhi_Alpha / (1. - BigPhi_Alpha)) * fdetector->get_sPEres();
-
             // Step through the pmt hits
             for (int i = 0; i < nHits; ++i) {
                 // generate photo electron, integer count and area
@@ -964,19 +963,34 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
             break;
         }
         case S1CalculationMode::Parametric: {
-            Nphe = nHits + static_cast<int>(BinomFluct(nHits, fdetector->get_P_dphe()));
-            eff = fdetector->get_sPEeff();
-            if (eff < 1.) {
-                eff += ((1. - eff) / (2. * static_cast<double>(fdetector->get_numPMTs()))) * static_cast<double>(Nphe);
-            }
-            eff = max(0., min(eff, 1.));
-            auto Nphe_det = static_cast<double>(BinomFluct(Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())));
-            pulseArea = RandomGen::rndm()->rand_gauss(Nphe_det, fdetector->get_sPEres() * sqrt(Nphe_det));
-            //proper truncation not done here because this is meant to be approximation, quick and dirty
-            spike = static_cast<double>(nHits);
+           //Take into account truncated Gaussian shape of SPE and DPE distributions
+           //Use the CDFs of the SPE and DPE dists to get the fraction of events below the detectors sPE threshold
+           // This will be applied to the digital spike count variable
+           double BigPhi_alpha_SPE = 0.5*(1. + erf( -1./fdetector->get_sPEres()/sqrt(2.) ) );
+           double BigPhi_xi_SPE = 0.5*(1. + erf( (fdetector->get_sPEthr()-1.)/fdetector->get_sPEres()/sqrt(2.) ) ); //where we'll evaluate the CDF
+           double sPE_belowThresh_percentile = ( BigPhi_xi_SPE - BigPhi_alpha_SPE ) / (1. - BigPhi_alpha_SPE );
+        
+           //get the same parameters for the DPE distribution
+           double BigPhi_alpha_DPE = 0.5*(1. + erf( -2./(sqrt(2.)*fdetector->get_sPEres())/sqrt(2.) ) );
+           double BigPhi_xi_DPE = 0.5*(1. + erf( (fdetector->get_sPEthr() - 2.)/(sqrt(2.)*fdetector->get_sPEres())/sqrt(2.)) );
+           double dPE_belowThresh_percentile = ( BigPhi_xi_DPE - BigPhi_alpha_DPE ) / (1. - BigPhi_alpha_DPE);
+        
+           double belowThresh_percentile = sPE_belowThresh_percentile * (1. - fdetector->get_P_dphe() )
+                                         + dPE_belowThresh_percentile * fdetector->get_P_dphe();
+        
+           Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
+           eff = fdetector->get_sPEeff();
+           if ( eff < 1. )
+             eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits); //same as Full S1CalculationMode case
+           eff = max ( 0., min ( eff, 1. ) );
+           double Nphe_det = BinomFluct ( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe() ) );
+           //take into account the truncation of the PE distributions
+           pulseArea = RandomGen::rndm()->rand_gauss ( Nphe_det*(1./NewMean), fdetector->get_sPEres() * sqrt(Nphe_det) );
+           spike = (double) BinomFluct( nHits, eff*(1. - belowThresh_percentile) );
 
-            break;
+	   break;
         }
+
         case S1CalculationMode::Hybrid: {
 
             break;

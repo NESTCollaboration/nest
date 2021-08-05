@@ -978,15 +978,15 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
            double belowThresh_percentile = sPE_belowThresh_percentile * (1. - fdetector->get_P_dphe() )
                                          + dPE_belowThresh_percentile * fdetector->get_P_dphe();
         
-           Nphe = nHits + BinomFluct(nHits, fdetector->get_P_dphe());
+           Nphe = nHits + static_cast<int>BinomFluct(nHits, fdetector->get_P_dphe());
            eff = fdetector->get_sPEeff();
            if ( eff < 1. )
-             eff += ((1.-eff)/(2.*double(fdetector->get_numPMTs())))*double(nHits); //same as Full S1CalculationMode case
+             eff += ((1.-eff)/(2.*static_cast<double>(fdetector->get_numPMTs())))*static_cast<double>(nHits); //same as Full S1CalculationMode case
            eff = max ( 0., min ( eff, 1. ) );
-           double Nphe_det = BinomFluct ( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe() ) );
+           auto Nphe_det = static_cast<double>(BinomFluct( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe())));
            //take into account the truncation of the PE distributions
            pulseArea = RandomGen::rndm()->rand_gauss ( Nphe_det*(1./NewMean), fdetector->get_sPEres() * sqrt(Nphe_det) );
-           spike = (double) BinomFluct( nHits, eff*(1. - belowThresh_percentile) );
+           spike = static_cast<double>(BinomFluct(nHits, eff*(1. - belowThresh_percentile)));
 
 	   break;
         }

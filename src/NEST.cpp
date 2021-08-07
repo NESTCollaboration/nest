@@ -982,6 +982,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
            eff = fdetector->get_sPEeff();
            if ( eff < 1. )
              eff += ((1.-eff)/(2.*static_cast<double>(fdetector->get_numPMTs())))*static_cast<double>(nHits); //same as Full S1CalculationMode case
+	   // Above efficiency adjustment needs to be 'NPhe' instead of 'nHits' for Flamedisx implementation 
            eff = max ( 0., min ( eff, 1. ) );
            auto Nphe_det = static_cast<double>(BinomFluct( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe())));
            //take into account the truncation of the PE distributions

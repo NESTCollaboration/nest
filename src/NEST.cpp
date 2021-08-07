@@ -888,7 +888,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     // (some phe will be below threshold)
 
     S1CalculationMode current_mode = mode;
-    if (current_mode == S1CalculationMode::Hybrid && energy > 100. ) { //100 keV_ee at 100 V/cm gives approximately 500 photon hits at g1=10%
+    if (current_mode == S1CalculationMode::Hybrid && energy < 100. ) { //100 keV_ee at 100 V/cm gives approximately 500 photon hits at g1=10%
         current_mode = S1CalculationMode::Full;
     } else if (current_mode == S1CalculationMode::Hybrid) {
         current_mode = S1CalculationMode::Parametric;

@@ -68,7 +68,8 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97,
             tau1 = 3.27; //arXiv:1802.06162. NR may need tauR ~0.5-1ns instead of 0
     if (fdetector->get_inGas() ||
-        energy < W_DEFAULT * 0.001) {  // from G4S1Light.cc in old NEST
+        energy < W_DEFAULT * 0.001) {  
+	// from G4S1Light.cc in old NEST
         tau1 = 5.18;                     // uncertainty of 1.55 ns from G4S2Light
         tau3 = 100.1;                    // uncertainty of 7.90 ns from G4S2Light
     }
@@ -78,7 +79,8 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     // if ( dfield > 60. ) dfield = 60. // makes Xed work. 200 for LUX Run04 instead. A mystery! Why no field dep?
 
     double LET = CalcElectronLET(energy, ATOM_NUM);
-    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { //copied from 2013 NEST version for LAr on LBNE
+    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { 
+	//copied from 2013 NEST version for LAr on LBNE
         tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8); // error from weighted average
         tau3 = RandomGen::rndm()->rand_gauss(1300, 50); // ibid.
         tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2); // Kubota 1979
@@ -96,10 +98,12 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
         if (species <= Cf) // NR
             SingTripRatio =
                     (0.21 - 0.0001 * dfield) * pow(energy, 0.21 - 0.0001 * dfield); //arXiv:1803.07935. LUX:0.15*E^0.15
-        else if (species == ion) { // e.g., alphas
+        else if (species == ion) { 
+            // e.g., alphas
             SingTripRatio = 0.065 * pow(energy, 0.416); // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
 	}
-        else { // ER
+        else { 
+            // ER
             if (!exciton) {
                 if (energy > 1e3) energy = 1e3; // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
                 tauR = exp(-0.00900 * dfield) * (7.3138 + 3.8431 * log10(energy)); // arXiv:1310.1117
@@ -300,7 +304,8 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     double skewness;
     if ((yields.PhotonYield + yields.ElectronYield) > 1e4 || yields.ElectricField > 4e3 || yields.ElectricField < 50.) {
         skewness = 0.00; //make it a constant 0 when outside the range of Vetri Velan's Run04 models.
-    } else { // LUX Skewness Model
+    } else { 
+	// LUX Skewness Model
         Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
         double Wq_eV = wvalue.Wq_eV;
         double engy = 1e-3 * Wq_eV * (yields.PhotonYield + yields.ElectronYield);
@@ -389,8 +394,9 @@ YieldResult NESTcalc::GetYieldNROld(double energy, int option) { // possible ant
 
     double Ne, Nph, FakeField;
 
-    if (option ==
-        0) { // with old-school L_eff*S_nr conversion, and more explicit Thomas-Imel box model formulae but approximation where Qy can sail off as energy to 0
+    if (option == 0) { 
+	// with old-school L_eff*S_nr conversion, and more explicit Thomas-Imel box model formulae
+	// but approximation where Qy can sail off as energy to 0
         FakeField = 1.00;
         Nph = 0.95 * 64. * energy * (0.050295 * pow(energy, 1.3483) * (log(1. + (0.84074 * pow(energy, 1.3875))) /
                                                                        (0.84074 * pow(energy,
@@ -411,7 +417,8 @@ YieldResult NESTcalc::GetYieldNROld(double energy, int option) { // possible ant
                                                       1.2669)); // NEST v1.0 (2015) arXiv:1412.4417, with ability to cut off yield at either low or high energy. Fit to Nph
         Ne = (60.914 * pow(energy, 0.32220)) * (1. - exp(-0.12684 * pow(energy,
                                                                         0.65729))); // middle of road: k = 0.14. By Brian Lenardo, still pre-LUX-DD. With explicit bi-Exc quenching
-    } else { // simplest by far, but not 1st principles: based on work of M. Wyman UAlbany
+    } else { 
+	// simplest by far, but not 1st principles: based on work of M. Wyman UAlbany
         FakeField = 180.; // fit to LUX Run03 D-D alone
         Ne = (-3.8780 + 12.372 * pow(energy, 0.73502)) *
              exp(-0.0034329 * energy); // slide 68 of Matthew's private Google Slides mega-deck
@@ -419,8 +426,8 @@ YieldResult NESTcalc::GetYieldNROld(double energy, int option) { // possible ant
     }
 
     YieldResult result{};
-    if (Nph < 0.)Nph = 0.;
-    if (Ne < 0.)Ne = 0.;
+    if (Nph < 0.) Nph = 0.;
+    if (Ne < 0.) Ne = 0.;
     result.PhotonYield = Nph;
     result.ElectronYield = Ne;
     result.ExcitonRatio = 1.;
@@ -525,7 +532,8 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
     if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
     double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
     if (ValidityTests::nearlyEqual(A1, 206.) &&
-        ValidityTests::nearlyEqual(Z1, 82.)) { //Pb-206 (from Po-210 alpha decay).
+        ValidityTests::nearlyEqual(Z1, 82.)) { 
+	//Pb-206 (from Po-210 alpha decay).
         ThomasImel = 79.9 * pow(dfield, -0.868); //Nishat Parveen
     }
     const double logden = log10(density);
@@ -656,7 +664,8 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
     double Wq_eV = wvalue.Wq_eV;
     //double alpha = wvalue.alpha; // duplicate definition below. We don't even need this here (it is Nex/Ni)
 
-    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { // Liquid Argon
+    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { 
+	// Liquid Argon
         double alpha =
                 32.988 - 552.988 / (17.2346 + pow(dfield / (-4.7 + 0.025115 * exp(1.3954 / 0.265360653)), 0.242671));
         double beta = 0.778482 + 25.9 / pow(1.105 + pow(dfield / 0.4, 4.55), 7.502);
@@ -948,7 +957,8 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
                         photon_areas[0].emplace_back(phe1);
                         photon_areas[1].emplace_back(phe2);
                     }
-                } else {  // use approximation to find timing
+                } else {  
+		    // use approximation to find timing
                     if ((phe1 + phe2) > fdetector->get_sPEthr()
                         && (-20. * log(RandomGen::rndm()->rand_uniform()) < fdetector->get_coinWind()
                             || nHits > fdetector->get_coinLevel())) {
@@ -1599,7 +1609,8 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r, x, y;
     int Nph, nHits;
     if (verbosity) {
-        for (int i = 0; i < 10000; ++i) { // calculate properly the width (1-sigma std dev) in the SE size
+        for (int i = 0; i < 10000; ++i) { 
+            // calculate properly the width (1-sigma std dev) in the SE size
             Nph = int(floor(RandomGen::rndm()->rand_gauss(elYield, sqrt(fdetector->get_s2Fano() * elYield)) + 0.5));
             phi = two_PI * RandomGen::rndm()->rand_uniform();
             r = fdetector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());
@@ -1652,7 +1663,7 @@ double NESTcalc::nCr(double n, double r) {
     return Factorial(n) / (Factorial(r) * Factorial(n - r));
 }
 
-vector<double>& NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
+const vector<double>& NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
                                   double driftSpeed, double dS_mid,
                                   const vector<double> &oldScint)
 {
@@ -1761,8 +1772,9 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
     double vi, vf, slope, Ti, Tf, offset;
 
     if (ValidityTests::nearlyEqual(ATOM_NUM,
-                                   18.)) { //replace eventually with Kate's work, once T's splined as done for LXe and SXe
-        /*x_nest is field in kV/cm:
+                                   18.)) { 
+      //replace eventually with Kate's work, once T's splined as done for LXe and SXe
+      /*x_nest is field in kV/cm:
       Liquid:
       y_nest_85 = 2.553969*(0.929235**(1/x_nest))*x_nest**0.315673 // temperatures in Kelvin
       y_nest_87 = 2.189388*(0.961701**(1/x_nest))*x_nest**0.339414
@@ -1915,7 +1927,8 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
                     driftTime += zStep / SetDriftVelocity(fdetector->get_T_Kelvin(), rho,
                                                           fdetector->get_E_gas() /
                                                           (EPS_LIQ / std::abs(EPS_GAS)) * 1e3);
-                else { // if gate == TopDrift properly set, shouldn't happen
+                else { 
+		    // if gate == TopDrift properly set, shouldn't happen
                     driftTime += zStep / GetDriftVelocity_MagBoltz(
                             rho, fdetector->get_E_gas() * 1e3);
 		}
@@ -1972,7 +1985,8 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
     double wavelength, E_keV;  // wavelength is in nanometers
 
-    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { // liquid Argon
+    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { 
+	// liquid Argon
         if (state) return RandomGen::rndm()->rand_gauss(9.7, 0.2);
         return RandomGen::rndm()->rand_gauss(9.69, 0.22);
     }
@@ -1984,7 +1998,8 @@ double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
         wavelength =
                 RandomGen::rndm()->rand_gauss(175., 5.);  // G4S1Light, probably Doke
     }
-    if (s2Flag) {  // S2 different from ordinary gas (or just measurement error?)
+    if (s2Flag) {  
+	// S2 different from ordinary gas (or just measurement error?)
         if (tempK < 200.)  // cold gas
             wavelength = RandomGen::rndm()->rand_gauss(
                     179., 5.);  // source is G4S2Light.cc from the old NEST
@@ -2023,7 +2038,8 @@ double NESTcalc::CalcElectronLET(double E, int Z) {
         else {
             LET = 0.;
 	}
-    } else { //replace with Justin and Prof. Mooney's work
+    } else { 
+	//replace with Justin and Prof. Mooney's work
         if (E >= 1.)
             LET = 116.70 - 162.97 * log10(E) + 99.361 * pow(log10(E), 2) -
                   33.405 * pow(log10(E), 3) + 6.5069 * pow(log10(E), 4) -
@@ -2041,17 +2057,18 @@ double NESTcalc::CalcElectronLET(double E, int Z) {
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass, bool rmQuanta) {
     double alpha, Wq_eV;
-    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { // Liquid argon
+    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) { 
+	// Liquid argon
         alpha = 0.21;
         Wq_eV = 1000. / 51.9; //23.6/1.21; // ~19.2-5 eV
         return Wvalue{.Wq_eV=Wq_eV, .alpha=alpha};
     }
     alpha = 0.067366 + density * 0.039693;
     /*double xi_se = 9./(1.+pow(density/2.,2.));
-  double I_ion = 9.+(12.13-9.)/(1.+pow(density/2.953,65.));
-  double I_exc = I_ion / 1.46;
-  double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
-  +xi_se/(1.+alpha);*/
+    double I_ion = 9.+(12.13-9.)/(1.+pow(density/2.953,65.));
+    double I_exc = I_ion / 1.46;
+    double Wq_eV = I_exc*(alpha/(1.+alpha))+I_ion/(1.+alpha)
+    +xi_se/(1.+alpha);*/
     double eDensity = (density / MolarMass) * NEST_AVO * ATOM_NUM;
     Wq_eV = 18.7263 - 1.01e-23 * eDensity;
     if (rmQuanta) Wq_eV *= InfraredER; //EXO
@@ -2073,7 +2090,8 @@ double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel, double K
 {
     double output;
 
-    if (Z == 18) { // G4S2Light.cc from LUXSim
+    if (Z == 18) { 
+	// G4S2Light.cc from LUXSim
         double nDensity = NEST_AVO * DENSITY / 40.; // 1 over cm^3
         return 93.342 * pow(dfield / nDensity, 0.041322);
     }

@@ -296,7 +296,7 @@ namespace NEST {
         // Very comprehensive conversion of the "original" intrinsic scintillation
         // photons into the many possible definitions of S1 as measured by
         // photo-sensors
-        std::vector<double>& GetSpike(int Nph, double dx, double dy, double dz,
+        const std::vector<double>& GetSpike(int Nph, double dx, double dy, double dz,
                                      double driftSpeed, double dS_mid,
                                      const std::vector<double> &origScint);
 

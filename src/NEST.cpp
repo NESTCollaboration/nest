@@ -56,8 +56,9 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
     if (do_times)
         result.photon_times = GetPhotonTimes(
                 species, result.quanta.photons, result.quanta.excitons, dfield, energy);
-    else
+    else {
         result.photon_times = photonstream(result.quanta.photons, 0.0);
+    }
     return result;
 
 }
@@ -82,9 +83,10 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
         tau3 = RandomGen::rndm()->rand_gauss(1300, 50); // ibid.
         tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2); // Kubota 1979
         if (species <= Cf) SingTripRatio = 0.22218 * pow(energy, 0.48211);
-        else if (species == ion) //really only alphas here
+        else if (species == ion) { //really only alphas here
             SingTripRatio = (-0.065492 + 1.9996 * exp(-energy / 1e3)) / (1. + 0.082154 / pow(energy / 1e3, 2.)) +
                             2.1811; //uses energy in MeV not keV
+	}
         else {
             SingTripRatio = 0.2701 + 0.003379 * LET - 4.7338e-5 * pow(LET, 2.) + 8.1449e-6 * pow(LET, 3.);
             if (LET < 3. && !exciton) SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2);
@@ -94,8 +96,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
         if (species <= Cf) // NR
             SingTripRatio =
                     (0.21 - 0.0001 * dfield) * pow(energy, 0.21 - 0.0001 * dfield); //arXiv:1803.07935. LUX:0.15*E^0.15
-        else if (species == ion) // e.g., alphas
+        else if (species == ion) { // e.g., alphas
             SingTripRatio = 0.065 * pow(energy, 0.416); // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
+	}
         else { // ER
             if (!exciton) {
                 if (energy > 1e3) energy = 1e3; // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
@@ -104,15 +107,18 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
                 if (dfield > 8e2) dfield = 8e2; //to match Kubota's 4,000 V/cm
                 SingTripRatio = 1.00 * pow(energy, -0.45 + 0.0005 *
                                                            dfield); // see comment below; also, dfield may need to be fixed at ~100-200 V/cm (for NR too)
-            } else
+            } else {
                 SingTripRatio = 0.20 * pow(energy, -0.45 + 0.0005 * dfield); // mixing arXiv:1807.07121 with Kubota 1979
+	    }
         }
     }
     if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) {
         SingTripRatio = 0.1;
         if (fdetector->get_inGas() && !exciton)
             tauR = 28e3;
-        else tauR = 0.; //28 microseconds comes from Henrique: https://doi.org/10.1016/j.astropartphys.2018.04.006
+        else {
+	  tauR = 0.; //28 microseconds comes from Henrique: https://doi.org/10.1016/j.astropartphys.2018.04.006
+	}
         if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
             tau3 = 1600.;
             tau1 = 6.;
@@ -126,8 +132,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
 
     if (RandomGen::rndm()->rand_uniform() < SingTripRatio / (1. + SingTripRatio))
         time_ns -= tau1 * log(RandomGen::rndm()->rand_uniform());
-    else
+    else {
         time_ns -= tau3 * log(RandomGen::rndm()->rand_uniform());
+    }
 
     return time_ns;
 }
@@ -174,11 +181,11 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector
     double cntr = 0.5; //0.41-45 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E). Also works with GregR LUX Run04 model. FreeParam #3
     //for gamma-rays larger than 100 keV at least in XENON10 use 0.43 as the best fit. 0.62-0.37 for LUX Run03
     double skew = -0.2; //FreeParam #4
-    double mode = cntr + sqrt(2. / M_PI) * skew * wide / sqrt(1. + skew * skew);
+    double mode = cntr + 2.*inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
     double norm = 1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
-                        (1. + erf(skew * (mode - cntr) / (wide * sqrt(2.))))); //makes sure omega never exceeds ampl
+                        (1. + erf(skew * (mode - cntr) / (wide * sqrt2)))); //makes sure omega never exceeds ampl
     double omega = norm * ampl * exp(-0.5 * pow(elecFrac - cntr, 2.) / (wide * wide)) *
-                   (1. + erf(skew * (elecFrac - cntr) / (wide * sqrt(2.))));
+                   (1. + erf(skew * (elecFrac - cntr) / (wide * sqrt2)));
     if (omega < 0.)
         omega = 0;
     return omega;
@@ -319,12 +326,13 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
 
     double widthCorrection = sqrt(1. - (2. / M_PI) * skewness * skewness / (1. + skewness * skewness));
     double muCorrection =
-            (sqrt(Variance) / widthCorrection) * (skewness / sqrt(1. + skewness * skewness)) * sqrt(2. / M_PI);
+            (sqrt(Variance) / widthCorrection) * (skewness / sqrt(1. + skewness * skewness)) * 2.*inv_sqrt2_PI;
     if (std::abs(skewness) > DBL_MIN && ValidityTests::nearlyEqual(ATOM_NUM, 54.)) //skewness model only for Xenon!
         Ne = int(floor(RandomGen::rndm()->rand_skewGauss((1. - recombProb) * Ni - muCorrection,
                                                          sqrt(Variance) / widthCorrection, skewness) + 0.5));
-    else
+    else {
         Ne = int(floor(RandomGen::rndm()->rand_gauss((1. - recombProb) * Ni, sqrt(Variance)) + 0.5));
+    }
 
     if (Ne < 0) Ne = 0;
     if (Ne > Ni) Ne = Ni;
@@ -437,8 +445,9 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     double ScaleFactor[2] = {1., 1.};
     if (ValidityTests::nearlyEqual(massNum, 0.))
         massNumber = RandomGen::rndm()->SelectRanXeAtom();
-    else
+    else {
         massNumber = int(massNum);
+    }
     ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double) massNumber);
     ScaleFactor[1] = ScaleFactor[0];
     double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
@@ -532,36 +541,24 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
     if (Ni > 0. && ThomasImel > 0.)
         recombProb =
                 1. - log(1. + (ThomasImel / 4.) * Ni) / ((ThomasImel / 4.) * Ni);
-    else
+    else {
         recombProb = 0.0;
+    }
     double Nph = Nq * NexONi / (1. + NexONi) + recombProb * Ni;
     double Ne = Nq - Nph;
     if (ValidityTests::nearlyEqual(A1, 206.) && ValidityTests::nearlyEqual(Z1, 82.))
-        Ne = RandomGen::rndm()->rand_gauss(Ne / ChargeLoss, 2. * sqrt(Ne / (ChargeLoss *
-                                                                            ChargeLoss))); // to compensate for accidentally including Q-loss in fits to Xed data
-
+        Ne = RandomGen::rndm()->rand_gauss(Ne / ChargeLoss, 2. * sqrt(Ne / (ChargeLoss * ChargeLoss)));
+    // to compensate for accidentally including Q-loss in fits to Xed data
     if (ValidityTests::nearlyEqual(Z2, 18.) && ValidityTests::nearlyEqual(Z1, 2.) &&
         ValidityTests::nearlyEqual(A1, 4.)) { //alphas in argon
         double factorE = pow((4.71598 + pow(dfield, 7.72848)), 0.109802);
         double Qy = (1. / 6200.) *
-                    (64478398.7663 - (64478398.7663 * 0.173553719 + (64478398.7663 / 1.21) * (1. - (0.02852 * log(1. +
-                                                                                                                  (64478398.7663 /
-                                                                                                                   1.21) *
-                                                                                                                  ((0.01 /
-                                                                                                                    factorE) /
-                                                                                                                   3.))) /
-                                                                                                   ((64478398.7663 /
-                                                                                                     1.21) * (0.01 /
-                                                                                                              factorE)))));
+	  (64478398.7663 - (64478398.7663 * 0.173553719 + (64478398.7663 / 1.21) * (1. - (0.02852 * log(1. + (64478398.7663 / 1.21) * ((0.01 / factorE) / 3.))) /
+										    ((64478398.7663 / 1.21) * (0.01 / factorE)))));
         double qu = 1. / (1.5 * pow(dfield, -0.012));
         factorE = pow(4.98483 + pow(dfield / 10.0822, 1.2076), 0.97977);
-        double Ly = qu * (1. / 6500.) *
-                    (278037.250283 * 0.173553719 + (278037.250283 / 1.21) * (1. - (2. * log(1. +
-                                                                                            (278037.250283 / 1.21) *
-                                                                                            ((0.653503 / factorE) /
-                                                                                             3.))) /
-                                                                                  ((278037.250283 / 1.21) *
-                                                                                   (0.653503 / factorE))));
+        double Ly= qu * (1. / 6500.) * (278037.250283 * 0.173553719 + (278037.250283 / 1.21) * (1. - (2. * log(1. + (278037.250283 / 1.21) * ((0.653503 / factorE) / 3.))) /
+												((278037.250283 / 1.21) * (0.653503 / factorE))));
         Ne = Qy * energy;
         Nph = Ly * energy;
         L = 0.0;
@@ -886,14 +883,14 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
 
     // If single photo-electron efficiency is under 1 and the threshold is above 0
     // (some phe will be below threshold)
-
+    
     S1CalculationMode current_mode = mode;
-    if (current_mode == S1CalculationMode::Hybrid && energy < 100. ) { //100 keV_ee at 100 V/cm gives approximately 500 photon hits at g1=10%
-        current_mode = S1CalculationMode::Full;
-    } else if (current_mode == S1CalculationMode::Hybrid) {
-        current_mode = S1CalculationMode::Parametric;
-    }
-
+    if (current_mode == S1CalculationMode::Hybrid)
+      {
+	//100 keV_ee at 100 V/cm gives approximately 500 photon hits at g1=10%
+	current_mode = energy < 100. ? S1CalculationMode::Full : S1CalculationMode::Parametric;
+      }
+    
     // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
     double TruncGaussAlpha = -1. / fdetector->get_sPEres();
     double LittlePhi_Alpha = inv_sqrt2_PI * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
@@ -966,13 +963,13 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
            //Take into account truncated Gaussian shape of SPE and DPE distributions
            //Use the CDFs of the SPE and DPE dists to get the fraction of events below the detectors sPE threshold
            // This will be applied to the digital spike count variable
-           double BigPhi_alpha_SPE = 0.5*(1. + erf( -1./fdetector->get_sPEres()/sqrt(2.) ) );
-           double BigPhi_xi_SPE = 0.5*(1. + erf( (fdetector->get_sPEthr()-1.)/fdetector->get_sPEres()/sqrt(2.) ) ); //where we'll evaluate the CDF
+           double BigPhi_alpha_SPE = 0.5*(1. + erf( -1./fdetector->get_sPEres()/sqrt2 ) );
+           double BigPhi_xi_SPE = 0.5*(1. + erf( (fdetector->get_sPEthr()-1.)/fdetector->get_sPEres()/sqrt2 ) ); //where we'll evaluate the CDF
            double sPE_belowThresh_percentile = ( BigPhi_xi_SPE - BigPhi_alpha_SPE ) / (1. - BigPhi_alpha_SPE );
         
            //get the same parameters for the DPE distribution
-           double BigPhi_alpha_DPE = 0.5*(1. + erf( -2./(sqrt(2.)*fdetector->get_sPEres())/sqrt(2.) ) );
-           double BigPhi_xi_DPE = 0.5*(1. + erf( (fdetector->get_sPEthr() - 2.)/(sqrt(2.)*fdetector->get_sPEres())/sqrt(2.)) );
+           double BigPhi_alpha_DPE = 0.5*(1. + erf( -2./(sqrt2*fdetector->get_sPEres())/sqrt2 ) );
+           double BigPhi_xi_DPE = 0.5*(1. + erf( (fdetector->get_sPEthr() - 2.)/(sqrt2*fdetector->get_sPEres())/sqrt2) );
            double dPE_belowThresh_percentile = ( BigPhi_xi_DPE - BigPhi_alpha_DPE ) / (1. - BigPhi_alpha_DPE);
         
            double belowThresh_percentile = sPE_belowThresh_percentile * (1. - fdetector->get_P_dphe() )
@@ -980,8 +977,9 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
         
            Nphe = nHits + static_cast<int>(BinomFluct(nHits, fdetector->get_P_dphe()));
            eff = fdetector->get_sPEeff();
-           if ( eff < 1. )
+           if ( eff < 1. ) {
              eff += ((1.-eff)/(2.*static_cast<double>(fdetector->get_numPMTs())))*static_cast<double>(nHits); //same as Full S1CalculationMode case
+	   }
 	   // Above efficiency adjustment needs to be 'NPhe' instead of 'nHits' for Flamedisx implementation 
            eff = max ( 0., min ( eff, 1. ) );
            auto Nphe_det = static_cast<double>(BinomFluct( Nphe, 1. - ( 1. - eff ) / ( 1. + fdetector->get_P_dphe())));
@@ -993,6 +991,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
         }
 
         case S1CalculationMode::Hybrid: {
+        default:
 
             break;
         }
@@ -1147,10 +1146,12 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
             else if (fdetector->get_coinLevel() == 1) {
                 if (spike >= 1.)
                     prob = 1.;
-                else
+                else {
                     prob = 0.;
-            } else if (fdetector->get_coinLevel() == 2)
+		}
+            } else if (fdetector->get_coinLevel() == 2) {
                 prob = 1. - pow((double) fdetector->get_numPMTs(), 1. - spike);
+	    }
             else {
                 double numer = 0., denom = 0.;
                 for (int i = spike; i > 0; --i) {
@@ -1365,8 +1366,9 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
                     if (tau2 > 1e6)
                         tau2 = 1e6; // 1 sec. cap
                     electronstream[i] += tau2;
-                } else
+                } else {
                     electronstream[i] -= tau1 * log(RandomGen::rndm()->rand_uniform());
+		}
             }
             for (double j = 0.; j < SE; j += 1.) {
                 double phe = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres());
@@ -1403,9 +1405,10 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
             if (ValidityTests::nearlyEqual(AreaTableBot[0][k], 0.0))
                 PEperBin =
                         fdetector->SinglePEWaveForm(AreaTableTop[0][k], TimeTable[k] - min);
-            else
+            else {
                 PEperBin =
                         fdetector->SinglePEWaveForm(AreaTableBot[0][k], TimeTable[k] - min);
+	    }
             for (i = 0; i < int(PEperBin.size()) - 1; ++i) {
                 double eTime = PEperBin[0] + i * SAMPLE_SIZE;
                 int index = int(floor(eTime / SAMPLE_SIZE + 0.5));
@@ -1416,11 +1419,12 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
                                               (PULSE_WIDTH * sqrt2_PI) *
                                               exp(-pow(eTime - TimeTable[k] + min, 2.) /
                                                   (2. * PULSE_WIDTH * PULSE_WIDTH));
-                else
+                else {
                     AreaTableBot[1][index] += 10. * AreaTableBot[0][k] /
                                               (PULSE_WIDTH * sqrt2_PI) *
                                               exp(-pow(eTime - TimeTable[k] + min, 2.) /
                                                   (2. * PULSE_WIDTH * PULSE_WIDTH));
+		}
             }
         }
         for (k = 0; k < numPts; ++k) {
@@ -1431,9 +1435,13 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
             if (outputTiming) {
                 char line[80];
                 if (AreaTableBot[1][k] > PHE_MAX) subtract[0] = AreaTableBot[1][k] - PHE_MAX;
-                else subtract[0] = 0.0;
+                else {
+		  subtract[0] = 0.0;
+		}
                 if (AreaTableTop[1][k] > PHE_MAX) subtract[1] = AreaTableTop[1][k] - PHE_MAX;
-                else subtract[1] = 0.0;
+                else {
+		  subtract[1] = 0.0;
+		}
                 sprintf(line, "%llu\t%lld\t%.3f\t%.3f", evtNum, wf_time.back(),
                         AreaTableBot[1][k] - subtract[0], AreaTableTop[1][k] - subtract[1]);
                 pulseFile << line << endl;
@@ -1686,8 +1694,9 @@ double NESTcalc::GetDensity(double Kelvin, double bara, bool &inGas, uint64_t ev
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) && !inGas) {
         inGas = false;
         if (DENSITY > 2.) return 1.4;
-        else
+        else {
             return DENSITY;
+	}
     }
 
     //if (MOLAR_MASS > 134.5) //enrichment for 0vBB expt (~0.8 Xe-136)
@@ -1702,9 +1711,12 @@ double NESTcalc::GetDensity(double Kelvin, double bara, bool &inGas, uint64_t ev
     double VaporP_bar;  // we will calculate using NIST
     if (Kelvin < 289.7) {
         if (ValidityTests::nearlyEqual(ATOM_NUM, 54.)) VaporP_bar = pow(10., 4.0519 - 667.16 / Kelvin);
-        else VaporP_bar = 1.;
-    } else
+        else {
+	  VaporP_bar = 1.;
+	}
+    } else {
         VaporP_bar = DBL_MAX;
+    }
     if (bara < VaporP_bar || inGas) {
         double p_Pa = bara * 1e5;
         double density = 1. /
@@ -1736,8 +1748,9 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField) 
 
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas) {
     if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
-    else
+    else {
         return GetDriftVelocity_Liquid(Kelvin, eField, Density);
+    }
 }
 
 double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
@@ -1902,16 +1915,18 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
                     driftTime += zStep / SetDriftVelocity(fdetector->get_T_Kelvin(), rho,
                                                           fdetector->get_E_gas() /
                                                           (EPS_LIQ / std::abs(EPS_GAS)) * 1e3);
-                else  // if gate == TopDrift properly set, shouldn't happen
+                else { // if gate == TopDrift properly set, shouldn't happen
                     driftTime += zStep / GetDriftVelocity_MagBoltz(
                             rho, fdetector->get_E_gas() * 1e3);
-            } else
+		}
+            } else {
                 driftTime +=
                         zStep /
                         SetDriftVelocity(
                                 fdetector->get_T_Kelvin(), rho,
                                 fdetector->FitEF(dx, dy,
                                                  zz));  // update x and y if you want 3-D fields
+	    }
         }
 
         speedTable.emplace_back((zz - pos_z) / driftTime);  // uses highest zz
@@ -1965,16 +1980,17 @@ double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
     if (!state)  // liquid or solid
         wavelength = RandomGen::rndm()->rand_gauss(
                 178., 14. / 2.355);  // taken from Jortner JchPh 42 '65
-    else                       // gas
+    else {                     // gas
         wavelength =
                 RandomGen::rndm()->rand_gauss(175., 5.);  // G4S1Light, probably Doke
-
+    }
     if (s2Flag) {  // S2 different from ordinary gas (or just measurement error?)
         if (tempK < 200.)  // cold gas
             wavelength = RandomGen::rndm()->rand_gauss(
                     179., 5.);  // source is G4S2Light.cc from the old NEST
-        else
+        else {
             wavelength = RandomGen::rndm()->rand_gauss(174., 5.);  // ditto
+	}
     }
 
     E_keV = 1240e-3 / wavelength;  // h*c in keV-nm divided by lambda in nm
@@ -1999,20 +2015,25 @@ double NESTcalc::CalcElectronLET(double E, int Z) {
             // at energies <1 keV, use a different spline, determined manually by
             // generating sub-keV electrons in Geant4 and looking at their ranges, since
             // ESTAR does not go this low (4.9.4)
-        else if (E > 0. && E < 1.)
+        else if (E > 0. && E < 1.) {
             LET = 6.9463 + 815.98 * E - 4828 * pow(E, 2) + 17079 * pow(E, 3) -
                   36394 * pow(E, 4) + 44553 * pow(E, 5) - 28659 * pow(E, 6) +
                   7483.8 * pow(E, 7);
-        else
+	}
+        else {
             LET = 0.;
+	}
     } else { //replace with Justin and Prof. Mooney's work
         if (E >= 1.)
             LET = 116.70 - 162.97 * log10(E) + 99.361 * pow(log10(E), 2) -
                   33.405 * pow(log10(E), 3) + 6.5069 * pow(log10(E), 4) -
                   0.69334 * pow(log10(E), 5) + .031563 * pow(log10(E), 6);
-        else if (E > 0. && E < 1.) LET = 100.;
-        else
+        else if (E > 0. && E < 1.) {
+	  LET = 100.;
+	}
+        else {
             LET = 0.;
+	}
     }
 
     return LET;

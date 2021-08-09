@@ -1960,7 +1960,7 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
                    exp(fdetector->get_PosResExp() * rad);  // arXiv:1710.02752
     double sigmaR = kappa / sqrt(A_top);                   // ibid.
 
-    double phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+    double phi = two_PI * RandomGen::rndm()->rand_uniform();
     sigmaR = std::abs(RandomGen::rndm()->rand_gauss(0.0, sigmaR));
     double sigmaX = sigmaR * cos(phi);
     double sigmaY = sigmaR * sin(phi);

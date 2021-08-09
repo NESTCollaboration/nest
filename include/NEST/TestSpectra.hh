@@ -32,7 +32,7 @@
 
 #define NUMBINS_MAX 1000
 
-static const double ElectronRestMassEnergy = 510.9989461;
+static constexpr double ElectronRestMassEnergy = 510.9989461;
 
 class TestSpectra {
  public:

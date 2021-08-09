@@ -99,11 +99,11 @@
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
 #define PHE_MAX 180 // saturation threshold, in PE per bin i.e. sample
 
-static const int XYcorr = 3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both
+static constexpr int XYcorr = 3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both
 
-static const double RidealGas = 8.31446261815324;  // Joules/mole/Kelvin
-static const double RealGasA = 0.4250;  // m^6*Pa/mol^2 or m^4*N/mol^2. For Ar: 0.1355
-static const double RealGasB = 5.105e-5;  // m^3/mol. For Ar: 3.201e-5
+static constexpr double RidealGas = 8.31446261815324;  // Joules/mole/Kelvin
+static constexpr double RealGasA = 0.4250;  // m^6*Pa/mol^2 or m^4*N/mol^2. For Ar: 0.1355
+static constexpr double RealGasB = 5.105e-5;  // m^3/mol. For Ar: 3.201e-5
 
 namespace NEST {
 

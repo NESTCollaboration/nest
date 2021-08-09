@@ -11,7 +11,7 @@
 using namespace std;
 using namespace NEST;
 
-const int podLength = 1100; //roughly 100-1,000 ns for S1
+static constexpr int podLength = 1100; //roughly 100-1,000 ns for S1
 
 bool kr83m_reported_low_deltaT = false; //to aid in verbosity 
 

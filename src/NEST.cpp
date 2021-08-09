@@ -2254,7 +2254,7 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDL() {
                                {220053,  0.0900259}};
     for (auto &iP : modelDL) {
         std::pair<double, double> thePair(iP[0], iP[1]);
-        output.emplace_back(thePair);
+        output.emplace_back(iP[0], iP[1]);
     }
     return output;
 }

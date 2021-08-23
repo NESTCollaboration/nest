@@ -2,7 +2,7 @@
 # Set minimum CMake version required and prevent building in source
 cmake_minimum_required(VERSION 3.8...3.16 FATAL_ERROR)
 
-project(NEST VERSION 2.1.0 LANGUAGES CXX)
+project(NEST VERSION 2.2.3 LANGUAGES CXX)
 
 option(G4 "Build integration with Geant4" OFF)
 option(BUILD_ROOT "Build ROOT tools" OFF)

@@ -2,7 +2,31 @@
 # Set minimum CMake version required and prevent building in source
 cmake_minimum_required(VERSION 3.8...3.16 FATAL_ERROR)
 
-project(NEST VERSION 2.2.3 LANGUAGES CXX)
+###############        Get version from git        #####################
+execute_process(COMMAND git describe
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE PROJECT_GIT_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+function(get_versions versionString version)
+    if ("${versionString}" STREQUAL "")
+        set(version "0.0.0" PARENT_SCOPE)
+        return()
+    endif ()
+
+    string(REGEX REPLACE "([0-9]*)([.][0-9]*[.][0-9]*-?.*)$" "\\1" numbers ${versionString})
+    set(major ${numbers})
+    string(REGEX REPLACE "([0-9]*[.])([0-9]*)([.][0-9]*-?.*)$" "\\2" numbers ${versionString})
+    set(minor ${numbers})
+    string(REGEX REPLACE "([0-9]*[.][0-9]*[.])([0-9]*)(-?.*)$" "\\2" numbers ${versionString})
+    set(patch ${numbers})
+    set(version "${major}.${minor}.${patch}" PARENT_SCOPE)
+endfunction()
+
+get_versions("${PROJECT_GIT_VERSION}" version)
+set(PROJECT_GIT_VERSION ${version})
+###############    project name and version        #####################
+project(NEST VERSION ${PROJECT_GIT_VERSION} LANGUAGES CXX)
 
 option(G4 "Build integration with Geant4" OFF)
 option(BUILD_ROOT "Build ROOT tools" OFF)

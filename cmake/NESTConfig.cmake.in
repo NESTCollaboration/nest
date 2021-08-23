@@ -11,6 +11,11 @@ set(NEST_INCLUDE_DIRS
     "${PACKAGE_PREFIX_DIR}/include/Detectors"
 )
 
+# Internal gcem build
+if(NOT TARGET gcem)
+  find_dependency(gcem PATHS "${NEST_CMAKE_DIR}/../gcem")
+endif()
+
 if(NOT TARGET NEST::Core)
     include("${NEST_CMAKE_DIR}/NESTTargets.cmake")
 endif()

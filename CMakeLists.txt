@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.8...3.16 FATAL_ERROR)
 
 ###############        Get version from git        #####################
 execute_process(COMMAND git describe --tag
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         OUTPUT_VARIABLE PROJECT_GIT_VERSION
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 

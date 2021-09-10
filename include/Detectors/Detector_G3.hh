@@ -27,11 +27,9 @@ public:
         Initialization();
     }
 
-
     ~Detector_G3() override= default;
 
     void Initialization() override {
-
         // Primary Scintillation (S1) parameters
         g1 = 0.118735;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
         sPEres = 0.38;   // single phe resolution (Gaussian assumed)
@@ -84,7 +82,6 @@ public:
 
         noiseL[0] = 0;
         noiseL[1] = 0;
-
     }
 
     // S1 PDE custom fit for function of z
@@ -204,10 +201,8 @@ public:
                 time += tStep1;
             if (time > 5. * sigma) break;
         }
-
         return PEperBin;
     }
-
 };
 
 

@@ -1766,7 +1766,6 @@ double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField) 
 }
 
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas) {
- 
     if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
     else {
         return GetDriftVelocity_Liquid(Kelvin, eField, Density);
@@ -1920,8 +1919,7 @@ if (Kelvin < 84. || Kelvin > 140.) {
 double NESTcalc::GetDriftVelocity_MagBoltz(
         double density, double efieldinput, double molarMass)  // Nichole Barry UCD 2011
 {
-    
-    
+   
     if (ValidityTests::nearlyEqual(ATOM_NUM,
                                    18.)) {
     molarMass = 39.948;

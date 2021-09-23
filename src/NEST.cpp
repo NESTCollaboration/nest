@@ -48,7 +48,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
                                      const std::vector<double> &NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
                                      const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
                                      bool do_times /*=true*/) {
-
+ 
     if (density < 1.) fdetector->set_inGas(true);
     NESTresult result;
     result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
@@ -1700,14 +1700,22 @@ double NESTcalc::SetDensity(double Kelvin,
 double NESTcalc::GetDensity(double Kelvin, double bara, bool &inGas, uint64_t evtNum, double molarMass) {
     // currently only for fixed pressure (the saturated vapor pressure); will add pressure dependence later
 
-    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) && !inGas) {
+    if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
+        double density = 0.;
+        double VaporP_bar = 0.;
+        VaporP_bar = exp(45.973940 - 1464.718291 / Kelvin - 6.539938 *log(Kelvin));
+        if (bara < VaporP_bar || inGas) {
+        double p_Pa = bara * 1e5;
+        density = 1. /(pow(RidealGas * Kelvin, 3.) / (p_Pa * pow(RidealGas * Kelvin, 2.) + RealGasA * p_Pa * p_Pa) +
+                          RealGasB);  // Van der Waals equation, mol/m^3
+        density *= molarMass * 1e-6;
+        if (bara < VaporP_bar && evtNum == 0) cerr << "\nWARNING: ARGON GAS PHASE. IS THAT WHAT YOU WANTED?\n";
+        inGas = true;
+        return density; 
+        }     
         inGas = false;
-        if (DENSITY > 2.) return 1.4;
-        else {
-            return DENSITY;
-	}
+        return 1.4;  
     }
-
     //if (MOLAR_MASS > 134.5) //enrichment for 0vBB expt (~0.8 Xe-136)
     //return 3.0305; // ±0.0077 g/cm^3, EXO-200 @167K: arXiv:1908.04128
 
@@ -1784,7 +1792,32 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
       Solid:
       y_nest_80 = 7.063288*(0.929753**(1/x_nest))*x_nest**0.314640
       y_nest_82 = 5.093097*(0.920459**(1/x_nest))*x_nest**0.458724*/
-        speed = 0.097384 * pow(log10(eField), 3.0622) - 0.018614 * sqrt(eField);
+      double Temperature[8] = {84., 86., 88., 92., 96., 110.,
+                               125., 140.};
+
+if (Kelvin < 84. || Kelvin > 140.) {
+        cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
+        if (Kelvin < 84.) Kelvin = 84.;
+        if (Kelvin > 140.) Kelvin = 140.;
+        cerr << "Using value at closest temp for a drift speed estimate\n";
+    }
+    if (Kelvin >= Temperature[0] && Kelvin < Temperature[1])
+        speed = exp(0.937729-0.0734108/(eField/1000)+0.315338*log(eField/1000));
+    else if (Kelvin >= Temperature[1] && Kelvin < Temperature[2])
+        speed = exp(0.80302379-0.06694564/(eField/1000)+0.331798*log(eField/1000));
+    else if (Kelvin >= Temperature[2] && Kelvin < Temperature[3])
+        speed = exp(0.7795972-0.0990952/(eField/1000)+0.320876*log(eField/1000));
+    else if (Kelvin >= Temperature[3] && Kelvin < Temperature[4])
+        speed = exp(0.6911897-0.092997/(eField/1000)+0.3295202*log(eField/1000));
+    else if (Kelvin >= Temperature[4] && Kelvin < Temperature[5])
+        speed = exp(0.76551511-0.0731659/(eField/1000)+0.317972*log(eField/1000));
+    else if (Kelvin >= Temperature[5] && Kelvin < Temperature[6])
+        speed = exp(0.502022794-0.06644517/(eField/1000)+0.3290246*log(eField/1000));
+    else if (Kelvin >= Temperature[6] && Kelvin <= Temperature[7])
+        speed = exp(0.24207633-0.03558428/(eField/1000)+0.33645519*log(eField/1000));
+    else {
+        throw std::runtime_error("ERROR: TEMPERATURE OUT OF RANGE (84-140 K)");
+    }
         if (speed < 0.) speed = 0.;
         return speed;
     }
@@ -1884,8 +1917,17 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
 double NESTcalc::GetDriftVelocity_MagBoltz(
         double density, double efieldinput, double molarMass)  // Nichole Barry UCD 2011
 {
+   
+    if (ValidityTests::nearlyEqual(ATOM_NUM,
+                                   18.)) {
+    molarMass = 39.948;
     density *= NEST_AVO / molarMass;
+    double edrift = 0., gasdep = efieldinput / density;
+    edrift = 2.991205 * pow(1.00113657, 1. / (gasdep*1.e17)) * pow(gasdep*1.e17, 0.2570253);
+    return edrift;
+    } 
     // Gas equation one coefficients (E/N of 1.2E-19 to 3.5E-19)
+    density *= NEST_AVO / molarMass;
     double gas1a = 395.50266631436, gas1b = -357384143.004642,
             gas1c = 0.518110447340587;
     // Gas equation two coefficients (E/N of 3.5E-19 to 3.8E-17)

@@ -177,13 +177,11 @@ double NESTcalc::RecombOmegaNR(double elecFrac, const std::vector<double> &FreeP
 }
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam) {
-    double ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210.,
-                                                    1.25)); //0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); //pair with GregR mean yields model
+    double ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); //0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));
     if (ampl < 0.)
         ampl = 0.;
-    double wide = 0.205; //or: FreeParam #2, like amplitude (#1)
-    double cntr = 0.5; //0.41-45 agrees better with Dahl thesis. Odd! Reduces fluctuations for high e-Frac (high EF,low E). Also works with GregR LUX Run04 model. FreeParam #3
-    //for gamma-rays larger than 100 keV at least in XENON10 use 0.43 as the best fit. 0.62-0.37 for LUX Run03
+    double wide = .205; //or: FreeParam #2, like amplitude (#1)
+    double cntr = 0.45; //FreeParam #3 (old value of 0.50 for old ampl above 0.14...)
     double skew = -0.2; //FreeParam #4
     double mode = cntr + 2.*inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
     double norm = 1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
@@ -485,7 +483,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
         Nex = Nq - Ni;
     }
 
-    if (Nex <= 0.)
+    if (Nex < 0.)
         cerr
                 << "\nCAUTION: You are approaching the border of NEST's validity for high-energy (OR, for LOW) NR, or are beyond it, at "
                 << energy << " keV." << endl;
@@ -789,9 +787,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             return GetYieldGamma(energy, density, dfield); //PE of the full gamma spectrum
             break;
         default:  // beta, CH3T, 14C, the pp solar neutrino background, and Compton/PP spectra of fullGamma
-            return GetYieldBeta(energy, density, dfield);
-            //return GetYieldBetaGR(energy,density,dfield,NuisParam);
-            break;
+	  //return GetYieldBeta(energy, density, dfield);
+	  return GetYieldBetaGR(energy,density,dfield,NuisParam);
+	  break;
     }
 
 

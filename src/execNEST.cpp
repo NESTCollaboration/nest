@@ -182,15 +182,15 @@ int main(int argc, char** argv) {
     
     FreeParam.clear();
     NuisParam.clear();
-    if ( type == "ER" ) {
-      FreeParam.push_back(0.500);//LUX Run03
-      FreeParam.push_back(0.5);
-      FreeParam.push_back(1.1);
-      FreeParam.push_back(-5.);
-      FreeParam.push_back(1.01);
-      FreeParam.push_back(0.95);
-      FreeParam.push_back(1.4e-2);
-      FreeParam.push_back(1.8e-2);
+    if ( type == "ER" ) { //Based on XELDA L-shell 5.2 keV yields https://arxiv.org/abs/2109.11487
+      FreeParam.push_back(0.23);//0.5 for LUX Run03
+      FreeParam.push_back(0.77); //0.5
+      FreeParam.push_back(2.95); //1.1
+      FreeParam.push_back(-1.44); //-5.
+      FreeParam.push_back(1.0); //1.01
+      FreeParam.push_back(1.0); //0.95
+      FreeParam.push_back(0.); //1.4e-2 
+      FreeParam.push_back(0.); //1.8e-2
     }
     else {
       FreeParam.push_back(1.00); // Fi (Fano factor for ionization)
@@ -887,7 +887,8 @@ vector<double> signal1, signal2, signalE, vTable;
             YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
                                               double(massNum), double(atomNum), NuisParam);
             double weightG =
-                    FreeParam[0] + FreeParam[1] * erf(FreeParam[2] * (log(keV) + FreeParam[3])); // Xe10:1,.55,-1.6,-1.0
+                    FreeParam[0] + FreeParam[1] * erf(FreeParam[2] * (log(keV) + FreeParam[3])) * (1. - (1./(1. + pow(field/421.15, 3.27)))); // Xe10:1,.55,-1.6,-1.0
+	            //field weighting added to match dependence reported by XELDA and LUX Run3 
             double weightB = 1. - weightG;
             yields.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
             yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;

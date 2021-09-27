@@ -5,8 +5,8 @@
 #include "VDetector.hh"
 using namespace std;
 
-//NOTES: best g1 for DD 0.1193, but for tritium 0.1146; S2 noise 1.9, 7.5%; g1_gas 0.1019, 0.1012
-//s2fano 3.6, 0.9; eField in gas 6.25, 6.2; e- life 650, 750 us; fid vol 80-130, 38-305 us; gasGap 4.25, 4.5 mm
+//NOTES: best g1 for DD 0.115, but for tritium 0.119; g1_gas = 0.1 for both, s2Fano & s2_thr equal
+//E_gas 6.3, 6.55; e- lifet 650, 750 us; fid vol 80-130, 38-305 us; gasGap and noiseL0,1 same (both ~0)
 //DISCLAIMER: Slight differences from official published values due to private LUX algorithms
 
 class DetectorExample_LUX_RUN03: public VDetector {
@@ -41,14 +41,14 @@ public:
     numPMTs = 119;// 122 minus 3 off
     
     rmQuanta = true; //default
-    noiseL[0]=1.4e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
-    noiseL[1]=5.5e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[0]=0.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    noiseL[1]=0.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.1033; //0.1 in 1910.04211
-    s2Fano = 2.2; //3.7 in 1910.04211; this matches 1608.05381 better
-    s2_thr = 165.;//(150.*1.173)/0.915; //65-194 pe in 1608.05381
-    E_gas = 6.23; //6.55 in 1910.04211
+    g1_gas = 0.1; //0.1 in 1910.04211
+    s2Fano = 3.6; //3.7 in 1910.04211; this matches 1608.05381 better
+    s2_thr = (150.*1.173)/0.915; //65-194 pe in 1608.05381
+    E_gas = 6.55; //6.55 in 1910.04211
     eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown
     
     // Thermodynamic Properties
@@ -64,7 +64,7 @@ public:
     radius = 200.; //1512.03506
     radmax = 235.; //1910.04211
     
-    TopDrift = 544.8; //544.95 in 1910.04211
+    TopDrift = 544.95; //544.95 in 1910.04211
     anode = 549.2; //1910.04211 and 549 in 1708.02566
     gate = 539.2; //1910.04211 and 539 in 1708.02566
     cathode = 55.90; //55.9-56 in 1910.04211,1708.02566

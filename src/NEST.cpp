@@ -177,11 +177,11 @@ double NESTcalc::RecombOmegaNR(double elecFrac, const std::vector<double> &FreeP
 }
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam) {
-    double ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); //0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));
+    double ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); // <-NEW(GregR); OLD-> 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));
     if (ampl < 0.)
         ampl = 0.;
     double wide = .205; //or: FreeParam #2, like amplitude (#1)
-    double cntr = 0.45; //FreeParam #3 (old value of 0.50 for old ampl above 0.14...)
+    double cntr = 0.45; //NEW(GregR) FreeParam #3 (OLD value of 0.50 for OLD ampl above 0.14...)
     double skew = -0.2; //FreeParam #4
     double mode = cntr + 2.*inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
     double norm = 1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
@@ -656,7 +656,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     return YieldResultValidity(result, energy, Wq_eV);  // everything needed to calculate fluctuations
 }
 
-YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield) {
+YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield) { // OLD
     Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
     double Qy, Nq;
     double Wq_eV = wvalue.Wq_eV;
@@ -709,7 +709,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
     return YieldResultValidity(result, energy, Wq_eV);  // everything needed to calculate fluctuations;
 }
 
-YieldResult
+YieldResult // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std::vector<double> &NuisParam) {
 
     if (RecombOmegaER(0.0, 0.5, NuisParam) < 0.05)
@@ -787,8 +787,8 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             return GetYieldGamma(energy, density, dfield); //PE of the full gamma spectrum
             break;
         default:  // beta, CH3T, 14C, the pp solar neutrino background, and Compton/PP spectra of fullGamma
-	  //return GetYieldBeta(energy, density, dfield);
-	  return GetYieldBetaGR(energy,density,dfield,NuisParam);
+	  //return GetYieldBeta(energy, density, dfield); // OLD
+	  return GetYieldBetaGR(energy,density,dfield,NuisParam); // NEW
 	  break;
     }
 

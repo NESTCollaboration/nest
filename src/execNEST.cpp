@@ -880,7 +880,7 @@ vector<double> signal1, signal2, signalE, vTable;
                       << endl;
               cerr << "with weight values of " << FreeParam[0] << " " << FreeParam[1] << " " << FreeParam[2] << " "
                    << FreeParam[3] << " " << FreeParam[4]
-                   << " " << FreeParam[5] << " " << FreeParam[6] << " " << FreeParam[7] << endl;
+                   << " " << FreeParam[5] << " " << FreeParam[6] << " " << FreeParam[7] << " for use in Xe-127 L-/M-shell captures at 1.1 & 5.2 keV, or Xe-129/131m" << endl;
             }
             YieldResult yieldsB = n.GetYields(NEST::beta, keV, rho, field,
                                               double(massNum), double(atomNum), NuisParam);

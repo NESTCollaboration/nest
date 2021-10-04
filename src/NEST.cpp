@@ -1998,8 +1998,11 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
     double rad = sqrt(pow(xPos_mm, 2.) + pow(yPos_mm, 2.));
     double kappa = fdetector->get_PosResBase() +
                    exp(fdetector->get_PosResExp() * rad);  // arXiv:1710.02752
-    double sigmaR = kappa / sqrt(A_top);                   // ibid.
-
+    if ( rad > 150. )
+      kappa = 116.; // see git issue #131 from Claudio: but, converted from cm to mm here
+    double sigmaR = kappa / sqrt(A_top);                   // ibid. But only stat; add syst (~3mm)
+    sigmaR = sqrt ( sigmaR * sigmaR + 9. ); // σ_vertex^2 = ((r_vertex/r_S2)*σ_(x,y))^2 + σ_sys^2
+    
     double phi = two_PI * RandomGen::rndm()->rand_uniform();
     sigmaR = std::abs(RandomGen::rndm()->rand_gauss(0.0, sigmaR));
     double sigmaX = sigmaR * cos(phi);

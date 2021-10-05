@@ -20,58 +20,58 @@ public:
     // Call the initialization of all the parameters
     Initialization();
   };
-  ~DetectorExample_LUX_RUN03() override = default;;
+  ~DetectorExample_LUX_RUN03() override = default;
   
   // Do here the initialization of all the parameters that are not varying as a function of time
   void Initialization() override {
     
     // Primary Scintillation (S1) parameters
-    g1 = 0.1170; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim
-    sPEres = 0.37; //arXiv:1910.04211
-    sPEthr = (0.3*1.173)/0.915; //arXiv:1910.04211
-    sPEeff = 1.00; //arXiv:1910.04211
-    noiseB[0] = 0.00; //arXiv:1910.04211 says -0.01
-    noiseB[1] = 0.08; //arXiv:1910.04211
-    noiseB[2] = 0.;
-    noiseB[3] = 0.;
-    P_dphe = 0.173; //arXiv:1910.04211
+    g1 = 0.1170; //0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005 CH3T,0.119+/-0.001 LUXSim. UNITS: phd per photon (NOT photoelectrons!!)
+    sPEres = 0.37; //arXiv:1910.04211. UNITS: phe a.k.a. PE or photoelectrons
+    sPEthr = (0.3*1.173)/0.915; //arXiv:1910.04211. UNITS: phe
+    sPEeff = 1.00; //arXiv:1910.04211. UNITS: fractional
+    noiseB[0] = 0.00; //arXiv:1910.04211 says -0.01. UNITS: phe
+    noiseB[1] = 0.08; //arXiv:1910.04211. UNITS: phe
+    noiseB[2] = 0.; // UNITS: e-'s
+    noiseB[3] = 0.; // UNITS: e-'s
+    P_dphe = 0.173; //arXiv:1910.04211. UNITS: fractional
     
-    coinWind= 100;// 1310.8214
-    coinLevel=2;  //1512.03506
-    numPMTs = 119;// 122 minus 3 off
+    coinWind= 100;// 1310.8214. UNITS: ns
+    coinLevel=2;  //1512.03506. UNITS: number of PMTs for coincidence requirement
+    numPMTs = 119;// 122 minus 3 off. UNITS: number of PMTs
     
-    rmQuanta = true; //default
-    noiseL[0]=0.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
-    noiseL[1]=0.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8
+    rmQuanta = true; //default true, which means use "classic" W instead of Baudis / EXO's
+    noiseL[0]=0.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8. UNITS: fraction NOT %!
+    noiseL[1]=0.0e-2; //1910.04211 p.12, to match 1610.02076 Fig. 8. UNITS: fraction NOT %!
     
     // Ionization and Secondary Scintillation (S2) parameters
-    g1_gas = 0.1; //0.1 in 1910.04211
-    s2Fano = 3.6; //3.7 in 1910.04211; this matches 1608.05381 better
-    s2_thr = (150.*1.173)/0.915; //65-194 pe in 1608.05381
-    E_gas = 6.4; //6.55 in 1910.04211
-    eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown
+    g1_gas = 0.1; //0.1 in 1910.04211. UNITS: phd per e-
+    s2Fano = 3.6; //3.7 in 1910.04211; this matches 1608.05381 better. Dimensionless
+    s2_thr = (150.*1.173)/0.915; //65-194 pe in 1608.05381. UNITS: phe
+    E_gas = 6.4; //6.55 in 1910.04211. UNITS: kV/cm
+    eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown. UNIT: microseconds (us)
     
     // Thermodynamic Properties
     //inGas = false; //duh
-    T_Kelvin = 173.; //1910.04211
-    p_bar = 1.57; //1910.04211
+    T_Kelvin = 173.; //1910.04211. UNITS: Temperature in Kelvin
+    p_bar = 1.57; //1910.04211. UNITS: pressure in bar
     
     // Data Analysis Parameters and Geometry
-    dtCntr = 160.; //p.61 Dobi thesis UMD, 159 in 1708.02566
-    dt_min = 38.; //1608.05381
-    dt_max = 305.; //1608.05381
+    dtCntr = 160.; //p.61 Dobi thesis UMD, 159 in 1708.02566. UNITS: microseconds
+    dt_min = 38.; //1608.05381. UNITS: microseconds
+    dt_max = 305.; //1608.05381. UNITS: microseconds
     
-    radius = 200.; //1512.03506
-    radmax = 235.; //1910.04211
+    radius = 200.; //1512.03506. UNITS: mm
+    radmax = 235.; //1910.04211. UNITS: mm
     
-    TopDrift = 544.95; //544.95 in 1910.04211
-    anode = 549.2; //1910.04211 and 549 in 1708.02566
-    gate = 539.2; //1910.04211 and 539 in 1708.02566
-    cathode = 55.90; //55.9-56 in 1910.04211,1708.02566
+    TopDrift = 544.95; //544.95 in 1910.04211. UNITS: mm
+    anode = 549.2; //1910.04211 and 549 in 1708.02566. UNITS: mm
+    gate = 539.2; //1910.04211 and 539 in 1708.02566. UNITS: mm
+    cathode = 55.90; //55.9-56 in 1910.04211,1708.02566. UNITS: mm
     
     // 2-D (X & Y) Position Reconstruction
-    PosResExp = 0.015; //arXiv:1710.02752 indirectly
-    PosResBase = 70.8364; //1710.02752 indirectly
+    PosResExp = 0.015; //arXiv:1710.02752 indirectly. UNITS: mm^-1
+    PosResBase = 70.8364; //1710.02752 indirectly. UNITS: mm
   }
   
   // S1 PDE custom fit for function of xyz

@@ -15,9 +15,8 @@ static constexpr int podLength = 1100; //roughly 100-1,000 ns for S1
 
 bool kr83m_reported_low_deltaT = false; //to aid in verbosity 
 
-const std::vector<double> NESTcalc::default_NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1.,
-                                                         1.};
-const std::vector<double> NESTcalc::default_FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25};
+const std::vector<double> NESTcalc::default_NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
+const std::vector<double> NESTcalc::default_FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25}; //Fano factor of ~3 at least for ionization when using rmQuanta (look at first 2 values)
 
 int64_t NESTcalc::BinomFluct(int64_t N0, double prob) {
     double mean = N0 * prob;
@@ -302,8 +301,8 @@ QuantaResult NESTcalc::GetQuanta(YieldResult &yields, double density,
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) omega = 0.0; // Ar has no non-binom sauce
     double Variance =
             recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
-    if ( !fdetector->get_rmQuanta() ) Variance /= sqrt ( 1.1 );
-
+    //if ( !fdetector->get_rmQuanta() ) Variance /= sqrt ( 1.1 );
+    
     double skewness;
     if ((yields.PhotonYield + yields.ElectronYield) > 1e4 || yields.ElectricField > 4e3 || yields.ElectricField < 50.) {
         skewness = 0.00; //make it a constant 0 when outside the range of Vetri Velan's Run04 models.
@@ -461,6 +460,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double) massNumber);
     ScaleFactor[1] = ScaleFactor[0];
     double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
+    if ( !fdetector->get_rmQuanta() ) Nq *= InfraredER;
     double ThomasImel =
             NuisParam[2] * pow(dfield, NuisParam[3]) * pow(density / DENSITY, 0.3);
     double Qy = 1. / (ThomasImel * pow(energy + NuisParam[4], NuisParam[9]));

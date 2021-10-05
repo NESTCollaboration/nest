@@ -5,7 +5,8 @@
 
 // *********************************************************************
 // THIS DEFAULT VIRTUAL DETECTOR SHOULD ONLY BE MODIFIED BY DEVELOPERS.
-// PLEASE DEFINE YOUR OWN DETECTOR (see DetectorExample_XENON10.hh).
+// PLEASE DEFINE YOUR OWN DETECTOR (see DetectorExample_XENON10.hh, or
+// the LUX Run03 detector header file: they each explain the units too).
 // *********************************************************************
 
 #ifndef VDetector_hh

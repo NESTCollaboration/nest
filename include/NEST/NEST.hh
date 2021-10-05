@@ -267,7 +267,7 @@ namespace NEST {
         virtual YieldResult YieldResultValidity(YieldResult &res, const double energy, const double Wq_eV);
 
         // Confirms and sometimes adjusts YieldResult to make physical sense
-        virtual QuantaResult GetQuanta(const YieldResult &yields, double density,
+        virtual QuantaResult GetQuanta(YieldResult &yields, double density,
                                        const std::vector<double> &FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25});
 
         // GetQuanta takes the yields from above and fluctuates them, both the total

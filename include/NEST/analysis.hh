@@ -14,7 +14,7 @@ bool MCtruthE = false;    // false means reconstructed energy
 bool MCtruthPos = false;  // false means reconstructed position
 
 // Setting the S1 and S2 calculation modes
-NEST::S1CalculationMode s1CalculationMode = NEST::S1CalculationMode::Full;
+NEST::S1CalculationMode s1CalculationMode = NEST::S1CalculationMode::Hybrid;
 // S1 calculation mode options are:
 // Full [Default]: calculating the pulse area by looping over all the pmt hits
 // Parametric: calculating the pulse area by using a parametric equation

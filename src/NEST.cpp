@@ -209,7 +209,7 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
 }
 
 
-QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
+QuantaResult NESTcalc::GetQuanta(YieldResult &yields, double density,
                                  const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
     QuantaResult result{};
     bool HighE;
@@ -221,6 +221,10 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
 
     double excitonRatio = yields.ExcitonRatio;
     double Nq_mean = yields.PhotonYield + yields.ElectronYield;
+    if ( !fdetector->get_rmQuanta() ) {
+      yields.ElectronYield *= 1.1;
+      yields.PhotonYield = Nq_mean - yields.ElectronYield;
+    }
 
     double elecFrac = max(0., min(yields.ElectronYield / Nq_mean, 1.));
 
@@ -298,6 +302,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) omega = 0.0; // Ar has no non-binom sauce
     double Variance =
             recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
+    if ( !fdetector->get_rmQuanta() ) Variance /= sqrt ( 1.1 );
 
     double skewness;
     if ((yields.PhotonYield + yields.ElectronYield) > 1e4 || yields.ElectricField > 4e3 || yields.ElectricField < 50.) {

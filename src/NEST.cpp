@@ -18,27 +18,12 @@ bool kr83m_reported_low_deltaT = false; //to aid in verbosity
 const std::vector<double> NESTcalc::default_NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
 const std::vector<double> NESTcalc::default_FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25}; //Fano factor of ~3 at least for ionization when using rmQuanta (look at first 2 values)
 
+unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+std::default_random_engine generator(seed);
+
 int64_t NESTcalc::BinomFluct(int64_t N0, double prob) {
-    double mean = N0 * prob;
-    double sigma = sqrt(N0 * prob * (1. - prob));
-    int N1 = 0;
-
-    if (prob <= 0.00) return N1;
-    if (prob >= 1.00) return N0;
-
-    if (N0 <= 9. * (1. - prob) / prob || N0 <= 9. * prob / (1. - prob)) {
-        //https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation
-        for (int i = 0; i < N0; ++i) {
-            if (RandomGen::rndm()->rand_uniform() < prob) ++N1;
-        }
-    } else {
-        N1 = int(floor(RandomGen::rndm()->rand_gauss(mean, sigma) + 0.5));
-    }
-
-    if (N1 > N0) N1 = N0;
-    if (N1 < 0) N1 = 0;
-
-    return N1;
+    std::binomial_distribution<int> distribution(N0, prob);
+    return distribution(generator);
 }
 
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,

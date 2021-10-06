@@ -28,7 +28,7 @@ class DetectorExample_XENON10 : public VDetector {
     // Call the initialisation of all the parameters
     Initialization();
   };
-  ~DetectorExample_XENON10() override= default;;
+  ~DetectorExample_XENON10() override= default;
 
   // Do here the initialization of all the parameters that are not varying as a
   // function of time

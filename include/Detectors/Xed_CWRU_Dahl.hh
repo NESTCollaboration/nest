@@ -16,10 +16,10 @@ public:
     // Call the initialization of all the parameters
     Initialization();
   };
-  virtual ~DetectorExample_XED() {};
+  ~DetectorExample_XED() override = default;
   
   // Do here the initialization of all the parameters that are not varying as a function of time
-  virtual void Initialization() {
+  virtual void Initialization() override {
     
     // Primary Scintillation (S1) parameters
     g1 = 0.05; //phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
@@ -79,13 +79,13 @@ public:
   
   //S1 PDE custom fit for function of z
   //s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
-  virtual double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm, LCE map ) {
+  virtual double FitS1 ( double xPos_mm, double yPos_mm, double zPos_mm, LCE map ) override {
     return 1.; // unitless, 1.000 at detector center
   }
   
   //Drift electric field as function of Z in mm
   //For example, use a high-order poly spline
-  virtual double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) { // in V/cm
+  virtual double FitEF ( double xPos_mm, double yPos_mm, double zPos_mm ) override { // in V/cm
     uniform_int_distribution<int> distribution(0,6);
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     default_random_engine generator(seed);
@@ -110,12 +110,12 @@ public:
   
   //S2 PDE custom fit for function of r
   //s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
-  virtual double FitS2 ( double xPos_mm, double yPos_mm, LCE map ) {
+  virtual double FitS2 ( double xPos_mm, double yPos_mm, LCE map ) override {
     return 1.; // unitless, 1.000 at detector center
   }
   
   virtual vector<double> FitTBA(double xPos_mm, double yPos_mm,
-				double zPos_mm) {
+				double zPos_mm) override {
     vector<double> BotTotRat(2);
     
     BotTotRat[0] = 0.2;  // S1 bottom-to-total ratio
@@ -124,7 +124,7 @@ public:
     return BotTotRat;
   }
   
-  virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) {
+  virtual double OptTrans ( double xPos_mm, double yPos_mm, double zPos_mm ) override {
     
     double phoTravT, approxCenter = ( TopDrift + cathode ) / 2., relativeZ = zPos_mm - approxCenter;
     
@@ -156,7 +156,7 @@ public:
     return phoTravT; //this function follows LUX (arXiv:1802.06162) not Xe10 technically but tried to make general
   }
   
-  virtual vector<double> SinglePEWaveForm ( double area, double t0 ) {
+  virtual vector<double> SinglePEWaveForm ( double area, double t0 ) override {
     
     vector<double> PEperBin;
     

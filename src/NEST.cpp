@@ -2,6 +2,7 @@
 #include <exception>
 #include "NEST.hh"
 #include <stdexcept>
+#include <chrono>
 
 #define InfraredER 1.1716263232
 //#define InfraredNR 7.

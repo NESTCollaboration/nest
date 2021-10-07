@@ -208,7 +208,7 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
 }
 
 
-QuantaResult NESTcalc::GetQuanta(YieldResult &yields, double density,
+QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
                                  const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
     QuantaResult result{};
     bool HighE;
@@ -217,16 +217,12 @@ QuantaResult NESTcalc::GetQuanta(YieldResult &yields, double density,
     if (FreeParam.size() < 6) {
         throw std::runtime_error("ERROR: You need a minimum of 6 free parameters for the resolution model.");
     }
-
+    
     double excitonRatio = yields.ExcitonRatio;
     double Nq_mean = yields.PhotonYield + yields.ElectronYield;
-    if ( !fdetector->get_rmQuanta() ) {
-      yields.ElectronYield *= 1.1;
-      yields.PhotonYield = Nq_mean - yields.ElectronYield;
-    }
-
+    
     double elecFrac = max(0., min(yields.ElectronYield / Nq_mean, 1.));
-
+    
     if (excitonRatio < 0.) {
         excitonRatio = 0.;
         HighE = true;
@@ -380,6 +376,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
     if (fdetector->get_inGas()) m8 = -2.;
     double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 +
                 (m6 - m5) / (1. + pow(energy / m7, m8));
+    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
     double Ly = Nq / energy - Qy;
 
     YieldResult result{};
@@ -465,6 +462,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
             NuisParam[2] * pow(dfield, NuisParam[3]) * pow(density / DENSITY, 0.3);
     double Qy = 1. / (ThomasImel * pow(energy + NuisParam[4], NuisParam[9]));
     Qy *= 1. - 1. / pow(1. + pow((energy / NuisParam[5]), NuisParam[6]), NuisParam[10]);
+    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
     double Ly = Nq / energy - Qy;
     if (Qy < 0.0) Qy = 0.0;
     if (Ly < 0.0) Ly = 0.0;
@@ -700,6 +698,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
         if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
     }
 
+    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
     double Ly = Nq / energy - Qy;
     double Ne = Qy * energy;
     double Nph = Ly * energy;
@@ -744,6 +743,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std
     double coeff_Ni = pow(1. / DENSITY, 1.4);
     double coeff_OL = pow(1. / DENSITY, -1.7) / log(1. + coeff_TI * coeff_Ni * pow(DENSITY, 1.7));
     Qy *= coeff_OL * log(1. + coeff_TI * coeff_Ni * pow(density, 1.7)) * pow(density, -1.7);
+    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
     double Ly = Nq / energy - Qy;
     double Ne = Qy * energy;
     double Nph = Ly * energy;

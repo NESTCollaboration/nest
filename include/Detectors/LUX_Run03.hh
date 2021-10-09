@@ -6,7 +6,7 @@
 using namespace std;
 
 //NOTES: best g1 for DD 0.115, but for tritium 0.119; g1_gas = 0.1 for both, s2Fano & s2_thr equal
-//E_gas 6.3, 6.5; e- lifet 650, 750 us; fid vol 80-130, 38-305 us; gasGap and noiseL0,1 same (both ~0)
+//E_gas 6.17, 6.35; e- lifet 650, 750 us; fid vol 80-130, 38-305 us; gasGap and noiseL0,1 same (both ~0)
 //DISCLAIMER: Slight differences from official published values due to private LUX algorithms
 
 class DetectorExample_LUX_RUN03: public VDetector {
@@ -48,7 +48,7 @@ public:
     g1_gas = 0.1; //0.1 in 1910.04211. UNITS: phd per e-
     s2Fano = 3.6; //3.7 in 1910.04211; this matches 1608.05381 better. Dimensionless
     s2_thr = (150.*1.173)/0.915; //65-194 pe in 1608.05381. UNITS: phe
-    E_gas = 6.4; //6.55 in 1910.04211. UNITS: kV/cm
+    E_gas = 6.25; //6.55 in 1910.04211. UNITS: kV/cm
     eLife_us = 800.; //p.44 of James Verbus PhD thesis Brown. UNIT: microseconds (us)
     
     // Thermodynamic Properties

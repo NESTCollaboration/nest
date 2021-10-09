@@ -82,7 +82,7 @@ int RandomGen::poisson_draw(double mean) {
 }
 
 int64_t RandomGen::binom_draw(int64_t N0, double prob) {
-  std::binomial_distribution<int> distribution(N0, prob);
+  std::binomial_distribution<int64_t> distribution(N0, prob);
   return distribution(rng);
 }
 

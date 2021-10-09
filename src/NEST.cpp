@@ -628,7 +628,13 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
 
     YieldResult result{};
     result.PhotonYield = Nph;
-    result.ElectronYield = Ne;
+    result.ElectronYield= Ne;
+    if ( !fdetector->get_rmQuanta() ) {
+      Ne *= 1.1;
+      Nph = (result.PhotonYield+result.ElectronYield) - Ne;
+      result.PhotonYield = Nph;
+      result.ElectronYield =Ne;
+    }
     result.ExcitonRatio = NexONi(energy, density);
     result.Lindhard = 1;
     result.ElectricField = dfield;

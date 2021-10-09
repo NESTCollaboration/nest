@@ -1537,14 +1537,11 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) // Argon
         ExtEff = 1. - 1.1974 * exp(-1.003 * pow(E_liq, 1.3849));  // Guschin 1978-79 and 1981-82
     else {
-        if (EPS_GAS > 0.) {
-            ExtEff = -0.03754 * pow(E_liq, 2.) + 0.52660 * E_liq - 0.84645;  // arXiv:1710.11032 (PIXeY)
-            if (E_liq > 7.) ExtEff = 1.;
-        } else {
-            ExtEff = 1. - 1. / (1. + pow(E_liq / 3.4832, 4.9443));  // arXiv:1904.02885 (Livermore)
-            //ExtEff = -0.0012052 + 0.1638 * fdetector->get_E_gas() - 0.0063782 * pow ( fdetector->get_E_gas(), 2. );  // Aprile 2004 IEEE No. 5
-            //ExtEff = 1. - 1.3558 * exp ( -0.074312 * pow ( E_liq, 2.4259 ) );//Gus, favored by RED-100
-        } //the alternative options
+      double T_Kelvin = fdetector->get_T_Kelvin();  // data was available at 160(solid), 165, 170, 175, 179, 181 K
+      double em1 = 87852.-2021.0*T_Kelvin+17.426*pow(T_Kelvin,2.)-0.066742*pow(T_Kelvin,3.)+9.5810e-5*pow(T_Kelvin,4.);
+      double em2 = 43512.-1004.0*T_Kelvin+8.6837*pow(T_Kelvin,2.)-0.033365*pow(T_Kelvin,3.)+4.8052e-5*pow(T_Kelvin,4.);
+      double em3 = 29263.-754.82*T_Kelvin+7.2426*pow(T_Kelvin,2.)-0.030672*pow(T_Kelvin,3.)+4.8417e-5*pow(T_Kelvin,4.);
+      ExtEff = 1. - em1 * exp ( -em2 * pow ( E_liq, em3 ) );  // combination of GusX4, PIXeY, LLNLx2, Xe10, Xe100, RED
     }
     if (ExtEff > 1. || fdetector->get_inGas()) ExtEff = 1.;
     if (ExtEff < 0. || E_liq <= 0.) ExtEff = 0.;

@@ -800,7 +800,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             return GetYieldGamma(energy, density, dfield); //PE of the full gamma spectrum
             break;
         default:  // beta, CH3T, 14C, the pp solar neutrino background, and Compton/PP spectra of fullGamma
-	  if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) || dfield < 1e2 )
+	  if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) )
             return GetYieldBeta(energy, density, dfield); // OLD
           else return GetYieldBetaGR(energy,density,dfield,NuisParam); // NEW
 	  break;

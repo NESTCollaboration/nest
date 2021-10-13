@@ -882,7 +882,9 @@ vector<double> signal1, signal2, signalE, vTable;
                    << FreeParam[3] << " " << FreeParam[4]
                    << " " << FreeParam[5] << " " << FreeParam[6] << " " << FreeParam[7] << " for Xe-127 L-/M-shell captures at 1.1,5.2keV or Xe-129/131m, at low field" << endl;
             }
-            YieldResult yieldsB = n.GetYields(NEST::beta, keV, rho, field,
+	    yields = n.GetYieldERWeighted(keV, rho, field, NuisParam);
+	    //Comment out GetYields above and uncomment below for LoopNEST usage
+            /*YieldResult yieldsB = n.GetYields(NEST::beta, keV, rho, field,
                                               double(massNum), double(atomNum), NuisParam);
             YieldResult yieldsG = n.GetYields(gammaRay, keV, rho, field,
                                               double(massNum), double(atomNum), NuisParam);
@@ -900,7 +902,8 @@ vector<double> signal1, signal2, signalE, vTable;
             FudgeFactor[1] = FreeParam[5];//1.04;
             yields.PhotonYield *= FudgeFactor[0];
             yields.ElectronYield *= FudgeFactor[1];
-            detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
+            detector->set_noiseL(FreeParam[6], FreeParam[7]); // XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5% 
+	    */
           }
 	  else {
             if ( seed < 0 && seed != -1 && type_num <= 5 ) massNum = detector->get_molarMass();

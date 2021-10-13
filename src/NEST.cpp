@@ -366,6 +366,31 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
     return YieldResultValidity(result, energy, Wq_eV);
 }
 
+YieldResult NESTcalc::GetYieldERWeighted(double energy, double density, double dfield, const std::vector<double> &NuisParam ) {
+    Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
+    double Wq_eV = wvalue.Wq_eV;
+    
+    const std::vector<double> EnergyParams = {0.23, 0.77, 2.95, -1.44};
+    const std::vector<double> FieldParams = {421.15, 3.27};
+    YieldResult yieldsB = GetYieldBetaGR( energy, density, dfield, NuisParam );
+    YieldResult yieldsG = GetYieldGamma( energy, density, dfield );
+    double weightG =
+            EnergyParams[0] + EnergyParams[1] * erf(EnergyParams[2] * (log(energy) + EnergyParams[3])) * 
+            (1. - (1./(1. + pow(dfield/FieldParams[0], FieldParams[1])))); 
+            //field weighting added to match dependence reported by XELDA and LUX Run3.
+            //Not validated beyond of fields on the order of a few hundred V/cm
+    double weightB = 1. - weightG;
+  
+    YieldResult result{};
+    result.PhotonYield = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
+    result.ElectronYield = weightG * yieldsG.ElectronYield + weightB * yieldsB.ElectronYield;
+    result.ExcitonRatio = weightG * yieldsG.ExcitonRatio + weightB * yieldsB.ExcitonRatio;
+    result.Lindhard = weightG * yieldsG.Lindhard + weightB * yieldsB.Lindhard;
+    result.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
+    result.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
+    return YieldResultValidity(result, energy, Wq_eV);
+}
+
 YieldResult NESTcalc::GetYieldNROld(double energy, int option) { // possible anti-correlation in NR ignored totally
 
     double Ne, Nph, FakeField;

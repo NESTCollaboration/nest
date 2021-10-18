@@ -6,7 +6,7 @@
 #define InfraredER 1.1716263232
 //#define InfraredNR 7.
 
-#define ChargeLoss 0.20
+#define ChargeLoss 0.77
 
 using namespace std;
 using namespace NEST;
@@ -537,7 +537,8 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
     if (ValidityTests::nearlyEqual(A1, 206.) &&
         ValidityTests::nearlyEqual(Z1, 82.)) {
 	//Pb-206 (from Po-210 alpha decay).
-        ThomasImel = 79.9 * pow(dfield, -0.868); //Nishat Parveen
+        //ThomasImel = 79.9 * pow(dfield, -0.868); //Nishat Parveen
+	 ThomasImel = exp(-1.28683 - 1.42053e-03 * dfield); //updated by Nishat Parveen
     }
     const double logden = log10(density);
     double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
@@ -545,7 +546,8 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
                    74.194 * pow(logden, 5.) - 20.276 * pow(logden, 6.) -
                    2.2352 * pow(logden, 7.);
     double alpha = 0.64 / pow(1. + pow(density / 10., 2.), 449.61);
-    double NexONi = alpha + 0.00178 * pow(atomNum, 1.587); //Wq_eV=13.7;ThomasImel=0.05;NexONi=0.05;
+   // double NexONi = alpha + 0.00178 * pow(atomNum, 1.587); //Wq_eV=13.7;ThomasImel=0.05;NexONi=0.05;
+    double NexONi = 1.1; //updated by Nishat Parveen
     double Nq = 1e3 * L * energy / Wq_eV;
     double Ni = Nq / (1. + NexONi);
     double recombProb;

@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #define InfraredER 1.1716263232
+#define ZurichEXO 1.1
 //#define InfraredNR 7.
 
 #define ChargeLoss 0.77
@@ -286,7 +287,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) omega = 0.0; // Ar has no non-binom sauce
     double Variance =
             recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
-    //if ( !fdetector->get_rmQuanta() ) Variance /= sqrt ( 1.1 );
+    //if ( !fdetector->get_rmQuanta() ) Variance /= sqrt ( ZurichEXO );
 
     double skewness;
     if ((yields.PhotonYield + yields.ElectronYield) > 1e4 || yields.ElectricField > 4e3 || yields.ElectricField < 50.) {
@@ -367,7 +368,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
     if (fdetector->get_inGas()) m8 = -2.;
     double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 +
                 (m6 - m5) / (1. + pow(energy / m7, m8));
-    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
+    if ( !fdetector->get_rmQuanta() ) Qy *= ZurichEXO;
     double Ly = Nq / energy - Qy;
 
     YieldResult result{};
@@ -481,7 +482,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
             NuisParam[2] * pow(dfield, NuisParam[3]) * pow(density / DENSITY, 0.3);
     double Qy = 1. / (ThomasImel * pow(energy + NuisParam[4], NuisParam[9]));
     Qy *= 1. - 1. / pow(1. + pow((energy / NuisParam[5]), NuisParam[6]), NuisParam[10]);
-    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
+    if ( !fdetector->get_rmQuanta() ) Qy *= ZurichEXO;
     double Ly = Nq / energy - Qy;
     if (Qy < 0.0) Qy = 0.0;
     if (Ly < 0.0) Ly = 0.0;
@@ -552,21 +553,19 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
     double fieldDep = pow(1. + pow(dfield / 95., 8.7), 0.0592);
     if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
     double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
-    if (ValidityTests::nearlyEqual(A1, 206.) &&
-        ValidityTests::nearlyEqual(Z1, 82.)) {
-	//Pb-206 (from Po-210 alpha decay).
-        //ThomasImel = 79.9 * pow(dfield, -0.868); //Nishat Parveen
-	 ThomasImel = exp(-1.28683 - 1.42053e-03 * dfield); //updated by Nishat Parveen
+    double alpha = 0.64 / pow(1. + pow(density / 10., 2.), 449.61);
+    double NexONi = alpha + 0.00178 * pow(atomNum, 1.587); //Wq_eV=13.7; ThomasImel=0.05; NexONi=0.05;
+    if ( ValidityTests::nearlyEqual(A1, 206.) && ValidityTests::nearlyEqual(Z1, 82.) ) { //Pb-206 (from Po-210 alpha decay).
+      ThomasImel = exp(-1.28683 - 1.42053e-03 * dfield); //updated by Nishat Parveen
+      NexONi = 1.1; //updated by Nishat Parveen
     }
     const double logden = log10(density);
     double Wq_eV = 28.259 + 25.667 * logden - 33.611 * pow(logden, 2.) -
                    123.73 * pow(logden, 3.) - 136.47 * pow(logden, 4.) -
                    74.194 * pow(logden, 5.) - 20.276 * pow(logden, 6.) -
                    2.2352 * pow(logden, 7.);
-    double alpha = 0.64 / pow(1. + pow(density / 10., 2.), 449.61);
-   // double NexONi = alpha + 0.00178 * pow(atomNum, 1.587); //Wq_eV=13.7;ThomasImel=0.05;NexONi=0.05;
-    double NexONi = 1.1; //updated by Nishat Parveen
     double Nq = 1e3 * L * energy / Wq_eV;
+    if ( !fdetector->get_rmQuanta() ) Nq *= InfraredER;
     double Ni = Nq / (1. + NexONi);
     double recombProb;
     if (Ni > 0. && ThomasImel > 0.)
@@ -677,7 +676,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     result.PhotonYield = Nph;
     result.ElectronYield= Ne;
     if ( !fdetector->get_rmQuanta() ) {
-      Ne *= 1.1;
+      Ne *= ZurichEXO;
       Nph = (result.PhotonYield+result.ElectronYield) - Ne;
       result.PhotonYield = Nph;
       result.ElectronYield =Ne;
@@ -730,7 +729,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
         if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
     }
 
-    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
+    if ( !fdetector->get_rmQuanta() ) Qy *= ZurichEXO;
     double Ly = Nq / energy - Qy;
     double Ne = Qy * energy;
     double Nph = Ly * energy;
@@ -776,7 +775,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std
     double coeff_Ni = pow(1. / DENSITY, 1.4);
     double coeff_OL = pow(1. / DENSITY, -1.7) / log(1. + coeff_TI * coeff_Ni * pow(DENSITY, 1.7));
     Qy *= coeff_OL * log(1. + coeff_TI * coeff_Ni * pow(density, 1.7)) * pow(density, -1.7);
-    if ( !fdetector->get_rmQuanta() ) Qy *= 1.1;
+    if ( !fdetector->get_rmQuanta() ) Qy *= ZurichEXO;
     double Ly = Nq / energy - Qy;
     double Ne = Qy * energy;
     double Nph = Ly * energy;

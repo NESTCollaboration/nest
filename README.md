@@ -65,13 +65,13 @@ Please contact Matthew Szydagis about becoming involved in development before me
 
 In order to compile and run NEST, the following are required:
 
-* CMake 3.8 (or higher)
-* gcc (with C++11 support, 4.8.1 or higher)
+* CMake 3.17.5 (or higher)
+* gcc (with C++17 support, 8.3.1 or higher)
 
 The following are optional, depending on intended use of NEST:
 
 * GEANT4
-* ROOT (version 6 or higher, known CMake issues with ROOT 5).
+* ROOT (version 6 or higher, tested on 6.24/06 most recently)
 
 <a name="config"></a>
 ### Running CMake
@@ -86,7 +86,7 @@ The following are optional, depending on intended use of NEST:
 	```
 
 2. From within the build directory, configure CMake. On systems where the C compiler/C++ compiler 
-	paths are already specified, one can simply do:
+	paths are already specified, one can simply do (sometimes not cmake but cmake3 e.g. on Kitware on CentOS 7):
 
 	```
 	cmake -DCMAKE_INSTALL_PREFIX=[path to install directory] ../relative/path/nest

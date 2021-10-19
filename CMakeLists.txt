@@ -79,7 +79,7 @@ target_include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Detectors>
 )
 
-target_compile_features(Core PUBLIC cxx_std_11)
+target_compile_features(Core PUBLIC cxx_std_17)
 
 add_executable(execNEST
   ${CMAKE_CURRENT_SOURCE_DIR}/src/execNEST.cpp

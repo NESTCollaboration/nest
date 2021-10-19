@@ -41,6 +41,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
 
 double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
                             double dfield, double energy) {
+  
     double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97,
             tau1 = 3.27; //arXiv:1802.06162. NR may need tauR ~0.5-1ns instead of 0
     if (fdetector->get_inGas() ||
@@ -117,22 +118,26 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     }
 
     return time_ns;
+    
 }
 
 // in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
 photonstream NESTcalc::AddPhotonTransportTime(const photonstream &emitted_times,
                                               double x, double y, double z) {
+  
     photonstream return_photons;
     for (auto t : emitted_times) {
         double newtime = t + fdetector->OptTrans(x, y, z);
         return_photons.emplace_back(newtime);
     }
     return return_photons;
+    
 }
 
 photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
                                       int total_photons, int excitons,
                                       double dfield, double energy) {
+  
     photonstream return_photons;
     int total, excit;
 
@@ -143,16 +148,20 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
     }
 
     return return_photons;
+    
 }
 
 double NESTcalc::RecombOmegaNR(double elecFrac, const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
+  
     double omega = FreeParam[2] * exp(-0.5 * pow(elecFrac - FreeParam[3], 2.) / (FreeParam[4] * FreeParam[4]));
     if (omega < 0.)
         omega = 0;
     return omega;
+    
 }
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam) {
+  
     double ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); // <-NEW(GregR); OLD-> 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));
     if (ampl < 0.)
         ampl = 0.;
@@ -167,9 +176,11 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector
     if (omega < 0.)
         omega = 0;
     return omega;
+    
 }
 
 double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
+  
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) // liquid argon
         return 0.1115; // T&I. conflicting reports of .107 (Doke) & ~0.1 elsewhere
     double Fano = 0.12707 - 0.029623 * density -  // Fano factor is  << 1
@@ -182,11 +193,12 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
     if (!fdetector->get_inGas())
         Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
     return Fano;
+    
 }
-
 
 QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
                                  const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
+  
     QuantaResult result{};
     bool HighE;
     int Nq_actual, Ne, Nph, Ni, Nex;
@@ -331,9 +343,11 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     result.electrons = Ne;
 
     return result;  // quanta returned with recomb fluctuations
+    
 }
 
 YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield) {
+  
     Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
     double Wq_eV = wvalue.Wq_eV;
     double alpha = wvalue.alpha;
@@ -364,9 +378,11 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
     result.ElectricField = dfield;
     result.DeltaT_Scint = -999;
     return YieldResultValidity(result, energy, Wq_eV);
+    
 }
 
-YieldResult NESTcalc::GetYieldERWeighted(double energy, double density, double dfield, const std::vector<double> &NuisParam ) {
+YieldResult NESTcalc::GetYieldERWeighted(double energy, double density, double dfield, const std::vector<double> &NuisParam) {
+  
     Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
     double Wq_eV = wvalue.Wq_eV;
     
@@ -389,6 +405,7 @@ YieldResult NESTcalc::GetYieldERWeighted(double energy, double density, double d
     result.ElectricField = weightG * yieldsG.ElectricField + weightB * yieldsB.ElectricField;
     result.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB * yieldsB.DeltaT_Scint;
     return YieldResultValidity(result, energy, Wq_eV);
+    
 }
 
 YieldResult NESTcalc::GetYieldNROld(double energy, int option) { // possible anti-correlation in NR ignored totally
@@ -507,6 +524,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     result.ElectricField = dfield;
     result.DeltaT_Scint = -999;
     return YieldResultValidity(result, energy, Wq_eV);  // everything needed to calculate fluctuations
+    
 }
 
 YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum,
@@ -587,10 +605,12 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
     result.ElectricField = dfield;
     result.DeltaT_Scint = -999;
     return YieldResultValidity(result, energy, Wq_eV);  // everything needed to calculate fluctuations
+    
 }
 
 YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield, double maxTimeSeparation,
                                     double deltaT_ns = -999) {
+  
     double Nq = -999;
     double Nph = -999;
     double Ne = -999;
@@ -667,9 +687,11 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     result.ElectricField = dfield;
     result.DeltaT_Scint = deltaT_ns;
     return YieldResultValidity(result, energy, Wq_eV);  // everything needed to calculate fluctuations
+    
 }
 
 YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield) { // OLD
+  
     Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
     double Qy, Nq;
     double Wq_eV = wvalue.Wq_eV;
@@ -721,6 +743,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
     result.ElectricField = dfield;
     result.DeltaT_Scint = -999;
     return YieldResultValidity(result, energy, Wq_eV);  // everything needed to calculate fluctuations;
+    
 }
 
 YieldResult // NEW
@@ -773,6 +796,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double density, double dfield, double massNum,
                                 double atomNum, const std::vector<double> &NuisParam
         /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
+  
     switch (species) {
         case NR:
         case WIMP:
@@ -808,10 +832,10 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
 	  break;
     }
 
-
 }
 
 YieldResult NESTcalc::YieldResultValidity(YieldResult &res, const double energy, const double Wq_eV) {
+  
     assert(res.ElectronYield != -999 && res.PhotonYield != -999 && res.ExcitonRatio != -999);
     if (res.PhotonYield > energy / W_SCINT)
         res.PhotonYield = energy / W_SCINT;  // yields can never exceed 1 / [ W ~ few eV ]
@@ -824,10 +848,11 @@ YieldResult NESTcalc::YieldResultValidity(YieldResult &res, const double energy,
         res.ElectronYield = 0.;
     }
     return res;
+
 }
 
-
 NESTcalc::NESTcalc(VDetector *detector) {
+  
     assert(detector);
     fdetector = detector;
 
@@ -840,7 +865,9 @@ NESTcalc::NESTcalc(VDetector *detector) {
 }
 
 NESTcalc::~NESTcalc() {
-    if (pulseFile) pulseFile.close();
+  
+  if (pulseFile) pulseFile.close();
+  
 }
 
 const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPosX, double truthPosY, double truthPosZ,
@@ -1224,6 +1251,7 @@ const vector<double> &NESTcalc::GetS1(const QuantaResult &quanta, double truthPo
     //fdetector->get_g1();  // g1 (light collection efficiency in liquid)
 
     return scintillation;
+    
 }
 
 const vector<double> &
@@ -1552,9 +1580,11 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
             g2;  // g2 = ExtEff * SE, gain of EL in gas gap (from CalculateG2)
 
     return ionization;
+    
 }
 
 vector<double> NESTcalc::CalculateG2(bool verbosity) {
+  
     vector<double> g2_params(5);
 
     // Set parameters for calculating EL yield and extraction
@@ -1669,18 +1699,21 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     g2_params[3] = g2;
     g2_params[4] = gasGap;
     return g2_params;
+    
 }
 
 long double NESTcalc::Factorial(double x) { return tgammal(x + 1.); }
 
 double NESTcalc::nCr(double n, double r) {
-    return Factorial(n) / (Factorial(r) * Factorial(n - r));
+  
+  return Factorial(n) / (Factorial(r) * Factorial(n - r));
+  
 }
 
 const vector<double>& NESTcalc::GetSpike(int Nph, double dx, double dy, double dz,
                                   double driftSpeed, double dS_mid,
-                                  const vector<double> &oldScint)
-{
+                                  const vector<double> &oldScint) {
+  
     std::fill(newSpike.begin(), newSpike.end(), 0);
 
     if (oldScint[7] > SPIKES_MAXM) {
@@ -1702,15 +1735,18 @@ const vector<double>& NESTcalc::GetSpike(int Nph, double dx, double dy, double d
                                            dS_mid * fdetector->get_dtCntr(), VDetector::unfold);
 
     return newSpike;  // regular and position-corrected spike counts returned
+    
 }
 
 double NESTcalc::SetDensity(double Kelvin,
                             double bara) {
+  
     bool inGas = false;
     double density = GetDensity(Kelvin, bara, inGas, 0);
     fdetector->set_inGas(inGas);
 
     return density;
+    
 }
 
 double NESTcalc::GetDensity(double Kelvin, double bara, bool &inGas, uint64_t evtNum, double molarMass) {
@@ -1773,21 +1809,27 @@ double NESTcalc::GetDensity(double Kelvin, double bara, bool &inGas, uint64_t ev
                                              2.)) -
            8.3086310405942265E+02;  // in grams per cubic centimeter based on
     // zunzun fit to NIST data; will add gas later
+    
 }
 
 double NESTcalc::SetDriftVelocity(double Kelvin, double Density, double eField) {
-    return GetDriftVelocity(Kelvin, Density, eField, fdetector->get_inGas());
+  
+  return GetDriftVelocity(Kelvin, Density, eField, fdetector->get_inGas());
+  
 }
 
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField, bool inGas) {
+  
     if (inGas) return GetDriftVelocity_MagBoltz(Density, eField);
     else {
         return GetDriftVelocity_Liquid(Kelvin, eField, Density);
     }
+    
 }
 
 double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
                                          double Density) {  // for liquid and solid only
+  
     double speed =
             0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
     int i, j;
@@ -1811,7 +1853,7 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
       double Temperature[8] = {84., 86., 88., 92., 96., 110.,
                                125., 140.};
       
-      std::clamp(Kelvin, 84., 140.);
+      //std::clamp(Kelvin, 84., 140.);
       if ( Kelvin < 84. || Kelvin > 140. ) {
         cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
         cerr <<"Using value at closest temp for a drift speed estimate\n";
@@ -1926,6 +1968,7 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
         speed = 0.1;
     }
     return speed; //mm per microsecond
+    
 }
 
 double NESTcalc::GetDriftVelocity_MagBoltz(
@@ -1966,10 +2009,12 @@ double NESTcalc::GetDriftVelocity_MagBoltz(
     if (gasdep >= 3.8e-17) edrift = 6e21 * gasdep - 32279.;
 
     return std::abs(edrift) * 1e-5;  // from cm/s into mm per microsecond
+    
 }
 
 vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
                                                      double dx, double dy) {
+  
     vector<double> speedTable;
     double driftTime, zz;
 
@@ -2000,10 +2045,12 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
     }
 
     return speedTable;
+    
 }
 
 vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
                                       double A_top) {
+  
     vector<double> xySmeared(2);
     A_top *=
             1. -
@@ -2037,9 +2084,11 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 
     return xySmeared;  // new X and Y position in mm with empirical smearing. LUX
     // Run03 example
+    
 }
 
 double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
+  
     double wavelength, E_keV;  // wavelength is in nanometers
 
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
@@ -2072,9 +2121,11 @@ double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
 
     return E_keV * 1000.;  // convert from keV into eV. Eventually add full T, P
     // dependence
+    
 }
 
 double NESTcalc::CalcElectronLET(double E, int Z) {
+  
     double LET;
 
     // use a spline fit to online ESTAR data
@@ -2110,9 +2161,11 @@ double NESTcalc::CalcElectronLET(double E, int Z) {
     }
 
     return LET;
+    
 }
 
 NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass, bool rmQuanta) {
+  
     double alpha, Wq_eV;
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
 	// Liquid argon
@@ -2130,13 +2183,16 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass, bool r
     Wq_eV = 18.7263 - 1.01e-23 * eDensity;
     if (rmQuanta) Wq_eV *= InfraredER; //EXO
     return Wvalue{.Wq_eV=Wq_eV, .alpha=alpha}; //W and Nex/Ni together
+    
 }
 
 double NESTcalc::NexONi(double energy, double density) {
+  
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) return 0.21; // https://arxiv.org/pdf/1903.05815.pdf
     Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
     double alpha = wvalue.alpha;
     return alpha * erf(0.05 * energy);
+    
 }
 
 //This function returns the transverse diffusion coefficient in liquid. It allows a user
@@ -2169,6 +2225,7 @@ double NESTcalc::GetDiffTran_Liquid(double dfield, bool highFieldModel, double K
                  << ", may be either too low or too high to interpolate a DT. Returning DT=0.\n";
     }
     return output;
+    
 }
 
 //This function returns the longitudinal diffusion coefficient in liquid. It allows a user
@@ -2202,10 +2259,12 @@ double NESTcalc::GetDiffLong_Liquid(double dfield, bool highFieldModel, double K
                     << "Looks like your desired drift field may be either too low or too high to interpolate a DL Returning DL=0.\n";
     }
     return output;
+    
 }
 
 //Simple function for interpolating
 double NESTcalc::interpolateFunction(const std::vector<std::pair<double, double> > &func, double x, bool isLogLog) {
+  
     //Linear interpolation
     if (!isLogLog) {
         double y_desired = 0;
@@ -2238,13 +2297,15 @@ double NESTcalc::interpolateFunction(const std::vector<std::pair<double, double>
                 break;
             }
         }
-        return y_desired;
+        return y_desired;	
     }
+    
 }
 
 // Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
 // all of the size accounting is done nicely downstream without having to pass container sizes around.
 std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDT() {
+  
     std::vector<std::pair<double, double> > output;
     const int nPts = 25;
     double modelDT[nPts][2] = {{14.6236, 24.674},
@@ -2277,11 +2338,13 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDT() {
         output.emplace_back(iP[0], iP[1]);
     }
     return output;
+    
 }
 
 // Organized nicely to just input the Boyle Model's curve data. Using vectors and pairs so
 // all of the size accounting is done nicely downstream without having to pass container sizes around. Returns cm^2/s
 std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDL() {
+  
     std::vector<std::pair<double, double> > output;
     const int nPts = 25;
     double modelDL[nPts][2] = {{14.6236, 22.2977},
@@ -2314,4 +2377,5 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDL() {
         output.emplace_back(iP[0], iP[1]);
     }
     return output;
+    
 }

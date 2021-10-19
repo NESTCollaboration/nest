@@ -77,18 +77,15 @@ double RandomGen::rand_skewGauss(double xi, double omega, double alpha) {
 }
 
 int RandomGen::poisson_draw(double mean) {
-  std::poisson_distribution<int> distribution(mean);
-  return distribution(rng);
+  return std::poisson_distribution<int>(mean)(rng);
 }
 
 int64_t RandomGen::binom_draw(int64_t N0, double prob) {
-  std::binomial_distribution<int64_t> distribution(N0, prob);
-  return distribution(rng);
+  return std::binomial_distribution<int64_t>(N0, prob)(rng);
 }
 
 int RandomGen::integer_range(int min, int max) {
-  std::uniform_int_distribution<int> distribution(min, max);
-  return distribution(rng);
+  return std::uniform_int_distribution<int>(min, max)(rng);
 }
 
 vector<double> RandomGen::VonNeumann(double xMin, double xMax, double yMin,

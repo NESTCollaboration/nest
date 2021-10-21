@@ -14,8 +14,8 @@ class DetectorExample_LUX_RUN03: public VDetector {
 public:
   
   DetectorExample_LUX_RUN03() {
-    if ( verbosity ) cerr << "*** Detector definition message ***" << endl;
-    if ( verbosity ) cerr << "You are currently using the LUX Run03 template detector." << endl << endl;
+    cerr << "*** Detector definition message ***" << endl;
+    cerr << "You are currently using the LUX Run03 template detector." << endl << endl;
     
     // Call the initialization of all the parameters
     Initialization();

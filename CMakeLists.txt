@@ -61,16 +61,16 @@ set(NEST_CORE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/ValidityTests.hh
 )
 
-add_library(Core ${NEST_CORE_SOURCES} ${NEST_CORE_HEADERS})
-add_library(NEST::Core ALIAS Core)
+add_library(NESTCore ${NEST_CORE_SOURCES} ${NEST_CORE_HEADERS})
+add_library(NEST::Core ALIAS NESTCore)
 
-target_link_libraries(Core PUBLIC gcem)
+target_link_libraries(NESTCore PUBLIC gcem)
 
-list(APPEND NEST_TARGETS "Core")
+list(APPEND NEST_TARGETS "NESTCore")
 list(APPEND NEST_LIBRARY_TARGETS "NEST::Core")
 
 target_include_directories(
-  Core PUBLIC
+  NESTCore PUBLIC
   $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:include/NEST>
   $<INSTALL_INTERFACE:include/Detectors>
@@ -79,7 +79,7 @@ target_include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Detectors>
 )
 
-target_compile_features(Core PUBLIC cxx_std_17)
+target_compile_features(NESTCore PUBLIC cxx_std_17)
 
 add_executable(execNEST
   ${CMAKE_CURRENT_SOURCE_DIR}/src/execNEST.cpp

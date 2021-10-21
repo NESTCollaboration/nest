@@ -145,6 +145,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
     for (int ip = 0; ip < total_photons; ++ip) {
         bool isExciton = false;
         if (ip < excitons) isExciton = true;
+	//message from Matthew: please stop telling me next line bad. I can't skip PhotonTime, it's a func not array
         return_photons.emplace_back(PhotonTime(species, isExciton, dfield, energy));
     }
 
@@ -1954,7 +1955,7 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
 
     if (speed <= 0.) {
         cerr << "\nWARNING: DRIFT SPEED NON-POSITIVE. Setting to 0.1 mm/us\t" <<
-             "Line Number ~1700 of NEST.cpp, in function NESTcalc::GetDriftVelocity_Liquid\t" <<
+             "Line Number ~1950 of NEST.cpp, in function NESTcalc::GetDriftVelocity_Liquid\t" <<
              "Stop bothering Matthew about this, and fix underlying cause in your code!\n";
         if (eField < 1e2 && eField >= FIELD_MIN) {
             cerr << "FIELD MAY BE TOO LOW. ";
@@ -2307,7 +2308,7 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDT() {
   
     std::vector<std::pair<double, double> > output;
     const int nPts = 25;
-    double modelDT[nPts][2] = {{14.6236, 24.674},
+    constexpr double modelDT[nPts][2] = {{14.6236, 24.674},
                                {24.5646, 26.4954},
                                {36.675,  29.2043},
                                {53.4802, 32.6845},
@@ -2332,9 +2333,8 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDT() {
                                {127948,  29.5377},
                                {169785,  27.4412},
                                {220053,  27.9686}};
-    for (auto &iP : modelDT) {
-        std::pair<double, double> thePair(iP[0], iP[1]);
-        output.emplace_back(iP[0], iP[1]);
+    for ( auto &iP : modelDT ) {
+      output.emplace_back(iP[0], iP[1]);
     }
     return output;
     
@@ -2346,7 +2346,7 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDL() {
   
     std::vector<std::pair<double, double> > output;
     const int nPts = 25;
-    double modelDL[nPts][2] = {{14.6236, 22.2977},
+    constexpr double modelDL[nPts][2] = {{14.6236, 22.2977},
                                {24.5646, 22.4238},
                                {36.675,  22.933},
                                {53.4802, 23.4595},
@@ -2371,9 +2371,8 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDL() {
                                {127948,  0.116139},
                                {169785,  0.0957632},
                                {220053,  0.0900259}};
-    for (auto &iP : modelDL) {
-        std::pair<double, double> thePair(iP[0], iP[1]);
-        output.emplace_back(iP[0], iP[1]);
+    for ( auto &iP : modelDL ) {
+      output.emplace_back(iP[0], iP[1]);
     }
     return output;
     

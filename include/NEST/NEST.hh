@@ -230,7 +230,7 @@ namespace NEST {
         YieldResult GetYields(INTERACTION_TYPE species, double energy, double density,
                               double dfield, double A, double Z,
                               const std::vector<double> &NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2.,
-                                                                      0.5, 1., 1.});
+                                                                      0.5, 1., 1.}, bool oldModelER = false);
 
         // the innermost heart of NEST, this provides floating-point average values
         // for photons and electrons per keV. Nuis(ance)Param included for varying the
@@ -270,7 +270,7 @@ namespace NEST {
 
         // Confirms and sometimes adjusts YieldResult to make physical sense
         virtual QuantaResult GetQuanta(const YieldResult &yields, double density,
-                                       const std::vector<double> &FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25});
+                                       const std::vector<double> &FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25}, bool oldModelER = false);
 
         // GetQuanta takes the yields from above and fluctuates them, both the total
         // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
@@ -280,7 +280,7 @@ namespace NEST {
         RecombOmegaNR(double elecFrac, const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/);
 
         //Calculates the Omega parameter governing non-binomial recombination fluctuations for nuclear recoils and ions (Lindhard<1)
-        virtual double RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam);
+        virtual double RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam, bool oldModel = false);
 
         //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
         virtual double FanoER(double density, double Nq_mean, double efield);

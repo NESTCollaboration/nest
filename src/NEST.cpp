@@ -162,13 +162,20 @@ double NESTcalc::RecombOmegaNR(double elecFrac, const std::vector<double> &FreeP
     
 }
 
-double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam) {
+double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam, bool oldModel) {
   
-    double ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); // <-NEW(GregR); OLD-> 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));
+    double ampl;
+    if (!oldModel)
+        ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); // <-NEW(GregR);
+    else{
+        ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));// ,-OLD
+    }
     if (ampl < 0.)
         ampl = 0.;
     double wide = .205; //or: FreeParam #2, like amplitude (#1)
     double cntr = 0.45; //NEW(GregR) FreeParam #3 (OLD value of 0.50 for OLD ampl above 0.14...)
+    if (oldModel)
+        cntr = 0.50;
     double skew = -0.2; //FreeParam #4
     double mode = cntr + 2.*inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
     double norm = 1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
@@ -199,7 +206,7 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
 }
 
 QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
-                                 const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/) {
+                                 const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/, bool oldModelER) {
   
     QuantaResult result{};
     bool HighE;
@@ -284,7 +291,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     //set omega (non-binomial recombination fluctuations parameter) according to whether the Lindhard <1, i.e. this is NR.
     double omega =
             yields.Lindhard < 1 ? RecombOmegaNR(elecFrac, FreeParam) : RecombOmegaER(yields.ElectricField, elecFrac,
-                                                                                     FreeParam);
+                                                                                     FreeParam, oldModelER);
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) omega = 0.0; // Ar has no non-binom sauce
     double Variance =
             recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
@@ -691,7 +698,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
 }
 
 YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield) { // OLD
-  
+
     Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
     double Qy, Nq;
     double Wq_eV = wvalue.Wq_eV;
@@ -748,8 +755,8 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 
 YieldResult // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std::vector<double> &NuisParam) {
-
-    if (RecombOmegaER(0.0, 0.5, NuisParam) < 0.05)
+    bool oldModelER = false;
+    if (RecombOmegaER(0.0, 0.5, NuisParam, oldModelER) < 0.05)
         cerr << "WARNING! You need to change RecombOmegaER to go along with GetYieldBetaGR" << endl;
 
     Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(), fdetector->get_rmQuanta());
@@ -795,7 +802,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std
 
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double density, double dfield, double massNum,
                                 double atomNum, const std::vector<double> &NuisParam
-        /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
+        /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/, bool oldModelER) {
   
     switch (species) {
         case NR:
@@ -828,7 +835,11 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
         default:  // beta, CH3T, 14C, the pp solar neutrino background, and Compton/PP spectra of fullGamma
 	  if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) )
             return GetYieldBeta(energy, density, dfield); // OLD
-          else return GetYieldBetaGR(energy,density,dfield,NuisParam); // NEW
+          else {
+          if (!oldModelER)
+          return GetYieldBetaGR(energy,density,dfield,NuisParam); // NEW
+          else return GetYieldBeta(energy,density,dfield);
+          }
 	  break;
     }
 

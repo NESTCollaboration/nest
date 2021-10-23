@@ -1273,8 +1273,7 @@ vector<double> signal1, signal2, signalE, vTable;
                     energies[1] <= 1E-6) &&
                    field >= FIELD_MIN)
           if ( verbosity ) cerr << "If your energy resolution is 0% then you probably still have MC truth energy on." << endl;
-        else
-          { ; }
+	
       }
     }
   }

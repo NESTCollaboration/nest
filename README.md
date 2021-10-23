@@ -65,13 +65,13 @@ Please contact Matthew Szydagis about becoming involved in development before me
 
 In order to compile and run NEST, the following are required:
 
-* CMake 3.17.5 (or higher)
-* gcc (with C++17 support, 8.3.1 or higher)
+* CMake 3.8 (or higher: tested with 3.17.5 on Linux CentOS 7 and 3.21.3 on Mac OSX 10.14.6)
+* gcc (with C++17 support or at the very least C++11, with GCC 5 or higher; tested with 8.3.1 on Linux and Apple LLVM version 10.0.1, clang-1001.0.46.4)
 
 The following are optional, depending on intended use of NEST:
 
-* GEANT4
-* ROOT (version 6 or higher, tested on 6.24/06 most recently)
+* GEANT4 (tested as high as Geant4.10.7.p01)
+* ROOT (version 6 or higher: tested on 6.24/04 most recently on Mac OSX, 6.24/06 on CentOS 7)
 
 <a name="config"></a>
 ### Running CMake

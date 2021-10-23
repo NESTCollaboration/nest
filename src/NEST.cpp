@@ -1867,10 +1867,11 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
       double Temperature[8] = {84., 86., 88., 92., 96., 110.,
                                125., 140.};
       
-      //std::clamp(Kelvin, 84., 140.);
       if ( Kelvin < 84. || Kelvin > 140. ) {
         cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
-        cerr <<"Using value at closest temp for a drift speed estimate\n";
+	if ( Kelvin < 84. ) Kelvin = 84.;
+        if ( Kelvin > 140. ) Kelvin = 140.;
+        cerr << "Using value at closest temp for a drift speed estimate\n";
       }
       
     if (Kelvin >= Temperature[0] && Kelvin < Temperature[1])

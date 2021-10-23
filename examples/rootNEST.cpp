@@ -97,14 +97,13 @@ int main(int argc, char** argv) {
     cout << endl
          << "This program takes 1 (or 2) inputs." << endl
          << endl;
-    cout << "One input means you are just doing a band of Gaussians." << endl
-         << endl;
-    cout << "Two inputs means you're doing both ER and NR and calculating "
+    cout << "One input means you are just doing a band of Gaussians." << endl << endl;
+    cout << "Two inputs means you're doing both ER and NR and calculating the "
             "leakage and discrimination." << endl;
     cout << "If you write NR first, you're seeking characterization of the "
-            "non-Gaussian asymmetry of NR band." << endl;
-    cout << "If you write ER first, you're finding non-Gaussian leakage of ER "
-            "into NR band." << endl
+            "non-Gaussian asymmetry of the NR band." << endl;
+    cout << "If you write ER first, you're finding the non-Gaussian leakage of ER "
+            "into the NR band." << endl
          << endl;
     return 1;
   } else if (argc == 2)

@@ -166,9 +166,9 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, const std::vector
   
     double ampl;
     if (!oldModel)
-        ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); // <-NEW(GregR);
-    else{
-        ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));// ,-OLD
+        ampl = 0.086036+(0.0553-0.086036)/pow(1.+pow(efield/295.2,251.6),0.0069114); // NEW(GregR)
+    else {
+        ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25)); // OLD
     }
     if (ampl < 0.)
         ampl = 0.;
@@ -755,6 +755,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
 
 YieldResult // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std::vector<double> &NuisParam) {
+  
     bool oldModelER = false;
     if (RecombOmegaER(0.0, 0.5, NuisParam, oldModelER) < 0.05)
         cerr << "WARNING! You need to change RecombOmegaER to go along with GetYieldBetaGR" << endl;
@@ -833,13 +834,10 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             return GetYieldGamma(energy, density, dfield); //PE of the full gamma spectrum
             break;
         default:  // beta, CH3T, 14C, the pp solar neutrino background, and Compton/PP spectra of fullGamma
-	  if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) )
+	  if ( ValidityTests::nearlyEqual(ATOM_NUM, 18.) || oldModelER )
             return GetYieldBeta(energy, density, dfield); // OLD
-          else {
-          if (!oldModelER)
-          return GetYieldBetaGR(energy,density,dfield,NuisParam); // NEW
-          else return GetYieldBeta(energy,density,dfield);
-          }
+          else
+	    return GetYieldBetaGR(energy, density, dfield, NuisParam); // NEW
 	  break;
     }
 

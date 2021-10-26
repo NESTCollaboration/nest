@@ -585,7 +585,7 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
     double Nph = Nq * NexONi / (1. + NexONi) + recombProb * Ni;
     double Ne = Nq - Nph;
     if (ValidityTests::nearlyEqual(A1, 206.) && ValidityTests::nearlyEqual(Z1, 82.))
-        Ne = RandomGen::rndm()->rand_gauss(Ne / ChargeLoss, 2. * sqrt(Ne / (ChargeLoss * ChargeLoss)));
+        Ne = RandomGen::rndm()->binom_draw(Ne,ChargeLoss);
     // to compensate for accidentally including Q-loss in fits to Xed data
     if (ValidityTests::nearlyEqual(Z2, 18.) && ValidityTests::nearlyEqual(Z1, 2.) &&
         ValidityTests::nearlyEqual(A1, 4.)) { //alphas in argon

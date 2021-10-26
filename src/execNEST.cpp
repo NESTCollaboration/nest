@@ -37,6 +37,8 @@ int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
   auto* detector = new DetectorExample_LUX_RUN03();
+  if ( verbosity ) cerr << "*** Detector definition message ***" << endl;
+  if ( verbosity ) cerr << "You are currently using the LUX Run03 template detector." << endl << endl;
   // Custom parameter modification functions
   // detector->ExampleFunction();
   

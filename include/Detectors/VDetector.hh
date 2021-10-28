@@ -26,12 +26,12 @@ class VDetector {
   double get_sPEres() const { return sPEres; }
   double get_sPEthr() const { return sPEthr; }
   double get_sPEeff() const { return sPEeff; }
-  const double* get_noiseB() { return &noiseB[0]; }
-  const double* get_noiseL() { return &noiseL[0]; }
-  const double* get_noiseQ() { return &noiseQ[0]; }
+  const double* get_noiseBaseline() { return &noiseBaseline[0]; }
+  const double* get_noiseLinear() { return &noiseLinear[0]; }
+  const double* get_noiseQuadratic() { return &noiseQuadratic[0]; }
   double get_P_dphe() const { return P_dphe; }
   
-  bool get_rmQuanta() const{ return rmQuanta; }
+  bool get_OldW13eV() const{ return OldW13eV; }
   double get_coinWind() const { return coinWind; }
   int get_coinLevel() const { return coinLevel; }
   int get_numPMTs() const { return numPMTs; }
@@ -72,23 +72,23 @@ class VDetector {
   void set_sPEres(double param) { sPEres = param; }
   void set_sPEthr(double param) { sPEthr = param; }
   void set_sPEeff(double param) { sPEeff = param; }
-  void set_noiseB(double p1, double p2, double p3, double p4) {
-    noiseB[0] = p1;
-    noiseB[1] = p2;
-    noiseB[2] = p3;
-    noiseB[3] = p4;
+  void set_noiseBaseline(double p1, double p2, double p3, double p4) {
+    noiseBaseline[0] = p1;
+    noiseBaseline[1] = p2;
+    noiseBaseline[2] = p3;
+    noiseBaseline[3] = p4;
   }
-  void set_noiseL(double p1, double p2) {
-    noiseL[0] = p1;
-    noiseL[1] = p2;
+  void set_noiseLinear(double p1, double p2) {
+    noiseLinear[0] = p1;
+    noiseLinear[1] = p2;
   }
-  void set_noiseQ(double p1, double p2) {
-    noiseQ[0] = p1;
-    noiseQ[1] = p2;
+  void set_noiseQuadratic(double p1, double p2) {
+    noiseQuadratic[0] = p1;
+    noiseQuadratic[1] = p2;
   }
   void set_P_dphe(double param) { P_dphe = param; }
 
-  void set_rmQuanta(bool param) { rmQuanta = param; }
+  void set_OldW13eV(bool param) { OldW13eV = param; }
   void set_coinWind(double param) { coinWind = param; }
   void set_coinLevel(int param) { coinLevel = param; }
   void set_numPMTs(int param) { numPMTs = param; }
@@ -162,7 +162,7 @@ protected:
   double sPEres = 0.58;  // single phe resolution (Gaussian assumed)
   double sPEthr = 0.35;  // POD threshold in phe, usually used IN PLACE of sPEeff
   double sPEeff = 1.00;  // actual efficiency, can be used in lieu of POD threshold
-  double noiseB[4] = {0.0,  // baseline noise mean and width in PE (Gaussian)
+  double noiseBaseline[4] = {0.0,  // baseline noise mean and width in PE (Gaussian)
                   0.0,  // baseline noise mean and width in PE (Gaussian)
                   0.0,   //EXO noise mean
                   0.0    //EXO noise width
@@ -174,10 +174,10 @@ protected:
   int coinLevel = 2;   // how many PMTs have to fire for an S1 to count
   int numPMTs = 89;    // For coincidence calculation
 
-  bool rmQuanta = true;  // for matching EXO-200's W measurement
+  bool OldW13eV = true;  // for matching EXO-200's W measurement
   //"Linear noise" terms as defined in Dahl thesis and by D. McK
-  double noiseL[2] = {3e-2,3e-2}; // S1->S1 Gaussian-smeared w/ noiseL[0]*S1. Ditto S2
-  double noiseQ[2] = {0.0, 0.0}; //(n)EXO quadratic noise term
+  double noiseLinear[2] = {3e-2,3e-2}; // S1->S1 Gaussian-smeared w/ noiseL[0]*S1. Ditto S2
+  double noiseQuadratic[2] = {0.0, 0.0}; //(n)EXO quadratic noise term
 
   // Ionization and Secondary Scintillation (S2) parameters
   double g1_gas = 0.06;  // phd per S2 photon in gas, used to get SE size

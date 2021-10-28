@@ -27,19 +27,19 @@ public:
     sPEres = 0.44;//single phe resolution (Gaussian assumed)
     sPEthr = 0.4; //POD threshold in phe, usually used IN PLACE of sPEeff
     sPEeff = 1.0; //actual efficiency, can be used in lieu of POD threshold
-    noiseB[0] = 0.0; //baseline noise mean and width in PE (Gaussian)
-    noiseB[1] = 0.0; //baseline noise mean and width in PE (Gaussian)
-    noiseB[2] = 0.0;
-    noiseB[3] = 0.0;
+    noiseBaseline[0] = 0.0; //baseline noise mean and width in PE (Gaussian)
+    noiseBaseline[1] = 0.0; //baseline noise mean and width in PE (Gaussian)
+    noiseBaseline[2] = 0.0;
+    noiseBaseline[3] = 0.0;
     P_dphe = 0.2; //chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
     
     coinWind=100;//S1 coincidence window in ns
     coinLevel=1; //how many PMTs have to fire for an S1 to count
     numPMTs = 4; //For coincidence calculation
     
-    rmQuanta = true;
-    noiseL[0]=.0312;
-    noiseL[1]=.0395;
+    OldW13eV = true;
+    noiseLinear[0] = 0.0312;
+    noiseLinear[1] = 0.0395;
 
     // Ionization and Secondary Scintillation (S2) parameters
     g1_gas = 0.045; //phd per S2 photon in gas, used to get SE size

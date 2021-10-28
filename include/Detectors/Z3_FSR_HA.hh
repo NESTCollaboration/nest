@@ -27,19 +27,19 @@ class DetectorExample_ZEPLIN : public VDetector {
     sPEres = 0.4;   // single phe resolution (Gaussian assumed)
     sPEthr = 0.33;  // POD threshold in phe, usually used IN PLACE of sPEeff
     sPEeff = 1.0;   // actual efficiency, can be used in lieu of POD threshold
-    noiseB[0] = 0.0;  // baseline noise mean and width in PE (Gaussian)
-    noiseB[1] = 0.0;  // baseline noise mean and width in PE (Gaussian)
-    noiseB[2] = 0.0;
-    noiseB[3] = 0.0;
+    noiseBaseline[0] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+    noiseBaseline[1] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+    noiseBaseline[2] = 0.0;
+    noiseBaseline[3] = 0.0;
     P_dphe = 0.11;  // chance 1 photon makes 2 phe instead of 1 in ETEL PMTs (LopezParedes, 2018)
     
     coinWind = 50;  // S1 coincidence window in ns (Note: Z3 used time difference method in Neves, 2011)
     coinLevel = 3;  // how many PMTs have to fire for an S1 to count
     numPMTs =  31;  // For coincidence calculation using the nFold defined in previous line
     
-    rmQuanta = true;
-    noiseL[0] = 0.;
-    noiseL[1] = 0.;
+    OldW13eV = true;
+    noiseLinear[0] = 0.;
+    noiseLinear[1] = 0.;
     
     // Ionization and Secondary Scintillation (S2) parameters
     g1_gas = 0.111; // phd per S2 photon in gas, used to get SE size. ~<g1 common but ZIII unique

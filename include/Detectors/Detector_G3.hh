@@ -35,8 +35,10 @@ public:
         sPEres = 0.38;   // single phe resolution (Gaussian assumed)
         sPEthr = 0.375;   // POD threshold in phe, usually used IN PLACE of sPEeff
         sPEeff = 1.0;   // actual efficiency, can be used in lieu of POD threshold
-        noiseB[0] = 0.0;  // baseline noise mean and width in PE (Gaussian)
-        noiseB[1] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+        noiseBaseline[0] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+        noiseBaseline[1] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+	noiseBaseline[2] = 0.0;
+	noiseBaseline[3] = 0.0;
         P_dphe = 0.2;  // chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
 
         coinWind = 150;  // S1 coincidence window in ns
@@ -79,9 +81,11 @@ public:
         // 2-D (X & Y) Position Reconstruction
         PosResExp = 0.015;     // exp increase in pos recon res at hi r, 1/mm
         PosResBase = 70.8364;  // baseline unc in mm, see NEST.cpp for usage
-
-        noiseL[0] = 0;
-        noiseL[1] = 0;
+	
+	OldW13eV = true;
+	
+        noiseLinear[0] = 0;
+        noiseLinear[1] = 0;
     }
 
     // S1 PDE custom fit for function of z

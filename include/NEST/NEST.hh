@@ -377,7 +377,7 @@ namespace NEST {
             double alpha;
         };
 
-        static Wvalue WorkFunction(double rho, double MolarMass, bool rmQuanta = true);
+        static Wvalue WorkFunction(double rho, double MolarMass, bool OldW13eV = true);
 
         //the W-value as a func of density in g/cm^3
         virtual double NexONi(double energy, double density);

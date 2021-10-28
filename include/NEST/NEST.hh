@@ -401,6 +401,9 @@ namespace NEST {
 
         //Read in the Boyle model data for DL
         static std::vector<std::pair<double, double> > GetBoyleModelDL();
+      
+        static constexpr int clamp ( int v, const int lo, const int hi );
+        
     };
 }
 

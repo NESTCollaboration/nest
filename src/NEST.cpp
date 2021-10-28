@@ -3,8 +3,8 @@
 #include "NEST.hh"
 #include <stdexcept>
 
-#define InfraredER 1.1716263232
-#define ZurichEXO 1.1
+#define ZurichEXOW 1.1716263232
+#define ZurichEXOQ 1.1
 //#define InfraredNR 7.
 
 #define ChargeLoss 0.77 //LUX Run03 is the default (wall BG model)
@@ -295,7 +295,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) omega = 0.0; // Ar has no non-binom sauce
     double Variance =
             recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
-    //if ( !fdetector->get_OldW13eV() ) Variance /= sqrt ( ZurichEXO );
+    //if ( !fdetector->get_OldW13eV() ) Variance /= sqrt ( ZurichEXOQ );
     
     double skewness;
     if ((yields.PhotonYield + yields.ElectronYield) > 1e4 || yields.ElectricField > 4e3 || yields.ElectricField < 50.) {
@@ -335,7 +335,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
         Ne = int(floor(RandomGen::rndm()->rand_gauss((1. - recombProb) * Ni, sqrt(Variance)) + 0.5));
     }
     
-    clamp ( Ne, 0, Ni );
+    Ne = NESTcalc::clamp ( Ne, 0, Ni );
     
     Nph = Nq_actual - Ne;
     if (Nph > Nq_actual) Nph = Nq_actual;
@@ -375,7 +375,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density, double dfield
     if (fdetector->get_inGas()) m8 = -2.;
     double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 +
                 (m6 - m5) / (1. + pow(energy / m7, m8));
-    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXO;
+    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXOQ;
     double Ly = Nq / energy - Qy;
 
     YieldResult result{};
@@ -484,12 +484,12 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield, d
     ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double) massNumber);
     ScaleFactor[1] = ScaleFactor[0];
     double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
-    if ( !fdetector->get_OldW13eV() ) Nq *= InfraredER;
+    if ( !fdetector->get_OldW13eV() ) Nq *= ZurichEXOW;
     double ThomasImel =
             NuisParam[2] * pow(dfield, NuisParam[3]) * pow(density / DENSITY, 0.3);
     double Qy = 1. / (ThomasImel * pow(energy + NuisParam[4], NuisParam[9]));
     Qy *= 1. - 1. / pow(1. + pow((energy / NuisParam[5]), NuisParam[6]), NuisParam[10]);
-    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXO;
+    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXOQ;
     double Ly = Nq / energy - Qy;
     if (Qy < 0.0) Qy = 0.0;
     if (Ly < 0.0) Ly = 0.0;
@@ -572,7 +572,7 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
                    74.194 * pow(logden, 5.) - 20.276 * pow(logden, 6.) -
                    2.2352 * pow(logden, 7.);
     double Nq = 1e3 * L * energy / Wq_eV;
-    if ( !fdetector->get_OldW13eV() ) Nq *= InfraredER;
+    if ( !fdetector->get_OldW13eV() ) Nq *= ZurichEXOW;
     double Ni = Nq / (1. + NexONi);
     double recombProb;
     if (Ni > 0. && ThomasImel > 0.)
@@ -683,7 +683,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     result.PhotonYield = Nph;
     result.ElectronYield= Ne;
     if ( !fdetector->get_OldW13eV() ) {
-      Ne *= ZurichEXO;
+      Ne *= ZurichEXOQ;
       Nph = (result.PhotonYield+result.ElectronYield) - Ne;
       result.PhotonYield = Nph;
       result.ElectronYield =Ne;
@@ -736,7 +736,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density, double dfield)
         if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
     }
 
-    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXO;
+    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXOQ;
     double Ly = Nq / energy - Qy;
     double Ne = Qy * energy;
     double Nph = Ly * energy;
@@ -783,7 +783,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield, const std
     double coeff_Ni = pow(1. / DENSITY, 1.4);
     double coeff_OL = pow(1. / DENSITY, -1.7) / log(1. + coeff_TI * coeff_Ni * pow(DENSITY, 1.7));
     Qy *= coeff_OL * log(1. + coeff_TI * coeff_Ni * pow(density, 1.7)) * pow(density, -1.7);
-    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXO;
+    if ( !fdetector->get_OldW13eV() ) Qy *= ZurichEXOQ;
     double Ly = Nq / energy - Qy;
     double Ne = Qy * energy;
     double Nph = Ly * energy;
@@ -1472,7 +1472,7 @@ NESTcalc::GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, do
             for (i = 0; i < int(PEperBin.size()) - 1; ++i) {
                 double eTime = PEperBin[0] + i * SAMPLE_SIZE;
                 int index = int(floor(eTime / SAMPLE_SIZE + 0.5));
-		clamp ( index, 0, numPts - 1 );
+		index = NESTcalc::clamp ( index, 0, numPts - 1 );
                 if (ValidityTests::nearlyEqual(AreaTableBot[0][k], 0.0))
                     AreaTableTop[1][index] += 10. * AreaTableTop[0][k] /
                                               (PULSE_WIDTH * sqrt2_PI) *
@@ -1868,8 +1868,8 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
       if ( Kelvin < 84. || Kelvin > 140. ) {
 	cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
 	cerr <<"Using value at closest temp for a drift speed estimate\n";
+	Kelvin = (double)NESTcalc::clamp ( int(Kelvin), 84, 140 );
       }
-      clamp ( Kelvin, 84., 140. );
       
     if (Kelvin >= Temperature[0] && Kelvin < Temperature[1])
         speed = exp(0.937729-0.0734108/(eField/1000)+0.315338*log(eField/1000));
@@ -2193,7 +2193,7 @@ NESTcalc::Wvalue NESTcalc::WorkFunction(double density, double MolarMass, bool O
     +xi_se/(1.+alpha);*/
     double eDensity = (density / MolarMass) * NEST_AVO * ATOM_NUM;
     Wq_eV = 18.7263 - 1.01e-23 * eDensity;
-    if ( OldW13eV ) Wq_eV *= InfraredER; //EXO
+    if ( OldW13eV ) Wq_eV *= ZurichEXOW; //EXO
     return Wvalue{.Wq_eV=Wq_eV, .alpha=alpha}; //W and Nex/Ni together
     
 }
@@ -2390,9 +2390,10 @@ std::vector<std::pair<double, double> > NESTcalc::GetBoyleModelDL() {
     
 }
 
-template<class T, class Compare>
-constexpr const T& clamp( const T& v, const T& lo, const T& hi, Compare comp )
+constexpr int NESTcalc::clamp( int v, const int lo, const int hi )
 {
-  assert( !comp(hi, lo) );
-  return comp(v, lo) ? lo : comp(hi, v) ? hi : v;
+
+  if ( v < lo ) v = lo; if ( v > hi ) v = hi;
+  return v;
+
 }

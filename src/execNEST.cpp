@@ -32,6 +32,7 @@ double band[NUMBINS_MAX][7], energies[3], AnnModERange[2] = { 1.5, 6.5 }; //keVe
 bool BeenHere = false;
 uint SaveTheDates[tMax] = {0};
 bool dEOdxBasis = false;
+double minTimeSeparation = 1E2; //ns (Kr83m)
 
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
@@ -451,7 +452,7 @@ vector<double> signal1, signal2, signalE, vTable;
   
   double maxTimeSep = DBL_MAX;
   if (type_num == Kr83m) {
-    if ( (ValidityTests::nearlyEqual(eMin, 9.4) || ValidityTests::nearlyEqual(eMin, 32.1) || ValidityTests::nearlyEqual(eMin, 41.5) || ValidityTests::nearlyEqual(eMin, 41.55) || ValidityTests::nearlyEqual(eMin, 41.6)) && eMin != eMax ) {
+    if ( ( (eMin > 9.35 && eMin < 9.45) || (eMin >= 32. && eMin < 32.2) || (eMin > 41. && eMin <= 41.6) ) && eMin != eMax ) {
       maxTimeSep = eMax;
       if ( eMax <= 0. ) { if ( verbosity ) cerr << "Max t sep must be +." << endl; return 1; }
     } else {
@@ -505,7 +506,7 @@ vector<double> signal1, signal2, signalE, vTable;
     else
       energyMaximum = eMax;
     if ( type_num == Kr83m )
-      yieldsMax = n.GetYields(Kr83m, eMin, rho, centralField, 400., double(atomNum), NuisParam);
+      yieldsMax = n.GetYields(Kr83m, eMin, rho, centralField, 400., 0., NuisParam);
     else
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum), NuisParam);
@@ -722,7 +723,7 @@ vector<double> signal1, signal2, signalE, vTable;
                << " eV\tNegative numbers are flagging things below threshold!   "
                   "phe=(1+P_dphe)*phd & phd=phe/(1+P_dphe)\n";
 
-          if(type_num == Kr83m && eMin != 32.1)
+          if ( type_num == Kr83m && (eMin < 10. || eMin > 40.) )
             fprintf(stdout,
                     "t [ns]\t\t");
           if ( timeStamp > tZero ) fprintf ( stdout, "dayNum\t\t" );
@@ -909,6 +910,7 @@ vector<double> signal1, signal2, signalE, vTable;
           }
 	  else {
             if ( seed < 0 && seed != -1 && type_num <= 5 ) massNum = detector->get_molarMass();
+	    if ( type_num == 11 ) atomNum = minTimeSeparation; //Kr83m
             yields = n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum), NuisParam);
           }
 	  if ( type_num == ion ) { //alphas +other nuclei, lighter/heavier than medium's default nucleus
@@ -1164,7 +1166,7 @@ vector<double> signal1, signal2, signalE, vTable;
         // other suggestions: minS1, minS2 (or s2_thr) for tighter cuts depending
         // on analysis.hh settings (think of as analysis v. trigger thresholds)
         // and using max's too, pinching both ends
-        if ( type_num == Kr83m && eMin != 32.1 && verbosity )
+        if ( type_num == Kr83m && verbosity && (eMin < 10. || eMin > 40.) )
           printf("%.6f\t", yields.DeltaT_Scint);
         if ( timeStamp > tZero && verbosity ) {
 	  printf ( "%.6f\t", timeStamp );

@@ -615,7 +615,7 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
 }
 
 YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield, double maxTimeSeparation,
-                                    double deltaT_ns = -999) {
+                                    double minTimeSeparation) {
   
     double Nq = -999;
     double Nph = -999;
@@ -624,61 +624,58 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     double Wq_eV = wvalue.Wq_eV;
     double alpha = wvalue.alpha;
     constexpr double deltaT_ns_halflife = 154.4;
-    if (ValidityTests::nearlyEqual(energy, 9.4)) {
-        if (deltaT_ns < 0) {
-            while (deltaT_ns > maxTimeSeparation || deltaT_ns < 0) {
-                deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
-            }
-        }
-        if (deltaT_ns < 100. && energy < 41.5 && kr83m_reported_low_deltaT == false) {
-            kr83m_reported_low_deltaT = true;
-            cerr << "\tWARNING! Past Kr83m model fit validity region. Details: "
-                 << " deltaT_ns is <100 ns and your input energy is either 32.1 or 9.4 keV. "
-                 << " Data for separated Kr83m decays does not yet exist for deltaT_ns <100 ns. "
-                 << " 9.4 & 32.1 keV yields are still summed to physically accurate result, but individually will be nonsensical."
-                 << endl;
-        }
-        Nq = energy * 1e3 / Wq_eV;
-        double medTlevel = 57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-        double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
-        double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
-        Nph = energy * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-              (1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
-        Ne = Nq - Nph;
-        if (Ne < 0)
-            Ne = 0.;
-        alpha = 0.;
+    double deltaT_ns = -999.;
+    if ( minTimeSeparation == maxTimeSeparation )
+      deltaT_ns = maxTimeSeparation;
+    if ( minTimeSeparation < 100. && energy < 32. && kr83m_reported_low_deltaT == false ) {
+      kr83m_reported_low_deltaT = true;
+      cerr << "\tWARNING! Outside of Kr83m model fit validity region. Details:"
+	   << " minTimeSeparation is < 100 ns and your input E is 9.4 keV."
+	   << " Data for separated Kr83m decays do not yet exist for deltaT_ns <100 ns."
+	   << " 9.4 & 32.1 keV yields are still summed to physically accurate result, but individually will be nonsensical."
+	   << endl;
+    }
+    if ( energy > 9.35 && energy < 9.45 ) {
+      while ( minTimeSeparation != maxTimeSeparation && (deltaT_ns > maxTimeSeparation || deltaT_ns < minTimeSeparation) )
+	deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+      Nq = energy * 1e3 / Wq_eV;
+      double medTlevel = 57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
+      double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
+      double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
+      Nph = energy * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
+	(1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
+      Ne = Nq - Nph;
+      if (Ne < 0)
+	Ne = 0.;
+      alpha = 0.;
     } else {
-        if (ValidityTests::nearlyEqual(energy, 32.1)) {
+        if ( energy >= 32.0 || energy < 32.2 ) {
             Nq = energy * 1e3 / Wq_eV;
             Nph = energy * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
             Ne = Nq - Nph;
             if (Ne < 0.)
                 Ne = 0.;
         } else {   //merged 41.5 keV decay
-            if (deltaT_ns < 0) {
-                while (deltaT_ns > maxTimeSeparation || deltaT_ns < 0) {
-                    deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
-                }
-            }
-            double medTlevel = 57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-            double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
-            double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
-            //9.4 keV model
-            Nph = 9.4 * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-                  (1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
-            Ne = (9.4 * 1e3 / Wq_eV) - Nph;
-            if (Ne < 0.) Ne = 0.;  //can't have negative charge from either decay
-            //Add in 32.1 keV yields
-
-            double Nph_32 = 32.1 * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
-            double Ne_32 = (32.1 * 1e3 / Wq_eV) - Nph_32;
-            Nph += Nph_32;
-            Ne += Ne_32;
-            if (Ne < 0.) Ne = 0.;
+	  while ( minTimeSeparation != maxTimeSeparation && (deltaT_ns > maxTimeSeparation || deltaT_ns < minTimeSeparation) )
+	    deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
+	  double medTlevel = 57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
+	  double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
+	  double lowTpeak = 6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
+	  //9.4 keV model
+	  Nph = 9.4 * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
+	    (1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
+	  Ne = (9.4 * 1e3 / Wq_eV) - Nph;
+	  if (Ne < 0.) Ne = 0.;  //can't have negative charge from either decay
+	  //Add in 32.1 keV yields
+	  
+	  double Nph_32 = 32.1 * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
+	  double Ne_32 = (32.1 * 1e3 / Wq_eV) - Nph_32;
+	  Nph += Nph_32;
+	  Ne += Ne_32;
+	  if (Ne < 0.) Ne = 0.;
         }
     }
-
+    
     YieldResult result{};
     result.PhotonYield = Nph;
     result.ElectronYield= Ne;
@@ -826,9 +823,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy, double 
             return GetYieldGamma(energy, density, dfield);
             break;
         case Kr83m:
-            return GetYieldKr83m(energy, density, dfield, massNum);
-            //not actually massNumber, but a place holder for maxTime
-            break;
+	  return GetYieldKr83m(energy, density, dfield, massNum, atomNum);
+	  //not actually massNumber, but a place holder for maxTime
+	  break;
         case fullGamma_PE:
             return GetYieldGamma(energy, density, dfield); //PE of the full gamma spectrum
             break;

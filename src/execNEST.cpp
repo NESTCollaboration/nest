@@ -506,7 +506,7 @@ vector<double> signal1, signal2, signalE, vTable;
     else
       energyMaximum = eMax;
     if ( type_num == Kr83m )
-      yieldsMax = n.GetYields(Kr83m, eMin, rho, centralField, 400., 0., NuisParam);
+      yieldsMax = n.GetYields(Kr83m, eMin, rho, centralField, 400., 100., NuisParam);
     else
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
                               double(massNum), double(atomNum), NuisParam);

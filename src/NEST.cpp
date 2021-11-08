@@ -617,6 +617,9 @@ YieldResult NESTcalc::GetYieldIon(double energy, double density, double dfield, 
 YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield, double maxTimeSeparation,
                                     double minTimeSeparation) {
   
+  if ( minTimeSeparation > maxTimeSeparation && (energy < 32.0 || energy >= 32.2) )
+    throw std::runtime_error("ERROR: min greater than max");
+  
     double Nq = -999;
     double Nph = -999;
     double Ne = -999;
@@ -625,7 +628,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
     double alpha = wvalue.alpha;
     constexpr double deltaT_ns_halflife = 154.4;
     double deltaT_ns = -999.;
-    if ( minTimeSeparation == maxTimeSeparation )
+    if ( ValidityTests::nearlyEqual(minTimeSeparation,maxTimeSeparation) )
       deltaT_ns = maxTimeSeparation;
     if ( minTimeSeparation < 100. && energy < 32. && kr83m_reported_low_deltaT == false ) {
       kr83m_reported_low_deltaT = true;
@@ -636,7 +639,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
 	   << endl;
     }
     if ( energy > 9.35 && energy < 9.45 ) {
-      while ( minTimeSeparation != maxTimeSeparation && (deltaT_ns > maxTimeSeparation || deltaT_ns < minTimeSeparation) )
+      while ( !ValidityTests::nearlyEqual(minTimeSeparation,maxTimeSeparation) && (deltaT_ns > maxTimeSeparation || deltaT_ns < minTimeSeparation) )
 	deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
       Nq = energy * 1e3 / Wq_eV;
       double medTlevel = 57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
@@ -649,14 +652,14 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density, double dfield
 	Ne = 0.;
       alpha = 0.;
     } else {
-        if ( energy >= 32.0 || energy < 32.2 ) {
+        if ( energy >= 32.0 && energy < 32.2 ) {
             Nq = energy * 1e3 / Wq_eV;
             Nph = energy * (6. + (66.742 - 6.) / pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
             Ne = Nq - Nph;
             if (Ne < 0.)
                 Ne = 0.;
-        } else {   //merged 41.5 keV decay
-	  while ( minTimeSeparation != maxTimeSeparation && (deltaT_ns > maxTimeSeparation || deltaT_ns < minTimeSeparation) )
+        } else {  // merged 41.5 keV decay
+	  while ( !ValidityTests::nearlyEqual(minTimeSeparation,maxTimeSeparation) && (deltaT_ns > maxTimeSeparation || deltaT_ns < minTimeSeparation) )
 	    deltaT_ns = RandomGen::rndm()->rand_exponential(deltaT_ns_halflife);
 	  double medTlevel = 57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
 	  double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);

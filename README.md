@@ -66,7 +66,7 @@ Please contact Matthew Szydagis about becoming involved in development before me
 In order to compile and run NEST, the following are required:
 
 * CMake 3.8 (or higher: tested with 3.17.5 on Linux CentOS 7 and 3.21.3 on Mac OSX 10.14.6)
-* gcc (with C++17 support or at the very least C++11, with GCC 5 or higher; tested with 8.3.1 on Linux and Apple LLVM version 10.0.1, clang-1001.0.46.4)
+* gcc (with C++17 support or at the very least C++11, with GCC 5 or higher; tested with 8.3.1-9.4.0 on Linux and Apple LLVM version 10.0.1, clang-1001.0.46.4)
 
 The following are optional, depending on intended use of NEST:
 
@@ -314,7 +314,7 @@ This program takes 6 (or 7) inputs, with Z position in mm from bottom of detecto
 ```
 ./execNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
-To simulate time-dependent 83m-Kr decays -- 83m-Kr produces yields via a 32.1 keV $\gamma$ followed by a 9.4 keV gamma --  E_max[keV] is replaced with the time between the decays in ns; E_min[keV] is replaced with either 9.4, 32.1, or 41.5 [keV]. Example of 9.4 keV decay 250ns (NOTE: this is the MAX time separation along an exponential) after the inital 32.1 keV follows below. The minimum time separation (minTimeSeparation) defaults to 100 (so, merged pulses are included) but you can change that at the top of execNEST.cpp
+To simulate time-dependent 83m-Kr decays -- 83m-Kr produces yields via a 32.1 keV $\gamma$ followed by a 9.4 keV gamma --  E_max[keV] is replaced with the time between the decays in ns; E_min[keV] is replaced with either 9.4, 32.1, or 41.5 [keV]. Example of 9.4 keV decay 250ns (NOTE: this is the MAX time separation along an exponential) after the inital 32.1 keV follows below. The minimum deltaT (minTimeSeparation) defaults to 100 (so, merged pulses are included) but you can change that at the top of execNEST.cpp (make =MAX to fix t)
 
 ```
 ./execNEST numEvts Kr83m 9.4 250 field_drift[V/cm] x,y,z-position[mm] {optional:seed}

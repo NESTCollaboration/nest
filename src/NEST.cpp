@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 #define ZurichEXOW 1.1716263232
-#define ZurichEXOQ 1.1
+#define ZurichEXOQ 1.08 //Qy Boost Factor to fit EXO-200 Data (error on this quantity is +/- 0.03)
 //#define InfraredNR 7.
 
 #define ChargeLoss 0.77 //LUX Run03 is the default (wall BG model)

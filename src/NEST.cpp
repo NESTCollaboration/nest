@@ -9,7 +9,7 @@
         // 0.03)
 //#define InfraredNR 7.
 
-#define ChargeLoss 0.77  // LUX Run03 is the default (wall BG model)
+#define ChargeLoss 1.000  // 0.77 is LUX Run03 default (wall BG model)
 
 using namespace std;
 using namespace NEST;
@@ -649,7 +649,7 @@ YieldResult NESTcalc::GetYieldIon(
   double NexONi =
       alpha +
       0.00178 *
-          pow(atomNum, 1.587);  // Wq_eV=13.7; ThomasImel=0.05; NexONi=0.05;
+          pow(atomNum, 1.587);
   if (ValidityTests::nearlyEqual(A1, 206.) &&
       ValidityTests::nearlyEqual(Z1,
                                  82.)) {  // Pb-206 (from Po-210 alpha decay).

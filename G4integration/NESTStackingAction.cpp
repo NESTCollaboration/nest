@@ -18,8 +18,12 @@ G4ClassificationOfNewTrack NESTStackingAction::ClassifyNewTrack(
 }
 
 bool NESTStackingAction::isUrgentEmpty() {
-  if(!savedManager){
-    std::cerr<<"savedManager not set by NESTStackingAction::ClassifyNewTrack(). Did you set up NESTStackingAction as your stacking action? Did you override ClassifyNewTrack and forget to set savedManager?"<<std::endl;
+  if (!savedManager) {
+    std::cerr
+        << "savedManager not set by NESTStackingAction::ClassifyNewTrack(). "
+           "Did you set up NESTStackingAction as your stacking action? Did you "
+           "override ClassifyNewTrack and forget to set savedManager?"
+        << std::endl;
   }
   return savedManager->GetNUrgentTrack() == 0;
 }

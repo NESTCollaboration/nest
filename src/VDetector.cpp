@@ -14,5 +14,4 @@ VDetector::VDetector() { Initialization(); }
 
 VDetector::~VDetector() = default;
 
-void VDetector::Initialization() {
-}
+void VDetector::Initialization() {}

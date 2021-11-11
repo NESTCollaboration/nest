@@ -20,9 +20,9 @@ class RandomGen {
   void SetSeed(uint64_t s);
   double rand_uniform();
   double rand_gauss(double mean, double sigma);
-  double rand_zero_trunc_gauss ( double mean, double sigma );
+  double rand_zero_trunc_gauss(double mean, double sigma);
   double rand_exponential(double half_life);
-  double rand_skewGauss( double xi, double omega, double alpha);
+  double rand_skewGauss(double xi, double omega, double alpha);
   int poisson_draw(double mean);
   int64_t binom_draw(int64_t N0, double prob);
   int integer_range(int min, int max);
@@ -35,18 +35,19 @@ class RandomGen {
   //  std::ranlux24 rng;
   xoroshiro128plus64 rng;
 
-  static constexpr double   xoroshiro128plus64_min = static_cast<double>(xoroshiro128plus64::min());
-  static constexpr double   xoroshiro128plus64_minmax = static_cast<double>(xoroshiro128plus64::max() - xoroshiro128plus64::min());
+  static constexpr double xoroshiro128plus64_min =
+      static_cast<double>(xoroshiro128plus64::min());
+  static constexpr double xoroshiro128plus64_minmax = static_cast<double>(
+      xoroshiro128plus64::max() - xoroshiro128plus64::min());
 
   static constexpr double two_PI = 2. * M_PI;
-  static constexpr double four_minus_PI_div_2 = 0.5*(4. - M_PI);
+  static constexpr double four_minus_PI_div_2 = 0.5 * (4. - M_PI);
   static constexpr double sqrt2 = gcem::sqrt(2.);
-  static constexpr double sqrt2_PI = gcem::sqrt( 2. * M_PI );
-  static constexpr double sqrt2_div_PI =  gcem::sqrt(2./M_PI);
+  static constexpr double sqrt2_PI = gcem::sqrt(2. * M_PI);
+  static constexpr double sqrt2_div_PI = gcem::sqrt(2. / M_PI);
   static constexpr double log2 = gcem::log(2.);
 
-
-  RandomGen()= default;                // private so that it cannot be manually called
+  RandomGen() = default;        // private so that it cannot be manually called
   RandomGen(RandomGen const&);  // copy constructor is private
   void operator=(RandomGen const&);  // assignment operator is private
   static RandomGen* m_pInstance;     // private class pointer instance

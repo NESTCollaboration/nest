@@ -46,22 +46,22 @@
 
 using namespace NEST;
 
-NESTProc::NESTProc(const G4String& processName, G4ProcessType type, VDetector* detector)
-    : NESTProc(processName,type,new NEST::NESTcalc(detector),detector)  {
-  
-}
+NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
+                   VDetector* detector)
+    : NESTProc(processName, type, new NEST::NESTcalc(detector), detector) {}
 
-NESTProc::NESTProc(const G4String& processName, G4ProcessType type, NESTcalc* customcalc, VDetector* detector): G4VRestDiscreteProcess(processName, type), fNESTcalc(customcalc), fDetector(detector)
-{
+NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
+                   NESTcalc* customcalc, VDetector* detector)
+    : G4VRestDiscreteProcess(processName, type),
+      fNESTcalc(customcalc),
+      fDetector(detector) {
   pParticleChange = &fParticleChange;
   SetProcessSubType(fScintillation);
-  
+
   if (verboseLevel > 0) {
     G4cout << GetProcessName() << " is created " << G4endl;
   }
 }
-
-
 
 NESTProc::~NESTProc() {}  // destructor needed to avoid linker error
 
@@ -88,71 +88,66 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
   return new G4Track(aQuantum, t, xyz);
 }
 
-G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t,double kin_E) {
+G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t,
+                                double kin_E) {
   // Determine polarization of new photon
 
+  double efield_here = fDetector->FitEF(xyz.x(), xyz.y(), xyz.z());
 
-  double efield_here = fDetector->FitEF(xyz.x(),xyz.y(),xyz.z());
-  
-  if(efield_here>0)
-  {
+  if (efield_here > 0) {
     G4ParticleMomentum electronMomentum(0, 0, 1);
-    G4DynamicParticle* aQuantum = new G4DynamicParticle(NESTThermalElectron::ThermalElectron(), electronMomentum);
+    G4DynamicParticle* aQuantum = new G4DynamicParticle(
+        NESTThermalElectron::ThermalElectron(), electronMomentum);
     aQuantum->SetKineticEnergy(kin_E);
     return new G4Track(aQuantum, t, xyz);
   } else {
-    return nullptr;   
+    return nullptr;
   }
   // calculate time
 }
 
-void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
-{
+void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
   pParticleChange->SetNumberOfSecondaries(1e7);
 
   // ready to pop out OP and TE?
-  if (aTrack.GetKineticEnergy()==0 &&
+  if (aTrack.GetKineticEnergy() == 0 &&
       NESTStackingAction::theStackingAction->isUrgentEmpty() &&
-      aStep.GetSecondary()->empty())
-  {
+      aStep.GetSecondary()->empty()) {
     lineages_prevEvent.clear();
 
-    for (auto &lineage : lineages)
-    {
+    for (auto& lineage : lineages) {
       double etot =
-              std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
-                              [](double a, Hit b)
-                              {
-                                return a + b.E; });
-      if (etot == 0)
-      {
+          std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
+                          [](double a, Hit b) { return a + b.E; });
+      if (etot == 0) {
         continue;
       }
-      G4ThreeVector maxHit_xyz = std::max_element(lineage.hits.begin(), lineage.hits.end(),
-                                                  [](Hit a, Hit b)
-                                                  {
-                                                    return a.E < b.E;
-                                                  })->xyz;
-      double efield_here = fDetector->FitEF(maxHit_xyz.x(), maxHit_xyz.y(), maxHit_xyz.z());
+      G4ThreeVector maxHit_xyz =
+          std::max_element(lineage.hits.begin(), lineage.hits.end(),
+                           [](Hit a, Hit b) { return a.E < b.E; })
+              ->xyz;
+      double efield_here =
+          fDetector->FitEF(maxHit_xyz.x(), maxHit_xyz.y(), maxHit_xyz.z());
       lineage.result = fNESTcalc->FullCalculation(
-                                                  lineage.type, etot, lineage.density, efield_here, lineage.A, lineage.Z, NESTcalc::default_NuisParam, NESTcalc::default_FreeParam, detailed_secondaries);
+          lineage.type, etot, lineage.density, efield_here, lineage.A,
+          lineage.Z, NESTcalc::default_NuisParam, NESTcalc::default_FreeParam,
+          detailed_secondaries);
       lineage.result_calculated = true;
-      if (lineage.result.quanta.photons)
-      {
+      if (lineage.result.quanta.photons) {
         auto photontimes = lineage.result.photon_times.begin();
         double ecum = 0;
         int phot_cum = 0;
-        for (auto &hit : lineage.hits)
-        {
-          hit.result.photons = round((lineage.result.quanta.photons - phot_cum) * hit.E / (etot - ecum));
+        for (auto& hit : lineage.hits) {
+          hit.result.photons =
+              round((lineage.result.quanta.photons - phot_cum) * hit.E /
+                    (etot - ecum));
           ecum += hit.E;
           phot_cum += hit.result.photons;
-          for (int i=0; i < hit.result.photons; ++i)
-          {
-            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor))
-            {
-              if (stack_photons)
-              {
+          for (int i = 0; i < hit.result.photons; ++i) {
+            if (YieldFactor == 1 ||
+                (YieldFactor > 0 &&
+                 RandomGen::rndm()->rand_uniform() < YieldFactor)) {
+              if (stack_photons) {
                 G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
                 pParticleChange->AddSecondary(onePhoton);
               }
@@ -161,24 +156,27 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
           }
         }
       }
-      if (lineage.result.quanta.electrons)
-      {
+      if (lineage.result.quanta.electrons) {
         double ecum = 0;
         double el_cum = 0;
-        double electron_speed = fNESTcalc->SetDriftVelocity(fDetector->get_T_Kelvin(), lineage.density, efield_here);
-        double electron_kin_E = NESTThermalElectron::ThermalElectron()->GetPDGMass() * std::pow(electron_speed * mm / us, 2);
-        for (auto &hit : lineage.hits)
-        {
-          hit.result.electrons = round((lineage.result.quanta.electrons - el_cum) * hit.E / (etot - ecum));
+        double electron_speed = fNESTcalc->SetDriftVelocity(
+            fDetector->get_T_Kelvin(), lineage.density, efield_here);
+        double electron_kin_E =
+            NESTThermalElectron::ThermalElectron()->GetPDGMass() *
+            std::pow(electron_speed * mm / us, 2);
+        for (auto& hit : lineage.hits) {
+          hit.result.electrons =
+              round((lineage.result.quanta.electrons - el_cum) * hit.E /
+                    (etot - ecum));
           ecum += hit.E;
-          el_cum+= hit.result.electrons;
-          for (int i = 0 ; i < hit.result.electrons; ++i)
-          {
-            if (YieldFactor == 1 || (YieldFactor > 0 && RandomGen::rndm()->rand_uniform() < YieldFactor))
-            {
-              if (stack_electrons)
-              {
-                G4Track* oneElectron = MakeElectron(hit.xyz, lineage.density, hit.t, electron_kin_E);
+          el_cum += hit.result.electrons;
+          for (int i = 0; i < hit.result.electrons; ++i) {
+            if (YieldFactor == 1 ||
+                (YieldFactor > 0 &&
+                 RandomGen::rndm()->rand_uniform() < YieldFactor)) {
+              if (stack_electrons) {
+                G4Track* oneElectron = MakeElectron(hit.xyz, lineage.density,
+                                                    hit.t, electron_kin_E);
                 if (oneElectron) pParticleChange->AddSecondary(oneElectron);
               }
             }
@@ -188,8 +186,7 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
 
       lineages_prevEvent.push_back(lineage);
     }
-    if (analysisTrigger)
-    {
+    if (analysisTrigger) {
       analysisTrigger(lineages_prevEvent);
     }
     lineages.clear();
@@ -199,11 +196,10 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep)
   return;
 }
 
-
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
-  pParticleChange->Initialize(aTrack);  
-  return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep); 
+  pParticleChange->Initialize(aTrack);
+  return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
 }
 
 Lineage NESTProc::GetChildType(const G4Track* parent,
@@ -227,13 +223,12 @@ Lineage NESTProc::GetChildType(const G4Track* parent,
              parent->GetDefinition()->GetIonLifeTime() * .693 >
                  1 * 60 * 60 * s) {
     return Lineage(Kr83m);
-  }else if (parent && parent->GetDefinition() == G4Gamma::Definition()) {
-    if (sec_creator.contains("compt")){ 
+  } else if (parent && parent->GetDefinition() == G4Gamma::Definition()) {
+    if (sec_creator.contains("compt")) {
       return Lineage(beta);
-    } else if (sec_creator.contains("conv")) { //conv is pair production
+    } else if (sec_creator.contains("conv")) {  // conv is pair production
       return Lineage(beta);
-    }
-      else if (sec_creator.contains("phot")) {
+    } else if (sec_creator.contains("phot")) {
       return Lineage(gammaRay);
     }
   } else if (child->GetDefinition() == G4Electron::Definition() &&
@@ -268,29 +263,43 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   // lineage.
   bool break_lineage = true;
   if (myLinID != track_lins.end()) {
-    break_lineage=false;
-    break_lineage |= (lineages[myLinID->second].type == ion); //ions do not pass on their lineage to their secondaries, since those secondaries are radioactive decay
-    if(aTrack.GetDefinition()==G4Gamma::Definition()){
-      G4ThreeVector dist_from_vertex = aTrack.GetVertexPosition() - aStep.GetPostStepPoint()->GetPosition();
-      if(dist_from_vertex.mag() > gamma_break){
-        break_lineage = true; //long-travelling gammas break the lineage, since they are excluded from the single-site experimental results infomring the NEST model
+    break_lineage = false;
+    break_lineage |=
+        (lineages[myLinID->second].type ==
+         ion);  // ions do not pass on their lineage to their secondaries, since
+                // those secondaries are radioactive decay
+    if (aTrack.GetDefinition() == G4Gamma::Definition()) {
+      G4ThreeVector dist_from_vertex =
+          aTrack.GetVertexPosition() - aStep.GetPostStepPoint()->GetPosition();
+      if (dist_from_vertex.mag() > gamma_break) {
+        break_lineage = true;  // long-travelling gammas break the lineage,
+                               // since they are excluded from the single-site
+                               // experimental results infomring the NEST model
       }
     }
-    if(!break_lineage){ 
+    if (!break_lineage) {
       for (const G4Track* sec : secondaries) {
-        if(sec->GetDefinition() == G4OpticalPhoton::Definition() || sec->GetCreatorProcess()->GetProcessName().contains("annihil")) continue;
+        if (sec->GetDefinition() == G4OpticalPhoton::Definition() ||
+            sec->GetCreatorProcess()->GetProcessName().contains("annihil"))
+          continue;
         track_lins.insert(
             make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
                                  sec->GetMomentumDirection()),
                       myLinID->second));
-        if(verbose>2){
-                std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<" type "<<lineages[myLinID->second].type <<" parent "<<aTrack.GetDefinition()->GetParticleName() <<std::endl;
+        if (verbose > 2) {
+          std::cout << "added "
+                    << sec->GetDynamicParticle()
+                           ->GetParticleDefinition()
+                           ->GetParticleName()
+                    << " to lineage " << lineages.size() - 1 << " type "
+                    << lineages[myLinID->second].type << " parent "
+                    << aTrack.GetDefinition()->GetParticleName() << std::endl;
         }
       }
     }
   }
   // otherwise, we may need to start a new lineage
-  if(break_lineage) {
+  if (break_lineage) {
     // What if the parent is a primary? Give it a lineage just as if it were one
     // of its own secondaries
     if (aTrack.GetParentID() == 0 && myLinID == track_lins.end()) {
@@ -306,23 +315,29 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                        aTrack.GetVertexMomentumDirection()),
             lineages.size() - 1));
         myLinID = --track_lins.end();
-        if(lineages.back().type != ion){
-          for (const G4Track* sec : secondaries)
-          {
-            if(sec->GetDefinition() == G4OpticalPhoton::Definition() || sec->GetCreatorProcess()->GetProcessName().contains("annihil")){
+        if (lineages.back().type != ion) {
+          for (const G4Track* sec : secondaries) {
+            if (sec->GetDefinition() == G4OpticalPhoton::Definition() ||
+                sec->GetCreatorProcess()->GetProcessName().contains(
+                    "annihil")) {
               continue;
             }
             step_type = sec_type;
-            track_lins.insert(make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
-                                                   sec->GetMomentumDirection()),
-                                        lineages.size() - 1));
-            if(verbose>2){
-              std::cout<<"added "<<sec->GetDynamicParticle()->GetParticleDefinition()->GetParticleName()<<" to lineage "<<lineages.size()-1<<std::endl;
+            track_lins.insert(
+                make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
+                                     sec->GetMomentumDirection()),
+                          lineages.size() - 1));
+            if (verbose > 2) {
+              std::cout << "added "
+                        << sec->GetDynamicParticle()
+                               ->GetParticleDefinition()
+                               ->GetParticleName()
+                        << " to lineage " << lineages.size() - 1 << std::endl;
             }
-          }   
+          }
         }
       }
-    } 
+    }
 
     for (const G4Track* sec : secondaries) {
       // Each secondary has a type (including the possible NoneType)
@@ -335,10 +350,15 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
              step_type == NoneType || step_type == ion || sec_type == ion);
       // if this is the first secondary to have a non-None type, we've started a
       // new lineage
-      if (sec_type != NoneType && (step_type == NoneType || step_type == ion || sec_type == ion)) {
+      if (sec_type != NoneType &&
+          (step_type == NoneType || step_type == ion || sec_type == ion)) {
         if (verbose > 1)
-          cout << "Made new lineage "<<lineages.size()<<" from secondary of particle "
-               << aTrack.GetTrackID()<<"("<<aTrack.GetDefinition()->GetParticleName()<<" -> "<<sec->GetDefinition()->GetParticleName()<<")" << " of type " << sec_type <<sec->GetCreatorProcess()->GetProcessName() << endl;
+          cout << "Made new lineage " << lineages.size()
+               << " from secondary of particle " << aTrack.GetTrackID() << "("
+               << aTrack.GetDefinition()->GetParticleName() << " -> "
+               << sec->GetDefinition()->GetParticleName() << ")"
+               << " of type " << sec_type
+               << sec->GetCreatorProcess()->GetProcessName() << endl;
         lineages.push_back(sec_lin);
       }
       step_type = sec_type;
@@ -366,7 +386,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   if (myLinID2 == track_lins.end()) {
     if (sec_mylinid)
       myLinID2 = myLinID;
-    else{
+    else {
       TryPopLineages(aTrack, aStep);
       return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
     }
@@ -377,11 +397,11 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
     TryPopLineages(aTrack, aStep);
     return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
   }
-  
+
   //... in a noble element...
   const G4Material* preMaterial = aStep.GetPreStepPoint()->GetMaterial();
   const G4Material* postMaterial = aStep.GetPostStepPoint()->GetMaterial();
-  G4Element* ElementA = NULL, * ElementB = NULL;
+  G4Element *ElementA = NULL, *ElementB = NULL;
   if (preMaterial) {
     const G4ElementVector* theElementVector1 = preMaterial->GetElementVector();
     ElementA = (*theElementVector1)[0];
@@ -407,7 +427,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
     NobleLater = true;
   }
 
-  if (!NobleNow){
+  if (!NobleNow) {
     TryPopLineages(aTrack, aStep);
     return G4VRestDiscreteProcess::PostStepDoIt(aTrack, aStep);
   }

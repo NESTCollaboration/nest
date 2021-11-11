@@ -16,21 +16,21 @@
 #include "GammaHandler.hh"
 #include <stdexcept>
 
-
 using namespace std;
 
 double power =
     3.7488;  // this is a global variable because it is for both AmBe and 252Cf
 
-const vector<double> TestSpectra::Gamma_spectrum(double xMin, double xMax, string source) {
+const vector<double> TestSpectra::Gamma_spectrum(double xMin, double xMax,
+                                                 string source) {
   GammaHandler gh;
 
   return gh.combineSpectra(xMin, xMax, source);
 }
 
 double TestSpectra::CH3T_spectrum(double xMin, double xMax) {
-  double m_e = ElectronRestMassEnergy;     // e- rest mass-energy [keV]
-  double aa = 0.0072973525664;  // fine structure constant
+  double m_e = ElectronRestMassEnergy;  // e- rest mass-energy [keV]
+  double aa = 0.0072973525664;          // fine structure constant
   double ZZ = 2.;
   double qValue = 18.5898;  // tritium beta decay endpoint [keV]
 
@@ -58,8 +58,8 @@ double TestSpectra::CH3T_spectrum(double xMin, double xMax) {
 }
 
 double TestSpectra::C14_spectrum(double xMin, double xMax) {
-  double m_e = ElectronRestMassEnergy;     // e- rest mass-energy [keV]
-  double aa = 0.0072973525664;  // fine structure constant
+  double m_e = ElectronRestMassEnergy;  // e- rest mass-energy [keV]
+  double aa = 0.0072973525664;          // fine structure constant
   double ZZ = 7.;
   double V0 = 0.495;  // effective offset in T due to screening of the nucleus
                       // by electrons
@@ -175,45 +175,48 @@ double TestSpectra::DD_spectrum(
   if (xMin < 0.000) xMin = 0.000;
   double yMax = 1.1;
   vector<double> xyTry = {
-    xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
-    yMax * RandomGen::rndm()->rand_uniform(), 1.};
+      xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
+      yMax * RandomGen::rndm()->rand_uniform(), 1.};
   while (xyTry[2] > 0.) {
-    double FuncValue = exp(-xyTry[0]/10.) + 0.1*exp(-pow((xyTry[0]-60.)/25.,2.));
+    double FuncValue =
+        exp(-xyTry[0] / 10.) + 0.1 * exp(-pow((xyTry[0] - 60.) / 25., 2.));
     xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0],
                                           xyTry[1], FuncValue);
   }
   return xyTry[0];
 }
 
-double TestSpectra::ppSolar_spectrum ( double xMin, double xMax ) {
-  
-  if ( xMax > 250. ) xMax = 250.;
-  if ( xMin < 0.00 ) xMin = 0.00;
+double TestSpectra::ppSolar_spectrum(double xMin, double xMax) {
+  if (xMax > 250.) xMax = 250.;
+  if (xMin < 0.00) xMin = 0.00;
   double yMax = 0.000594;
   vector<double> xyTry = {
-    xMin + ( xMax - xMin ) * RandomGen::rndm()->rand_uniform(),
-    yMax * RandomGen::rndm()->rand_uniform(), 1. };
-  while ( xyTry[2] > 0. ) {
-    double FuncValue = 9.2759e-6 - 3.5556e-8 * xyTry[0] - 5.4608e-12 * xyTry[0] * xyTry[0];
-    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0], xyTry[1], FuncValue);
+      xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
+      yMax * RandomGen::rndm()->rand_uniform(), 1.};
+  while (xyTry[2] > 0.) {
+    double FuncValue =
+        9.2759e-6 - 3.5556e-8 * xyTry[0] - 5.4608e-12 * xyTry[0] * xyTry[0];
+    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0],
+                                          xyTry[1], FuncValue);
   }
   return xyTry[0];
-
 }
 
-double TestSpectra::atmNu_spectrum ( double xMin, double xMax ) {
-  
-  if ( xMax > 85. ) xMax = 85.;
-  if ( xMin < 0.0 ) xMin = 0.0;
+double TestSpectra::atmNu_spectrum(double xMin, double xMax) {
+  if (xMax > 85.) xMax = 85.;
+  if (xMin < 0.0) xMin = 0.0;
   vector<double> xyTry = {
-    xMin + ( xMax - xMin ) * RandomGen::rndm()->rand_uniform(),
-    RandomGen::rndm()->rand_uniform(), 1. };
-  while ( xyTry[2] > 0. ) {
-    double FuncValue = ( 1. + 0.0041482 * xyTry[0] + 0.00079972 * xyTry[0] * xyTry[0] - 1.0201e-5 * xyTry[0] * xyTry[0] * xyTry[0] ) * exp ( -xyTry[0] / 12.355 );
-    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., 1., xyTry[0], xyTry[1], FuncValue);
+      xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
+      RandomGen::rndm()->rand_uniform(), 1.};
+  while (xyTry[2] > 0.) {
+    double FuncValue =
+        (1. + 0.0041482 * xyTry[0] + 0.00079972 * xyTry[0] * xyTry[0] -
+         1.0201e-5 * xyTry[0] * xyTry[0] * xyTry[0]) *
+        exp(-xyTry[0] / 12.355);
+    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., 1., xyTry[0],
+                                          xyTry[1], FuncValue);
   }
   return xyTry[0];
-
 }
 
 //------++++++------++++++------++++++------++++++------++++++------++++++------
@@ -236,11 +239,15 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   double SqrtPi = pow(M_PI, 0.5);
   double root2 = sqrt(2.);
   // Convert all velocities from km/s into cm/s
-  double v_0 = V_WIMP * cmPerkm;     // peak WIMP velocity
-  double v_esc = V_ESCAPE * cmPerkm; // escape velocity
-  double v_e = ( V_SUN + ( 0.49 * 29.8 * cos ( ( dayNum * 2. * M_PI / 365.24 ) - ( 0.415 * 2. * M_PI ) ) ) ) * cmPerkm;  // the Earth's velocity
-  // used Eq. 18 for SHM w/ June 1 as reference date (MAX!) from arXiv 0607121 [Savage, Freese, Gondolo 2006] - Juergen Reichenbacher 09/17/2020
-  
+  double v_0 = V_WIMP * cmPerkm;      // peak WIMP velocity
+  double v_esc = V_ESCAPE * cmPerkm;  // escape velocity
+  double v_e =
+      (V_SUN + (0.49 * 29.8 *
+                cos((dayNum * 2. * M_PI / 365.24) - (0.415 * 2. * M_PI)))) *
+      cmPerkm;  // the Earth's velocity
+  // used Eq. 18 for SHM w/ June 1 as reference date (MAX!) from arXiv 0607121
+  // [Savage, Freese, Gondolo 2006] - Juergen Reichenbacher 09/17/2020
+
   // Define the detector Z and A and the mass of the target nucleus
   double Z = ATOM_NUM;
   double A = (double)RandomGen::rndm()->SelectRanXeAtom();
@@ -280,9 +287,8 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   double x_esc = v_esc / v_0;
   // Calculate overall normalization to the velocity integral
   double N = SqrtPi * SqrtPi * SqrtPi * v_0 * v_0 * v_0 *
-             (erf(x_esc) -
-              (4. / SqrtPi) * exp(-x_esc * x_esc) *
-                  (x_esc / 2. + bet * x_esc * x_esc * x_esc / 3.));
+             (erf(x_esc) - (4. / SqrtPi) * exp(-x_esc * x_esc) *
+                               (x_esc / 2. + bet * x_esc * x_esc * x_esc / 3.));
   // Calculate the part of the velocity integral that isn't a constant
   double zeta = 0.;
   int thisCase = -1;
@@ -320,7 +326,8 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
       zeta = 0.;
       break;
     default:
-      throw std::runtime_error("\tThe velocity integral in the WIMP generator broke!!!");
+      throw std::runtime_error(
+          "\tThe velocity integral in the WIMP generator broke!!!");
   }
 
   double a = 0.52;                           // in fm
@@ -355,7 +362,9 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   return dSpec;
 }
 
-TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, double eStep, double dayNum) {
+TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass,
+                                                                double eStep,
+                                                                double dayNum) {
   WIMP_spectrum_prep spectrum;
   double divisor, x1, x2;
   vector<double> EnergySpec;
@@ -370,36 +379,44 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
     divisor = 1.0 / eStep;
     numberPoints = int(100. / eStep);
   }
-  int nZeros = 0; //keep track of the number of zeros in a row
+  int nZeros = 0;  // keep track of the number of zeros in a row
   for (int i = 0; i < (numberPoints + 1); ++i) {
-    EnergySpec.push_back( WIMP_dRate(double(i) / divisor, mass, dayNum) );
-    if ( ValidityTests::nearlyEqual(EnergySpec[i], 0.) ) ++nZeros;
-    else nZeros = 0; //reset the count if EnergySpec[i] != zero
-    if ( nZeros == 100 ) break; //quit the for-loop once we're sure we're only getting zeros
+    EnergySpec.push_back(WIMP_dRate(double(i) / divisor, mass, dayNum));
+    if (ValidityTests::nearlyEqual(EnergySpec[i], 0.))
+      ++nZeros;
+    else
+      nZeros = 0;  // reset the count if EnergySpec[i] != zero
+    if (nZeros == 100)
+      break;  // quit the for-loop once we're sure we're only getting zeros
   }
 
   for (uint64_t i = 0; i < 1000000; ++i) {
     spectrum.integral += WIMP_dRate(double(i) / 1e4, mass, dayNum) / 1e4;
   }
-  spectrum.xMax = ( (double) EnergySpec.size() - 1. )/divisor;
-                //defualt value -- will be overwritten if 
-                //xMax is acutally smaller
-  for (int i = 0; i < (int) EnergySpec.size() - 1; ++i) {
+  spectrum.xMax = ((double)EnergySpec.size() - 1.) / divisor;
+  // defualt value -- will be overwritten if
+  // xMax is acutally smaller
+  for (int i = 0; i < (int)EnergySpec.size() - 1; ++i) {
     x1 = double(i) / divisor;
     x2 = double(i + 1) / divisor;
     spectrum.base[i] = EnergySpec[i + 1] *
                        pow(EnergySpec[i + 1] / EnergySpec[i], x2 / (x1 - x2));
     spectrum.exponent[i] = log(EnergySpec[i + 1] / EnergySpec[i]) / (x1 - x2);
     if (spectrum.base[i] > 0. && spectrum.base[i] < DBL_MAX &&
-        spectrum.exponent[i] > 0. && spectrum.exponent[i] < DBL_MAX )
+        spectrum.exponent[i] > 0. && spectrum.exponent[i] < DBL_MAX)
       ;  // spectrum.integral+=spectrum.base[i]/spectrum.exponent[i]*(exp(-spectrum.exponent[i]*x1)-exp(-spectrum.exponent[i]*x2));
     else {
-      if ( EnergySpec[i+1] > 10. ) { //i.e. the calculation stopped before event rate was low
-        throw std::runtime_error("ERROR: WIMP E_step is too small (or large)! Increase(decrease) it slightly to avoid noise in the calculation.");
+      if (EnergySpec[i + 1] >
+          10.) {  // i.e. the calculation stopped before event rate was low
+        throw std::runtime_error(
+            "ERROR: WIMP E_step is too small (or large)! Increase(decrease) it "
+            "slightly to avoid noise in the calculation.");
       }
       spectrum.xMax = double(i - 1) / divisor;
       if (spectrum.xMax <= 0.0) {
-        throw std::runtime_error("ERROR: The maximum possible WIMP recoil is not +-ive, which usually means your E_step is too small (OR it is too large).");
+        throw std::runtime_error(
+            "ERROR: The maximum possible WIMP recoil is not +-ive, which "
+            "usually means your E_step is too small (OR it is too large).");
       }
       break;
     }
@@ -409,9 +426,9 @@ TestSpectra::WIMP_spectrum_prep TestSpectra::WIMP_prep_spectrum(double mass, dou
   return spectrum;
 }
 
-double TestSpectra::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum,
-                                  double mass, double dayNum) {
-  int count = 0; //added by Jack Genovesi of LZ
+double TestSpectra::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum, double mass,
+                                  double dayNum) {
+  int count = 0;  // added by Jack Genovesi of LZ
   double xMin = 0., FuncValue = 0.00, x = 0.;
   double yMax = WIMP_dRate(xMin, mass, dayNum);
   vector<double> xyTry = {
@@ -421,28 +438,36 @@ double TestSpectra::WIMP_spectrum(WIMP_spectrum_prep wimp_spectrum,
     while (
         xyTry[1] >
         (-WIMP_dRate(0., mass, dayNum) / wimp_spectrum.xMax * xyTry[0] +
-         WIMP_dRate(0., mass, dayNum))) {  // triangle cut more efficient than rectangle
+         WIMP_dRate(0., mass,
+                    dayNum))) {  // triangle cut more efficient than rectangle
       xyTry[0] =
           (wimp_spectrum.xMax - xMin) * RandomGen::rndm()->rand_uniform();
-      xyTry[1] = yMax * RandomGen::rndm()->rand_uniform();  // needs to be a lower value
-    }  // end of the inner while loop
-    for (x = 0; x < wimp_spectrum.xMax; x += (1. / wimp_spectrum.divisor)) {  // start inner for loop
-      if (xyTry[0] > x && xyTry[0] < (x + 1. / wimp_spectrum.divisor)) {  // start inner if statement
+      xyTry[1] =
+          yMax *
+          RandomGen::rndm()->rand_uniform();  // needs to be a lower value
+    }                                         // end of the inner while loop
+    for (x = 0; x < wimp_spectrum.xMax;
+         x += (1. / wimp_spectrum.divisor)) {  // start inner for loop
+      if (xyTry[0] > x &&
+          xyTry[0] <
+              (x + 1. / wimp_spectrum.divisor)) {  // start inner if statement
         FuncValue =
             wimp_spectrum.base[int(x * wimp_spectrum.divisor)] *
             exp(-wimp_spectrum.exponent[int(x * wimp_spectrum.divisor)] *
                 xyTry[0]);
         break;
       }  // end inner if statement
-    }  // end inner for loop
+    }    // end inner for loop
     xyTry = RandomGen::rndm()->VonNeumann(xMin, wimp_spectrum.xMax, 0., yMax,
                                           xyTry[0], xyTry[1], FuncValue);
-    
-    ++count; // for avoiding an infinite loop
-    if ( count >= 100 ) { xyTry[0] = 0.; break; }
-    
+
+    ++count;  // for avoiding an infinite loop
+    if (count >= 100) {
+      xyTry[0] = 0.;
+      break;
+    }
   }
-  
+
   return xyTry[0];
 }
 

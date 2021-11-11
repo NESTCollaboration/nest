@@ -28,7 +28,8 @@ int main(int argc, char** argv) {
   double dayNum = 0.;
   // Give a message establishing the use of this code
   cerr << "NOTE: This is a skeleton code meant to be a starting point for "
-          "custom uses of NEST. But you should really look at execNEST." << endl
+          "custom uses of NEST. But you should really look at execNEST."
+       << endl
        << endl;
 
   // Instantiate your own VDetector class here, then load into NEST class
@@ -46,9 +47,9 @@ int main(int argc, char** argv) {
   NEST::QuantaResult quanta;
 
   // Declare needed temporary variables
-  vector<double> vTable,
-    NuisParam = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1., 1.};
-  int index;    // index for Z step (for getting pre-calculated drift field)
+  vector<double> vTable, NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3,
+                                      2.,  0.3, 2.,     0.5,     1.,   1.};
+  int index;  // index for Z step (for getting pre-calculated drift field)
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD, vD_middle;
   // Energy min and max for source spectrum
   double eMin = 10;
@@ -79,15 +80,20 @@ int main(int argc, char** argv) {
     if (eMin == 9.4 && eMax == 9.4) {
     } else if (eMin == 32.1 && eMax == 32.1) {
     } else {
-      if ( verbosity ) cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 keV please." << endl;
+      if (verbosity)
+        cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 "
+                "keV please."
+             << endl;
       return 1;
     }
   } else if (type_num == gammaRay && verbosity) {
     if (eMin < 10. || eMax < 10.) {
       cerr << "WARNING: Typically beta model works better for ER BG at low "
-              "energies as in a WS." << endl;
+              "energies as in a WS."
+           << endl;
       cerr << "ER data is often best matched by a weighted average of the beta "
-              "& gamma models." << endl;
+              "& gamma models."
+           << endl;
     }
   }
 
@@ -119,8 +125,9 @@ int main(int argc, char** argv) {
         break;
       case WIMP:
         spec.wimp_spectrum_prep =
-	  spec.WIMP_prep_spectrum(wimp_mass_GeV, E_step, dayNum);
-        keV = spec.WIMP_spectrum(spec.wimp_spectrum_prep, wimp_mass_GeV, dayNum);
+            spec.WIMP_prep_spectrum(wimp_mass_GeV, E_step, dayNum);
+        keV =
+            spec.WIMP_spectrum(spec.wimp_spectrum_prep, wimp_mass_GeV, dayNum);
         break;
       default:
         keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
@@ -176,32 +183,34 @@ int main(int argc, char** argv) {
   // Get yields from NEST calculator, along with number of quanta
   yields = n.GetYields(type_num, keV, rho, field, double(massNum),
                        double(atomNum), NuisParam);
-  vector<double> FreeParam = { 1,1,.1,.5,.19,2.25 };
+  vector<double> FreeParam = {1, 1, .1, .5, .19, 2.25};
   quanta = n.GetQuanta(yields, rho, FreeParam);
 
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =
       g2 * quanta.electrons * exp(-driftTime / detector->get_eLife_us());
 
-  // Vectors for saving times and amplitudes of waveforms (with calculationMode and
-  // verbosity boolean flags both set to true in analysis.hh)
+  // Vectors for saving times and amplitudes of waveforms (with calculationMode
+  // and verbosity boolean flags both set to true in analysis.hh)
   vector<double> wf_amp;
   vector<int64_t> wf_time;
-  
+
   double truthPos[3] = {pos_x, pos_y, pos_z};
   double smearPos[3] = {pos_x, pos_y, pos_z};
-  
+
   // Calculate the S1 based on the quanta generated
   vector<double> scint =
-    n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0], smearPos[1], smearPos[2], vD, vD_middle, type_num, 0, field,
-	    keV, s1CalculationMode, verbosity, wf_time, wf_amp);
-  
+      n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0],
+              smearPos[1], smearPos[2], vD, vD_middle, type_num, 0, field, keV,
+              s1CalculationMode, verbosity, wf_time, wf_amp);
+
   // Take care of gamma-X case for positions below cathode
   if (truthPos[2] < detector->get_cathode()) quanta.electrons = 0;
   vector<double> scint2 =
-    n.GetS2(quanta.electrons, truthPos[0], truthPos[1], truthPos[2], smearPos[0], smearPos[1], smearPos[2], driftTime, vD, 0, field,
-	    s2CalculationMode, verbosity, wf_time, wf_amp, g2_params);
-  
+      n.GetS2(quanta.electrons, truthPos[0], truthPos[1], truthPos[2],
+              smearPos[0], smearPos[1], smearPos[2], driftTime, vD, 0, field,
+              s2CalculationMode, verbosity, wf_time, wf_amp, g2_params);
+
   // If using the reconstructed energy, back-calculate energy as measured from
   // yields
   if (!MCtruthE) {

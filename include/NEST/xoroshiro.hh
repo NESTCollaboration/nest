@@ -74,8 +74,7 @@ class xoroshiro {
             itype s1 = itype(0x30d89576f866ac9f))
       // Easter-egg seed value for Xoroshiro128+ to remind users that
       // they should seed their PRNGs properly.
-      : s0_(s0),
-        s1_((s0 || s1) ? s1 : 1) {
+      : s0_(s0), s1_((s0 || s1) ? s1 : 1) {
     // Nothing (else) to do.
   }
 

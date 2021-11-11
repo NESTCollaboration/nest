@@ -28,16 +28,16 @@ class DetectorExample_XENON10 : public VDetector {
     // Call the initialisation of all the parameters
     Initialization();
   };
-  ~DetectorExample_XENON10() override= default;
+  ~DetectorExample_XENON10() override = default;
 
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   void Initialization() override {
     // Primary Scintillation (S1) parameters
     g1 = 0.073;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
-    sPEres = 0.58;   // single phe resolution (Gaussian assumed)
-    sPEthr = 0.35;   // POD threshold in phe, usually used IN PLACE of sPEeff
-    sPEeff = 1.00;   // actual efficiency, can be used in lieu of POD threshold
+    sPEres = 0.58;  // single phe resolution (Gaussian assumed)
+    sPEthr = 0.35;  // POD threshold in phe, usually used IN PLACE of sPEeff
+    sPEeff = 1.00;  // actual efficiency, can be used in lieu of POD threshold
     noiseBaseline[0] = 0.0;  // baseline noise mean in PE (Gaussian)
     noiseBaseline[1] = 0.0;  // baseline noise width in PE (Gaussian)
     noiseBaseline[2] = 0.0;  // baseline noise mean in e- (for grid wires)
@@ -49,7 +49,7 @@ class DetectorExample_XENON10 : public VDetector {
     numPMTs = 89;    // For coincidence calculation
 
     OldW13eV = true;  // for matching EXO-200's W measurement
-    //the "Linear noise" terms as defined in Dahl thesis and by Dan McK
+    // the "Linear noise" terms as defined in Dahl thesis and by Dan McK
     noiseLinear[0] = 3e-2;  // S1->S1 Gaussian-smeared with noiseL[0]*S1
     noiseLinear[1] = 3e-2;  // S2->S2 Gaussian-smeared with noiseL[1]*S2
 
@@ -93,15 +93,16 @@ class DetectorExample_XENON10 : public VDetector {
 
   // S1 PDE custom fit for function of z
   // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
-  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
+  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm,
+               LCE map) override {
     return 1.;  // unitless, 1.000 at detector center
   }
 
   // Drift electric field as function of Z in mm
   // For example, use a high-order poly spline
   double FitEF(double xPos_mm, double yPos_mm,
-                       double zPos_mm) override {  // in V/cm
-    return 730.; // NOTE: if just const don't use -1 field option at run-time
+               double zPos_mm) override {  // in V/cm
+    return 730.;  // NOTE: if just const don't use -1 field option at run-time
   }
 
   // S2 PDE custom fit for function of r
@@ -111,7 +112,7 @@ class DetectorExample_XENON10 : public VDetector {
   }
 
   vector<double> FitTBA(double xPos_mm, double yPos_mm,
-                                double zPos_mm) override {
+                        double zPos_mm) override {
     vector<double> BotTotRat(2);
 
     BotTotRat[0] = 0.6;  // S1 bottom-to-total ratio

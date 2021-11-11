@@ -79,321 +79,372 @@
 #include <string>
 
 #define HIGH_E_NR 330.
-#define W_DEFAULT 13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35. 19.5-19.6 eV for LAr
-#define W_SCINT 8.5e-3  // the *max* possible energy of 1 scint phot, keV. Make this at least 10 eV for LAr
+#define W_DEFAULT \
+  13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35. 19.5-19.6 eV
+        // for LAr
+#define W_SCINT \
+  8.5e-3  // the *max* possible energy of 1 scint phot, keV. Make this at least
+          // 10 eV for LAr
 #define NEST_AVO 6.0221409e+23
-#define ATOM_NUM 54.         // period to make float. 18 for LAr. If changed here go to TestSpectra.hh too
+#define ATOM_NUM \
+  54.  // period to make float. 18 for LAr. If changed here go to TestSpectra.hh
+       // too
 
-#define PHE_MIN 1e-6         // area
-#define FIELD_MIN 1.         // min elec field to make S2 (in V/cm)
-#define DENSITY 2.90         // g/cm^3, ref density for dependent effects. ~1.4 for LAr
+#define PHE_MIN 1e-6  // area
+#define FIELD_MIN 1.  // min elec field to make S2 (in V/cm)
+#define DENSITY 2.90  // g/cm^3, ref density for dependent effects. ~1.4 for LAr
 
-#define EPS_GAS 1.00126  // poly-morphic: make negative to use Aprile/PandaX instead of LLNL/PIXeY's e- EE
+#define EPS_GAS \
+  1.00126  // poly-morphic: make negative to use Aprile/PandaX instead of
+           // LLNL/PIXeY's e- EE
 // for GAr it is 1.000574 at least at room T (doi.org/10.1103/PhysRev.34.615)
-#define EPS_LIQ 1.85  // LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan M. LAr 1.325
+#define EPS_LIQ \
+  1.85  // LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan
+        // M. LAr 1.325
 
 #define SAMPLE_SIZE 10  // nano-seconds
 #define PULSE_WIDTH 10  // nano-seconds
 #define PULSEHEIGHT \
-  0.005                 // threshold height, in PE, for writing to photon_times
+  0.005                  // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
-#define PHE_MAX 180 // saturation threshold, in PE per bin i.e. sample
+#define PHE_MAX 180      // saturation threshold, in PE per bin i.e. sample
 
-static constexpr int XYcorr = 3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both
+static constexpr int XYcorr =
+    3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both
 
 static constexpr double RidealGas = 8.31446261815324;  // Joules/mole/Kelvin
-static constexpr double RealGasA = 0.4250;  // m^6*Pa/mol^2 or m^4*N/mol^2. For Ar: 0.1355
+static constexpr double RealGasA =
+    0.4250;  // m^6*Pa/mol^2 or m^4*N/mol^2. For Ar: 0.1355
 static constexpr double RealGasB = 5.105e-5;  // m^3/mol. For Ar: 3.201e-5
 
 namespace NEST {
 
-    typedef enum {
+typedef enum {
 
-        // nuclear recoil
-        NR = 0,
-        WIMP = 1,
-        B8 = 2,
-        DD = 3,
-        AmBe = 4,
-        Cf = 5,
-        ion = 6,  // includes alphas, Pb-206
-        // electron recoil
-        gammaRay = 7,  // only photoelectric
-        beta = 8,  // includes comptons
-        CH3T = 9,
-        C14 = 10,
-        Kr83m = 11,
-        ppSolar = 12,
-        atmNu = 13,
-        fullGamma = 14,
-        fullGamma_PE = 15,
-        fullGamma_Compton_PP = 16,
-        NoneType = 17
+  // nuclear recoil
+  NR = 0,
+  WIMP = 1,
+  B8 = 2,
+  DD = 3,
+  AmBe = 4,
+  Cf = 5,
+  ion = 6,  // includes alphas, Pb-206
+  // electron recoil
+  gammaRay = 7,  // only photoelectric
+  beta = 8,      // includes comptons
+  CH3T = 9,
+  C14 = 10,
+  Kr83m = 11,
+  ppSolar = 12,
+  atmNu = 13,
+  fullGamma = 14,
+  fullGamma_PE = 15,
+  fullGamma_Compton_PP = 16,
+  NoneType = 17
 
-    } INTERACTION_TYPE;
+} INTERACTION_TYPE;
 
+enum class S1CalculationMode { Full, Parametric, Hybrid, Waveform };
 
-    enum class S1CalculationMode {
-        Full, Parametric, Hybrid, Waveform
-    };
+enum class S2CalculationMode { Full, Waveform, WaveformWithEtrain };
 
-    enum class S2CalculationMode {
-        Full, Waveform, WaveformWithEtrain
-    };
+struct YieldResult {
+  double PhotonYield;
+  double ElectronYield;
+  double ExcitonRatio;
+  double Lindhard;
+  double ElectricField;
+  double DeltaT_Scint;
+};
 
+struct QuantaResult {
+  int photons;
+  int electrons;
+  int ions;
+  int excitons;
+  double recombProb;
+  double Variance;
+};
 
-    struct YieldResult {
-        double PhotonYield;
-        double ElectronYield;
-        double ExcitonRatio;
-        double Lindhard;
-        double ElectricField;
-        double DeltaT_Scint;
-    };
+typedef std::vector<double> photonstream;
 
-    struct QuantaResult {
-        int photons;
-        int electrons;
-        int ions;
-        int excitons;
-        double recombProb;
-        double Variance;
-    };
+struct NESTresult {
+  YieldResult yields;
+  QuantaResult quanta;
+  photonstream photon_times;
+};
 
-    typedef std::vector<double> photonstream;
+class NESTcalc {
+ protected:
+  VDetector *fdetector;
 
-    struct NESTresult {
-        YieldResult yields;
-        QuantaResult quanta;
-        photonstream photon_times;
-    };
+ private:
+  ofstream pulseFile;
 
-    class NESTcalc {
-    protected:
-        VDetector *fdetector;
+  static long double Factorial(double x);
 
-    private:
-        ofstream pulseFile;
+  static double nCr(double n, double r);
 
-        static long double Factorial(double x);
+  vector<vector<double>> photon_areas;
+  vector<double> scintillation;  // return vector
+  vector<double> newSpike;       // for re-doing spike counting more precisely
+  vector<double> ionization;
 
-        static double nCr(double n, double r);
+  static constexpr double two_PI = 2. * M_PI;
+  static constexpr double sqrt2 = gcem::sqrt(2.);
+  static constexpr double sqrt2_PI = gcem::sqrt(2. * M_PI);
+  static constexpr double inv_sqrt2_PI = 1. / gcem::sqrt(2. * M_PI);
 
-        vector<vector<double>> photon_areas;
-        vector<double> scintillation;  // return vector
-        vector<double> newSpike;  // for re-doing spike counting more precisely
-        vector<double> ionization;
+ public:
+  NESTcalc(const NESTcalc &) = delete;
 
-        static constexpr double two_PI = 2. * M_PI;
-        static constexpr double sqrt2 = gcem::sqrt(2.);
-        static constexpr double sqrt2_PI = gcem::sqrt( 2. * M_PI );
-        static constexpr double inv_sqrt2_PI = 1./gcem::sqrt( 2. * M_PI );
+  NESTcalc &operator=(const NESTcalc &) = delete;
 
-    public:
-        NESTcalc(const NESTcalc &) = delete;
+  explicit NESTcalc(VDetector *detector);
 
-        NESTcalc &operator=(const NESTcalc &) = delete;
+  virtual ~NESTcalc();
 
-        explicit NESTcalc(VDetector *detector);
-      
-        virtual ~NESTcalc();
-      
-        static const std::vector<double> default_NuisParam; /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
-        static const std::vector<double> default_FreeParam; /* = {1.,1.,0.1,0.5,0.19,2.25} */
-      
-        NESTresult FullCalculation(INTERACTION_TYPE species, double energy,
-                                   double density, double dfield, double A, double Z,
-                                   const std::vector<double> &NuisParam = default_NuisParam, /* = {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
-                                   const std::vector<double> &FreeParam = default_FreeParam, /* = {1.,1.,0.1,0.5,0.19,2.25} */
-                                   bool do_times = true); // the so-called full NEST calculation puts together all the individual functions/calculations below
-      
-        double PhotonTime(INTERACTION_TYPE species, bool exciton, double dfield,
-                          double energy); // gives you the birth times of S1 as well as S2 scintillation photons, taking singlet, triplet, and recombination times into account, depending on particle, energy, field
-      
-        photonstream AddPhotonTransportTime(const photonstream &emitted_times, double x,
-                                            double y, double z); // adds an approximately ray-traced (analytical function) photon travel time in the detector to each photon birth time
-      
-        photonstream GetPhotonTimes(INTERACTION_TYPE species, int total_photons,
-                                    int excitons, double dfield, double energy); // this function loops over the photon times above to add times to multiple photons in a loop
-      
-        YieldResult GetYields(INTERACTION_TYPE species, double energy, double density,
-                              double dfield, double A, double Z,
-                              const std::vector<double> &NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2.,
-                                                                      0.5, 1., 1.}, bool oldModelER = false);
-        // the innermost heart of NEST, this provides floating-point average values
-        // for photons and electrons per keV. Nuis(ance)Param included for varying the
-        // NR Ly & Qy up and down
+  static const std::vector<double>
+      default_NuisParam; /* =
+                            {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
+  static const std::vector<double>
+      default_FreeParam; /* = {1.,1.,0.1,0.5,0.19,2.25} */
 
-        virtual YieldResult GetYieldGamma(double energy, double density, double dfield);
-        // Called by GetYields in the Gamma/x-ray/Photoabsorption Case
-	
-        virtual YieldResult GetYieldERWeighted( double energy, double density, double dfield, const std::vector<double> &NuisParam);
-        // Weights beta/gamma models to account for ER sources with differing
-	// recombination profiles (such as L-shell electron-capture interactions)
+  NESTresult FullCalculation(
+      INTERACTION_TYPE species, double energy, double density, double dfield,
+      double A, double Z,
+      const std::vector<double> &NuisParam =
+          default_NuisParam, /* =
+                                {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
+      const std::vector<double> &FreeParam =
+          default_FreeParam, /* = {1.,1.,0.1,0.5,0.19,2.25} */
+      bool do_times =
+          true);  // the so-called full NEST calculation puts together all the
+                  // individual functions/calculations below
 
-        virtual YieldResult GetYieldNR(double energy, double density, double dfield, double massNum,
-                                       const std::vector<double> &NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2.,
-                                                                               0.3, 2., 0.5, 1., 1.});
-        // Called by GetYields in the NR (and related) cases
+  double PhotonTime(
+      INTERACTION_TYPE species, bool exciton, double dfield,
+      double energy);  // gives you the birth times of S1 as well as S2
+                       // scintillation photons, taking singlet, triplet, and
+                       // recombination times into account, depending on
+                       // particle, energy, field
 
-        virtual YieldResult GetYieldNROld(double energy, int alt);
-        // Quick and dirty simple analytical approximations saved for earlier NEST versions that were first principles: power laws, ln, sigmoid, exponentials
+  photonstream AddPhotonTransportTime(
+      const photonstream &emitted_times, double x, double y,
+      double
+          z);  // adds an approximately ray-traced (analytical function) photon
+               // travel time in the detector to each photon birth time
 
-        virtual YieldResult GetYieldIon(double energy, double density, double dfield, double massNum, double atomNum,
-                                        const std::vector<double> &NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3,
-                                                                                2., 0.3, 2., 0.5, 1., 1.});
-        // Called by GetYields in the ion case
+  photonstream GetPhotonTimes(
+      INTERACTION_TYPE species, int total_photons, int excitons, double dfield,
+      double energy);  // this function loops over the photon times above to add
+                       // times to multiple photons in a loop
 
-        virtual YieldResult
-        GetYieldKr83m(double energy, double density, double dfield, double maxTimeSeparation = 2e3, double minTimeSeparation = 0.0);
-        // Called by GetYields in the Kr83m case
+  YieldResult GetYields(
+      INTERACTION_TYPE species, double energy, double density, double dfield,
+      double A, double Z,
+      const std::vector<double> &NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6,
+                                              0.3, 2., 0.3, 2., 0.5, 1., 1.},
+      bool oldModelER = false);
+  // the innermost heart of NEST, this provides floating-point average values
+  // for photons and electrons per keV. Nuis(ance)Param included for varying the
+  // NR Ly & Qy up and down
 
-        virtual YieldResult GetYieldBeta(double energy, double density, double dfield);
-        // Called by GetYields in the Beta/Compton/etc.(IC,Auger,EC) Case
+  virtual YieldResult GetYieldGamma(double energy, double density,
+                                    double dfield);
+  // Called by GetYields in the Gamma/x-ray/Photoabsorption Case
 
-        virtual YieldResult
-        GetYieldBetaGR(double energy, double density, double dfield, const std::vector<double> &NuisParam);
-        // Greg R. version: arXiv:1910.04211
+  virtual YieldResult GetYieldERWeighted(double energy, double density,
+                                         double dfield,
+                                         const std::vector<double> &NuisParam);
+  // Weights beta/gamma models to account for ER sources with differing
+  // recombination profiles (such as L-shell electron-capture interactions)
 
-        virtual YieldResult YieldResultValidity(YieldResult &res, const double energy, const double Wq_eV);
-        // Confirms and sometimes adjusts YieldResult to make physical sense
+  virtual YieldResult GetYieldNR(double energy, double density, double dfield,
+                                 double massNum,
+                                 const std::vector<double> &NuisParam = {
+                                     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2.,
+                                     0.3, 2., 0.5, 1., 1.});
+  // Called by GetYields in the NR (and related) cases
 
-        virtual QuantaResult GetQuanta(const YieldResult &yields, double density,
-                                       const std::vector<double> &FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25}, bool oldModelER = false);
-        // GetQuanta takes the yields from above and fluctuates them, both the total
-        // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
-        // photons and electrons
-        // Namely, the recombination fluctuations
+  virtual YieldResult GetYieldNROld(double energy, int alt);
+  // Quick and dirty simple analytical approximations saved for earlier NEST
+  // versions that were first principles: power laws, ln, sigmoid, exponentials
 
-        virtual double
-        RecombOmegaNR(double elecFrac, const std::vector<double> &FreeParam/*={1.,1.,0.1,0.5,0.19,2.25}*/);
-        //Calculates the Omega parameter governing non-binomial recombination fluctuations for nuclear recoils and ions (Lindhard<1)
+  virtual YieldResult GetYieldIon(double energy, double density, double dfield,
+                                  double massNum, double atomNum,
+                                  const std::vector<double> &NuisParam = {
+                                      11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2.,
+                                      0.3, 2., 0.5, 1., 1.});
+  // Called by GetYields in the ion case
 
-        virtual double RecombOmegaER(double efield, double elecFrac, const std::vector<double> &FreeParam, bool oldModel = false);
-        //Calculates the Omega parameter governing non-binomial recombination fluctuations for gammas and betas (Lindhard==1)
+  virtual YieldResult GetYieldKr83m(double energy, double density,
+                                    double dfield,
+                                    double maxTimeSeparation = 2e3,
+                                    double minTimeSeparation = 0.0);
+  // Called by GetYields in the Kr83m case
 
-        virtual double FanoER(double density, double Nq_mean, double efield);
-        //Fano-factor (and Fano-like additional energy resolution model) for gammas and betas (Lindhard==1)
+  virtual YieldResult GetYieldBeta(double energy, double density,
+                                   double dfield);
+  // Called by GetYields in the Beta/Compton/etc.(IC,Auger,EC) Case
 
-        const std::vector<double> &
-        GetS1(const QuantaResult &quanta, double truthPosX, double truthPosY, double truthPosZ, double smearPosX,
-              double smearPosY, double smearPosZ,
-              double driftSpeed,
-              double dS_mid, INTERACTION_TYPE species,
-              uint64_t evtNum, double dfield, double energy,
-              S1CalculationMode mode, bool outputTiming,
-              vector<int64_t> &wf_time, vector<double> &wf_amp);
-        // Very comprehensive conversion of the "original" intrinsic scintillation
-        // photons into the many possible definitions of S1 as measured by
-        // photo-sensors
+  virtual YieldResult GetYieldBetaGR(double energy, double density,
+                                     double dfield,
+                                     const std::vector<double> &NuisParam);
+  // Greg R. version: arXiv:1910.04211
 
-        const std::vector<double>& GetSpike(int Nph, double dx, double dy, double dz,
-                                     double driftSpeed, double dS_mid,
-                                     const std::vector<double> &origScint);
-        // GetSpike takes the extremely basic digital/integer number of spike counts
-        // provided by GetS1 and does more realistic smearing
+  virtual YieldResult YieldResultValidity(YieldResult &res, const double energy,
+                                          const double Wq_eV);
+  // Confirms and sometimes adjusts YieldResult to make physical sense
 
-        const std::vector<double> &
-        GetS2(int Ne, double truthPosX, double truthPosY, double truthPosZ, double smearPosX, double smearPosY,
-              double smearPosZ,
-              double dt, double driftSpeed, uint64_t evtNum,
-              double dfield, S2CalculationMode mode, bool outputTiming,
-              vector<int64_t> &wf_time, vector<double> &wf_amp,
-              const vector<double> &g2_params);
-        // Exhaustive conversion of the intrinsic ionization electrons into the many
-        // possible definitions of S2 pulse areas as observed in the photo-tubes
-        // This function also applies the extraction efficiency (binomial) and finite
-        // electron mean free path or life time caused by electronegative impurities
-        // (exponential)
+  virtual QuantaResult GetQuanta(
+      const YieldResult &yields, double density,
+      const std::vector<double> &FreeParam = {1., 1., 0.1, 0.5, 0.19, 2.25},
+      bool oldModelER = false);
+  // GetQuanta takes the yields from above and fluctuates them, both the total
+  // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
+  // photons and electrons
+  // Namely, the recombination fluctuations
 
-        std::vector<double> CalculateG2(bool verbosity = true);
-        // Calculates "g2" by combining the single electron size with the extraction
-        // efficiency. Called by GetS2 above. Includes helper variables like gas gap
-        // and SE width.
+  virtual double RecombOmegaNR(
+      double elecFrac,
+      const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/);
+  // Calculates the Omega parameter governing non-binomial recombination
+  // fluctuations for nuclear recoils and ions (Lindhard<1)
 
-        double SetDriftVelocity(double T, double D, double F);
-        // Gives one the drift velocity as a function of temperature and electric
-        // field in liquid or solid. If density implies gas, kicks calculation down to
-        // the next function below
+  virtual double RecombOmegaER(double efield, double elecFrac,
+                               const std::vector<double> &FreeParam,
+                               bool oldModel = false);
+  // Calculates the Omega parameter governing non-binomial recombination
+  // fluctuations for gammas and betas (Lindhard==1)
 
-        static double GetDriftVelocity(double T, double D, double F, bool inGas);
-        // Gives one the drift velocity as a function of temperature and electric
-        // field in liquid or solid. If density implies gas, kicks calculation down to
-        // the next function below
+  virtual double FanoER(double density, double Nq_mean, double efield);
+  // Fano-factor (and Fano-like additional energy resolution model) for gammas
+  // and betas (Lindhard==1)
 
-        static double GetDriftVelocity_Liquid(double T, double F, double D = 2.9);
-        // Gives one the drift velocity as a function of temperature and electric
-        // field in liquid or solid. If density implies gas, kicks calculation down to
-        // the next function below. NOTE: Density default implies liquid
+  const std::vector<double> &GetS1(
+      const QuantaResult &quanta, double truthPosX, double truthPosY,
+      double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
+      double driftSpeed, double dS_mid, INTERACTION_TYPE species,
+      uint64_t evtNum, double dfield, double energy, S1CalculationMode mode,
+      bool outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp);
+  // Very comprehensive conversion of the "original" intrinsic scintillation
+  // photons into the many possible definitions of S1 as measured by
+  // photo-sensors
 
-        static double GetDriftVelocity_MagBoltz(double D, double F, double molarMass = 131.293);
-        // Gas electron drift speed for S2 gas gap in 2-phase TPCs or the whole
-        // detector for all gas. Based on simple fits to complicated MagBoltz software
-        // output.
+  const std::vector<double> &GetSpike(int Nph, double dx, double dy, double dz,
+                                      double driftSpeed, double dS_mid,
+                                      const std::vector<double> &origScint);
+  // GetSpike takes the extremely basic digital/integer number of spike counts
+  // provided by GetS1 and does more realistic smearing
 
-        std::vector<double> SetDriftVelocity_NonUniform(double rho, double zStep,
-                                                        double dx, double dy);
-        // Special handling for the case of non-uniform electric fields in a detector,
-        // this integrates over position to find the correct total drift time from any
-        // starting point
+  const std::vector<double> &GetS2(
+      int Ne, double truthPosX, double truthPosY, double truthPosZ,
+      double smearPosX, double smearPosY, double smearPosZ, double dt,
+      double driftSpeed, uint64_t evtNum, double dfield, S2CalculationMode mode,
+      bool outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp,
+      const vector<double> &g2_params);
+  // Exhaustive conversion of the intrinsic ionization electrons into the many
+  // possible definitions of S2 pulse areas as observed in the photo-tubes
+  // This function also applies the extraction efficiency (binomial) and finite
+  // electron mean free path or life time caused by electronegative impurities
+  // (exponential)
 
-        double SetDensity(double T, double P);
-        // A simple, approximate but good, density is returned for solid, liquid, or
-        // gaseous xenon, as a function of temperature and pressure
+  std::vector<double> CalculateG2(bool verbosity = true);
+  // Calculates "g2" by combining the single electron size with the extraction
+  // efficiency. Called by GetS2 above. Includes helper variables like gas gap
+  // and SE width.
 
-        static double GetDensity(double T, double P, bool &inGas, uint64_t evtNum = 0, double molarMass = 131.293);
-        // A simple, approximate but good, density is returned for solid, liquid, or
-        // gaseous xenon, as a function of temperature and pressure
+  double SetDriftVelocity(double T, double D, double F);
+  // Gives one the drift velocity as a function of temperature and electric
+  // field in liquid or solid. If density implies gas, kicks calculation down to
+  // the next function below
 
-        std::vector<double> xyResolution(double xPos_mm, double yPos_mm,
-                                         double A_top);
-        // Utilizing a dependence on radius and the size of the S2 signal, takes MC
-        // truth X and Y and outputs smeared values as if you did position
-        // reconstruction like in real data
+  static double GetDriftVelocity(double T, double D, double F, bool inGas);
+  // Gives one the drift velocity as a function of temperature and electric
+  // field in liquid or solid. If density implies gas, kicks calculation down to
+  // the next function below
 
-        virtual double PhotonEnergy(bool s2Flag, bool state, double tempK);
-        // Determines the birth energies in electron-Volts of scintillation photons,
-        // for either S1 or S2, including fluctuations in them, so that you can apply
-        // proper QE in G4 for ex.
+  static double GetDriftVelocity_Liquid(double T, double F, double D = 2.9);
+  // Gives one the drift velocity as a function of temperature and electric
+  // field in liquid or solid. If density implies gas, kicks calculation down to
+  // the next function below. NOTE: Density default implies liquid
 
-        double CalcElectronLET(double E, int Z);
-        // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with
-        // density can provide the dE/dx, as a function of energy in keV. Will be more
-        // useful in the future
-      
-        struct Wvalue {
-	  double Wq_eV;
-	  double alpha;
-        };
-      
-        static Wvalue WorkFunction(double rho, double MolarMass, bool OldW13eV = true);
-        //the W-value as a func of density in g/cm^3
+  static double GetDriftVelocity_MagBoltz(double D, double F,
+                                          double molarMass = 131.293);
+  // Gas electron drift speed for S2 gas gap in 2-phase TPCs or the whole
+  // detector for all gas. Based on simple fits to complicated MagBoltz software
+  // output.
 
-        virtual double NexONi(double energy, double density);
-        //calculate exciton/ion
+  std::vector<double> SetDriftVelocity_NonUniform(double rho, double zStep,
+                                                  double dx, double dy);
+  // Special handling for the case of non-uniform electric fields in a detector,
+  // this integrates over position to find the correct total drift time from any
+  // starting point
 
-        VDetector *GetDetector() { return fdetector; }
+  double SetDensity(double T, double P);
+  // A simple, approximate but good, density is returned for solid, liquid, or
+  // gaseous xenon, as a function of temperature and pressure
 
-        void SetDetector(VDetector *detector) { fdetector = detector; }
+  static double GetDensity(double T, double P, bool &inGas, uint64_t evtNum = 0,
+                           double molarMass = 131.293);
+  // A simple, approximate but good, density is returned for solid, liquid, or
+  // gaseous xenon, as a function of temperature and pressure
 
-        //Access the diffusion coefficient for transverse diffusion in liquid
-        static double GetDiffTran_Liquid(double dfield, bool highFieldModel = false, double T = 175., int Z = 54);
+  std::vector<double> xyResolution(double xPos_mm, double yPos_mm,
+                                   double A_top);
+  // Utilizing a dependence on radius and the size of the S2 signal, takes MC
+  // truth X and Y and outputs smeared values as if you did position
+  // reconstruction like in real data
 
-        //Access the diffusion coefficient for longitudinal diffusion in liquid
-        static double GetDiffLong_Liquid(double dfield, bool highFieldModel = false, double T = 175., int Z = 54);
+  virtual double PhotonEnergy(bool s2Flag, bool state, double tempK);
+  // Determines the birth energies in electron-Volts of scintillation photons,
+  // for either S1 or S2, including fluctuations in them, so that you can apply
+  // proper QE in G4 for ex.
 
-        //Function helpful for interpolation of the new diffusion coefficient model (Boyle)
-        static double interpolateFunction(const std::vector<std::pair<double, double> > &func, double x, bool isLogLog);
+  double CalcElectronLET(double E, int Z);
+  // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with
+  // density can provide the dE/dx, as a function of energy in keV. Will be more
+  // useful in the future
 
-        //Read in the Boyle model data for DT
-        static std::vector<std::pair<double, double> > GetBoyleModelDT();
+  struct Wvalue {
+    double Wq_eV;
+    double alpha;
+  };
 
-        //Read in the Boyle model data for DL
-        static std::vector<std::pair<double, double> > GetBoyleModelDL();
-      
-        static constexpr int clamp ( int v, const int lo, const int hi );
-        
-    };
-}
+  static Wvalue WorkFunction(double rho, double MolarMass,
+                             bool OldW13eV = true);
+  // the W-value as a func of density in g/cm^3
+
+  virtual double NexONi(double energy, double density);
+  // calculate exciton/ion
+
+  VDetector *GetDetector() { return fdetector; }
+
+  void SetDetector(VDetector *detector) { fdetector = detector; }
+
+  // Access the diffusion coefficient for transverse diffusion in liquid
+  static double GetDiffTran_Liquid(double dfield, bool highFieldModel = false,
+                                   double T = 175., int Z = 54);
+
+  // Access the diffusion coefficient for longitudinal diffusion in liquid
+  static double GetDiffLong_Liquid(double dfield, bool highFieldModel = false,
+                                   double T = 175., int Z = 54);
+
+  // Function helpful for interpolation of the new diffusion coefficient model
+  // (Boyle)
+  static double interpolateFunction(
+      const std::vector<std::pair<double, double>> &func, double x,
+      bool isLogLog);
+
+  // Read in the Boyle model data for DT
+  static std::vector<std::pair<double, double>> GetBoyleModelDT();
+
+  // Read in the Boyle model data for DL
+  static std::vector<std::pair<double, double>> GetBoyleModelDL();
+
+  static constexpr int clamp(int v, const int lo, const int hi);
+};
+}  // namespace NEST
 
 #endif

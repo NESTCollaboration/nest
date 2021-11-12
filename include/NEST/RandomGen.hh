@@ -21,7 +21,7 @@ class RandomGen {
   double rand_uniform();
   double rand_gauss(double mean, double sigma);
   double rand_zero_trunc_gauss(double mean, double sigma);
-  double rand_exponential(double half_life);
+  double rand_exponential(double half_life, double t_min=-1, double t_max=-1);
   double rand_skewGauss(double xi, double omega, double alpha);
   int poisson_draw(double mean);
   int64_t binom_draw(int64_t N0, double prob);

@@ -54,7 +54,7 @@ class TestSpectra {
   static double B8_spectrum(double emin, double emax);
   static double AmBe_spectrum(double emin, double emax);
   static double Cf_spectrum(double emin, double emax);
-  static double DD_spectrum(double emin, double emax);
+  static double DD_spectrum(double xMin, double xMax, double expFall, double peakFrac, double peakMu, double peakSig);
   static double ppSolar_spectrum(double emin, double emax);
   static double atmNu_spectrum(double emin, double emax);
   static double WIMP_dRate(double ER, double mWimp, double day);

@@ -168,19 +168,19 @@ double TestSpectra::Cf_spectrum(double xMin, double xMax) {
   return xyTry[0];
 }
 
-double TestSpectra::DD_spectrum(
-    double xMin, double xMax) {  // JV LUX, most closely like JENDL-4. See
-                                 // arXiv:1608.05381. Lower than G4/LUXSim
+double TestSpectra::DD_spectrum(double xMin, double xMax, double expFall, double peakFrac, double peakMu, double peakSig) {
+// JV LUX, most closely like JENDL-4. See arXiv:1608.05381. Lower than G4/LUXSim
   if (xMax > 80.) xMax = 80.;
   if (xMin < 0.000) xMin = 0.000;
-  double yMax = 1.1;
+  double yMin = 0.0;
+  double yMax = 1. + peakFrac;
   vector<double> xyTry = {
       xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
-      yMax * RandomGen::rndm()->rand_uniform(), 1.};
+      yMin + (yMax - yMin) * RandomGen::rndm()->rand_uniform(), 1.};
   while (xyTry[2] > 0.) {
     double FuncValue =
-        exp(-xyTry[0] / 10.) + 0.1 * exp(-pow((xyTry[0] - 60.) / 25., 2.));
-    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0],
+        exp(-xyTry[0] / expFall) + peakFrac * exp(-pow((xyTry[0] - peakMu) / peakSig, 2.));
+    xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, yMin, yMax, xyTry[0],
                                           xyTry[1], FuncValue);
   }
   return xyTry[0];

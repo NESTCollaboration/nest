@@ -628,7 +628,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             keV = TestSpectra::Cf_spectrum(eMin, eMax);
             break;
           case DD:
-            keV = TestSpectra::DD_spectrum(eMin, eMax);
+            keV = TestSpectra::DD_spectrum(eMin, eMax, 10., 0.1, 60., 25.);
             break;
           case WIMP:
             keV = TestSpectra::WIMP_spectrum(spec.wimp_spectrum_prep, eMin,
@@ -701,11 +701,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             } else {  // negative eMax signals to NEST that you want to use an
               // exponential energy spectrum profile
               if (ValidityTests::nearlyEqual(eMin, 0.)) return 1;
-              keV = 1e100;  // eMin will be used in place of eMax as the maximum
+              // eMin will be used in place of eMax as the maximum
               // energy in exponential scenario
-              while (keV > eMin)
-                keV = eMax * log(RandomGen::rndm()->rand_uniform());
-            }
+	      keV = RandomGen::rndm()->rand_exponential(eMax*log(2.),0.,eMin);
+	    }
             break;
         }
       }
@@ -1362,7 +1361,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                  driftTime, smearPos[0], smearPos[1], smearPos[2],
                  quanta.photons, quanta.electrons);
         if (keV > 10. * hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
-            // switch to exponential notation to make output more readable, if
+            // switch to engineering notation to make output more readable, if
             // energy is too high (>1 MeV)
             (dEOdxBasis && eMin > 0.)) {
           printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);

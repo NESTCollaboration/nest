@@ -903,18 +903,18 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       NESTresult result;
       if (dEOdxBasis) {
 	if (j == 0) {
-	  NuisParam[0] = double(j);
-	  NuisParam[1] = pos_x;
-	  NuisParam[2] = pos_y;
-	  NuisParam[3] = pos_z;
-	  NuisParam[4] = eMax;
-	  NuisParam[5] = fPos;
-	  NuisParam[6] = eMin;
-	  NuisParam[7] = z_step;
-	  NuisParam[8] = inField;
-	  NuisParam[9] = vD_middle;
+	  NuisParam[0] = pos_x;
+	  NuisParam[1] = pos_y;
+	  NuisParam[2] = pos_z;
+	  NuisParam[3] = eMax;
+	  NuisParam[4] = fPos;
+	  NuisParam[5] = eMin;
+	  NuisParam[6] = z_step;
+	  NuisParam[7] = inField;
+	  NuisParam[8] = vD_middle;
+	  NuisParam[9] = rho;
 	}
-	result = n.GetYieldERdEOdxBasis(keV, rho, field, NuisParam, posiMuon, vTable);
+	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable);
 	yields = result.yields;
 	quanta = result.quanta;
 	driftTime = 0.00;

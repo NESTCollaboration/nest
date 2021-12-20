@@ -467,19 +467,17 @@ YieldResult NESTcalc::GetYieldERWeighted(double energy, double density,
   return YieldResultValidity(result, energy, Wq_eV);
 }
 
-NESTresult NESTcalc::GetYieldERdEOdxBasis(double energy, double rho,
-					  double field,
-					  const std::vector<double> &NuisParam,
+NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 					  string muonInitPos,
 					  vector<double> vTable) {
-  Wvalue wvalue = WorkFunction(rho, fdetector->get_molarMass(),
+  Wvalue wvalue = WorkFunction(NuisParam[9], fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
-  double Wq_eV = wvalue.Wq_eV;
+  double Wq_eV = wvalue.Wq_eV; double rho = NuisParam[9];
   double xi = -999., yi = -999., zi = fdetector->get_TopDrift();
-  double xf, yf, zf, pos_x, pos_y, pos_z, r, phi,
-    eMin = NuisParam[6], z_step = NuisParam[7], inField = NuisParam[8];
+  double xf, yf, zf, pos_x, pos_y, pos_z, r, phi, field,
+    eMin = NuisParam[5], z_step = NuisParam[6], inField = NuisParam[7];
   NESTresult result{};
-  if (NuisParam[5] == -1.) {
+  if (NuisParam[4] == -1.) {
     r = fdetector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());
     phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
     xf = r * cos(phi);
@@ -487,11 +485,11 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(double energy, double rho,
     zf = fdetector->get_TopDrift() * RandomGen::rndm()->rand_uniform();
   }
   else {
-    xf = NuisParam[1];
-    yf = NuisParam[2];
-    zf = NuisParam[3];
+    xf = NuisParam[0];
+    yf = NuisParam[1];
+    zf = NuisParam[2];
   }
-  if (ValidityTests::nearlyEqual(NuisParam[4], -1.)) {
+  if (ValidityTests::nearlyEqual(NuisParam[3], -1.)) {
     r = fdetector->get_radmax() * sqrt(RandomGen::rndm()->rand_uniform());
     phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
     xi = r * cos(phi);
@@ -559,7 +557,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(double energy, double rho,
     int index = int(floor(zz / z_step + 0.5));
     if (index >= vTable.size()) index = vTable.size() - 1;
     if (vTable.size() == 0)
-      vD = NuisParam[9];
+      vD = NuisParam[8];
     else
       vD = vTable[index];
     driftTime = (fdetector->get_TopDrift() - zz) / vD;
@@ -591,7 +589,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(double energy, double rho,
   pos_y = 0.5 * (yi + yy);
   pos_z = 0.5 * (zi + zz);
   driftTime = 0.00;
-  if (field == -1. || inField == -1.)
+  if (inField == -1.)
     field = fdetector->FitEF(pos_x, pos_y, pos_z);
   else
     field = inField;

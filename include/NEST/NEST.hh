@@ -260,9 +260,7 @@ class NESTcalc {
   // Weights beta/gamma models to account for ER sources with differing
   // recombination profiles (such as L-shell electron-capture interactions)
   
-  virtual NESTresult GetYieldERdEOdxBasis(double energy, double density,
-					  double dfield,
-					  const std::vector<double> &NuisParam,
+  virtual NESTresult GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 					  string muonInitPos,
 					  vector<double> eDriftVelTable);
   // Use dE/dx-based yield models instead of energy-based, as everywhere else

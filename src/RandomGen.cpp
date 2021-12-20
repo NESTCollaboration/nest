@@ -35,7 +35,7 @@ double RandomGen::rand_gauss(double mean, double sigma, bool zero_min) {
   double u = rand_uniform(), v = rand_uniform();
   double draw = mean + sigma * sqrt2 * sqrt(-log(u)) * cos(two_PI * v);
   if (zero_min) {
-    return max(draw, 0);
+    return max(draw, 0.);
   }
   return draw;
 }

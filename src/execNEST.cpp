@@ -897,122 +897,29 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           pos_z = detector->get_TopDrift() - z_step;  // just fix it and move on
         }
       }
-
+      
       YieldResult yields;
       QuantaResult quanta;
+      NESTresult result;
       if (dEOdxBasis) {
-        double xi = -999., yi = -999., zi = detector->get_TopDrift();
-        double xf, yf, zf;
-        if (j == 0 || fPos == -1.) {
-          xf = pos_x;
-          yf = pos_y;
-          zf = pos_z;
-        }
-        if (ValidityTests::nearlyEqual(eMax, -1.)) {
-          r = detector->get_radmax() * sqrt(RandomGen::rndm()->rand_uniform());
-          phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
-          xi = r * cos(phi);
-          yi = r * sin(phi);
-        } else {
-          position = posiMuon;
-          delimiter = ",";
-          loc = 0;
-          int ii = 0;
-          while ((loc = position.find(delimiter)) != string::npos) {
-            token = position.substr(0, loc);
-            if (ii == 0)
-              xi = stof(token);
-            else
-              yi = stof(token);
-            position.erase(0, loc + delimiter.length());
-            ++ii;
-          }
-          zi = stof(position);
-        }
-        if (zi <= 0.) zi = detector->get_TopDrift();
-        double dEOdx, eStep, refEnergy, kludge = 1.;
-        if (eMin < 0.) {
-          refEnergy = -eMin;
-          kludge = 2.;
-          dEOdx = n.CalcElectronLET(-eMin, ATOM_NUM) / kludge;
-          eStep = dEOdx * rho * z_step * 1e2;
-          while (eStep > refEnergy) {
-            z_step /= 10.;
-            eStep = dEOdx * rho * z_step * 1e2;
-          }
-        } else {
-          refEnergy = 1e6;
-          eStep = eMin * rho * z_step * 1e2;
-        }
-        keV = 0.;
-        int Nph = 0, Ne = 0;
-        double xx = xi, yy = yi, zz = zi;
-        if (zf < 0.) zf = 0.;
-        double distance = sqrt((xf - xi) * (xf - xi) + (yf - yi) * (yf - yi) +
-                               (zf - zi) * (zf - zi));
-        double norm[3];
-        norm[0] = (xf - xi) / distance;
-        norm[1] = (yf - yi) / distance;
-        norm[2] = (zf - zi) / distance;
-        while (zz > zf &&
-               (xx * xx + yy * yy) <
-                   detector->get_radmax() * detector->get_radmax() &&
-               std::abs(refEnergy) > PHE_MIN) {
-          // stop making S1 and S2 if particle exits Xe volume, OR runs out of
-          // energy (in case of beta)
-          if (eMin < 0.) {
-            if ((keV + eStep) > -eMin) eStep = -eMin - keV;
-            yields = n.GetYields(NEST::beta, 2.0 * eStep, rho,
-                                 detector->FitEF(xx, yy, zz), double(massNum),
-                                 double(atomNum), NuisParam);
-          } else
-            yields = n.GetYields(NEST::beta, refEnergy, rho,
-                                 detector->FitEF(xx, yy, zz), double(massNum),
-                                 double(atomNum), NuisParam);
-          quanta = n.GetQuanta(yields, rho, FreeParam);
-          if (eMin > 0.)
-            Nph += quanta.photons * (eStep / refEnergy);
-          else
-            Nph += quanta.photons / kludge;
-          index = int(floor(zz / z_step + 0.5));
-          if (index >= vTable.size()) index = vTable.size() - 1;
-          if (vTable.size() == 0)
-            vD = vD_middle;
-          else
-            vD = vTable[index];
-          driftTime = (detector->get_TopDrift() - zz) / vD;
-          if (zz >= detector->get_cathode()) {
-            if (eMin > 0.)
-              Ne += quanta.electrons * (eStep / refEnergy) *
-                    exp(-driftTime / detector->get_eLife_us());
-            else
-              Ne += quanta.electrons *
-                    exp(-driftTime / detector->get_eLife_us()) / kludge;
-          }
-          keV += eStep;
-          xx += norm[0] * z_step;
-          yy += norm[1] * z_step;
-          zz += norm[2] * z_step;
-          if (eMin < 0.) {
-            refEnergy -= eStep;
-            dEOdx = n.CalcElectronLET(refEnergy, ATOM_NUM) / 1.;
-            eStep = dEOdx * rho * z_step * 1e2;
-          }
-          // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << endl;
-        }
-        quanta.photons = Nph;
-        quanta.electrons = Ne;
-        pos_x =
-            0.5 *
-            (xi + xx);  // approximate things not already done right in loop as
-                        // middle of detector since muon traverses whole length
-        pos_y = 0.5 * (yi + yy);
-        pos_z = 0.5 * (zi + zz);
-        driftTime = 0.00;
-        if (field == -1. || inField == -1.)
-          field = detector->FitEF(pos_x, pos_y, pos_z);
-        else
-          field = inField;
+	if (j == 0) {
+	  NuisParam[0] = double(j);
+	  NuisParam[1] = pos_x;
+	  NuisParam[2] = pos_y;
+	  NuisParam[3] = pos_z;
+	  NuisParam[4] = eMax;
+	  NuisParam[5] = fPos;
+	  NuisParam[6] = eMin;
+	  NuisParam[7] = z_step;
+	  NuisParam[8] = inField;
+	  NuisParam[9] = vD_middle;
+	}
+	result = n.GetYieldERdEOdxBasis(keV, rho, field, NuisParam, posiMuon, vTable);
+	yields = result.yields;
+	quanta = result.quanta;
+	driftTime = 0.00;
+	field = yields.ElectricField;
+	pos_z = yields.DeltaT_Scint;
       } else {
         if (keV > 0.001 * Wq_eV) {
           if (type == "ER") {
@@ -1070,7 +977,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                 1.00, 1.00, 0.,
                 0.50, 0.19, 0.};  // zero out non-binom recomb fluct & skew (NR)
           }
-          quanta = n.GetQuanta(yields, rho, FreeParam);
+          if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, FreeParam);
         } else {
           yields.PhotonYield = 0.;
           yields.ElectronYield = 0.;

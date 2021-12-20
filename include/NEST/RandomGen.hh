@@ -19,7 +19,7 @@ class RandomGen {
   static RandomGen* rndm();
   void SetSeed(uint64_t s);
   double rand_uniform();
-  double rand_gauss(double mean, double sigma);
+  double rand_gauss(double mean, double sigma, bool zero_min=false);
   double rand_zero_trunc_gauss(double mean, double sigma);
   double rand_exponential(double half_life, double t_min=-1, double t_max=-1);
   double rand_skewGauss(double xi, double omega, double alpha);

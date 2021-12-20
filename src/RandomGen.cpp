@@ -29,11 +29,15 @@ double RandomGen::rand_uniform() {
          xoroshiro128plus64_minmax;
 }
 
-double RandomGen::rand_gauss(double mean, double sigma) {
+double RandomGen::rand_gauss(double mean, double sigma, bool zero_min) {
   // std::normal_distribution<double> norm(mean, sigma);
   // return norm(rng);
   double u = rand_uniform(), v = rand_uniform();
-  return mean + sigma * sqrt2 * sqrt(-log(u)) * cos(two_PI * v);
+  double draw = mean + sigma * sqrt2 * sqrt(-log(u)) * cos(two_PI * v);
+  if (zero_min) {
+    return max(draw, 0.);
+  }
+  return draw;
 }
 
 double RandomGen::rand_zero_trunc_gauss(double mean, double sigma) {

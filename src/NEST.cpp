@@ -1708,7 +1708,7 @@ const vector<double> &NESTcalc::GetS2(
       // char line[80]; sprintf ( line, "%lu\t%.0f\t%.3f\t%.3f", evtNum,
       // electronstream[i]*1e+3, newX, newY ); pulseFile << line << endl;
       SE = floor(RandomGen::rndm()->rand_gauss(
-                     elYield, sqrt(fdetector->get_s2Fano() * elYield)) +
+                     elYield, sqrt(fdetector->get_s2Fano() * elYield), true) +
                  0.5);
       Nph += uint64_t(SE);
       SE = (double)RandomGen::rndm()->binom_draw(
@@ -1836,7 +1836,7 @@ const vector<double> &NESTcalc::GetS2(
     Nph =
         uint64_t(floor(RandomGen::rndm()->rand_gauss(
                            elYield * double(Nee), sqrt(fdetector->get_s2Fano() *
-                                                       elYield * double(Nee))) +
+                                                       elYield * double(Nee)), true) +
                        0.5));
     nHits =
         RandomGen::rndm()->binom_draw(Nph, fdetector->get_g1_gas() * posDep);
@@ -2026,7 +2026,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
     for (int i = 0; i < 10000; ++i) {
       // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(
-                          elYield, sqrt(fdetector->get_s2Fano() * elYield)) +
+                          elYield, sqrt(fdetector->get_s2Fano() * elYield), true) +
                       0.5));
       phi = two_PI * RandomGen::rndm()->rand_uniform();
       r = fdetector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());

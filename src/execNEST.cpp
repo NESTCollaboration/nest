@@ -582,6 +582,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       energyMaximum = 1. / std::abs(eMax);
     else
       energyMaximum = eMax;
+    if ( !energyMaximum || std::isnan(energyMaximum) ) energyMaximum = 1.;
     if (type_num == Kr83m)
       yieldsMax =
           n.GetYields(Kr83m, eMin, rho, centralField, 400., 100., NuisParam);
@@ -590,7 +591,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                               double(massNum), double(atomNum), NuisParam);
   }
   if ((g1 * yieldsMax.PhotonYield) > (2. * maxS1) && eMin != eMax &&
-      type_num != Kr83m && verbosity)
+      type_num != Kr83m && verbosity && !dEOdxBasis)
     cerr
         << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
 
@@ -841,11 +842,18 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             else
               fprintf(stdout, "E_recon [keV]");
           }
-          if (seed == -2)
-            printf(
+          if (seed == -2) {
+	    if (dEOdxBasis)
+	      printf(
+                "\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph/keV\t\tNe-/keV\t\tS1 [PE "
+                "or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea "
+                "[PE]\tS2_3Dcorr [phd]\n");
+	    else
+	      printf(
                 "\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\t\tNe-\t\tS1 [PE "
                 "or phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea "
                 "[PE]\tS2_3Dcorr [phd]\n");
+	  }
           else
             printf(
                 "\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or "
@@ -913,6 +921,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	  NuisParam[7] = inField;
 	  NuisParam[8] = vD_middle;
 	  NuisParam[9] = rho;
+	  NuisParam[10]= 1e6;
 	}
 	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable);
 	yields = result.yields;
@@ -1028,7 +1037,8 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                        g2_params);
       if (dEOdxBasis) {
         driftTime = (detector->get_TopDrift() - pos_z) / vD_middle;
-        scint2[7] *= exp(driftTime / detector->get_eLife_us());
+	if ( scint2[7] != -PHE_MIN )
+	  scint2[7] *= exp(driftTime / detector->get_eLife_us());
       }
 
     NEW_RANGES:
@@ -1259,10 +1269,17 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           if (keV > AnnModERange[0] && keV < AnnModERange[1])
             SaveTheDates[int(timeStamp) % tMax]++;
         }
-        if (seed < 0 && seed != -1)  // for when you want means
+        if (seed < 0 && seed != -1) {  // for when you want means
+	  if (dEOdxBasis) {
+	    result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable);
+	    yields = result.yields;
+	    yields.PhotonYield /= NuisParam[10];
+	    yields.ElectronYield /= NuisParam[10];
+	  }
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t", keV, field,
                  driftTime, smearPos[0], smearPos[1], smearPos[2],
                  yields.PhotonYield, yields.ElectronYield);
+	}
         else
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field,
                  driftTime, smearPos[0], smearPos[1], smearPos[2],

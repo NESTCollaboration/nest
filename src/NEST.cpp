@@ -522,7 +522,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
       eStep = dEOdx * rho * z_step * 1e2;
     }
   } else {
-    refEnergy = 1e6;
+    refEnergy = NuisParam[10];
     eStep = eMin * rho * z_step * 1e2;
   }
   double driftTime, vD, keV = 0.;
@@ -535,19 +535,22 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   norm[0] = (xf - xi) / distance;
   norm[1] = (yf - yi) / distance;
   norm[2] = (zf - zi) / distance;
-  while (zz > zf &&
+  bool stopCond = false;
+  while (!stopCond && (xx * xx + yy * yy) < (xf * xf + yf * yf) &&
 	 (xx * xx + yy * yy) <
 	 fdetector->get_radmax() * fdetector->get_radmax() &&
 	 std::abs(refEnergy) > PHE_MIN) {
+    if ( (zf < zi && zz <= zf) || (zf > zi && zz >= zf) )
+      { stopCond = true; break; }
     // stop making S1 and S2 if particle exits Xe volume, OR runs out of
     // energy (in case of beta)
+    if (inField == -1.) field = fdetector->FitEF(xx, yy, zz);
+    else field = inField;
     if (eMin < 0.) {
       if ((keV + eStep) > -eMin) eStep = -eMin - keV;
-      result.yields = GetYieldBetaGR(2.0 * eStep, rho,
-				     fdetector->FitEF(xx, yy, zz), NuisParam);
+      result.yields = GetYieldBeta(2.0 * eStep, rho, field);
     } else
-      result.yields = GetYieldBetaGR(refEnergy, rho,
-				     fdetector->FitEF(xx, yy, zz), NuisParam);
+      result.yields = GetYieldBeta(refEnergy, rho, field);
     vector<double> FreeParam = default_FreeParam;
     result.quanta = GetQuanta(result.yields, rho, FreeParam);
     if (eMin > 0.)

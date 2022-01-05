@@ -470,25 +470,18 @@ YieldResult NESTcalc::GetYieldERWeighted(double energy, double density,
 NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 					  string muonInitPos,
 					  vector<double> vTable) {
-  Wvalue wvalue = WorkFunction(NuisParam[9], fdetector->get_molarMass(),
+  Wvalue wvalue = WorkFunction(NuisParam[8], fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
-  double Wq_eV = wvalue.Wq_eV; double rho = NuisParam[9];
+  double Wq_eV = wvalue.Wq_eV; double rho = NuisParam[8];
   double xi = -999., yi = -999., zi = fdetector->get_TopDrift();
   double xf, yf, zf, pos_x, pos_y, pos_z, r, phi, field,
-    eMin = NuisParam[5], z_step = NuisParam[6], inField = NuisParam[7];
+    eMin = NuisParam[4], z_step = NuisParam[5], inField = NuisParam[6];
+  if(ValidityTests::nearlyEqual(eMin, 0.) || std::isnan(eMin))
+    throw std::runtime_error("Energy cannot be zero or undefined");
   NESTresult result{};
-  if (NuisParam[4] == -1.) {
-    r = fdetector->get_radius() * sqrt(RandomGen::rndm()->rand_uniform());
-    phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
-    xf = r * cos(phi);
-    yf = r * sin(phi);
-    zf = fdetector->get_TopDrift() * RandomGen::rndm()->rand_uniform();
-  }
-  else {
-    xf = NuisParam[0];
-    yf = NuisParam[1];
-    zf = NuisParam[2];
-  }
+  xf = NuisParam[0];
+  yf = NuisParam[1];
+  zf = NuisParam[2];
   if (ValidityTests::nearlyEqual(NuisParam[3], -1.)) {
     r = fdetector->get_radmax() * sqrt(RandomGen::rndm()->rand_uniform());
     phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
@@ -522,7 +515,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
       eStep = dEOdx * rho * z_step * 1e2;
     }
   } else {
-    refEnergy = NuisParam[10];
+    refEnergy = NuisParam[9];
     eStep = eMin * rho * z_step * 1e2;
   }
   double driftTime, vD, keV = 0.;
@@ -536,11 +529,12 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   norm[1] = (yf - yi) / distance;
   norm[2] = (zf - zi) / distance;
   bool stopCond = false;
-  while (!stopCond && (xx * xx + yy * yy) < (xf * xf + yf * yf) &&
+  while (!stopCond &&
 	 (xx * xx + yy * yy) <
 	 fdetector->get_radmax() * fdetector->get_radmax() &&
 	 std::abs(refEnergy) > PHE_MIN) {
-    if ( (zf < zi && zz <= zf) || (zf > zi && zz >= zf) )
+    if ( (zf < zi && zz <= zf) || (zf > zi && zz >= zf) ||
+	 ((xx-xf)*(xx-xf)+(yy-yf)*(yy-yf)) < 4.*z_step*z_step )
       { stopCond = true; break; }
     // stop making S1 and S2 if particle exits Xe volume, OR runs out of
     // energy (in case of beta)
@@ -560,7 +554,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     int index = int(floor(zz / z_step + 0.5));
     if (index >= vTable.size()) index = vTable.size() - 1;
     if (vTable.size() == 0)
-      vD = NuisParam[8];
+      vD = NuisParam[7];
     else
       vD = vTable[index];
     driftTime = (fdetector->get_TopDrift() - zz) / vD;

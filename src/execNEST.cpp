@@ -383,9 +383,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       RandomGen::rndm()->SetSeed(seed);
     }
   }
-
-  if (ValidityTests::nearlyEqual(eMin, -1.)) eMin = 0.;
-
+  
+  if (ValidityTests::nearlyEqual(eMin, -1.) && type != "muon" && type !="MIP"
+      && type != "LIP" && type != "mu" && type != "mu-") eMin = 0.;
+  
   if (ValidityTests::nearlyEqual(eMax, -1.) &&
       ValidityTests::nearlyEqual(eMin, 0.))
     eMax = hiEregime;  // the default energy max
@@ -594,7 +595,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       type_num != Kr83m && verbosity && !dEOdxBasis)
     cerr
         << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
-
+  
   if (type_num < 6) massNum = 0;
   if (type_num == Kr83m) massNum = maxTimeSep;
   // use massNum to input maxTimeSep into GetYields(...)
@@ -910,18 +911,17 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       QuantaResult quanta;
       NESTresult result;
       if (dEOdxBasis) {
-	if (j == 0) {
+	if (j == 0 || fPos == -1.) {
 	  NuisParam[0] = pos_x;
 	  NuisParam[1] = pos_y;
 	  NuisParam[2] = pos_z;
 	  NuisParam[3] = eMax;
-	  NuisParam[4] = fPos;
-	  NuisParam[5] = eMin;
-	  NuisParam[6] = z_step;
-	  NuisParam[7] = inField;
-	  NuisParam[8] = vD_middle;
-	  NuisParam[9] = rho;
-	  NuisParam[10]= 1e6;
+	  NuisParam[4] = eMin;
+	  NuisParam[5] = z_step;
+	  NuisParam[6] = inField;
+	  NuisParam[7] = vD_middle;
+	  NuisParam[8] = rho;
+	  NuisParam[9] = 1e6;//GeV
 	}
 	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable);
 	yields = result.yields;
@@ -1271,10 +1271,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         }
         if (seed < 0 && seed != -1) {  // for when you want means
 	  if (dEOdxBasis) {
-	    result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable);
-	    yields = result.yields;
-	    yields.PhotonYield /= NuisParam[10];
-	    yields.ElectronYield /= NuisParam[10];
+	    if (eMin < 0.)
+	      { yields.PhotonYield = -quanta.photons/eMin; yields.ElectronYield = -quanta.electrons/eMin; }
+	    else
+	      { yields.PhotonYield /= NuisParam[10]; yields.ElectronYield /= NuisParam[10]; }
 	  }
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t", keV, field,
                  driftTime, smearPos[0], smearPos[1], smearPos[2],

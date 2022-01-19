@@ -768,7 +768,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           }
           pos_z = stof(position);
         } else {
-          if (j == 0) pos_z = stof(position);
+          pos_z = stof(position);
         }
         if (ValidityTests::nearlyEqual(stof(position), -1.))
           pos_z = 0. + (detector->get_TopDrift() - 0.) *
@@ -911,10 +911,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       QuantaResult quanta;
       NESTresult result;
       if (dEOdxBasis) {
-	if (j == 0 || fPos == -1.) {
-	  NuisParam[0] = pos_x;
-	  NuisParam[1] = pos_y;
-	  NuisParam[2] = pos_z;
+	NuisParam[0] = pos_x;
+	NuisParam[1] = pos_y;
+	NuisParam[2] = pos_z;
+	if ( j == 0 ) {
 	  NuisParam[3] = eMax;
 	  NuisParam[4] = eMin;
 	  NuisParam[5] = z_step;

@@ -22,9 +22,7 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-
   if (argc < 3) {
-
     cerr << "This program aims to take execNEST outputs, and combine energy "
             "deposits into Double Scatters. "
          << endl;
@@ -47,13 +45,11 @@ int main(int argc, char **argv) {
     cerr << "  -- <File 2> is optional, and will be the second scatter in each "
             "event, if provided."
          << endl;
-
     return 1;
   }
   // Load the number of events
   int nEvents = atoi(argv[1]);
   // RandomGen::rndm()->SetSeed(time(nullptr));
-
   // Check if using corrected or uncorrected output pulse areas
   bool corrected = true;
   if (atoi(argv[2]) == 0)
@@ -186,7 +182,6 @@ int main(int argc, char **argv) {
         thisS2b_corFactor;
 
     while (nGenerated < nEvents) {
-
       int i1 = RandomGen::rndm()->integer_range(0, (int)size1);
       int i2 = RandomGen::rndm()->integer_range(0, (int)size1);
       if (i1 == i2)

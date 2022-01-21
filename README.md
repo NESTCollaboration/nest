@@ -1,4 +1,4 @@
-#nest
+# nest
 
 Noble Element Simulation Technique (nest) is used to simulate noble-element energy deposition microphysics.
 
@@ -196,7 +196,7 @@ It serves as a template for users to create their own detector. Follow the steps
 	```
 
 	```cpp
-#ifndef DetectorExample_LUX_RUN03_hh 
+	#ifndef DetectorExample_LUX_RUN03_hh 
 	
 	--> #ifndef MyDetector_hh
 	```
@@ -207,7 +207,7 @@ It serves as a template for users to create their own detector. Follow the steps
 3. Once your header file is done, one should edit "src/execNEST.cpp" in the following way:
 
 	```cpp
-#include "LUX_Run03.hh" 
+	#include "LUX_Run03.hh" 
 	
 	--> #include "MyDetector.hh"
 	```
@@ -313,16 +313,12 @@ Running execNEST without arguments will remind you of the necessary inputs:
 This program takes 6 (or 7) inputs, with Z position in mm from bottom of detector:
 
 ```
-./execNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {
-optional:
-  seed}
+./execNEST numEvts type_interaction E_min[keV] E_max[keV] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
 To simulate time-dependent 83m-Kr decays -- 83m-Kr produces yields via a 32.1 keV $\gamma$ followed by a 9.4 keV gamma --  E_max[keV] is replaced with the time between the decays in ns; E_min[keV] is replaced with either 9.4, 32.1, or 41.5 [keV]. Example of 9.4 keV decay 250ns (NOTE: this is the MAX time separation along an exponential) after the inital 32.1 keV follows below. The minimum deltaT (minTimeSeparation) defaults to 100 (so, merged pulses are included) but you can change that at the top of execNEST.cpp (make =MAX to fix t)
 
 ```
-./execNEST numEvts Kr83m 9.4 250 field_drift[V/cm] x,y,z-position[mm] {
-optional:
-  seed}
+./execNEST numEvts Kr83m 9.4 250 field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
 
 To simulate 8B, numEvts (integer) is replaced with kg-days of exposure (floating-point #) with all other input parameters the same (unchanged). 
@@ -330,17 +326,13 @@ To simulate 8B, numEvts (integer) is replaced with kg-days of exposure (floating
 To simulate WIMPs:
 
 ```
-./execNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {
-optional:
-  seed}
+./execNEST exposure[kg-days] {WIMP} m[GeV] x-sect[cm^2] field_drift[V/cm] x,y,z-position[mm] {optional:seed}
 ```
 
 To simulate cosmic-ray muons or other similar particles with elongated track lengths:
 
 ```
-./execNEST numEvts {MIP} LET[MeV*cm^2/gram] x,y-position[mm](Initial) field_drift[V/cm] x,y,z-position[mm](Final) {
-optional:
-  seed}
+./execNEST numEvts {MIP} LET[MeV*cm^2/gram] x,y-position[mm](Initial) field_drift[V/cm] x,y,z-position[mm](Final) {optional:seed}
 ```
 
 <a name="inputs"></a>
@@ -495,8 +487,8 @@ Running the executable without arguments prints the usage:
     -- <File 1> is execNEST output events used to stitch together double scatters.
     -- <File 2> is optional, and will be the second scatter in each event, if provided.
 
-Using two files can be useful to model certain types of interactions. For example, using a beta ER file with gamma ER events will mimic a compton scatter followed by photoabsorption.
-The executable will print S1 and S2 areas to screen, which can be funneled into a text document.  
+Using two files can be useful to model certain types of interactions. For example, using a beta ER file with gamma ER events will mimic a Compton scatter followed by photoabsorption. Mixing ER and NR can be used for inelastic scattering of n's or WIMPs, or the Migdal effect.
+The executable will print S1 and S2 areas to screen, which can be funneled into a text document.
 
 <a name="geant"></a>
 ## GEANT4 Integration
@@ -542,8 +534,7 @@ The executable will print S1 and S2 areas to screen, which can be funneled into 
 	```cpp
 	NEST::NESTProc* theNEST2ScintillationProcess = new NEST::NESTProc("S1",fElectromagnetic,[your electric field]);
 	if (theNEST2ScintillationProcess->IsApplicable(*particle)) {
-  pmanager->AddProcess(theScintillationProcess, ordDefault + 1, ordInActive,
-                       ordDefault + 1);
+	   pmanager->AddProcess(theScintillationProcess, ordDefault + 1, ordInActive, ordDefault + 1);
 	}
 	```
 

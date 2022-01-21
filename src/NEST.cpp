@@ -504,16 +504,11 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     zi = stof(position);
   }
   if (zi <= 0.) zi = fdetector->get_TopDrift();
-  double dEOdx, eStep, refEnergy, kludge = 1.;
+  double dEOdx, eStep, refEnergy;
   if (eMin < 0.) {
     refEnergy = -eMin;
-    kludge = 2.;
-    dEOdx = CalcElectronLET(-eMin, ATOM_NUM) / kludge;
-    eStep = dEOdx * rho * z_step * 1e2;
-    while (eStep > refEnergy) {
-      z_step /= 10.;
-      eStep = dEOdx * rho * z_step * 1e2;
-    }
+    dEOdx = CalcElectronLET(-eMin, ATOM_NUM);
+    eStep =dEOdx * rho * z_step * 1e2;
   } else {
     refEnergy = NuisParam[9];
     eStep = eMin * rho * z_step * 1e2;
@@ -542,7 +537,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     else field = inField;
     if (eMin < 0.) {
       if ((keV + eStep) > -eMin) eStep = -eMin - keV;
-      result.yields = GetYieldBeta(2.0 * eStep, rho, field);
+      result.yields = GetYieldBeta(eStep, rho, field);
     } else
       result.yields = GetYieldBeta(refEnergy, rho, field);
     vector<double> FreeParam = default_FreeParam;
@@ -550,7 +545,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else
-      Nph += result.quanta.photons / kludge;
+      Nph += result.quanta.photons;
     int index = int(floor(zz / z_step + 0.5));
     if (index >= vTable.size()) index = vTable.size() - 1;
     if (vTable.size() == 0)
@@ -564,7 +559,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 	  exp(-driftTime / fdetector->get_eLife_us());
       else
 	Ne += result.quanta.electrons *
-	  exp(-driftTime / fdetector->get_eLife_us()) / kludge;
+	  exp(-driftTime / fdetector->get_eLife_us());
     }
     keV += eStep;
     xx += norm[0] * z_step;
@@ -572,7 +567,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     zz += norm[2] * z_step;
     if (eMin < 0.) {
       refEnergy -= eStep;
-      dEOdx = CalcElectronLET(refEnergy, ATOM_NUM) / 1.;
+      dEOdx = CalcElectronLET(refEnergy, ATOM_NUM);
       eStep = dEOdx * rho * z_step * 1e2;
     }
     // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << endl;

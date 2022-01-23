@@ -407,7 +407,7 @@ class NESTcalc {
   // for either S1 or S2, including fluctuations in them, so that you can apply
   // proper QE in G4 for ex.
 
-  double CalcElectronLET(double E, int Z);
+  double CalcElectronLET(double E, int Z, bool CSDA=true);
   // Linear Energy Transfer in units of MeV*cm^2/gram which when combined with
   // density can provide the dE/dx, as a function of energy in keV. Will be more
   // useful in the future

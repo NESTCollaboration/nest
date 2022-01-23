@@ -507,7 +507,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   double dEOdx, eStep, refEnergy;
   if (eMin < 0.) {
     refEnergy = -eMin;
-    dEOdx = CalcElectronLET(-eMin, ATOM_NUM);
+    dEOdx = CalcElectronLET(-eMin, ATOM_NUM, NuisParam[10]);
     eStep =dEOdx * rho * z_step * 1e2;
   } else {
     refEnergy = NuisParam[9];
@@ -567,7 +567,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     zz += norm[2] * z_step;
     if (eMin < 0.) {
       refEnergy -= eStep;
-      dEOdx = CalcElectronLET(refEnergy, ATOM_NUM);
+      dEOdx = CalcElectronLET(refEnergy, ATOM_NUM, NuisParam[10]);
       eStep = dEOdx * rho * z_step * 1e2;
     }
     // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << endl;
@@ -2509,10 +2509,20 @@ double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
                          // dependence
 }
 
-double NESTcalc::CalcElectronLET(double E, int Z) {
+double NESTcalc::CalcElectronLET(double E, int Z, bool CSDA) {
   double LET;
-
-  // use a spline fit to online ESTAR data
+  
+  if (!CSDA) { //total stopping power directly from ESTAR (radiative + collision)
+    if (ValidityTests::nearlyEqual(ATOM_NUM, 54.)) //loglog poly fit to 1-3e3keV
+      LET=1.4555+0.11493*log10(E)-1.2364*pow(log10(E),2.)+1.3677*pow(log10(E),3.)-1.1539*pow(log10(E),4.)+0.69658*pow(log10(E),5.)-0.28706*pow(log10(E),6.)
+	+0.077169*pow(log10(E),7.)-0.011957*pow(log10(E),8.)+0.00079395*pow(log10(E),9.);
+    else //ditto(ARGON)
+      LET=1.8106-0.45086*log10(E)-.33151*pow(log10(E),2.)+.25916*pow(log10(E),3.)-0.2051*pow(log10(E),4.)+0.15279*pow(log10(E),5.)-.084659*pow(log10(E),6.)
+	+0.030441*pow(log10(E),7.)-.0058953*pow(log10(E),8.)+0.00045633*pow(log10(E),9.);
+    return pow(10.,LET);
+  }
+  
+  // use a 9th-order polynomial spline to online CSDA data (still NIST's ESTAR)
   if (ValidityTests::nearlyEqual(ATOM_NUM, 54.)) {
     if (E >= 1.)
       LET = 58.482 - 61.183 * log10(E) + 19.749 * pow(log10(E), 2) +

@@ -195,7 +195,10 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac,
     ampl = 0.086036 + (0.0553 - 0.086036) / pow(1. + pow(efield / 295.2, 251.6),
                                                 0.0069114);  // NEW(GregR)
   else {
-    ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));  // OLD
+    if ( FreeParam[0] <= 0. )
+      return -FreeParam[0];
+    else
+      ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));  // OLD
   }
   if (ampl < 0.) ampl = 0.;
   double wide = .205;  // or: FreeParam #2, like amplitude (#1)
@@ -514,7 +517,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     eStep = eMin * rho * z_step * 1e2;
   }
   double driftTime, vD, keV = 0.;
-  int Nph = 0, Ne = 0;
+  int Nph = 0, Ne = 0, Nq = 0;
   double xx = xi, yy = yi, zz = zi;
   if (zf < 0.) zf = 0.;
   double distance = sqrt((xf - xi) * (xf - xi) + (yf - yi) * (yf - yi) +
@@ -541,11 +544,18 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     } else
       result.yields = GetYieldBeta(refEnergy, rho, field);
     vector<double> FreeParam = default_FreeParam;
-    result.quanta = GetQuanta(result.yields, rho, FreeParam);
+    //FreeParam[0] = -0.15;
+    result.quanta = GetQuanta(result.yields, rho, FreeParam, true);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
-    else
+    else {
+      Nq = result.quanta.photons + result.quanta.electrons;
+      double FanoOverall = 0.0015 * sqrt((-1e3*eMin/Wq_eV)*field);
+      Nq = int(floor(RandomGen::rndm()->rand_gauss(Nq,sqrt(FanoOverall*Nq))+0.5));
+      result.quanta.photons = int(floor(RandomGen::rndm()->rand_gauss(
+   result.quanta.photons,sqrt(20.*FanoOverall*result.quanta.photons),false)+0.5));
       Nph += result.quanta.photons;
+    }
     int index = int(floor(zz / z_step + 0.5));
     if (index >= vTable.size()) index = vTable.size() - 1;
     if (vTable.size() == 0)
@@ -558,7 +568,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 	Ne += result.quanta.electrons * (eStep / refEnergy) *
 	  exp(-driftTime / fdetector->get_eLife_us());
       else
-	Ne += result.quanta.electrons *
+	Ne += (Nq - result.quanta.photons) *
 	  exp(-driftTime / fdetector->get_eLife_us());
     }
     keV += eStep;
@@ -572,6 +582,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     }
     // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << endl;
   }
+  if (Nph < 0) Nph = 0; if (Ne < 0) Ne = 0;
   result.quanta.photons = Nph;
   result.quanta.electrons = Ne;
   pos_x =
@@ -2519,7 +2530,9 @@ double NESTcalc::CalcElectronLET(double E, int Z, bool CSDA) {
     else //ditto(ARGON)
       LET=1.8106-0.45086*log10(E)-.33151*pow(log10(E),2.)+.25916*pow(log10(E),3.)-0.2051*pow(log10(E),4.)+0.15279*pow(log10(E),5.)-.084659*pow(log10(E),6.)
 	+0.030441*pow(log10(E),7.)-.0058953*pow(log10(E),8.)+0.00045633*pow(log10(E),9.);
-    return pow(10.,LET);
+    LET = pow(10.,LET);
+    if ( std::isnan(LET) || LET <= 0. ) LET = 1e2;
+    return LET;
   }
   
   // use a 9th-order polynomial spline to online CSDA data (still NIST's ESTAR)

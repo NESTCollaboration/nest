@@ -921,8 +921,9 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	  NuisParam[6] = inField;
 	  NuisParam[7] = vD_middle;
 	  NuisParam[8] = rho;
-	  NuisParam[9] =1e6;//GeV
-	  NuisParam[10]= 1; //1 = true, means use continuous slowing-down approx
+	  NuisParam[9] = 1e6;//GeV
+	  NuisParam[10] = 0.; //+/-1=true, means use continuous slowing-down approx
+	  NuisParam[11] = 0.; //use w/[10] for dE/dx = [10]*keV^[11] e.g. 50 & -0.5
 	}
 	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable);
 	yields = result.yields;

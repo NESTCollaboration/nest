@@ -510,7 +510,10 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   double dEOdx, eStep, refEnergy;
   if (eMin < 0.) {
     refEnergy = -eMin;
-    dEOdx = CalcElectronLET(-eMin, ATOM_NUM, NuisParam[10]);
+    if ( NuisParam[10] > 0. && NuisParam[11] != 0. )
+      dEOdx= NuisParam[10]*pow(-eMin,NuisParam[11]);
+    else
+      dEOdx = CalcElectronLET(-eMin, ATOM_NUM, NuisParam[10]);
     eStep =dEOdx * rho * z_step * 1e2;
   } else {
     refEnergy = NuisParam[9];
@@ -551,9 +554,9 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     else {
       Nq = result.quanta.photons + result.quanta.electrons;
       double FanoOverall = 0.0015 * sqrt((-1e3*eMin/Wq_eV)*field);
-      Nq = int(floor(RandomGen::rndm()->rand_gauss(Nq,sqrt(FanoOverall*Nq))+0.5));
+      Nq = int(floor(RandomGen::rndm()->rand_gauss(Nq,sqrt(FanoOverall*Nq),false)+0.5));
       result.quanta.photons = int(floor(RandomGen::rndm()->rand_gauss(
-   result.quanta.photons,sqrt(20.*FanoOverall*result.quanta.photons),false)+0.5));
+         result.quanta.photons,sqrt(20.*FanoOverall*result.quanta.photons),false)+0.5));
       Nph += result.quanta.photons;
     }
     int index = int(floor(zz / z_step + 0.5));
@@ -577,7 +580,10 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     zz += norm[2] * z_step;
     if (eMin < 0.) {
       refEnergy -= eStep;
-      dEOdx = CalcElectronLET(refEnergy, ATOM_NUM, NuisParam[10]);
+      if ( NuisParam[10] > 0. && NuisParam[11] != 0. )
+	   dEOdx = NuisParam[10] * pow ( refEnergy, NuisParam[11] );
+      else
+	dEOdx = CalcElectronLET(refEnergy, ATOM_NUM, NuisParam[10]);
       eStep = dEOdx * rho * z_step * 1e2;
     }
     // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << endl;

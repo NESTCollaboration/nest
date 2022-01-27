@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
       totalS1 = 0.;
       totalCorFactor = 0.;
       totalS2 = 0.;
-      for (int jj = 0; jj < nScatters - 1; jj++) {
+      for (int jj = 0; jj < nScatters; jj++) {
         // randomly draw an energy deposit from the first file
         int index = RandomGen::rndm()->integer_range(0, (int)size1 - 1);
 

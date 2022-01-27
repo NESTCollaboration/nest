@@ -32,7 +32,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 	* [ Running rootNEST ](#rootnest)
 	* [Custom Energy Spectrum Example: 220RnCalib.sh](#220rn)
 	* [Generating S1s and S2s for Double Scatters](#doubles)
-        * [Generating S1s and S2s for 2+ Scatters](#multiple)
+	* [Generating S1s and S2s for 2+ Scatters](#multiple)
 6. [ GEANT4 Integration ](#geant)
 7. [ Need Help with Detector Parameters? ](#params)
 8. [ Versioning ](#versions)

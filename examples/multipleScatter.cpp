@@ -209,7 +209,6 @@ int main(int argc, char **argv) {
         thisS2b_corFactor;
 
     while (nGenerated < nEvents) {
-
       while (nScatters < 2) {
         nScatters =
             (int)(RandomGen::rndm()->rand_exponential(1., 1.5, 50.) + 0.5);

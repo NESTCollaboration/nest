@@ -488,6 +488,9 @@ Running the executable without arguments prints the usage:
     -- <File 1> is execNEST output events used to stitch together energy deposits.
     -- <File 2> is optional, and will be the last scatter in each event, if provided.
 
+The exponential draw used when running with ```nScatters = -1``` is a 0th order attempt at providing similar behavior to multiple scatters in LXe. 
+The exponential uses a half-life of 1 scatter, between 2 and 50 scatters. These can be changed by the user in the script for max flexibility. 
+
 Using two files can be useful to model certain types of interactions. For example, using a beta ER file with gamma ER events will mimic a Compton scatter followed by photoabsorption. Mixing ER and NR can be used for inelastic scattering of n's or WIMPs, or the Migdal effect.
 The executable will print S1 and S2 areas to screen in addition to the number of scatters used in the event, which can be funneled into a text document.
 

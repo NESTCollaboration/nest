@@ -1,8 +1,8 @@
 /*
- * File:   doubleScatter.cpp
+ * File:   multipleScatter.cpp
  * Author: Greg Rischbeter
  *
- * Created on January 18, 2022
+ * Created on January 28, 2022
  */
 
 #include <algorithm>
@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
          << endl;
     cerr << endl
          << "Usage: " << endl
-         << "./doubleScatter <nEvents> <nScatters> <Pulse Type> <File 1> "
+         << "./multipleScatter <nEvents> <nScatters> <Pulse Type> <File 1> "
             "<optional: File 2> "
          << endl;
 
@@ -57,6 +57,12 @@ int main(int argc, char **argv) {
   if (nScatters < 2) {
     randomScatters = true;
   }
+  //define parameters for random exponential draw of nScatters
+  // if using nScatters = -1. 
+  // These are just 0th order fill-ins to produce a spread of values.
+  double halfLife = 1.; 
+  double minScatters = 1.5; //int-rounding will make the true minimum = 2
+  double maxScatters = 50.;
   // Check if using corrected or uncorrected output pulse areas
   bool corrected = true;
   if (atoi(argv[3]) == 0)
@@ -106,7 +112,7 @@ int main(int argc, char **argv) {
   fclose(file1);
   if (!sameFile) {
     cerr << "Using two files to generate scatters..." << endl;
-    // Load the 2nd file if provided, and stitch the two together to make double
+    // Load the 2nd file if provided, and stitch the two together to make multiple scatter events
     // scatters
     FILE *file2 = fopen(argv[5], "r");
     ch, nLines = 0, o;
@@ -150,8 +156,8 @@ int main(int argc, char **argv) {
         thisS2b_corFactor;
     for (int ii = 0; ii < nEvents; ii++) {
       while (nScatters < 2) {
-        nScatters =
-            (int)(RandomGen::rndm()->rand_exponential(1., 1.5, 50.) + 0.5);
+        nScatters =  //0th order attempt at reproducing multiple scatter behavior
+            (int)(RandomGen::rndm()->rand_exponential(halfLife, minScatters, maxScatters) + 0.5);
       }
       totalS1 = 0.;
       totalCorFactor = 0.;
@@ -210,8 +216,8 @@ int main(int argc, char **argv) {
 
     while (nGenerated < nEvents) {
       while (nScatters < 2) {
-        nScatters =
-            (int)(RandomGen::rndm()->rand_exponential(1., 1.5, 50.) + 0.5);
+        nScatters = //0th order attempt at reproducing multiple scatter behavior
+            (int)(RandomGen::rndm()->rand_exponential(halfLife, minScatters, maxScatters) + 0.5);
       }
       totalS1 = 0.;
       totalCorFactor = 0.;

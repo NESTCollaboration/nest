@@ -32,9 +32,9 @@ add_executable(pulseShape pulseShape.cpp)
 target_link_libraries(pulseShape PUBLIC NEST::Core)
 list(APPEND EXAMPLES pulseShape)
 
-add_executable(doubleScatter doubleScatter.cpp)
-target_link_libraries(doubleScatter PUBLIC NEST::Core)
-list(APPEND EXAMPLES doubleScatter)
+add_executable(multipleScatter multipleScatter.cpp)
+target_link_libraries(multipleScatter PUBLIC NEST::Core)
+list(APPEND EXAMPLES multipleScatter)
 
 install(
     TARGETS ${EXAMPLES}        

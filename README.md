@@ -31,7 +31,7 @@ Noble Element Simulation Technique (nest) is used to simulate noble-element ener
 	* [ Using bareNEST ](#barenest)
 	* [ Running rootNEST ](#rootnest)
 	* [Custom Energy Spectrum Example: 220RnCalib.sh](#220rn)
-	* [Generating S1s and S2s for Double Scatters](#doubles)
+	* [Generating S1s and S2s for Multiple Scatters](#multiple)
 6. [ GEANT4 Integration ](#geant)
 7. [ Need Help with Detector Parameters? ](#params)
 8. [ Versioning ](#versions)
@@ -473,22 +473,26 @@ For any general spectrum, the user will want to run execNEST for every relevant 
 Note the funnel command used here, ```>>``` appends the command's output to an existing file (if the file already exists). 
 One must make sure they use proper ```rm outputfile``` commands when trying to re-run. See the "220RnCalib.sh" example.
 
-<a name="doubles"></a>
-## Generating S1s and S2s for Double Scatters
+<a name="multiple"></a>
+## Generating S1s and S2s for 2+ Scatters
 
-Included in the examples directory, the doubleScatter.cpp script produces the ```doubleScatter``` executable. 
-This tool uses one or two execNEST output files, and will return either corrected or uncorrected pulse areas. 
+Included in the examples directory, the multipleScatter.cpp script produces the ```multipleScatter``` executable.
+This tool uses one or two execNEST output files to stitch together energy depositions into multiple scatter events, and will return either corrected or uncorrected pulse areas.
 Running the executable without arguments prints the usage:
 
-    ./path/to/doubleScatter <nEvents> <Pulse Type> <File 1> <optional: File 2>
+    ./path/to/multipleScatter <nEvents> <nScatters> <Pulse Type> <File 1> <optional: File 2>
 
-    -- <nEvents> is the number of double scatters to stitch together.
+    -- <nEvents> is the number of scatters to stitch together per event.
+    -- <nScatters> is the number of depositions to use per event; using -1 gives a random exponential draw for each event.
     -- <Pulse Type> is either 0 (for uncorrected pulses) or 1 (for corrected pulses); corrected pulses sum S2s and take an S2-weighted average S1c.
-    -- <File 1> is execNEST output events used to stitch together double scatters.
-    -- <File 2> is optional, and will be the second scatter in each event, if provided.
+    -- <File 1> is execNEST output events used to stitch together energy deposits.
+    -- <File 2> is optional, and will be the last scatter in each event, if provided.
+
+The exponential draw used when running with ```nScatters = -1``` is a 0th order attempt at providing similar behavior to multiple scatters in LXe. 
+The exponential uses a half-life of 1 scatter, between 2 and 50 scatters. These can be changed by the user in the script for max flexibility. 
 
 Using two files can be useful to model certain types of interactions. For example, using a beta ER file with gamma ER events will mimic a Compton scatter followed by photoabsorption. Mixing ER and NR can be used for inelastic scattering of n's or WIMPs, or the Migdal effect.
-The executable will print S1 and S2 areas to screen, which can be funneled into a text document.
+The executable will print S1 and S2 areas to screen in addition to the number of scatters used in the event, which can be funneled into a text document.
 
 <a name="geant"></a>
 ## GEANT4 Integration

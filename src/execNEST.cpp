@@ -926,10 +926,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	  NuisParam[11] = 0.; //use w/[10] for dE/dx = [10]*keV^[11] e.g. 50 & -0.5
 	  NuisParam[12] = 0.; //fractional variation: e.g .15 = 15%
 	}
-	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable);
+	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable, FreeParam);
 	yields = result.yields;
 	quanta = result.quanta;
-	driftTime = 0.00;
+	if ( FreeParam[0] >= 0. ) driftTime = 0.00;
 	field = yields.ElectricField;
 	pos_z = yields.DeltaT_Scint;
       } else {
@@ -1040,7 +1040,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                        g2_params);
       if (dEOdxBasis) {
         driftTime = (detector->get_TopDrift() - pos_z) / vD_middle;
-	if ( scint2[7] != -PHE_MIN )
+	if ( scint2[7] != -PHE_MIN && FreeParam[0] >= 0. )
 	  scint2[7] *= exp(driftTime / detector->get_eLife_us());
       }
 

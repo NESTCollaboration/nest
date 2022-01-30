@@ -262,7 +262,8 @@ class NESTcalc {
   
   virtual NESTresult GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 					  string muonInitPos,
-					  vector<double> eDriftVelTable);
+					  vector<double> eDriftVelTable,
+					  const std::vector<double> &FreeParam);
   // Use dE/dx-based yield models instead of energy-based, as everywhere else
   
   virtual YieldResult GetYieldNR(double energy, double density, double dfield,

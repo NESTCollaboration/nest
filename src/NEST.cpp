@@ -194,12 +194,8 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac,
   if (!oldModel)
     ampl = 0.086036 + (0.0553 - 0.086036) / pow(1. + pow(efield / 295.2, 251.6),
                                                 0.0069114);  // NEW(GregR)
-  else {
-    if ( FreeParam[0] <= 0. )
-      return -FreeParam[0];
-    else
-      ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));  // OLD
-  }
+  else
+    ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));  // OLD
   if (ampl < 0.) ampl = 0.;
   double wide = .205;  // or: FreeParam #2, like amplitude (#1)
   double cntr = 0.45;  // NEW(GregR) FreeParam #3 (OLD value of 0.50 for OLD
@@ -472,7 +468,8 @@ YieldResult NESTcalc::GetYieldERWeighted(double energy, double density,
 
 NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 					  string muonInitPos,
-					  vector<double> vTable) {
+					  vector<double> vTable,
+					  const std::vector<double> &FreeParam) {
   Wvalue wvalue = WorkFunction(NuisParam[8], fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV; double rho = NuisParam[8];
@@ -528,7 +525,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   if (zf < 0.) zf = 0.;
   double distance = sqrt((xf - xi) * (xf - xi) + (yf - yi) * (yf - yi) +
 			 (zf - zi) * (zf - zi));
-  double norm[3];
+  double norm[3];  double xi_tib;
   norm[0] = (xf - xi) / distance;
   norm[1] = (yf - yi) / distance;
   norm[2] = (zf - zi) / distance;
@@ -546,20 +543,45 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     else field = inField;
     if (eMin < 0.) {
       if ((keV + eStep) > -eMin) eStep = -eMin - keV;
-      result.yields = GetYieldBeta(eStep, rho, field);
+      if ( FreeParam[0] < 0. ) {
+	YieldResult yields{};
+	xi_tib = (-FreeParam[0]/(1.+FreeParam[1]))*FreeParam[3]*pow(eStep,FreeParam[4]);
+	yields.PhotonYield=((-FreeParam[0]*eStep)/(1.+FreeParam[1]))*(1.+FreeParam[1]-log(FreeParam[2]+xi_tib)/xi_tib);
+	yields.ElectronYield = -FreeParam[0] * eStep - yields.PhotonYield;
+	yields.ExcitonRatio = FreeParam[1]; yields.Lindhard = 1.;
+	yields.ElectricField = field; yields.DeltaT_Scint = -999; result.yields = yields;
+      }
+      else
+	result.yields = GetYieldBeta(eStep, rho, field);
     } else
       result.yields = GetYieldBeta(refEnergy, rho, field);
-    vector<double> FreeParam = default_FreeParam;
-    //FreeParam[0] = -0.15;
-    result.quanta = GetQuanta(result.yields, rho, FreeParam, true);
+    if ( eMin < 0. && FreeParam[0] < 0. ) {
+      QuantaResult quanta{};
+      if ( -FreeParam[0]*eStep < 1. ) Nq = 0;
+      else Nq = int(ceil(RandomGen::rndm()->rand_gauss(-FreeParam[0]*eStep,sqrt(-FreeParam[5]*FreeParam[0]*eStep),true)-0.5));
+      if ( result.yields.PhotonYield < 1. || Nq <= 0 ) quanta.photons = 0;
+      else quanta.photons = int(ceil(RandomGen::rndm()->rand_gauss(result.yields.PhotonYield,sqrt(FreeParam[6]*result.yields.PhotonYield),true)-0.5));
+      quanta.electrons = Nq - quanta.photons;
+      quanta.ions = int(ceil(double(Nq)/(1.+FreeParam[1])-0.5));
+      quanta.excitons = Nq - quanta.ions;
+      quanta.recombProb = 1. - log ( FreeParam[2] + xi_tib ) / xi_tib;
+      quanta.Variance = FreeParam[6] * quanta.photons;
+      result.quanta = quanta; Ne += result.quanta.electrons;
+    }
+    else
+      result.quanta = GetQuanta(result.yields, rho, FreeParam, true);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else {
-      Nq = result.quanta.photons + result.quanta.electrons;
-      double FanoOverall = 0.0015 * sqrt((-1e3*eMin/Wq_eV)*field);
-      Nq = int(floor(RandomGen::rndm()->rand_gauss(Nq,sqrt(FanoOverall*Nq),false)+0.5));
-      result.quanta.photons = int(floor(RandomGen::rndm()->rand_gauss(
-	 result.quanta.photons,sqrt(20.*FanoOverall*result.quanta.photons),false)+0.5));
+      if ( FreeParam[0] >= 0. ) {
+	Nq = result.quanta.photons + result.quanta.electrons;
+	double FanoOverall = 0.0015 * sqrt((-1e3*eMin/Wq_eV)*field);
+	double FanoScint = 20. * FanoOverall;
+	Nq = int(floor(RandomGen::rndm()->rand_gauss(Nq,sqrt(FanoOverall*Nq),false)+0.5));
+	result.quanta.photons = int(floor(RandomGen::rndm()->rand_gauss(
+		 result.quanta.photons,sqrt(FanoScint*result.quanta.photons),false)+0.5));
+	result.quanta.electrons=Nq-result.quanta.photons;
+      }
       Nph += result.quanta.photons;
     }
     int index = int(floor(zz / z_step + 0.5));
@@ -569,12 +591,11 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     else
       vD = vTable[index];
     driftTime = (fdetector->get_TopDrift() - zz) / vD;
-    if (zz >= fdetector->get_cathode()) {
+    if ( zz >= fdetector->get_cathode() && FreeParam[0] >= 0. ) {
       if (eMin > 0.)
-	Ne += result.quanta.electrons * (eStep / refEnergy) *
-	  exp(-driftTime / fdetector->get_eLife_us());
+	Ne += result.quanta.electrons * (eStep / refEnergy) * exp(-driftTime / fdetector->get_eLife_us());
       else
-	Ne += (Nq - result.quanta.photons) *
+	Ne += result.quanta.electrons *
 	  exp(-driftTime / fdetector->get_eLife_us());
     }
     keV += eStep;
@@ -592,7 +613,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 	dEOdx = CalcElectronLET(refEnergy, ATOM_NUM, NuisParam[10]);
       eStep = dEOdx * rho * z_step * 1e2;
     }
-    // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << endl;
+    // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << "\t" << Nph << "\t" << Ne << endl;
   }
   if (Nph < 0) Nph = 0; if (Ne < 0) Ne = 0;
   result.quanta.photons = Nph;
@@ -603,7 +624,6 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   // middle of detector since muon traverses whole length
   pos_y = 0.5 * (yi + yy);
   pos_z = 0.5 * (zi + zz);
-  driftTime = 0.00;
   if (inField == -1.)
     field = fdetector->FitEF(pos_x, pos_y, pos_z);
   else

@@ -483,10 +483,17 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   yf = NuisParam[1];
   zf = NuisParam[2];
   if (ValidityTests::nearlyEqual(NuisParam[3], -1.)) {
-    r = fdetector->get_radmax() * sqrt(RandomGen::rndm()->rand_uniform());
-    phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
-    xi = r * cos(phi);
-    yi = r * sin(phi);
+    if ( FreeParam[0] < 0. && eMin < 0. ) {
+      xi = xf - 10.;
+      yi = yf;
+      zi = zf;
+    }
+    else {
+      r = fdetector->get_radmax() * sqrt(RandomGen::rndm()->rand_uniform());
+      phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
+      xi = r * cos(phi);
+      yi = r * sin(phi);
+    }
   } else {
     string position = muonInitPos;
     string delimiter = ",";
@@ -519,7 +526,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     refEnergy = NuisParam[9];
     eStep = eMin * rho * z_step * 1e2;
   }
-  double driftTime, vD, keV = 0.;
+  double driftTime, vD, keV = 0., Nq_mean;
   int Nph = 0, Ne = 0, Nq = 0;
   double xx = xi, yy = yi, zz = zi;
   if (zf < 0.) zf = 0.;
@@ -544,10 +551,10 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     if (eMin < 0.) {
       if ((keV + eStep) > -eMin) eStep = -eMin - keV;
       if ( FreeParam[0] < 0. ) {
-	YieldResult yields{};
-	xi_tib = (-FreeParam[0]/(1.+FreeParam[1]))*FreeParam[3]*pow(eStep,FreeParam[4]);
-	yields.PhotonYield=((-FreeParam[0]*eStep)/(1.+FreeParam[1]))*(1.+FreeParam[1]-log(FreeParam[2]+xi_tib)/xi_tib);
-	yields.ElectronYield = -FreeParam[0] * eStep - yields.PhotonYield;
+	YieldResult yields{}; Nq_mean = -FreeParam[0] * eStep;
+	double Ni_mean = Nq_mean/(1.+FreeParam[1]); xi_tib = Ni_mean*(FreeParam[3]/4.)*pow(eStep,FreeParam[4]-1.);
+	yields.PhotonYield = Ni_mean * (1.+FreeParam[1]-log(FreeParam[2]+xi_tib)/xi_tib);
+	yields.ElectronYield = Nq_mean - yields.PhotonYield;
 	yields.ExcitonRatio = FreeParam[1]; yields.Lindhard = 1.;
 	yields.ElectricField = field; yields.DeltaT_Scint = -999; result.yields = yields;
       }
@@ -557,16 +564,17 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
       result.yields = GetYieldBeta(refEnergy, rho, field);
     if ( eMin < 0. && FreeParam[0] < 0. ) {
       QuantaResult quanta{};
-      if ( -FreeParam[0]*eStep < 1. ) Nq = 0;
-      else Nq = int(ceil(RandomGen::rndm()->rand_gauss(-FreeParam[0]*eStep,sqrt(-FreeParam[5]*FreeParam[0]*eStep),true)-0.5));
+      if ( Nq_mean < 1. ) Nq = 0;
+      else Nq = int(ceil(RandomGen::rndm()->rand_gauss(Nq_mean,sqrt(FreeParam[5]*Nq_mean),true)-0.5));
       if ( result.yields.PhotonYield < 1. || Nq <= 0 ) quanta.photons = 0;
       else quanta.photons = int(ceil(RandomGen::rndm()->rand_gauss(result.yields.PhotonYield,sqrt(FreeParam[6]*result.yields.PhotonYield),true)-0.5));
       quanta.electrons = Nq - quanta.photons;
       quanta.ions = int(ceil(double(Nq)/(1.+FreeParam[1])-0.5));
       quanta.excitons = Nq - quanta.ions;
       quanta.recombProb = 1. - log ( FreeParam[2] + xi_tib ) / xi_tib;
-      quanta.Variance = FreeParam[6] * quanta.photons;
-      result.quanta = quanta; Ne += result.quanta.electrons;
+      quanta.Variance = FreeParam[6] * result.yields.PhotonYield;
+      result.quanta = quanta;
+      Ne += result.quanta.electrons;
     }
     else
       result.quanta = GetQuanta(result.yields, rho, FreeParam, true);

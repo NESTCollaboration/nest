@@ -2,40 +2,50 @@
 #!/usr/bin/env bash
 #This code doesn't actually perform any model fitting, however,
 #it provides an example for using rootNEST if one wishes to use execNEST + rootNEST
-#to fit a data target to find optimal model/detector parameters to match data
+#to fit a data target to find optimal model and/or detector params to match data
 
-#See lines 70-140 of src/execNEST.cpp for more info on what each of these input arguments is doing
+#Search the word "loopNEST" in src/execNEST.cpp for more info on what each of these input arguments is doing
 
-#Note that rootNEST must be in FIT mode (mode=1) to compare with data
+#First declare ranges for each of the free parameters
+#Here, in several for-loops, using 11 parameters with set ranges
+for a in 0.001 0.002 0.005 #step size in mm
+do
+for b in 30 40 50 #base for dE/dx power law at high energies
+do
+for c in -1 -0.75 -0.5 #exponent for dE/dx power law
+do
+for d in 0.1 0.2 0.5 #variation in dE/dx e.g. 0.1 means 10%
+do
+for e in 72 73 74 #total quanta per keV i.e. 1/W
+do
+for f in 0.01 0.02 0.05 #exciton-ion ratio Nex/Ni
+do
+for g in 1 2 3 #replacement of 1 in ln(1+xi)/xi in mod TIB model
+do
+for h in 0.02 0.05 0.10 #base for Ni, E, or dE/dx power law in TIB
+do
+for i in 0.1 0.2 0.5 #exponent
+do
+for j in 0.2 0.5 1.0 #Fano factor for total quanta
+do
+for k in 1.0 2.0 5.0 #Fano factor for scintillation
+do
 
-#First declare ranges for each of the free parameters/
-#Here, in several for-loops, using 7 parameters with set ranges
-for a in -0.1 0.00 0.10
-do
-for b in 0.40 0.50 0.60
-do
-for c in 0.04 0.05 0.06
-do
-for d in -0.5 -0.4 -0.3
-do
-for e in 1.09 1.10 1.11
-do
-for f in 0.96 0.97 0.98
-do
-for g in 6e-2 7e-2 8e-2
-do
+    #echo $a $b $c $d $e $f $g $h $i $j $k
     
-    #echo $a $b $c $d $e $f $g
+    #below: run execNEST with the selected parameters, and save the output
+    @CMAKE_BINARY_DIR@/execNEST $a $b $c $d $e $f $g $h $i $j $k > nohup.dat 2> nohup.err
     
-    #below: run execNEST with the select parameters, and save the output
-    @CMAKE_INSTALL_FULL_BINDIR@/execNEST $a $b $c $d $e $f $g > nohup.dat 2> nohup.err
-    
-    #next, use rootNEST in FIT mode to get goodness-of-fit statistic with a data file (See README on rootNEST)
+    #next, use rootNEST in FIT mode (i.e. mode=1) to get goodness-of-fit statistic with a data file (See README on rootNEST)
     @CMAKE_BINARY_DIR@/examples/rootNEST nohup.dat @CMAKE_SOURCE_DIR@/examples/LUXRun03_CH3TBand_SpikeFull.txt 2>> nohup.err
     
     #then remove the output file and move on to the next parameter set
     rm nohup.dat &> /dev/null
     
+done
+done
+done
+done
 done
 done
 done

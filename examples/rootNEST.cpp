@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
   double NRbandX[numBins], NRbandY[numBins], numSigma[numBins],
       leakage[numBins], discrim[numBins], errorBars[numBins][2];
   int i = 0;
-  if (loopNEST) verbosity = false;
+  if (loopNEST) { verbosity = false; mode = 1; }
 
   if (std::abs(NRbandCenter) != 1 && std::abs(NRbandCenter) != 2 &&
       std::abs(NRbandCenter) != 3)
@@ -791,8 +791,8 @@ void GetFile(char* fileName) {
       S2cor_phd.push_back(-999.);
     }
   }
-  fclose(ifp);
-
+  fclose(ifp); if ( E_keV.size() < 100000 ) { skewness = 0; cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so doing Gaussian" << endl; }
+  
   if (numBins == 1) {
     TH1F* HistogramArray = new TH1F[3];
     double minimum, maximum, average;

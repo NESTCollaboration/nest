@@ -98,15 +98,15 @@ int main(int argc, char** argv) {
   double eMin, eMax, inField, fPos;
   int seed;
   bool no_seed = false;
-  if (loopNEST) {
-    numEvts = 100000;  // 10,000 faster but of course less precise
-    if (loopNEST == 1)
-      type = "ER";
-    else
-      type = "NR";
-    eMin = 0.00;
-    eMax = 156.;  // Carbon-14
-    inField = -1.;
+  
+  if ( loopNEST ) {
+    
+    numEvts = 10000;
+    type = "MIP";
+    dEOdxBasis = true;
+    eMin = -TestSpectra::CH3T_spectrum(0.,18.6);
+    eMax = -1.;
+    inField = 180.;
     position = "-1";
     posiMuon = "-1";
     fPos = -1.;
@@ -115,61 +115,29 @@ int main(int argc, char** argv) {
     FreeParam.clear();
     NuisParam.clear();
     verbosity = false;
-
-    if (type == "ER") {
-      /*detector->set_g1(atof(argv[1])); //an alternate loop approach
-      detector->set_g1_gas(atof(argv[2]));
-      inField = atof(argv[3]);
-      detector->set_noiseLinear(atof(argv[4]),atof(argv[5]));*/
-
-      FreeParam.push_back(atof(argv[1]));  //-0.1 for LUX C-14 ~200V/cm
-      FreeParam.push_back(atof(argv[2]));  // 0.5
-      FreeParam.push_back(atof(argv[3]));  // 0.06
-      FreeParam.push_back(atof(argv[4]));  //-0.6
-      FreeParam.push_back(atof(argv[5]));  // 1.11
-      FreeParam.push_back(atof(argv[6]));  // 0.95
-      FreeParam.push_back(atof(argv[7]));  // 8e-2
-      FreeParam.push_back(atof(argv[7]));  // repeat
-
-      NuisParam.push_back(11.);
-      NuisParam.push_back(1.1);
-      NuisParam.push_back(0.0480);
-      NuisParam.push_back(-0.0533);
-      NuisParam.push_back(12.6);
-      NuisParam.push_back(0.3);
-      NuisParam.push_back(2.);
-      NuisParam.push_back(0.3);
-      NuisParam.push_back(2.);
-      NuisParam.push_back(0.5);
-      NuisParam.push_back(1.0);
-      NuisParam.push_back(1.0);
-
-    }
-
-    else {
-      NuisParam.push_back(atof(argv[1]));  // 11.0 XENON10
-      NuisParam.push_back(atof(argv[2]));  // 1.09
-      NuisParam.push_back(0.0480);
-      NuisParam.push_back(-0.0533);
-      NuisParam.push_back(12.6);
-      NuisParam.push_back(0.3);
-      NuisParam.push_back(2.);
-      NuisParam.push_back(0.3);
-      NuisParam.push_back(atof(argv[3]));  // 2.00
-      NuisParam.push_back(0.5);
-      NuisParam.push_back(1.0);
-      NuisParam.push_back(1.0);
-      detector->set_g1(atof(argv[5]));                          // 0.0725
-      detector->set_g1_gas(atof(argv[6]));                      // 0.0622
-      detector->set_noiseLinear(atof(argv[7]), atof(argv[7]));  // 0,0
-      FreeParam.push_back(1.00);
-      FreeParam.push_back(1.00);
-      FreeParam.push_back(atof(argv[4]));  // 0.070
-      FreeParam.push_back(0.50);
-      FreeParam.push_back(0.19);
-      FreeParam.push_back(2.25);
-    }
-
+    
+    NuisParam.push_back(0.0);
+    NuisParam.push_back(0.);
+    NuisParam.push_back(300.);
+    NuisParam.push_back(eMax);
+    NuisParam.push_back(eMin);
+    NuisParam.push_back(atof(argv[1]));
+    NuisParam.push_back(inField);
+    NuisParam.push_back(1.51);
+    NuisParam.push_back(2.888);
+    NuisParam.push_back(1e6);
+    NuisParam.push_back(atof(argv[2]));
+    NuisParam.push_back(atof(argv[3]));
+    NuisParam.push_back(atof(argv[4]));
+    
+    FreeParam.push_back(-atof(argv[5]));
+    FreeParam.push_back(atof(argv[6]));
+    FreeParam.push_back(atof(argv[7]));
+    FreeParam.push_back(atof(argv[8]));
+    FreeParam.push_back(atof(argv[9]));
+    FreeParam.push_back(atof(argv[10]));
+    FreeParam.push_back(atof(argv[11]));
+    
   } else {
     numEvts = (uint64_t)atof(argv[1]);
     if (numEvts <= 0) {
@@ -914,13 +882,14 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	NuisParam[0] = pos_x;
 	NuisParam[1] = pos_y;
 	NuisParam[2] = pos_z;
-	if ( j == 0 ) {
+	NuisParam[7] = vD_middle;
+	NuisParam[8] = rho;
+	if ( loopNEST ) NuisParam[4] = -TestSpectra::CH3T_spectrum(0.,18.6);
+	if ( j == 0 && !loopNEST ) {
 	  NuisParam[3] = eMax;
 	  NuisParam[4] = eMin;
 	  NuisParam[5] = z_step; //5mm for fast, 6um for accurate; .01mm LUXRun3 WS
 	  NuisParam[6] = inField;
-	  NuisParam[7] = vD_middle;
-	  NuisParam[8] = rho;
 	  NuisParam[9] = 1e6;//GeV
 	  NuisParam[10] = 0.; //+/-1=true, means use continuous slowing-down approx
 	  NuisParam[11] = 0.; //use w/[10] for dE/dx = [10]*keV^[11] e.g. 50 & -0.5
@@ -929,7 +898,12 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable, FreeParam);
 	yields = result.yields;
 	quanta = result.quanta;
-	if ( FreeParam[0] >= 0. ) driftTime = 0.00;
+	if ( FreeParam[0] >= 0. )
+	  driftTime = 0.00;
+	else {
+	  //pos_x = 0.; pos_y = 0.; pos_z = 300.;
+	  driftTime = (detector->get_TopDrift() - pos_z) / vD_middle;
+	}
 	field = yields.ElectricField;
 	pos_z = yields.DeltaT_Scint;
       } else {
@@ -1038,7 +1012,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                        smearPos[0], smearPos[1], smearPos[2], driftTime, vD, j,
                        field, s2CalculationMode, verbosity, wf_time, wf_amp,
                        g2_params);
-      if (dEOdxBasis) {
+      if ( dEOdxBasis && !loopNEST ) {
         driftTime = (detector->get_TopDrift() - pos_z) / vD_middle;
 	if ( scint2[7] != -PHE_MIN && FreeParam[0] >= 0. )
 	  scint2[7] *= exp(driftTime / detector->get_eLife_us());
@@ -1275,7 +1249,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         if (seed < 0 && seed != -1) {  // for when you want means
 	  if (dEOdxBasis) {
 	    if (eMin < 0.)
-	      { yields.PhotonYield = -quanta.photons/eMin; yields.ElectronYield = -quanta.electrons/eMin; }
+	      { yields.PhotonYield = -quanta.photons/NuisParam[4]; yields.ElectronYield = -quanta.electrons/NuisParam[4]; }
 	    else
 	      { yields.PhotonYield /= NuisParam[10]; yields.ElectronYield /= NuisParam[10]; }
 	  }

@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
   // open the first file and get the S1, S2, and their correction factors
   FILE *file1 = fopen(argv[4], "r");
   double a, b, c, d, e, f, g, h, i, j, k, l, m, n;
-  int ch, nLines = 0, o;
+  int ch, nLines = 0;
   vector<double> S1a, S2a;
   vector<double> S1a_corFactor, S2a_corFactor;
   if (verbosity) {
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
     // Load the 2nd file if provided, and stitch the two together to make multiple scatter events
     // scatters
     FILE *file2 = fopen(argv[5], "r");
-    ch, nLines = 0, o;
+    ch, nLines = 0;
     double a2, b2, c2, d2, e2, f2, g2, h2, i2, j2, k2, l2, m2, n2;
     vector<double> S1b, S2b;
     vector<double> S1b_corFactor, S2b_corFactor;

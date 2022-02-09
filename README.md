@@ -72,7 +72,7 @@ In order to compile and run NEST, the following are required:
 The following are optional, depending on intended use of NEST:
 
 * GEANT4 (tested as high as Geant4.10.7.p01)
-* ROOT (version 6 or higher: tested on 6.24/04 most recently on Mac OSX, 6.24/06 on CentOS 7)
+* ROOT (version 6.22/04 or higher, as it breaks on 6.22/03, ever since C++17 switchover: tested on 6.24/04 most recently on Mac OSX, 6.24/06 on CentOS 7)
 
 <a name="config"></a>
 ### Running CMake

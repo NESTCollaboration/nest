@@ -105,6 +105,7 @@ int main(int argc, char** argv) {
     type = "MIP";
     dEOdxBasis = true;
     eMin = -TestSpectra::CH3T_spectrum(0.,18.6);
+    //s1CalculationMode = NEST::S1CalculationMode::Parametric;
     eMax = -1.;
     inField = 180.;
     position = "-1";
@@ -900,10 +901,8 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	quanta = result.quanta;
 	if ( FreeParam[0] >= 0. )
 	  driftTime = 0.00;
-	else {
-	  //pos_x = 0.; pos_y = 0.; pos_z = 300.;
+	else
 	  driftTime = (detector->get_TopDrift() - pos_z) / vD_middle;
-	}
 	field = yields.ElectricField;
 	pos_z = yields.DeltaT_Scint;
       } else {
@@ -923,32 +922,6 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                    << endl;
             }
             yields = n.GetYieldERWeighted(keV, rho, field, NuisParam);
-            // Comment out GetYields above and uncomment below for LoopNEST
-            // usage
-            /*YieldResult yieldsB = n.GetYields(NEST::beta, keV, rho, field,
-                                              double(massNum), double(atomNum),
-            NuisParam); YieldResult yieldsG = n.GetYields(gammaRay, keV, rho,
-            field, double(massNum), double(atomNum), NuisParam); double weightG
-            = FreeParam[0] + FreeParam[1] * erf(FreeParam[2] * (log(keV) +
-            FreeParam[3])) * (1. - (1./(1. + pow(field/421.15, 3.27)))); //
-            Xe10:1,.55,-1.6,-1.0
-                    //field weighting added to match dependence reported by
-            XELDA and LUX Run3 double weightB = 1. - weightG; yields.PhotonYield
-            = weightG * yieldsG.PhotonYield + weightB * yieldsB.PhotonYield;
-            yields.ElectronYield = weightG * yieldsG.ElectronYield + weightB *
-            yieldsB.ElectronYield; yields.ExcitonRatio = weightG *
-            yieldsG.ExcitonRatio + weightB * yieldsB.ExcitonRatio;
-            yields.Lindhard = weightG * yieldsG.Lindhard + weightB *
-            yieldsB.Lindhard; yields.ElectricField = weightG *
-            yieldsG.ElectricField + weightB * yieldsB.ElectricField;
-            yields.DeltaT_Scint = weightG * yieldsG.DeltaT_Scint + weightB *
-            yieldsB.DeltaT_Scint; FudgeFactor[0] = FreeParam[4];//0.99;
-            FudgeFactor[1] = FreeParam[5];//1.04;
-            yields.PhotonYield *= FudgeFactor[0];
-            yields.ElectronYield *= FudgeFactor[1];
-            detector->set_noiseLinear(FreeParam[6], FreeParam[7]); //
-            XENON10: 1.0, 1.0. Hi-E gam: ~0-2%,6-5%
-            */
           } else {
             if (seed < 0 && seed != -1 && type_num <= 5)
               massNum = detector->get_molarMass();

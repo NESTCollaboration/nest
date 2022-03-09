@@ -83,7 +83,8 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
 
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
-  aParticleChange.Initialize(aTrack);
+  pParticleChange->Initialize(aTrack);
+  pParticleChange->SetNumberOfSecondaries(1e7);
 
   // ready to pop out OP and TE?
   if (NESTStackingAction::theStackingAction->isUrgentEmpty() &&
@@ -160,7 +161,8 @@ Lineage NESTProc::GetChildType(const G4Track* aTrack,
 
 G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                           const G4Step& aStep) {
-  aParticleChange.Initialize(aTrack);
+  pParticleChange->Initialize(aTrack);
+  pParticleChange->SetNumberOfSecondaries(1e7);
 
   auto myLinID = track_lins.find(
       std::make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(),

@@ -45,6 +45,11 @@ struct Lineage {
   bool result_calculated = false;
 };
 
+class NoTimeParticleChange : public G4ParticleChange {
+ public:
+  NoTimeParticleChange() : G4ParticleChange() { debugFlag = false; }
+};
+
 class NESTProc : public G4VRestDiscreteProcess {
  public:  // constructor and destructor
   NESTProc(const G4String& processName = "S1",
@@ -109,6 +114,7 @@ class NESTProc : public G4VRestDiscreteProcess {
       track_lins;
 
   G4double YieldFactor;  // turns scint. on/off
+  NoTimeParticleChange fParticleChange;  
 };
 
 ////////////////////

@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
     // Load the 2nd file if provided, and stitch the two together to make multiple scatter events
     // scatters
     FILE *file2 = fopen(argv[5], "r");
-    ch, nLines = 0;
+    nLines = 0;
     double a2, b2, c2, d2, e2, f2, g2, h2, i2, j2, k2, l2, m2, n2;
     vector<double> S1b, S2b;
     vector<double> S1b_corFactor, S2b_corFactor;

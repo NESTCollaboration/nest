@@ -401,7 +401,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   //... in a noble element...
   const G4Material* preMaterial = aStep.GetPreStepPoint()->GetMaterial();
   const G4Material* postMaterial = aStep.GetPostStepPoint()->GetMaterial();
-  G4Element *ElementA = NULL, *ElementB = NULL;
+  const G4Element *ElementA = NULL, *ElementB = NULL;
   if (preMaterial) {
     const G4ElementVector* theElementVector1 = preMaterial->GetElementVector();
     ElementA = (*theElementVector1)[0];

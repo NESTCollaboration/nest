@@ -541,7 +541,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 	 (xx * xx + yy * yy) <
 	 fdetector->get_radmax() * fdetector->get_radmax() &&
 	 std::abs(refEnergy) > PHE_MIN) {
-    if ( (zf < zi && zz <= zf) || (zf > zi && zz >= zf) ||
+    if ( ((zf < zi && zz <= zf) || (zf > zi && zz >= zf)) &&
 	 ((xx-xf)*(xx-xf)+(yy-yf)*(yy-yf)) < 4.*z_step*z_step )
       { stopCond = true; break; }
     // stop making S1 and S2 if particle exits Xe volume, OR runs out of
@@ -559,9 +559,9 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
 	yields.ElectricField = field; yields.DeltaT_Scint = -999; result.yields = yields;
       }
       else
-	result.yields = GetYieldBeta(eStep, rho, field);
+	result.yields = GetYieldBetaGR(eStep, rho, field, NuisParam);
     } else
-      result.yields = GetYieldBeta(refEnergy, rho, field);
+      result.yields = GetYieldBetaGR(refEnergy, rho, field, NuisParam);
     if ( eMin < 0. && FreeParam[0] < 0. ) {
       QuantaResult quanta{};
       if ( Nq_mean < 1. ) Nq = 0;
@@ -2512,7 +2512,7 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
       cerr << "WARNING: your position resolution is worse than 10 cm. Is that "
               "correct?!"
            << endl;
-      cerr << "Setting resolution to perfect." << endl;
+      cerr << "Setting resolution to perfect, for the current event." << endl;
       sigmaX = 0.;
       sigmaY = 0.;
     }  // this is only a problem if the area is large and the res is still bad

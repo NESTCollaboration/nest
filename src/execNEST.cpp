@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
     NuisParam.push_back(inField);
     NuisParam.push_back(1.51);
     NuisParam.push_back(2.888);
-    NuisParam.push_back(1e6);
+    NuisParam.push_back(1e3);
     NuisParam.push_back(atof(argv[2]));
     NuisParam.push_back(atof(argv[3]));
     NuisParam.push_back(atof(argv[4]));
@@ -891,7 +891,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	  NuisParam[4] = eMin;
 	  NuisParam[5] = z_step; //5mm for fast, 6um for accurate; .01mm LUXRun3 WS
 	  NuisParam[6] = inField;
-	  NuisParam[9] = 1e6;//GeV
+	  NuisParam[9] = 1e3;//MeV
 	  NuisParam[10] = 0.; //+/-1=true, means use continuous slowing-down approx
 	  NuisParam[11] = 0.; //use w/[10] for dE/dx = [10]*keV^[11] e.g. 50 & -0.5
 	  NuisParam[12] = 0.; //fractional variation: e.g .15 = 15%

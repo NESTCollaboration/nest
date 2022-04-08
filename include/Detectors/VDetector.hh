@@ -128,9 +128,11 @@ class VDetector {
   // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
   virtual double FitS1(double, double, double, LCE) { return 1.; }
 
-  // Drift electric field as function of Z in mm
+  // Drift electric field intensity as function of the point in mm
   // For example, use a high-order poly spline
   virtual double FitEF(double, double, double) { return 730.; }
+  // Set a custom direction for the electric field (by default constant in Z)
+  virtual std::vector<double> FitDirEF(double, double, double) { return {0, 0, 1}; }
 
   // S2 PDE custom fit for function of r
   // s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.

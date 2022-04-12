@@ -45,9 +45,9 @@ struct Lineage {
   bool result_calculated = false;
 };
 
-class NoTimeParticleChange : public G4ParticleChange {
+class NoTimeParticleChange : public G4VParticleChange {
  public:
-  NoTimeParticleChange() : G4ParticleChange() { debugFlag = false; }
+  NoTimeParticleChange() : G4VParticleChange() { debugFlag = false; }
 };
 
 class NESTProc : public G4VRestDiscreteProcess {
@@ -112,9 +112,8 @@ class NESTProc : public G4VRestDiscreteProcess {
   std::map<std::tuple<int, CLHEP::Hep3Vector, CLHEP::Hep3Vector>,
            long unsigned int>
       track_lins;
-
+  NoTimeParticleChange fParticleChange;
   G4double YieldFactor;  // turns scint. on/off
-  NoTimeParticleChange fParticleChange;  
 };
 
 ////////////////////

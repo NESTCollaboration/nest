@@ -52,6 +52,7 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
   fNESTcalc =
       std::unique_ptr<NEST::NESTcalc>(new NEST::NESTcalc(detector.get()));
 
+  pParticleChange = &fParticleChange;
   SetProcessSubType(fScintillation);
 
   fTrackSecondariesFirst = false;
@@ -85,7 +86,6 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
   pParticleChange->Initialize(aTrack);
   pParticleChange->SetNumberOfSecondaries(1e7);
-
   // ready to pop out OP and TE?
   if (NESTStackingAction::theStackingAction->isUrgentEmpty() &&
       aStep.GetSecondary()->empty()) {
@@ -108,10 +108,10 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
         while (ecum_p < ecum) {
           G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
           if (YieldFactor == 1)
-            aParticleChange.AddSecondary(onePhoton);
+            pParticleChange->AddSecondary(onePhoton);
           else if (YieldFactor > 0) {
             if (RandomGen::rndm()->rand_uniform() < YieldFactor)
-              aParticleChange.AddSecondary(onePhoton);
+              pParticleChange->AddSecondary(onePhoton);
           }
           ecum_p += e_p;
           photontimes++;
@@ -163,7 +163,6 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                                           const G4Step& aStep) {
   pParticleChange->Initialize(aTrack);
   pParticleChange->SetNumberOfSecondaries(1e7);
-
   auto myLinID = track_lins.find(
       std::make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(),
                       aTrack.GetVertexMomentumDirection()));

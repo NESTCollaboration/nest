@@ -1,3 +1,4 @@
 /fastNEST.exe
 nbproject/*
 **/.DS_Store
+build/

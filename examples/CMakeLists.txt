@@ -7,6 +7,9 @@ set(MIN_ROOT_VERSION 6.16)
 add_executable(bareNEST bareNEST.cpp)
 target_link_libraries(bareNEST PUBLIC NEST::Core)
 
+add_executable(bareLArNEST bareLArNEST.cpp)
+target_link_libraries(bareLArNEST PUBLIC NEST::Core)
+
 set(EXAMPLES bareNEST)
 
 # ROOT example

@@ -12,5 +12,8 @@
 
 namespace larnest
 {
-    
+    LArNEST::LArNEST(VDetector *detector)
+    : NEST::NESTcalc(detector)
+    {
+    }
 }

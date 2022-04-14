@@ -51,14 +51,20 @@ set(NEST_CORE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/VDetector.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/GammaHandler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ValidityTests.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/LArNEST.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/LArDetector.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/TestLArSpectra.cpp
 )
 set(NEST_CORE_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/NEST.hh
   ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/RandomGen.hh
   ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/TestSpectra.hh
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Detectors/VDetector.hh
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Detectors/LArDetector.hh
   ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/GammaHandler.hh
   ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/ValidityTests.hh
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/LArNEST.hh
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/TestLArSpectra.hh
 )
 
 add_library(NESTCore ${NEST_CORE_SOURCES} ${NEST_CORE_HEADERS})

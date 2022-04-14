@@ -10,6 +10,9 @@ target_link_libraries(bareNEST PUBLIC NEST::Core)
 add_executable(bareLArNEST bareLArNEST.cpp)
 target_link_libraries(bareLArNEST PUBLIC NEST::Core)
 
+add_executable(legacyLArNEST legacyLArNEST.cpp)
+target_link_libraries(legacyLArNEST PUBLIC NEST::Core)
+
 set(EXAMPLES bareNEST)
 
 # ROOT example

@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     LArDetector* detector = new LArDetector();
 
     // Construct NEST class using detector object
-    larnest::LArNEST n(detector);
+    NEST::LArNEST n(detector);
 
     // Set random seed of RandomGen class
     RandomGen::rndm()->SetSeed(0);

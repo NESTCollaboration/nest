@@ -11,6 +11,7 @@
 #pragma once
 
 #include "NEST.hh"
+#include "RandomGen.hh"
 
 // #define HIGH_E_NR 330.
 // #define W_DEFAULT \
@@ -43,16 +44,39 @@
 // #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
 // #define PHE_MAX 180      // saturation threshold, in PE per bin i.e. sample
 
-namespace larnest
+namespace NEST
 {
+    static constexpr double LAr_Z{18};
+    static constexpr double legacy_density_LAr{1.393};
+    static constexpr double legacy_scint_yield{1.0 / (19.5 * 1.e-6)};
+    static constexpr double legacy_resolution_scale{0.107}; // Doke 1976
     /**
      * @brief 
      * 
      */
-    class LArNEST : public NEST::NESTcalc
+    class LArNEST : public NESTcalc
     {
     public:
         explicit LArNEST(VDetector *detector);
+
+        INTERACTION_TYPE PDGToInteractionType(int pdg);
+
+        /**
+         * @brief Below are legacy LAr calculation 
+         * functions which are almost copied verbadim 
+         * from LArSoft, see - 
+         * 
+         * The default value for the dx=track_length is
+         * 1/3 mm, which is the standard from Geant4.
+         * @return QuantaResult 
+         */
+        QuantaResult LegacyCalculation(
+            int pdgcode, double energy,
+            double density, double eField, 
+            double track_length=0.0003
+        );
+        double LegacyCalcElectronLET(double E);
+
     private:
         
     };

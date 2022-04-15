@@ -44,12 +44,20 @@
 // #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
 // #define PHE_MAX 180      // saturation threshold, in PE per bin i.e. sample
 
+#define ZurichEXOW 1.1716263232
+// Qy Boost Factor to fit EXO-200 Data (error on this quantity is +/- 0.03)
+#define ZurichEXOQ 1.08  
+
 namespace NEST
 {
     static constexpr double LAr_Z{18};
     static constexpr double legacy_density_LAr{1.393};
     static constexpr double legacy_scint_yield{1.0 / (19.5 * 1.e-6)};
     static constexpr double legacy_resolution_scale{0.107}; // Doke 1976
+    static constexpr double two_PI = 2. * M_PI;
+    static constexpr double sqrt2 = gcem::sqrt(2.);
+    static constexpr double sqrt2_PI = gcem::sqrt(2. * M_PI);
+    static constexpr double inv_sqrt2_PI = 1. / gcem::sqrt(2. * M_PI);
     /**
      * @brief 
      * 
@@ -60,6 +68,61 @@ namespace NEST
         explicit LArNEST(VDetector *detector);
 
         INTERACTION_TYPE PDGToInteractionType(int pdg);
+
+        /**
+         * @brief 
+         * 
+         */
+        NESTresult FullCalculation(
+            INTERACTION_TYPE species, double energy, 
+            double density, double dfield,
+            double A, double Z,
+            const std::vector<double>
+            &NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+            const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
+            bool do_times /*=true*/
+        );
+        inline double FanoER();
+        double GetDensity(
+            double Kelvin, double bara, bool &inGas,
+            uint64_t evtNum, double molarMass
+        );
+        double GetDriftVelocity_Liquid(
+            double Kelvin, double eField,
+            double Density
+        );
+        double GetDriftVelocity_MagBoltz(
+            double density, double efieldinput,
+            double molarMass
+        );
+        double PhotonEnergy(bool state);
+        inline Wvalue WorkFunction();
+        inline double NexONi(); 
+        double PhotonTime(
+            INTERACTION_TYPE species, bool exciton,
+            double dfield, double energy
+        );
+        QuantaResult GetQuanta(
+            const YieldResult &yields, double density,
+            const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/
+        );
+        YieldResult GetYieldNR(
+            double energy, double density, double dfield,
+            const std::vector<double> &NuisParam 
+            /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
+        ); 
+        YieldResult GetYieldBeta(
+            double energy, double density, double dfield
+        );
+        YieldResult GetYields(
+            INTERACTION_TYPE species, double energy, 
+            double density, double dfield,
+            double massNum, double atomNum,
+            const std::vector<double> &NuisParam
+            /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+            bool oldModelER=false
+        );
+        std::vector<double> CalculateG2(bool verbosity=false);
 
         /**
          * @brief Below are legacy LAr calculation 
@@ -78,6 +141,7 @@ namespace NEST
         double LegacyCalcElectronLET(double E);
 
     private:
+        double fDensity = {1.4};
         
     };
 }

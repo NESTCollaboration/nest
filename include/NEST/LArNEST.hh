@@ -67,6 +67,42 @@ namespace NEST
     public:
         explicit LArNEST(VDetector *detector);
 
+        void setDensity(double density) { fDensity = density; }
+        void setWDefault(double wDefault) { fWDefault = wDefault; }
+        void setRIdealGas(double RIdealGas) { fRIdealGas = RIdealGas; }
+        void setRealGasA(double RealGasA) { fRealGasA = RealGasA; }
+        void setRealGasB(double RealGasB) { fRealGasB = RealGasB; }
+        void setNuisanceParameters(std::vector<double> nuisanceParameters);
+        void setTemperature(std::vector<double> temperature);
+        
+        void setERQuantaParameters(std::vector<double> ERQuantaParameters);
+
+        void setNRTotalQuantaAlpha(double alpha) { fNRTotalQuantaAlpha = alpha; }
+        void setNRTotalQuantaBeta(double beta) { fNRTotalQuantaBeta = beta; }
+
+        /**
+         * @brief NR Total Quanta function:
+         *      Ty = alpha * E^beta
+         * 
+         * @param energy 
+         * @return double 
+         */
+        double NRTotalQuanta(double energy);
+        /**
+         * @brief NR Exciton Quanta function:
+         *      Qy = (gamma * E^delta)*(sqrt(E + eps)^-1)
+         *              * (1 - (1 + (E/zeta)^eta))^-1)
+         * 
+         * @param energy 
+         * @param efield 
+         * @return double 
+         */
+        double NRExcitonQuanta(double energy, double efield);
+
+        double ERQuantaAlpha();
+        double ERQuantaBeta();
+        double ERQuantaGamma();
+
         INTERACTION_TYPE PDGToInteractionType(int pdg);
 
         /**
@@ -77,10 +113,9 @@ namespace NEST
             INTERACTION_TYPE species, double energy, 
             double density, double dfield,
             double A, double Z,
-            const std::vector<double>
-            &NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-            const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
-            bool do_times /*=true*/
+            const std::vector<double> &NuisParam,
+            const std::vector<double> &FreeParam,
+            bool do_times
         );
         inline double FanoER();
         double GetDensity(
@@ -88,8 +123,7 @@ namespace NEST
             uint64_t evtNum, double molarMass
         );
         double GetDriftVelocity_Liquid(
-            double Kelvin, double eField,
-            double Density
+            double Kelvin, double eField
         );
         double GetDriftVelocity_MagBoltz(
             double density, double efieldinput,
@@ -98,19 +132,57 @@ namespace NEST
         double PhotonEnergy(bool state);
         inline Wvalue WorkFunction();
         inline double NexONi(); 
+        double CalcElectronLET(double E, bool CSDA=false); 
         double PhotonTime(
             INTERACTION_TYPE species, bool exciton,
             double dfield, double energy
         );
+        /**
+         * @brief 
+         * 
+         */
         QuantaResult GetQuanta(
             const YieldResult &yields, double density,
             const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/
         );
+
+        /**
+         * @brief Calculate yields for nuclear recoils.  The formulas
+         * for these are given by:
+         *      Ty = alpha * E^beta
+         *      Qy = (gamma * F^delta)^-1 * (sqrt(E + epsilon)) 
+         *              * (1 - (1 + (E/zeta)^eta)^-1)
+         * 
+         *      Ly = alpha * E^(beta - 1) - (gamma * F^delta)^-1 
+         *              * (sqrt(E + epsilon))^-1
+         * First, we fit the total yield model and take it as fixed.
+         * The model is a simple power law in the deposited energy.  There
+         * is no field dependence.  (J. Mueller and E. Kozlova)
+         * @param energy 
+         * @param density 
+         * @param dfield 
+         * @param NuisParam 
+         * @return YieldResult 
+         */
         YieldResult GetYieldNR(
             double energy, double density, double dfield,
             const std::vector<double> &NuisParam 
-            /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
         ); 
+
+        /**
+         * @brief Calculate yields for beta particles.  The formulas
+         * for these are given by:
+         *      Qy = alpha * beta + (gamma - alpha * beta)/(p1 + p2 * E^p3)^p4
+         *                        + delta / (p5 + Doke * E^LET)
+         *      
+         *      Ly = Nq - Qy
+         * 
+         *      The p1-p5 parameters are stored in ERQuantaParameters.
+         * @param energy 
+         * @param density 
+         * @param dfield 
+         * @return YieldResult 
+         */
         YieldResult GetYieldBeta(
             double energy, double density, double dfield
         );
@@ -118,8 +190,7 @@ namespace NEST
             INTERACTION_TYPE species, double energy, 
             double density, double dfield,
             double massNum, double atomNum,
-            const std::vector<double> &NuisParam
-            /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+            const std::vector<double> &NuisParam,
             bool oldModelER=false
         );
         std::vector<double> CalculateG2(bool verbosity=false);
@@ -142,6 +213,32 @@ namespace NEST
 
     private:
         double fDensity = {1.4};
-        
+        double fWDefault = {19.5};
+        std::vector<double> fNuisanceParameters = {
+            11.0, 1.1, 0.0480, 
+            -0.0533, 12.6, 0.3, 
+            2., 0.3, 2., 0.5, 
+            1., 1.
+        };
+        double fRIdealGas = {8.31446261815324};
+        double fRealGasA = {0.1355};  // m^6*Pa/mol^2 or m^4*N/mol^2.
+        double fRealGasB = {3.201e-5};  // m^3/mol.
+
+        std::vector<double> fTemperature = {
+           84., 86., 88., 92., 96., 110., 125., 140.
+        };
+        /// parameters p1-p5 for the ER Qy
+        std::vector<double> fERQuantaParameters = {
+            1, 10.304, 13.0654, 0.10535, 0.7
+        };
+        /// parameters for NR total quanta
+        double fNRTotalQuantaAlpha = {11.10};   // (11.1 +/- 1.4)
+        double fNRTotalQuantaBeta = {1.087};    // (1.087 +/- 0.01)
+        /// parameters for NR Exciton quanta
+        double fNRExcitonQuantaGamma = {0.1};   // (0.1 +/- 0.005)
+        double fNRExcitonQuantaDelta = {-0.0932};// (-0.0932 +/- 0.0095)
+        double fNRExcitonQuantaEpsilon = {2.998};// (2.998 +/- 1.026)
+        double fNRExcitonQuantaZeta = {0.3};
+        double fNRExcitonQuantaEta = {2.94};    // (2.94 +/- 0.12)
     };
 }

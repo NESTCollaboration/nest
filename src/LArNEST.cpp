@@ -22,10 +22,9 @@ namespace NEST
         INTERACTION_TYPE species, double energy, 
         double density, double dfield,
         double A, double Z,
-        const std::vector<double>
-        &NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-        const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
-        bool do_times /*=true*/
+        const std::vector<double>& NuisParam,
+        const std::vector<double>& FreeParam,
+        bool do_times
     ) 
     {
         if (density < 1.) fdetector->set_inGas(true);
@@ -34,12 +33,24 @@ namespace NEST
         result.quanta = GetQuanta(result.yields, density, FreeParam);
         if (do_times)
             result.photon_times = GetPhotonTimes(
-                species, result.quanta.photons, result.quanta.excitons, dfield, energy
+                species, result.quanta.photons, 
+                result.quanta.excitons, dfield, energy
             );
         else {
             result.photon_times = photonstream(result.quanta.photons, 0.0);
         }
         return result;
+    }
+
+    double LArNEST::NRTotalQuanta(double energy)
+    {
+        return fNRTotalQuantaAlpha * pow(energy, fNRTotalQuantaBeta);
+    }
+    double LArNEST::NRExcitonQuanta(double energy, double efield)
+    {
+        return (1./(fNRExcitonQuantaGamma * pow(efield, fNRExcitonQuantaDelta))) * 
+                (1./sqrt(energy + fNRExcitonQuantaEpsilon)) * 
+                (1. - 1./(1. + pow(energy/fNRExcitonQuantaZeta, fNRExcitonQuantaEta)));
     }
 
     inline double LArNEST::FanoER() 
@@ -56,36 +67,35 @@ namespace NEST
         // currently only for fixed pressure (the saturated vapor pressure); will add
         // pressure dependence later
         double density = 0.;
-        double VaporP_bar = 0.;
-        VaporP_bar = exp(45.973940 - 1464.718291 / Kelvin - 6.539938 * log(Kelvin));
+        double VaporP_bar = exp(45.973940 - 1464.718291 / Kelvin - 6.539938 * log(Kelvin));
         if (bara < VaporP_bar || inGas) 
         {
             double p_Pa = bara * 1e5;
             density =
                 1. /
-                (pow(RidealGas * Kelvin, 3.) /
-                    (p_Pa * pow(RidealGas * Kelvin, 2.) + RealGasA * p_Pa * p_Pa) +
-                RealGasB);  // Van der Waals equation, mol/m^3
+                (pow(fRIdealGas * Kelvin, 3.) /
+                    (p_Pa * pow(fRIdealGas * Kelvin, 2.) + fRealGasA * p_Pa * p_Pa) +
+                fRealGasB);  // Van der Waals equation, mol/m^3
             density *= molarMass * 1e-6;
             if (bara < VaporP_bar && evtNum == 0)
-                cerr << "\nWARNING: ARGON GAS PHASE. IS THAT WHAT YOU WANTED?\n";
+                std::cerr << "\nWARNING: ARGON GAS PHASE. IS THAT WHAT YOU WANTED?\n";
             inGas = true;
             return density;
         }
-        inGas = false;
-        return 1.4;
+        else 
+        {
+            inGas = false;
+            return 1.4;
+        }
     }
 
     double LArNEST::GetDriftVelocity_Liquid(
-        double Kelvin, double eField,
-        double Density
+        double Kelvin, double eField
     ) 
     {  
         // for liquid and solid only
         // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
         double speed = 0.0;  
-        int i, j;
-        double vi, vf, slope, Ti, Tf, offset;
 
         // replace eventually with Kate's work, once T's splined as done for LXe and
         // SXe
@@ -101,8 +111,6 @@ namespace NEST
         Solid:
         y_nest_80 = 7.063288*(0.929753**(1/x_nest))*x_nest**0.314640
         y_nest_82 = 5.093097*(0.920459**(1/x_nest))*x_nest**0.458724*/
-        double Temperature[8] = {84., 86., 88., 92., 96., 110., 125., 140.};
-
         if (Kelvin < 84. || Kelvin > 140.) 
         {
             cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
@@ -110,31 +118,31 @@ namespace NEST
             Kelvin = (double)NESTcalc::clamp(int(Kelvin), 84, 140);
         }
 
-        if (Kelvin >= Temperature[0] && Kelvin < Temperature[1]) {
+        if (Kelvin >= fTemperature[0] && Kelvin < fTemperature[1]) {
             speed = exp(0.937729 - 0.0734108 / (eField / 1000) +
                         0.315338 * log(eField / 1000));
         }
-        else if (Kelvin >= Temperature[1] && Kelvin < Temperature[2]) {
+        else if (Kelvin >= fTemperature[1] && Kelvin < fTemperature[2]) {
             speed = exp(0.80302379 - 0.06694564 / (eField / 1000) +
                         0.331798 * log(eField / 1000));
         }
-        else if (Kelvin >= Temperature[2] && Kelvin < Temperature[3]) {
+        else if (Kelvin >= fTemperature[2] && Kelvin < fTemperature[3]) {
             speed = exp(0.7795972 - 0.0990952 / (eField / 1000) +
                         0.320876 * log(eField / 1000));
         }
-        else if (Kelvin >= Temperature[3] && Kelvin < Temperature[4]) {
+        else if (Kelvin >= fTemperature[3] && Kelvin < fTemperature[4]) {
             speed = exp(0.6911897 - 0.092997 / (eField / 1000) +
                         0.3295202 * log(eField / 1000));
         }
-        else if (Kelvin >= Temperature[4] && Kelvin < Temperature[5]) {
+        else if (Kelvin >= fTemperature[4] && Kelvin < fTemperature[5]) {
             speed = exp(0.76551511 - 0.0731659 / (eField / 1000) +
                         0.317972 * log(eField / 1000));
         }
-        else if (Kelvin >= Temperature[5] && Kelvin < Temperature[6]) {
+        else if (Kelvin >= fTemperature[5] && Kelvin < fTemperature[6]) {
             speed = exp(0.502022794 - 0.06644517 / (eField / 1000) +
                         0.3290246 * log(eField / 1000));
         }
-        else if (Kelvin >= Temperature[6] && Kelvin <= Temperature[7]) {
+        else if (Kelvin >= fTemperature[6] && Kelvin <= fTemperature[7]) {
             speed = exp(0.24207633 - 0.03558428 / (eField / 1000) +
                         0.33645519 * log(eField / 1000));
         }
@@ -151,6 +159,8 @@ namespace NEST
     )  
     {
         // Nichole Barry UCD 2011
+        // TODO: What is going on here?  molarMass is an input but
+        // is being overwritten.
         molarMass = 39.948;
         density *= NEST_AVO / molarMass;
         double edrift = 0., gasdep = efieldinput / density;
@@ -162,6 +172,7 @@ namespace NEST
     double LArNEST::PhotonEnergy(bool state) 
     {
         // liquid Argon
+        // TODO: What is this function about?
         if (state) {
             return RandomGen::rndm()->rand_gauss(9.7, 0.2);
         }
@@ -173,6 +184,8 @@ namespace NEST
     inline LArNEST::Wvalue LArNEST::WorkFunction() 
     {
         // Liquid argon
+        // TODO: Is this work function independent of
+        // other parameters?
         double alpha = 0.21;
         double Wq_eV = 1000. / 51.9;  // 23.6/1.21; // ~19.2-5 eV
         return Wvalue{.Wq_eV = Wq_eV, .alpha = alpha};
@@ -181,56 +194,68 @@ namespace NEST
     inline double LArNEST::NexONi() 
     {
         // https://arxiv.org/pdf/1903.05815.pdf
+        // TODO: What is this?
         return 0.21;  
     }
+
+    double LArNEST::CalcElectronLET(double E, bool CSDA) 
+    {
+        double LET;
+        if (!CSDA) 
+        { //total stopping power directly from ESTAR (radiative + collision)
+            LET = 1.8106 - 
+                  0.45086*log10(E) - 
+                  0.33151*pow(log10(E),2.) + 
+                  0.25916*pow(log10(E),3.) - 
+                  0.2051*pow(log10(E),4.) + 
+                  0.15279*pow(log10(E),5.) - 
+                  0.084659*pow(log10(E),6.) + 
+                  0.030441*pow(log10(E),7.) - 
+                  0.0058953*pow(log10(E),8.) + 
+                  0.00045633*pow(log10(E),9.);
+            LET = pow(10.,LET);
+            if ( std::isnan(LET) || LET <= 0. ) {
+                LET = 1e2;
+            }
+        }
+        else 
+        {
+            // replace with Justin and Prof. Mooney's work
+            if (E >= 1.) 
+            {
+                LET = 116.70 - 
+                      162.97 * log10(E) + 
+                      99.361 * pow(log10(E), 2) -
+                      33.405 * pow(log10(E), 3) + 
+                      6.5069 * pow(log10(E), 4) -
+                      0.69334 * pow(log10(E), 5) + 
+                      0.031563 * pow(log10(E), 6);
+            }
+            else if (E > 0. && E < 1.) {
+                LET = 100.;
+            } 
+            else {
+                LET = 0.;
+            }
+        }
+        return LET;
+    }
+
     double LArNEST::PhotonTime(
         INTERACTION_TYPE species, bool exciton,
         double dfield, double energy
     ) 
     {
         // arXiv:1802.06162. NR may need tauR ~0.5-1ns instead of 0
-        double time_ns = 0.;
-        double SingTripRatio = 0.;
-        double tauR = 0.;
-        double tau3 = 23.97;
-        double tau1 = 3.27;  
-        if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) 
-        {
-            // from G4S1Light.cc in old NEST
-            tau1 = 5.18;   // uncertainty of 1.55 ns from G4S2Light
-            tau3 = 100.1;  // uncertainty of 7.90 ns from G4S2Light
-        }
-        // tau1 = 3.5*ns; tau3 = 20.*ns; tauR = 40.*ns for solid Xe from old NEST.
-        // Here assuming same as in liquid
-
+        double SingTripRatio = 0.; 
         // if ( dfield > 60. ) dfield = 60. // makes Xed work. 200 for LUX Run04
         // instead. A mystery! Why no field dep?
 
-        double LET = CalcElectronLET(energy, ATOM_NUM);
+        double LET = CalcElectronLET(energy);
         // copied from 2013 NEST version for LAr on LBNE
-        tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8);  // error from weighted average
-        tau3 = RandomGen::rndm()->rand_gauss(1300, 50);  // ibid.
-        tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2);  // Kubota 1979
-        if (species <= Cf) {
-            SingTripRatio = 0.22218 * pow(energy, 0.48211);
-        }
-        else if (species == ion) 
-        {  // really only alphas here
-            SingTripRatio = (-0.065492 + 1.9996 * exp(-energy / 1e3)) /
-                            (1. + 0.082154 / pow(energy / 1e3, 2.)) +
-                        2.1811;  // uses energy in MeV not keV
-        } 
-        else 
-        {
-            SingTripRatio = 0.2701 + 0.003379 * LET - 4.7338e-5 * pow(LET, 2.) +
-                            8.1449e-6 * pow(LET, 3.);
-            if (LET < 3. && !exciton) {
-                SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2);
-            }
-            if (LET < 3. && exciton) {
-                SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06);
-            }
-        }  // lastly is ER for LAr
+        double tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8);  // error from weighted average
+        double tau3 = RandomGen::rndm()->rand_gauss(1300, 50);  // ibid.
+        double tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2);  // Kubota 1979
         if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) 
         {
             SingTripRatio = 0.1;
@@ -245,12 +270,40 @@ namespace NEST
             tau3 = 1600.;
             tau1 = 6.; 
         }
+        else
+        {
+            if (species <= Cf) {
+                SingTripRatio = 0.22218 * pow(energy, 0.48211);
+            }
+            else if (species == ion) 
+            {  // really only alphas here
+                SingTripRatio = (-0.065492 + 1.9996 * exp(-energy / 1e3)) /
+                                (1. + 0.082154 / pow(energy / 1e3, 2.)) +
+                            2.1811;  // uses energy in MeV not keV
+            } 
+            else 
+            {
+                if (LET < 3. && !exciton) {
+                    SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2);
+                }
+                else if (LET < 3. && exciton) {
+                    SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06);
+                }
+                else 
+                {
+                    SingTripRatio = 0.2701 + 
+                                    0.003379 * LET - 
+                                    4.7338e-5 * pow(LET, 2.) +
+                                    8.1449e-6 * pow(LET, 3.);
+                }
+            }  // lastly is ER for LAr
+        }
         if (tauR < 0.) {
             tauR = 0.;  
         } // in case varied with Gaussian earlier
         // the recombination time is non-exponential, but approximates
         // to exp at long timescales (see Kubota '79)
-        time_ns += tauR * (1.0 / RandomGen::rndm()->rand_uniform() - 1.);
+        double time_ns = tauR * (1.0 / RandomGen::rndm()->rand_uniform() - 1.);
 
         if (RandomGen::rndm()->rand_uniform() < SingTripRatio / (1. + SingTripRatio)) {
             time_ns -= tau1 * log(RandomGen::rndm()->rand_uniform());
@@ -266,6 +319,7 @@ namespace NEST
         const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/
     ) 
     {
+        // TODO: Understand and break up this function.
         QuantaResult result{};
         bool HighE;
         int Nq_actual, Ne, Nph, Ni, Nex;
@@ -433,13 +487,11 @@ namespace NEST
 
     YieldResult LArNEST::GetYieldNR(
         double energy, double density, double dfield,
-        const std::vector<double>
-            &NuisParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
+        const std::vector<double> &NuisParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
     ) 
     {
-        double massNum = fdetector->get_molarMass();
-
-        if (NuisParam.size() < 12) 
+        
+        if (fNuisanceParameters.size() < 12) 
         {
             throw std::runtime_error(
                 "ERROR: You need a minimum of 12 nuisance parameters for the mean "
@@ -448,40 +500,36 @@ namespace NEST
         if (energy > HIGH_E_NR)
             cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of "
                     "about 300 keV.\n";
-        int massNumber;
-        double ScaleFactor[2] = {1., 1.};
-        if (ValidityTests::nearlyEqual(massNum, 0.)) {
+        double massNumber = fdetector->get_molarMass();
+        if (ValidityTests::nearlyEqual(massNumber, 0.)) {
             massNumber = RandomGen::rndm()->SelectRanXeAtom();
         }
-        else {
-            massNumber = int(massNum);
-        }
-        ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double)massNumber);
-        ScaleFactor[1] = ScaleFactor[0];
-        double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
+        double ScaleFactor = sqrt(fdetector->get_molarMass() / massNumber);
+        double Ty = NRTotalQuanta(energy);
         if (!fdetector->get_OldW13eV()) {
-            Nq *= ZurichEXOW;
+            Ty *= ZurichEXOW;
         }
         double ThomasImel =
-            NuisParam[2] * pow(dfield, NuisParam[3]) * pow(density / DENSITY, 0.3);
-        double Qy = 1. / (ThomasImel * pow(energy + NuisParam[4], NuisParam[9]));
-        Qy *= 1. - 1. / pow(1. + pow((energy / NuisParam[5]), NuisParam[6]),
-                            NuisParam[10]);
+            fNuisanceParameters[2] * pow(dfield, fNuisanceParameters[3]) * pow(density / fDensity, 0.3);
+        double Qy = 1. / (ThomasImel * pow(energy + fNuisanceParameters[4], fNuisanceParameters[9]));
+        Qy *= 1. - 1. / pow(1. + pow((energy / fNuisanceParameters[5]), fNuisanceParameters[6]),
+                            fNuisanceParameters[10]);
         if (!fdetector->get_OldW13eV()) {
             Qy *= ZurichEXOQ;
         }
-        double Ly = Nq / energy - Qy;
         if (Qy < 0.0) {
             Qy = 0.0;
         }
-        if (Ly < 0.0) {
-            Ly = 0.0;
-        }
-        double Ne = Qy * energy * ScaleFactor[1];
-        double Nph = Ly * energy * ScaleFactor[0] *
-                    (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]),
-                                    NuisParam[11]));
-        Nq = Nph + Ne;
+        double Ly = Ty / energy - Qy;
+        // Perhaps don't need this unless energy is negative
+        // if (Ly < 0.0) {
+        //     Ly = 0.0;
+        // }
+        double Ne = Qy * energy * ScaleFactor;
+        double Nph = Ly * energy * ScaleFactor *
+                    (1. - 1. / pow(1. + pow((energy / fNuisanceParameters[7]), fNuisanceParameters[8]),
+                                    fNuisanceParameters[11]));
+        Ty = Nph + Ne;
         double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
         double Nex = (-1. / ThomasImel) *
                     (4. * exp(Ne * ThomasImel / 4.) - (Ne + Nph) * ThomasImel - 4.);
@@ -491,37 +539,33 @@ namespace NEST
         if (NexONi < wvalue.alpha && energy > 1e2) 
         {
             NexONi = wvalue.alpha;
-            Ni = Nq / (1. + NexONi);
-            Nex = Nq - Ni;
+            Ni = Ty / (1. + NexONi);
+            Nex = Ty - Ni;
         }
         if (NexONi > 1.0 && energy < 1.) 
         {
             NexONi = 1.00;
-            Ni = Nq / (1. + NexONi);
-            Nex = Nq - Ni;
+            Ni = Ty / (1. + NexONi);
+            Nex = Ty - Ni;
         }
 
         if (Nex < 0.) {
-            cerr << "\nCAUTION: You are approaching the border of NEST's validity for "
+            std::cerr << "\nCAUTION: You are approaching the border of NEST's validity for "
                     "high-energy (OR, for LOW) NR, or are beyond it, at "
                 << energy << " keV." << endl;
         }
-        if (std::abs(Nex + Ni - Nq) > 2. * PHE_MIN) 
+        if (std::abs(Nex + Ni - Ty) > 2. * PHE_MIN) 
         {
             throw std::runtime_error(
                 "ERROR: Quanta not conserved. Tell Matthew Immediately!");
         }
 
         double Wq_eV = wvalue.Wq_eV;
-        double L = (Nq / energy) * Wq_eV * 1e-3;
+        double L = (Ty / energy) * Wq_eV * 1e-3;
 
-        YieldResult result{};
-        result.PhotonYield = Nph;
-        result.ElectronYield = Ne;
-        result.ExcitonRatio = NexONi;
-        result.Lindhard = L;
-        result.ElectricField = dfield;
-        result.DeltaT_Scint = -999;
+        YieldResult result{
+            Nph, Ne, NexONi, L, dfield, -999
+        };
         return YieldResultValidity(result, energy, Wq_eV);  
     }
 
@@ -530,16 +574,15 @@ namespace NEST
     ) 
     {  
         Wvalue wvalue = WorkFunction();
-        double Qy, Nq;
+        double Qy, Ty;
         double Wq_eV = wvalue.Wq_eV;
         // double alpha = wvalue.alpha; // duplicate definition below. We don't even
         // need this here (it is Nex/Ni)
 
         // Liquid Argon
-        double alpha =
-            32.988 -
-            552.988 / (17.2346 +
-                    pow(dfield / (-4.7 + 0.025115 * exp(1.3954 / 0.265360653)),
+        double alpha = 32.988 -
+                       552.988 / (17.2346 +
+                            pow(dfield / (-4.7 + 0.025115 * exp(1.3954 / 0.265360653)),
                         0.242671));
         double beta = 0.778482 + 25.9 / pow(1.105 + pow(dfield / 0.4, 4.55), 7.502);
         double gamma =
@@ -548,31 +591,24 @@ namespace NEST
         double delta = 15.7489;
         double DB = 1052.264 + (14159350000 - 1652.264) /
                                 (-5 + pow(dfield / 0.157933, 1.83894));
-        double p1 = 1;
-        double p2 = 10.304;
-        double p3 = 13.0654;
-        double p4 = 0.10535;
-        double p5 = 0.7;
         double LET = -2.07763;
-        Nq = energy * 1e3 / Wq_eV;
+        Ty = energy * 1e3 / Wq_eV;
         Qy = alpha * beta +
-            (gamma - alpha * beta) / pow(p1 + p2 * pow(energy + 0.5, p3), p4) +
-            delta / (p5 + DB * pow(energy, LET));
+            (gamma - alpha * beta) / pow(
+                fERQuantaParameters[0] + fERQuantaParameters[1] * pow(
+                    energy + 0.5, fERQuantaParameters[2]), fERQuantaParameters[3]) +
+            delta / (fERQuantaParameters[4] + DB * pow(energy, LET));
 
         if (!fdetector->get_OldW13eV()) {
             Qy *= ZurichEXOQ;
         }
-        double Ly = Nq / energy - Qy;
+        double Ly = Ty / energy - Qy;
         double Ne = Qy * energy;
         double Nph = Ly * energy;
 
-        YieldResult result{};
-        result.PhotonYield = Nph;
-        result.ElectronYield = Ne;
-        result.ExcitonRatio = NexONi();
-        result.Lindhard = 1;
-        result.ElectricField = dfield;
-        result.DeltaT_Scint = -999;
+        YieldResult result{
+            Nph, Ne, NexONi(), 1, dfield, -999
+        };
         return YieldResultValidity(result, energy, Wq_eV);  
     }
 
@@ -580,8 +616,7 @@ namespace NEST
         INTERACTION_TYPE species, double energy, 
         double density, double dfield,
         double massNum, double atomNum,
-        const std::vector<double> &NuisParam
-        /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+        const std::vector<double> &NuisParam,
         bool oldModelER
     ) 
     {

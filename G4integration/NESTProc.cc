@@ -91,7 +91,6 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       aStep.GetSecondary()->empty()) {
     lineages_prevEvent.clear();
     photons_prevEvent.clear();
-
     for (auto lineage : lineages) {
       double etot =
           std::accumulate(lineage.hits.begin(), lineage.hits.end(), 0.,
@@ -103,12 +102,14 @@ G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
       double ecum = 0;
       double ecum_p = 0;
       const double e_p = etot / lineage.result.quanta.photons;
+      double nph = lineage.result.quanta.photons;
       for (auto hit : lineage.hits) {
         ecum += hit.E;
-        while (ecum_p < ecum) {
+        while (ecum_p < ecum && nph >= 1) {
           G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
-          if (YieldFactor == 1)
+          if (YieldFactor == 1) {
             pParticleChange->AddSecondary(onePhoton);
+	 }
           else if (YieldFactor > 0) {
             if (RandomGen::rndm()->rand_uniform() < YieldFactor)
               pParticleChange->AddSecondary(onePhoton);

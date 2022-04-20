@@ -176,7 +176,7 @@ namespace NEST
         double GetERExcitonYields(double energy, double efield, double density);
         
         double GetWorkFunction();
-        double GetLinearEnergyTransfer(double E, bool CSDA=false);
+        double GetLinearEnergyTransfer(double energy, bool CSDA=false);
         inline double GetFanoER();
         double GetDensity(
             double Kelvin, double bara, bool &inGas,

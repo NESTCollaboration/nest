@@ -65,7 +65,7 @@ namespace NEST
                (1.0 - 1.0 / (1.0 + pow(energy/fLArNRYieldsParameters.zeta, fLArNRYieldsParameters.eta)));
     }
     // TODO: This is likely temporary, otherwise it says that the total
-    // yield is linear with energy, which doesn't make sense.
+    // yield is linear with energy, but need to incorporate thermal quenching.
     double LArNEST::GetERTotalYields(double energy)
     {
         return energy *1e3 / GetWorkFunction();
@@ -250,6 +250,7 @@ namespace NEST
         }
         else 
         {
+            // the "continuous slowing down approximation" (CSDA)
             // replace with Justin and Prof. Mooney's work
             if (energy >= 1.) 
             {

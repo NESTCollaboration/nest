@@ -58,6 +58,71 @@ namespace NEST
     static constexpr double sqrt2 = gcem::sqrt(2.);
     static constexpr double sqrt2_PI = gcem::sqrt(2. * M_PI);
     static constexpr double inv_sqrt2_PI = 1. / gcem::sqrt(2. * M_PI);
+
+    
+    struct LArNRYieldsParameters
+    {
+        double alpha = {11.10};
+        double beta = {1.087};
+        double gamma = {0.1};
+        double delta = {-0.0932};
+        double epsilon = {2.998};
+        double zeta = {0.3};
+        double eta = {2.94};
+    };
+    struct LArERExcitonYieldsAlphaParameters
+    {
+        double A = {32.988};
+        double B = {-552.988};
+        double C = {15.5578};
+        double D = {-4.7};
+        double E = {0.025115};
+        double F = {-0.265360653};
+        double G = {-0.208889};
+    };
+    struct LArERExcitonYieldsBetaParameters
+    {
+        double A = {2.01952};
+        double B = {20.9};
+        double C = {1.105};
+        double D = {0.4};
+        double E = {4.55};
+        double F = {7.502};
+    };
+    struct LArERExcitonYieldsGammaParameters
+    {
+        double A = {0.642039};
+        double B = {1000};
+        double C = {6.5};
+        double D = {5};
+        double E = {-0.5};
+        double F = {1047.408};
+        double G = {0.01851};
+    };
+    struct LArERExcitonYieldsDokeBirksParameters
+    {
+        double A = {1052.264};
+        double B = {1.415935e10 - 1652.264};
+        double C = {-5};
+        double D = {0.328038};
+        double E = {1.74654};
+    };
+    struct LArERYieldsParameters
+    {
+        LArERExcitonYieldsAlphaParameters alpha;
+        LArERExcitonYieldsBetaParameters beta;
+        LArERExcitonYieldsGammaParameters gamma;
+        LArERExcitonYieldsDokeBirksParameters doke_birks;
+        double p1 = {1};
+        double p2 = {10.304};
+        double p3 = {24.3509};
+        double p4 = {0.10535};
+        double p5 = {0.7};
+        double delta = {10.3842};
+        double let = {-2.11259};
+    };
+
+
     /**
      * @brief 
      * 
@@ -75,10 +140,12 @@ namespace NEST
         void setNuisanceParameters(std::vector<double> nuisanceParameters);
         void setTemperature(std::vector<double> temperature);
         
-        void setERQuantaParameters(std::vector<double> ERQuantaParameters);
-
-        void setNRTotalQuantaAlpha(double alpha) { fNRTotalQuantaAlpha = alpha; }
-        void setNRTotalQuantaBeta(double beta) { fNRTotalQuantaBeta = beta; }
+        void setNRYieldsParameters(LArNRYieldsParameters NRYieldsParameters);
+        void setERYieldsParameters(LArERYieldsParameters ERYieldsParameters);
+        void setERExcitonYieldsAlphaParameters(LArERExcitonYieldsAlphaParameters ERExcitonYieldsAlphaParameters);
+        void setERExcitonYieldsBetaParameters(LArERExcitonYieldsBetaParameters ERExcitonYieldsBetaParameters);
+        void setERExcitonYieldsGammaParameters(LArERExcitonYieldsGammaParameters ERExcitonYieldsGammaParameters);
+        void setERExcitonYieldsDokeBirksParameters(LArERExcitonYieldsDokeBirksParameters ERExcitonYieldsDokeBirksParameters);
 
         /**
          * @brief NR Total Quanta function:
@@ -87,7 +154,7 @@ namespace NEST
          * @param energy 
          * @return double 
          */
-        double NRTotalQuanta(double energy);
+        double GetNRTotalYields(double energy);
         /**
          * @brief NR Exciton Quanta function:
          *      Qy = (gamma * E^delta)*(sqrt(E + eps)^-1)
@@ -97,27 +164,20 @@ namespace NEST
          * @param efield 
          * @return double 
          */
-        double NRExcitonQuanta(double energy, double efield);
+        double GetNRExcitonYields(double energy, double efield);
+        double GetNRPhotonYields(double energy, double efield);
+        double GetNRPhotonYieldsConserved(double energy, double efield);
 
-        double ERQuantaAlpha();
-        double ERQuantaBeta();
-        double ERQuantaGamma();
-
-        INTERACTION_TYPE PDGToInteractionType(int pdg);
-
-        /**
-         * @brief 
-         * 
-         */
-        NESTresult FullCalculation(
-            INTERACTION_TYPE species, double energy, 
-            double density, double dfield,
-            double A, double Z,
-            const std::vector<double> &NuisParam,
-            const std::vector<double> &FreeParam,
-            bool do_times
-        );
-        inline double FanoER();
+        double GetERTotalYields(double energy);
+        double GetERExcitonYieldsAlpha(double efield, double density);
+        double GetERExcitonYieldsBeta(double efield);
+        double GetERExcitonYieldsGamma(double efield);
+        double GetERExcitonYieldsDokeBirks(double efield);
+        double GetERExcitonYields(double energy, double efield, double density);
+        
+        double GetWorkFunction();
+        double GetLinearEnergyTransfer(double E, bool CSDA=false);
+        inline double GetFanoER();
         double GetDensity(
             double Kelvin, double bara, bool &inGas,
             uint64_t evtNum, double molarMass
@@ -129,14 +189,13 @@ namespace NEST
             double density, double efieldinput,
             double molarMass
         );
-        double PhotonEnergy(bool state);
-        inline Wvalue WorkFunction();
-        inline double NexONi(); 
-        double CalcElectronLET(double E, bool CSDA=false); 
-        double PhotonTime(
+        double GetPhotonEnergy(bool state);
+        inline double GetNexONi(); 
+        double GetPhotonTime(
             INTERACTION_TYPE species, bool exciton,
             double dfield, double energy
         );
+        
         /**
          * @brief 
          * 
@@ -164,8 +223,8 @@ namespace NEST
          * @param NuisParam 
          * @return YieldResult 
          */
-        YieldResult GetYieldNR(
-            double energy, double density, double dfield,
+        YieldResult GetNRYields(
+            double energy, double dfield, double density,
             const std::vector<double> &NuisParam 
         ); 
 
@@ -183,7 +242,10 @@ namespace NEST
          * @param dfield 
          * @return YieldResult 
          */
-        YieldResult GetYieldBeta(
+        YieldResult GetERYields(
+            double energy, double density, double dfield
+        );
+        YieldResult GetAlphaYields(
             double energy, double density, double dfield
         );
         YieldResult GetYields(
@@ -193,6 +255,20 @@ namespace NEST
             const std::vector<double> &NuisParam,
             bool oldModelER=false
         );
+        /**
+         * @brief 
+         * 
+         */
+        NESTresult FullCalculation(
+            INTERACTION_TYPE species, double energy, 
+            double density, double dfield,
+            double A, double Z,
+            const std::vector<double> &NuisParam,
+            const std::vector<double> &FreeParam,
+            bool do_times
+        );
+
+
         std::vector<double> CalculateG2(bool verbosity=false);
 
         /**
@@ -209,7 +285,7 @@ namespace NEST
             double density, double eField, 
             double track_length=0.0003
         );
-        double LegacyCalcElectronLET(double E);
+        double LegacyGetLinearEnergyTransfer(double E);
 
     private:
         double fDensity = {1.4};
@@ -227,18 +303,8 @@ namespace NEST
         std::vector<double> fTemperature = {
            84., 86., 88., 92., 96., 110., 125., 140.
         };
-        /// parameters p1-p5 for the ER Qy
-        std::vector<double> fERQuantaParameters = {
-            1, 10.304, 13.0654, 0.10535, 0.7
-        };
-        /// parameters for NR total quanta
-        double fNRTotalQuantaAlpha = {11.10};   // (11.1 +/- 1.4)
-        double fNRTotalQuantaBeta = {1.087};    // (1.087 +/- 0.01)
-        /// parameters for NR Exciton quanta
-        double fNRExcitonQuantaGamma = {0.1};   // (0.1 +/- 0.005)
-        double fNRExcitonQuantaDelta = {-0.0932};// (-0.0932 +/- 0.0095)
-        double fNRExcitonQuantaEpsilon = {2.998};// (2.998 +/- 1.026)
-        double fNRExcitonQuantaZeta = {0.3};
-        double fNRExcitonQuantaEta = {2.94};    // (2.94 +/- 0.12)
+        
+        LArNRYieldsParameters fLArNRYieldsParameters;
+        LArERYieldsParameters fLArERYieldsParameters;
     };
 }

@@ -20,7 +20,7 @@ namespace NEST
 
     NESTresult LArNEST::FullCalculation(
         INTERACTION_TYPE species, double energy, 
-        double density, double dfield,
+        double density, double efield,
         double A, double Z,
         const std::vector<double>& NuisParam,
         const std::vector<double>& FreeParam,
@@ -29,31 +29,93 @@ namespace NEST
     {
         if (density < 1.) fdetector->set_inGas(true);
         NESTresult result;
-        result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
+        result.yields = GetYields(species, energy, density, efield, A, Z, NuisParam);
         result.quanta = GetQuanta(result.yields, density, FreeParam);
         if (do_times)
             result.photon_times = GetPhotonTimes(
                 species, result.quanta.photons, 
-                result.quanta.excitons, dfield, energy
+                result.quanta.excitons, efield, energy
             );
         else {
             result.photon_times = photonstream(result.quanta.photons, 0.0);
         }
         return result;
     }
-
-    double LArNEST::NRTotalQuanta(double energy)
+    double LArNEST::GetNRTotalYields(double energy)
     {
-        return fNRTotalQuantaAlpha * pow(energy, fNRTotalQuantaBeta);
+        return fLArNRYieldsParameters.alpha * pow(energy, fLArNRYieldsParameters.beta);
     }
-    double LArNEST::NRExcitonQuanta(double energy, double efield)
+    double LArNEST::GetNRExcitonYields(double energy, double efield)
     {
-        return (1./(fNRExcitonQuantaGamma * pow(efield, fNRExcitonQuantaDelta))) * 
-                (1./sqrt(energy + fNRExcitonQuantaEpsilon)) * 
-                (1. - 1./(1. + pow(energy/fNRExcitonQuantaZeta, fNRExcitonQuantaEta)));
+        return (1.0 / (fLArNRYieldsParameters.gamma * pow(efield, fLArNRYieldsParameters.delta))) *
+               (1.0 / sqrt(energy + fLArNRYieldsParameters.epsilon)) *
+               (1.0 - 1.0 / (1.0 + pow(energy/fLArNRYieldsParameters.zeta, fLArNRYieldsParameters.eta)));
     }
-
-    inline double LArNEST::FanoER() 
+    double LArNEST::GetNRPhotonYields(double energy, double efield)
+    {
+        return fLArNRYieldsParameters.alpha * pow(energy, fLArNRYieldsParameters.beta - 1) - 
+               (1.0 / (fLArNRYieldsParameters.gamma * pow(efield, fLArNRYieldsParameters.delta))) *
+               (1.0 / sqrt(energy + fLArNRYieldsParameters.epsilon));
+    }
+    double LArNEST::GetNRPhotonYieldsConserved(double energy, double efield)
+    {
+        return fLArNRYieldsParameters.alpha * pow(energy, fLArNRYieldsParameters.beta) - 
+               (1.0 / (fLArNRYieldsParameters.gamma * pow(efield, fLArNRYieldsParameters.delta))) *
+               (1.0 / sqrt(energy + fLArNRYieldsParameters.epsilon)) *
+               (1.0 - 1.0 / (1.0 + pow(energy/fLArNRYieldsParameters.zeta, fLArNRYieldsParameters.eta)));
+    }
+    // TODO: This is likely temporary, otherwise it says that the total
+    // yield is linear with energy, which doesn't make sense.
+    double LArNEST::GetERTotalYields(double energy)
+    {
+        return energy *1e3 / GetWorkFunction();
+    }
+    double LArNEST::GetERExcitonYieldsAlpha(double efield, double density)
+    {
+        return fLArERYieldsParameters.alpha.A + 
+               fLArERYieldsParameters.alpha.B *
+               pow(fLArERYieldsParameters.alpha.C + 
+                   efield / (fLArERYieldsParameters.alpha.D + fLArERYieldsParameters.alpha.E * 
+                             exp(fLArERYieldsParameters.alpha.F * density)), fLArERYieldsParameters.alpha.G);
+    }
+    double LArNEST::GetERExcitonYieldsBeta(double efield)
+    {
+        return fLArERYieldsParameters.beta.A +         
+               fLArERYieldsParameters.beta.B *
+               pow(fLArERYieldsParameters.beta.C + 
+                   pow(efield / fLArERYieldsParameters.beta.D, fLArERYieldsParameters.beta.E), fLArERYieldsParameters.beta.F);
+    }
+    double LArNEST::GetERExcitonYieldsGamma(double efield)
+    {
+        return fLArERYieldsParameters.gamma.A *
+               (fLArERYieldsParameters.gamma.B / GetWorkFunction() + 
+                fLArERYieldsParameters.gamma.C *
+                (fLArERYieldsParameters.gamma.D + fLArERYieldsParameters.gamma.E / 
+                 pow(efield / fLArERYieldsParameters.gamma.F, fLArERYieldsParameters.gamma.G)));
+    }
+    double LArNEST::GetERExcitonYieldsDokeBirks(double efield)
+    {
+        return fLArERYieldsParameters.doke_birks.A + 
+               fLArERYieldsParameters.doke_birks.B / 
+               (fLArERYieldsParameters.doke_birks.C + 
+                pow(efield / fLArERYieldsParameters.doke_birks.D, fLArERYieldsParameters.doke_birks.E));
+    }
+    double LArNEST::GetERExcitonYields(double energy, double efield, double density)
+    {
+        double alpha = GetERExcitonYieldsAlpha(efield, density);
+        double beta = GetERExcitonYieldsBeta(efield);
+        double gamma = GetERExcitonYieldsGamma(efield);
+        double doke_birks = GetERExcitonYieldsDokeBirks(efield);
+        return alpha * beta + 
+               (gamma - alpha * beta) / 
+               pow(fLArERYieldsParameters.p1 + fLArERYieldsParameters.p2 * pow(energy + 0.5, fLArERYieldsParameters.p3), fLArERYieldsParameters.p4) + 
+               fLArERYieldsParameters.delta / (fLArERYieldsParameters.p5 + pow(doke_birks, fLArERYieldsParameters.let));
+    }
+    double LArNEST::GetWorkFunction()
+    {
+        return 1000. / 51.9;
+    }
+    inline double LArNEST::GetFanoER() 
     {
         // T&I. conflicting reports of .107 (Doke) & ~0.1 elsewhere
         return 0.1115;  
@@ -66,18 +128,17 @@ namespace NEST
     {
         // currently only for fixed pressure (the saturated vapor pressure); will add
         // pressure dependence later
-        double density = 0.;
         double VaporP_bar = exp(45.973940 - 1464.718291 / Kelvin - 6.539938 * log(Kelvin));
         if (bara < VaporP_bar || inGas) 
         {
             double p_Pa = bara * 1e5;
-            density =
+            double density =
                 1. /
                 (pow(fRIdealGas * Kelvin, 3.) /
                     (p_Pa * pow(fRIdealGas * Kelvin, 2.) + fRealGasA * p_Pa * p_Pa) +
-                fRealGasB);  // Van der Waals equation, mol/m^3
-            density *= molarMass * 1e-6;
+                fRealGasB) * molarMass * 1e-6;  // Van der Waals equation, mol/m^3
             if (bara < VaporP_bar && evtNum == 0)
+            // TODO: get rid of these output statements
                 std::cerr << "\nWARNING: ARGON GAS PHASE. IS THAT WHAT YOU WANTED?\n";
             inGas = true;
             return density;
@@ -88,29 +149,12 @@ namespace NEST
             return 1.4;
         }
     }
-
     double LArNEST::GetDriftVelocity_Liquid(
         double Kelvin, double eField
     ) 
     {  
-        // for liquid and solid only
         // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
         double speed = 0.0;  
-
-        // replace eventually with Kate's work, once T's splined as done for LXe and
-        // SXe
-        /*x_nest is field in kV/cm:
-        Liquid:
-        y_nest_85 = 2.553969*(0.929235**(1/x_nest))*x_nest**0.315673 // temperatures
-        in Kelvin y_nest_87 = 2.189388*(0.961701**(1/x_nest))*x_nest**0.339414
-        y_nest_89 = 2.201489*(0.931080**(1/x_nest))*x_nest**0.320762
-        y_nest_94 = 1.984534*(0.936081**(1/x_nest))*x_nest**0.332491
-        y_nest_100 = 2.150101*(0.929447**(1/x_nest))*x_nest**0.317973
-        y_nest_120 = 1.652059*(0.935714**(1/x_nest))*x_nest**0.329025
-        y_nest_130 = 1.273891*(0.965041**(1/x_nest))*x_nest**0.336455
-        Solid:
-        y_nest_80 = 7.063288*(0.929753**(1/x_nest))*x_nest**0.314640
-        y_nest_82 = 5.093097*(0.920459**(1/x_nest))*x_nest**0.458724*/
         if (Kelvin < 84. || Kelvin > 140.) 
         {
             cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
@@ -152,7 +196,6 @@ namespace NEST
         }
         return speed;
     }
-
     double LArNEST::GetDriftVelocity_MagBoltz(
         double density, double efieldinput,
         double molarMass
@@ -168,8 +211,7 @@ namespace NEST
                 pow(gasdep * 1.e17, 0.2570253);
         return edrift;
     }
-
-    double LArNEST::PhotonEnergy(bool state) 
+    double LArNEST::GetPhotonEnergy(bool state) 
     {
         // liquid Argon
         // TODO: What is this function about?
@@ -180,39 +222,27 @@ namespace NEST
             return RandomGen::rndm()->rand_gauss(9.69, 0.22);
         }
     }
-
-    inline LArNEST::Wvalue LArNEST::WorkFunction() 
-    {
-        // Liquid argon
-        // TODO: Is this work function independent of
-        // other parameters?
-        double alpha = 0.21;
-        double Wq_eV = 1000. / 51.9;  // 23.6/1.21; // ~19.2-5 eV
-        return Wvalue{.Wq_eV = Wq_eV, .alpha = alpha};
-    }
-
-    inline double LArNEST::NexONi() 
+    inline double LArNEST::GetNexONi() 
     {
         // https://arxiv.org/pdf/1903.05815.pdf
         // TODO: What is this?
         return 0.21;  
     }
-
-    double LArNEST::CalcElectronLET(double E, bool CSDA) 
+    double LArNEST::GetLinearEnergyTransfer(double energy, bool CSDA) 
     {
         double LET;
         if (!CSDA) 
         { //total stopping power directly from ESTAR (radiative + collision)
             LET = 1.8106 - 
-                  0.45086*log10(E) - 
-                  0.33151*pow(log10(E),2.) + 
-                  0.25916*pow(log10(E),3.) - 
-                  0.2051*pow(log10(E),4.) + 
-                  0.15279*pow(log10(E),5.) - 
-                  0.084659*pow(log10(E),6.) + 
-                  0.030441*pow(log10(E),7.) - 
-                  0.0058953*pow(log10(E),8.) + 
-                  0.00045633*pow(log10(E),9.);
+                  0.45086 * log10(energy) - 
+                  0.33151 * pow(log10(energy),2.) + 
+                  0.25916 * pow(log10(energy),3.) - 
+                  0.2051  * pow(log10(energy),4.) + 
+                  0.15279 * pow(log10(energy),5.) - 
+                  0.084659 * pow(log10(energy),6.) + 
+                  0.030441 * pow(log10(energy),7.) - 
+                  0.0058953 * pow(log10(energy),8.) + 
+                  0.00045633 * pow(log10(energy),9.);
             LET = pow(10.,LET);
             if ( std::isnan(LET) || LET <= 0. ) {
                 LET = 1e2;
@@ -221,17 +251,17 @@ namespace NEST
         else 
         {
             // replace with Justin and Prof. Mooney's work
-            if (E >= 1.) 
+            if (energy >= 1.) 
             {
                 LET = 116.70 - 
-                      162.97 * log10(E) + 
-                      99.361 * pow(log10(E), 2) -
-                      33.405 * pow(log10(E), 3) + 
-                      6.5069 * pow(log10(E), 4) -
-                      0.69334 * pow(log10(E), 5) + 
-                      0.031563 * pow(log10(E), 6);
+                      162.97 * log10(energy) + 
+                      99.361 * pow(log10(energy), 2) -
+                      33.405 * pow(log10(energy), 3) + 
+                      6.5069 * pow(log10(energy), 4) -
+                      0.69334 * pow(log10(energy), 5) + 
+                      0.031563 * pow(log10(energy), 6);
             }
-            else if (E > 0. && E < 1.) {
+            else if (energy > 0. && energy < 1.) {
                 LET = 100.;
             } 
             else {
@@ -241,17 +271,17 @@ namespace NEST
         return LET;
     }
 
-    double LArNEST::PhotonTime(
+    double LArNEST::GetPhotonTime(
         INTERACTION_TYPE species, bool exciton,
-        double dfield, double energy
+        double efield, double energy
     ) 
     {
         // arXiv:1802.06162. NR may need tauR ~0.5-1ns instead of 0
         double SingTripRatio = 0.; 
-        // if ( dfield > 60. ) dfield = 60. // makes Xed work. 200 for LUX Run04
+        // if ( efield > 60. ) efield = 60. // makes Xed work. 200 for LUX Run04
         // instead. A mystery! Why no field dep?
 
-        double LET = CalcElectronLET(energy);
+        double LET = GetLinearEnergyTransfer(energy);
         // copied from 2013 NEST version for LAr on LBNE
         double tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8);  // error from weighted average
         double tau3 = RandomGen::rndm()->rand_gauss(1300, 50);  // ibid.
@@ -314,6 +344,121 @@ namespace NEST
         return time_ns;
     }
 
+    YieldResult LArNEST::GetNRYields(
+        double energy, double efield, double density, 
+        const std::vector<double> &NuisParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
+    ) 
+    {
+        // TODO: Fix these error messages
+        if (energy > HIGH_E_NR)
+            cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of "
+                    "about 300 keV.\n";
+
+        double NRTotalYields = GetNRTotalYields(energy);
+        double NRExcitonYields = GetNRExcitonYields(energy, efield);
+        double NRPhotonYields = GetNRPhotonYields(energy, efield);
+
+        if (NRExcitonYields < 0.0) {
+            NRExcitonYields = 0.0;
+        }
+        // Perhaps don't need this unless energy is negative
+        // if (NRPhotonYields < 0.0) {
+        //     NRPhotonYields = 0.0;
+        // }
+        double Ne = NRExcitonYields * energy;
+        double Nph = NRPhotonYields * energy;
+        double Nex = GetNexONi() * NRTotalYields;
+        double Ni = NRTotalYields - Ne;
+
+        double Wq_eV = GetWorkFunction();
+        double L = (NRTotalYields / energy) * Wq_eV * 1e-3;
+
+        YieldResult result{
+            Nph, Ne, GetNexONi(), L, efield, -999
+        };
+        return YieldResultValidity(result, energy, Wq_eV);  
+    }
+
+    YieldResult LArNEST::GetERYields(
+        double energy, double density, double efield
+    ) 
+    {  
+        double ERTotalYields = GetERTotalYields(energy);
+        double ERExcitonYields = GetERExcitonYields(energy, efield, density);
+        double ERPhotonYields = ERTotalYields - ERExcitonYields;
+
+        if (ERExcitonYields < 0.0) {
+            ERExcitonYields = 0.0;
+        }
+        // Perhaps don't need this unless energy is negative
+        // if (ERPhotonYields < 0.0) {
+        //     ERPhotonYields = 0.0;
+        // }
+        double Ne = ERExcitonYields * energy;
+        double Nph = ERPhotonYields * energy;
+        double Nex = GetNexONi() * ERTotalYields;
+        double Ni = ERTotalYields - Ne;
+
+        double Wq_eV = GetWorkFunction();
+        double L = (ERTotalYields / energy) * Wq_eV * 1e-3;
+
+        YieldResult result{
+            Nph, Ne, GetNexONi(), L, efield, -999
+        };
+        return YieldResultValidity(result, energy, Wq_eV);  
+    }
+
+    YieldResult LArNEST::GetYields(
+        INTERACTION_TYPE species, double energy, 
+        double density, double efield,
+        double massNum, double atomNum,
+        const std::vector<double> &NuisParam,
+        bool oldModelER
+    ) 
+    {
+        switch (species) {
+            case NR:
+            case WIMP:
+            case B8:
+            case atmNu:
+            case DD:
+            case AmBe:
+            case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
+                // statement. Same intrinsic yields, but different energy spectra
+                // (TestSpectra)
+                return GetNRYields(energy, efield, density, NuisParam);
+                // return GetYieldNROld ( energy, 1 );
+                break;
+            case ion:
+                return GetYieldIon(energy, density, efield, massNum, atomNum, NuisParam);
+                break;
+            case gammaRay:
+                return GetYieldGamma(energy, density, efield);
+                break;
+            case Kr83m:
+                return GetYieldKr83m(energy, density, efield, massNum, atomNum);
+                // not actually massNumber, but a place holder for maxTime
+                break;
+            case fullGamma_PE:
+                return GetYieldGamma(energy, density, efield);  // PE of the full gamma spectrum
+                break;
+            default:  // beta, CH3T, 14C, the pp solar neutrino background, and
+                    // Compton/PP spectra of fullGamma
+                if (oldModelER) {
+                    return GetYieldBeta(energy, density, efield);  // OLD
+                }
+                break;
+        }
+    }
+    //  inline LArNEST::Wvalue LArNEST::WorkFunction() 
+    // {
+    //     // Liquid argon
+    //     // TODO: Is this work function independent of
+    //     // other parameters?
+    //     double alpha = 0.21;
+    //     double Wq_eV = 1000. / 51.9;  // 23.6/1.21; // ~19.2-5 eV
+    //     return Wvalue{.Wq_eV = Wq_eV, .alpha = alpha};
+    // }
     QuantaResult LArNEST::GetQuanta(
         const YieldResult &yields, double density,
         const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/
@@ -353,7 +498,7 @@ namespace NEST
 
         if (ValidityTests::nearlyEqual(yields.Lindhard, 1.)) 
         {
-            double Fano = FanoER();
+            double Fano = GetFanoER();
             Nq_actual = int(floor(
                 RandomGen::rndm()->rand_gauss(Nq_mean, sqrt(Fano * Nq_mean)) + 0.5)
             );
@@ -429,9 +574,8 @@ namespace NEST
         else 
         {
             // LUX Skewness Model
-            Wvalue wvalue = WorkFunction();
-            double Wq_eV = wvalue.Wq_eV;
-            double engy = 1e-3 * Wq_eV * (yields.PhotonYield + yields.ElectronYield);
+            double wvalue = GetWorkFunction();
+            double engy = 1e-3 * wvalue * (yields.PhotonYield + yields.ElectronYield);
             double fld = yields.ElectricField;
 
             double alpha0 = 1.39;
@@ -483,176 +627,6 @@ namespace NEST
         result.electrons = Ne;
 
         return result;  // quanta returned with recomb fluctuations
-    }
-
-    YieldResult LArNEST::GetYieldNR(
-        double energy, double density, double dfield,
-        const std::vector<double> &NuisParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
-    ) 
-    {
-        
-        if (fNuisanceParameters.size() < 12) 
-        {
-            throw std::runtime_error(
-                "ERROR: You need a minimum of 12 nuisance parameters for the mean "
-                "yields.");
-        }
-        if (energy > HIGH_E_NR)
-            cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of "
-                    "about 300 keV.\n";
-        double massNumber = fdetector->get_molarMass();
-        if (ValidityTests::nearlyEqual(massNumber, 0.)) {
-            massNumber = RandomGen::rndm()->SelectRanXeAtom();
-        }
-        double ScaleFactor = sqrt(fdetector->get_molarMass() / massNumber);
-        double Ty = NRTotalQuanta(energy);
-        if (!fdetector->get_OldW13eV()) {
-            Ty *= ZurichEXOW;
-        }
-        double ThomasImel =
-            fNuisanceParameters[2] * pow(dfield, fNuisanceParameters[3]) * pow(density / fDensity, 0.3);
-        double Qy = 1. / (ThomasImel * pow(energy + fNuisanceParameters[4], fNuisanceParameters[9]));
-        Qy *= 1. - 1. / pow(1. + pow((energy / fNuisanceParameters[5]), fNuisanceParameters[6]),
-                            fNuisanceParameters[10]);
-        if (!fdetector->get_OldW13eV()) {
-            Qy *= ZurichEXOQ;
-        }
-        if (Qy < 0.0) {
-            Qy = 0.0;
-        }
-        double Ly = Ty / energy - Qy;
-        // Perhaps don't need this unless energy is negative
-        // if (Ly < 0.0) {
-        //     Ly = 0.0;
-        // }
-        double Ne = Qy * energy * ScaleFactor;
-        double Nph = Ly * energy * ScaleFactor *
-                    (1. - 1. / pow(1. + pow((energy / fNuisanceParameters[7]), fNuisanceParameters[8]),
-                                    fNuisanceParameters[11]));
-        Ty = Nph + Ne;
-        double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
-        double Nex = (-1. / ThomasImel) *
-                    (4. * exp(Ne * ThomasImel / 4.) - (Ne + Nph) * ThomasImel - 4.);
-
-        double NexONi = Nex / Ni;
-        Wvalue wvalue = WorkFunction();
-        if (NexONi < wvalue.alpha && energy > 1e2) 
-        {
-            NexONi = wvalue.alpha;
-            Ni = Ty / (1. + NexONi);
-            Nex = Ty - Ni;
-        }
-        if (NexONi > 1.0 && energy < 1.) 
-        {
-            NexONi = 1.00;
-            Ni = Ty / (1. + NexONi);
-            Nex = Ty - Ni;
-        }
-
-        if (Nex < 0.) {
-            std::cerr << "\nCAUTION: You are approaching the border of NEST's validity for "
-                    "high-energy (OR, for LOW) NR, or are beyond it, at "
-                << energy << " keV." << endl;
-        }
-        if (std::abs(Nex + Ni - Ty) > 2. * PHE_MIN) 
-        {
-            throw std::runtime_error(
-                "ERROR: Quanta not conserved. Tell Matthew Immediately!");
-        }
-
-        double Wq_eV = wvalue.Wq_eV;
-        double L = (Ty / energy) * Wq_eV * 1e-3;
-
-        YieldResult result{
-            Nph, Ne, NexONi, L, dfield, -999
-        };
-        return YieldResultValidity(result, energy, Wq_eV);  
-    }
-
-    YieldResult LArNEST::GetYieldBeta(
-        double energy, double density, double dfield
-    ) 
-    {  
-        Wvalue wvalue = WorkFunction();
-        double Qy, Ty;
-        double Wq_eV = wvalue.Wq_eV;
-        // double alpha = wvalue.alpha; // duplicate definition below. We don't even
-        // need this here (it is Nex/Ni)
-
-        // Liquid Argon
-        double alpha = 32.988 -
-                       552.988 / (17.2346 +
-                            pow(dfield / (-4.7 + 0.025115 * exp(1.3954 / 0.265360653)),
-                        0.242671));
-        double beta = 0.778482 + 25.9 / pow(1.105 + pow(dfield / 0.4, 4.55), 7.502);
-        double gamma =
-            0.659509 *
-            (1000 / 19.5 + 6.5 * (5 - 0.5 / pow(dfield / 1047.408, 0.01851)));
-        double delta = 15.7489;
-        double DB = 1052.264 + (14159350000 - 1652.264) /
-                                (-5 + pow(dfield / 0.157933, 1.83894));
-        double LET = -2.07763;
-        Ty = energy * 1e3 / Wq_eV;
-        Qy = alpha * beta +
-            (gamma - alpha * beta) / pow(
-                fERQuantaParameters[0] + fERQuantaParameters[1] * pow(
-                    energy + 0.5, fERQuantaParameters[2]), fERQuantaParameters[3]) +
-            delta / (fERQuantaParameters[4] + DB * pow(energy, LET));
-
-        if (!fdetector->get_OldW13eV()) {
-            Qy *= ZurichEXOQ;
-        }
-        double Ly = Ty / energy - Qy;
-        double Ne = Qy * energy;
-        double Nph = Ly * energy;
-
-        YieldResult result{
-            Nph, Ne, NexONi(), 1, dfield, -999
-        };
-        return YieldResultValidity(result, energy, Wq_eV);  
-    }
-
-    YieldResult LArNEST::GetYields(
-        INTERACTION_TYPE species, double energy, 
-        double density, double dfield,
-        double massNum, double atomNum,
-        const std::vector<double> &NuisParam,
-        bool oldModelER
-    ) 
-    {
-        switch (species) {
-            case NR:
-            case WIMP:
-            case B8:
-            case atmNu:
-            case DD:
-            case AmBe:
-            case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
-                // statement. Same intrinsic yields, but different energy spectra
-                // (TestSpectra)
-                return GetYieldNR(energy, density, dfield, NuisParam);
-                // return GetYieldNROld ( energy, 1 );
-                break;
-            case ion:
-                return GetYieldIon(energy, density, dfield, massNum, atomNum, NuisParam);
-                break;
-            case gammaRay:
-                return GetYieldGamma(energy, density, dfield);
-                break;
-            case Kr83m:
-                return GetYieldKr83m(energy, density, dfield, massNum, atomNum);
-                // not actually massNumber, but a place holder for maxTime
-                break;
-            case fullGamma_PE:
-                return GetYieldGamma(energy, density, dfield);  // PE of the full gamma spectrum
-                break;
-            default:  // beta, CH3T, 14C, the pp solar neutrino background, and
-                    // Compton/PP spectra of fullGamma
-                if (oldModelER) {
-                    return GetYieldBeta(energy, density, dfield);  // OLD
-                }
-                break;
-        }
     }
 
     std::vector<double> LArNEST::CalculateG2(bool verbosity) 
@@ -858,7 +832,7 @@ namespace NEST
             // use the step length provided by Geant4 because it's not relevant,
             // instead calculate an estimated LET and range of the electrons that
             // would have been produced if Geant4 could track them
-            LET = LegacyCalcElectronLET(1000 * dE);
+            LET = LegacyGetLinearEnergyTransfer(1000 * dE);
 
             if (LET) {
                 //find the range based on the LET
@@ -878,7 +852,7 @@ namespace NEST
             }
             if (LET > 0 && dE > 0 && dx > 0) 
             {
-                double ratio = LegacyCalcElectronLET(dE * 1e3) / LET;
+                double ratio = LegacyGetLinearEnergyTransfer(dE * 1e3) / LET;
                 if (ratio < 0.7 && pdgcode == 11) 
                 {
                     dx /= ratio;
@@ -907,7 +881,7 @@ namespace NEST
         return result;
 
     }
-    double LArNEST::LegacyCalcElectronLET(double E)
+    double LArNEST::LegacyGetLinearEnergyTransfer(double E)
     {
         double LET;
         if (E >= 1) 

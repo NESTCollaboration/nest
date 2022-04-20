@@ -71,6 +71,8 @@ int main(int argc, char* argv[])
     {
         for (size_t i = 0; i < num_energy_steps; i++)
         {
+            std::vector<double> photons(num_events);
+            std::vector<double> electrons(num_events);
             for (size_t j = 0; j < num_events; j++)
             {
                 quanta = larnest.LegacyCalculation(
@@ -80,10 +82,14 @@ int main(int argc, char* argv[])
                     electric_field[v],
                     track_length
                 );
-                output_file << energy_vals[i] << ","; 
-                output_file << electric_field[v] << ",";
-                output_file << quanta.photons << "," << quanta.electrons << "\n";
+                photons[j] = quanta.photons;
+                electrons[j] = quanta.electrons;
             }
+            double photon_mean = std::accumulate(photons.begin(), photons.end(), 0) / num_events;
+            double electron_mean = std::accumulate(electrons.begin(), electrons.end(), 0) / num_events;
+            output_file << energy_vals[i] << ","; 
+            output_file << electric_field[v] << ",";
+            output_file << photon_mean << "," << electron_mean << "\n";
         }
     }
     output_file.close();

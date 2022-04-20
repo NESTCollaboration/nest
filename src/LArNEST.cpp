@@ -21,16 +21,13 @@ namespace NEST
     NESTresult LArNEST::FullCalculation(
         INTERACTION_TYPE species, double energy, 
         double density, double efield,
-        double A, double Z,
-        const std::vector<double>& NuisParam,
-        const std::vector<double>& FreeParam,
         bool do_times
     ) 
     {
         if (density < 1.) fdetector->set_inGas(true);
         NESTresult result;
-        result.yields = GetYields(species, energy, density, efield, A, Z, NuisParam);
-        result.quanta = GetQuanta(result.yields, density, FreeParam);
+        result.yields = GetYields(species, energy, density, efield);
+        result.quanta = GetQuanta(result.yields, density);
         if (do_times)
             result.photon_times = GetPhotonTimes(
                 species, result.quanta.photons, 
@@ -346,14 +343,13 @@ namespace NEST
     }
 
     YieldResult LArNEST::GetNRYields(
-        double energy, double efield, double density, 
-        const std::vector<double> &NuisParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
+        double energy, double efield, double density    
     ) 
     {
         // TODO: Fix these error messages
-        if (energy > HIGH_E_NR)
-            cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of "
-                    "about 300 keV.\n";
+        // if (energy > HIGH_E_NR)
+        //     cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of "
+        //             "about 300 keV.\n";
 
         double NRTotalYields = GetNRTotalYields(energy);
         double NRExcitonYields = GetNRExcitonYields(energy, efield);
@@ -368,12 +364,9 @@ namespace NEST
         // }
         double Ne = NRExcitonYields * energy;
         double Nph = NRPhotonYields * energy;
-        double Nex = GetNexONi() * NRTotalYields;
-        double Ni = NRTotalYields - Ne;
 
         double Wq_eV = GetWorkFunction();
         double L = (NRTotalYields / energy) * Wq_eV * 1e-3;
-
         YieldResult result{
             Nph, Ne, GetNexONi(), L, efield, -999
         };
@@ -397,8 +390,6 @@ namespace NEST
         // }
         double Ne = ERExcitonYields * energy;
         double Nph = ERPhotonYields * energy;
-        double Nex = GetNexONi() * ERTotalYields;
-        double Ni = ERTotalYields - Ne;
 
         double Wq_eV = GetWorkFunction();
         double L = (ERTotalYields / energy) * Wq_eV * 1e-3;
@@ -412,37 +403,27 @@ namespace NEST
     YieldResult LArNEST::GetYields(
         INTERACTION_TYPE species, double energy, 
         double density, double efield,
-        double massNum, double atomNum,
-        const std::vector<double> &NuisParam,
         bool oldModelER
     ) 
     {
         switch (species) {
             case NR:
+                return GetNRYields(energy, efield, density);
+                break;
             case WIMP:
             case B8:
             case atmNu:
             case DD:
             case AmBe:
-            case Cf:  // this doesn't mean all NR is Cf, this is like a giant if
-                // statement. Same intrinsic yields, but different energy spectra
-                // (TestSpectra)
-                return GetNRYields(energy, efield, density, NuisParam);
-                // return GetYieldNROld ( energy, 1 );
+            case Cf:  
+                return GetNRYields(energy, efield, density);
                 break;
             case ion:
-                return GetYieldIon(energy, density, efield, massNum, atomNum, NuisParam);
+                return GetERYields(energy, density, efield);
                 break;
             case gammaRay:
-                return GetYieldGamma(energy, density, efield);
-                break;
             case Kr83m:
-                return GetYieldKr83m(energy, density, efield, massNum, atomNum);
-                // not actually massNumber, but a place holder for maxTime
-                break;
             case fullGamma_PE:
-                return GetYieldGamma(energy, density, efield);  // PE of the full gamma spectrum
-                break;
             default:  // beta, CH3T, 14C, the pp solar neutrino background, and
                     // Compton/PP spectra of fullGamma
                 if (oldModelER) {
@@ -461,21 +442,14 @@ namespace NEST
     //     return Wvalue{.Wq_eV = Wq_eV, .alpha = alpha};
     // }
     QuantaResult LArNEST::GetQuanta(
-        const YieldResult &yields, double density,
-        const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/
+        const YieldResult &yields, double density
+        /*={1.,1.,0.1,0.5,0.19,2.25}*/
     ) 
     {
         // TODO: Understand and break up this function.
         QuantaResult result{};
         bool HighE;
         int Nq_actual, Ne, Nph, Ni, Nex;
-
-        if (FreeParam.size() < 6) 
-        {
-            throw std::runtime_error(
-                "ERROR: You need a minimum of 6 free parameters for the resolution "
-                "model.");
-        }
 
         double excitonRatio = yields.ExcitonRatio;
         double Nq_mean = yields.PhotonYield + yields.ElectronYield;
@@ -511,14 +485,14 @@ namespace NEST
 
         } 
         else {
-            double Fano = FreeParam[0];
+            double Fano = 1.;
             Ni = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean * alf,
                                                         sqrt(Fano * Nq_mean * alf)) +
                         0.5));
             if (Ni < 0) {
                 Ni = 0;
             }
-            Fano = FreeParam[1];
+            Fano = 1.;
             Nex = int(floor(RandomGen::rndm()->rand_gauss(
                 Nq_mean * excitonRatio * alf,
                 sqrt(Fano * Nq_mean * excitonRatio * alf)) + 0.5)
@@ -563,7 +537,7 @@ namespace NEST
         // set omega (non-binomial recombination fluctuations parameter) according to
         // whether the Lindhard <1, i.e. this is NR.
         double omega = 0.0;  // Ar has no non-binom sauce
-        double Variance = recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
+        double Variance = recombProb * (1. - recombProb) * Ni;
         // if ( !fdetector->get_OldW13eV() ) Variance /= sqrt ( ZurichEXOQ );
 
         double skewness;
@@ -596,7 +570,7 @@ namespace NEST
             // if ( std::abs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
             } 
             else {
-                skewness = FreeParam[5];  // 2.25 but ~5-20 also good (for NR). All better
+                skewness = 2.25;  // 2.25 but ~5-20 also good (for NR). All better
                                         // than zero, but 0 is OK too
             }  // note to self: find way to make 0 for ion (wall BG) incl. alphas?
         }

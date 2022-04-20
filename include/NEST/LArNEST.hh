@@ -201,8 +201,7 @@ namespace NEST
          * 
          */
         QuantaResult GetQuanta(
-            const YieldResult &yields, double density,
-            const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/
+            const YieldResult &yields, double density
         );
 
         /**
@@ -224,8 +223,7 @@ namespace NEST
          * @return YieldResult 
          */
         YieldResult GetNRYields(
-            double energy, double dfield, double density,
-            const std::vector<double> &NuisParam 
+            double energy, double dfield, double density
         ); 
 
         /**
@@ -251,8 +249,6 @@ namespace NEST
         YieldResult GetYields(
             INTERACTION_TYPE species, double energy, 
             double density, double dfield,
-            double massNum, double atomNum,
-            const std::vector<double> &NuisParam,
             bool oldModelER=false
         );
         /**
@@ -261,10 +257,7 @@ namespace NEST
          */
         NESTresult FullCalculation(
             INTERACTION_TYPE species, double energy, 
-            double density, double dfield,
-            double A, double Z,
-            const std::vector<double> &NuisParam,
-            const std::vector<double> &FreeParam,
+            double density, double efield,
             bool do_times
         );
 

@@ -43,5 +43,5 @@ class LegacyBenchmarks:
 
 if __name__ == "__main__":
 
-    legacy_benchmarks = LegacyBenchmarks("../../build/legacy_larnest_output_2112.csv")
+    legacy_benchmarks = LegacyBenchmarks("../../build/larnest_output_2112.csv")
     legacy_benchmarks.plot_photons()

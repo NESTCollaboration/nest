@@ -467,7 +467,7 @@ namespace NEST
         double sigma = sqrt(legacy_resolution_scale * MeanNq); //Fano
         int Nq = int(floor(RandomGen::rndm()->rand_gauss(MeanNq, sigma) + 0.5));
         double LeffVar = RandomGen::rndm()->rand_gauss(yieldFactor, 0.25 * yieldFactor);
-        LeffVar = std::clamp(LeffVar, 0., 1.);
+        LeffVar = clamp(LeffVar, 0., 1.);
 
         if (yieldFactor < 1) // nuclear recoil
         {
@@ -479,10 +479,10 @@ namespace NEST
         if (energy < 1 / legacy_scint_yield || Nq < 0) { Nq = 0; }
 
         // next section binomially assigns quanta to excitons and ions
-        int Nex = RandomGen::rndm()->binom_draw(
+        double Nex = RandomGen::rndm()->binom_draw(
             Nq, excitationRatio / (1 + excitationRatio)
         );
-        int Nion = Nq - Nex;
+        double Nion = Nq - Nex;
 
         // this section calculates recombination following the modified 
         // Birks'Law of Doke, deposition by deposition, may be overridden 
@@ -533,13 +533,13 @@ namespace NEST
         recombProb *= (density / legacy_density_LAr);
 
         //check against unphysicality resulting from rounding errors
-        recombProb = std::clamp(recombProb, 0., 1.);
+        recombProb = clamp(recombProb, 0., 1.);
 
         //use binomial distribution to assign photons, electrons, where photons
         //are excitons plus recombined ionization electrons, while final
         //collected electrons are the "escape" (non-recombined) electrons
-        int const Nph = Nex + RandomGen::rndm()->binom_draw(Nion, recombProb);
-        int const Ne = Nq - Nph;
+        double Nph = Nex + RandomGen::rndm()->binom_draw(Nion, recombProb);
+        double Ne = Nq - Nph;
 
         // create the quanta results
         LArYieldResult result {

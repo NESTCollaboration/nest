@@ -18,24 +18,24 @@ namespace NEST
 
     }
 
-    NESTresult LArNEST::FullCalculation(
+    LArNESTResult LArNEST::FullCalculation(
         INTERACTION_TYPE species, double energy, 
         double density, double efield,
         bool do_times
     ) 
     {
         if (density < 1.) fdetector->set_inGas(true);
-        NESTresult result;
+        LArNESTResult result;
         result.yields = GetYields(species, energy, density, efield);
-        result.quanta = GetQuanta(result.yields, density);
-        if (do_times)
-            result.photon_times = GetPhotonTimes(
-                species, result.quanta.photons, 
-                result.quanta.excitons, efield, energy
-            );
-        else {
-            result.photon_times = photonstream(result.quanta.photons, 0.0);
-        }
+        // result.quanta = GetQuanta(result.yields, density);
+        // if (do_times)
+        //     result.photon_times = GetPhotonTimes(
+        //         species, result.quanta.photons, 
+        //         result.quanta.excitons, efield, energy
+        //     );
+        // else {
+        //     result.photon_times = photonstream(result.quanta.photons, 0.0);
+        // }
         return result;
     }
     double LArNEST::GetNRTotalYields(double energy)
@@ -65,7 +65,7 @@ namespace NEST
     // yield is linear with energy, but need to incorporate thermal quenching.
     double LArNEST::GetERTotalYields(double energy)
     {
-        return energy * 1e3 / GetWorkQuantaFunction();
+        return energy / GetWorkQuantaFunction();
     }
     double LArNEST::GetERExcitonYieldsAlpha(double efield, double density)
     {
@@ -106,7 +106,7 @@ namespace NEST
         return alpha * beta + 
                (gamma - alpha * beta) / 
                pow(fLArERYieldsParameters.p1 + fLArERYieldsParameters.p2 * pow(energy + 0.5, fLArERYieldsParameters.p3), fLArERYieldsParameters.p4) + 
-               fLArERYieldsParameters.delta / (fLArERYieldsParameters.p5 + pow(doke_birks, fLArERYieldsParameters.let));
+               fLArERYieldsParameters.delta / (fLArERYieldsParameters.p5 + doke_birks * pow(energy, fLArERYieldsParameters.let));
     }
     // various constants
     double LArNEST::GetWorkQuantaFunction()
@@ -351,7 +351,7 @@ namespace NEST
         return time_ns;
     }
 
-    YieldResult LArNEST::GetNRYields(
+    LArYieldResult LArNEST::GetNRYields(
         double energy, double efield, double density    
     ) 
     {
@@ -364,39 +364,46 @@ namespace NEST
         }
         double Ne = NRExcitonYields * energy;
         double Nph = NRPhotonYields * energy;
+        double Nex = (Ne + Nph)/(1.0 + GetNexOverNion());
+        double Nion = (Ne + Nph) - Nex;
 
         double WQ_eV = GetWorkQuantaFunction();
         double Lindhard = (NRTotalYields / energy) * WQ_eV * 1e-3;
-        YieldResult result{
-            Nph, Ne, GetNexOverNion(), Lindhard, efield, -999
+        LArYieldResult result{
+            NRTotalYields, NRExcitonYields, NRPhotonYields,
+            Nph, Ne, Nex, Nion, Lindhard, efield
         };
-        return YieldResultValidity(result, energy, WQ_eV);  
+        return result;
+        //return YieldResultValidity(result, energy, WQ_eV);  
     }
 
-    YieldResult LArNEST::GetERYields(
+    LArYieldResult LArNEST::GetERYields(
         double energy, double density, double efield
     ) 
     {  
         double ERTotalYields = GetERTotalYields(energy);
         double ERExcitonYields = GetERExcitonYields(energy, efield, density);
-        double ERPhotonYields = ERTotalYields - ERExcitonYields;
+        double ERPhotonYields = ERTotalYields / energy - ERExcitonYields;
 
         if (ERExcitonYields < 0.0) {
             ERExcitonYields = 0.0;
         }
         double Ne = ERExcitonYields * energy;
         double Nph = ERPhotonYields * energy;
+        double Nex = (Ne + Nph)/(1.0 + GetNexOverNion());
+        double Nion = (Ne + Nph) - Nex;
 
         double WQ_eV = GetWorkQuantaFunction();
         double Lindhard = (ERTotalYields / energy) * WQ_eV * 1e-3;
-
-        YieldResult result{
-            Nph, Ne, GetNexOverNion(), Lindhard, efield, -999
+        LArYieldResult result{
+            ERTotalYields, ERExcitonYields, ERPhotonYields,
+            Nph, Ne, Nex, Nion, Lindhard, efield
         };
-        return YieldResultValidity(result, energy, WQ_eV);  
+        return result;
+        //return YieldResultValidity(result, energy, WQ_eV);
     }
 
-    YieldResult LArNEST::GetYields(
+    LArYieldResult LArNEST::GetYields(
         INTERACTION_TYPE species, double energy, 
         double density, double efield,
         bool oldModelER
@@ -423,7 +430,7 @@ namespace NEST
             default:  // beta, CH3T, 14C, the pp solar neutrino background, and
                     // Compton/PP spectra of fullGamma
                 if (oldModelER) {
-                    return GetYieldBeta(energy, density, efield);  // OLD
+                    //return GetYieldBeta(energy, density, efield);  // OLD
                 }
                 break;
         }

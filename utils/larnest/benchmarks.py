@@ -15,7 +15,7 @@ class LArNESTBenchmarks:
         self.input_file = input_file
         self.data = pd.read_csv(
             self.input_file,
-            names=['energy', 'efield' , 'photons' , 'electrons'],
+            names=['energy', 'efield' , 'TotalYields', 'QuantaYields', 'LightYields', 'Nph' , 'Ne', 'Nex', 'Nion'],
             header=0,
             dtype=float
         )
@@ -23,7 +23,7 @@ class LArNESTBenchmarks:
         self.unique_energy = np.unique(self.data['energy'])
 
     def plot_yields(self,
-        yields:  str='electrons',
+        yields:  str='Ne',
         title:  str='',
         save:   str='',
         show:   bool=False,
@@ -39,10 +39,20 @@ class LArNESTBenchmarks:
                 label=f"{efield} V/cm"
             )
         axs.set_xlabel("Energy (keV)")
-        if yields == 'electrons':
-            axs.set_ylabel("Number of electrons (e-)")
-        else:
+        if yields == 'TotalYields':
+            axs.set_ylabel("Total Yield (quanta)")
+        elif yields == 'QuantYields':
+            axs.set_ylabel("Quanta Yield (quanta)")
+        elif yields == 'LightYields':
+            axs.set_ylabel("Light Yield (quanta)")
+        elif yields == 'Nph':
             axs.set_ylabel("Number of photons (phe)")
+        elif yields == 'Ne':
+            axs.set_ylabel("Number of electrons (e-)")
+        elif yields == 'Nex':
+            axs.set_ylabel("Number of excitons (quanta)")
+        else:
+            axs.set_ylabel("Number of ions (quanta)")
         axs.set_xscale("log")
         if title != '':
             plt.title(title)
@@ -53,18 +63,23 @@ class LArNESTBenchmarks:
         if show:
             plt.show()
 
+    def plot_all_yields(self,
+        recoil: str="NR",
+    ):
+        for y in ['TotalYields', 'QuantaYields', 'LightYields', 'Nph' , 'Ne', 'Nex', 'Nion']:
+            self.plot_yields(
+                yields=y,
+                title=f'{recoil} {y}',
+                save=f'{recoil}_{y}'
+            )
+
 if __name__ == "__main__":
 
+    # larnest_benchmarks = LArNESTBenchmarks(
+    #     "../../build/LArNESTBenchmarks_output_NR.csv"
+    # )
+    # larnest_benchmarks.plot_all_yields("NR")
     larnest_benchmarks = LArNESTBenchmarks(
-        "../../build/larnest_output_2112.csv"
+        "../../build/LArNESTBenchmarks_output_ER.csv"
     )
-    larnest_benchmarks.plot_yields(
-        yields='photons',
-        title='NR Light Yield',
-        save='nr_photons'
-    )
-    larnest_benchmarks.plot_yields(
-        yields='electrons',
-        title='NR Qy Yield',
-        save='nr_electrons'
-    )
+    larnest_benchmarks.plot_all_yields("ER")

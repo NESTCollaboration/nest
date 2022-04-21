@@ -61,39 +61,39 @@ namespace NEST
 
     struct LArNRYieldsParameters
     {
-        double alpha = {11.10};
-        double beta = {1.087};
-        double gamma = {0.1};
-        double delta = {-0.0932};
-        double epsilon = {2.998};
-        double zeta = {0.3};
-        double eta = {2.94};
+        double alpha =  {11.10};
+        double beta =   {1.087};
+        double gamma =  {0.1};
+        double delta =  {-0.0932};
+        double epsilon ={2.998};
+        double zeta =   {0.3};
+        double eta =    {2.94};
     };
     struct LArERExcitonYieldsAlphaParameters
     {
         double A = {32.988};
         double B = {-552.988};
-        double C = {15.5578};
+        double C = {17.2346};
         double D = {-4.7};
         double E = {0.025115};
-        double F = {-0.265360653};
-        double G = {-0.208889};
+        double F = {3.768456};
+        double G = {-0.242671};
     };
     struct LArERExcitonYieldsBetaParameters
     {
-        double A = {2.01952};
-        double B = {20.9};
+        double A = {0.778482};
+        double B = {25.9};
         double C = {1.105};
         double D = {0.4};
         double E = {4.55};
-        double F = {7.502};
+        double F = {-7.502};
     };
     struct LArERExcitonYieldsGammaParameters
     {
-        double A = {0.642039};
+        double A = {0.659509};
         double B = {1000};
         double C = {6.5};
-        double D = {5};
+        double D = {5.0};
         double E = {-0.5};
         double F = {1047.408};
         double G = {0.01851};
@@ -101,10 +101,10 @@ namespace NEST
     struct LArERExcitonYieldsDokeBirksParameters
     {
         double A = {1052.264};
-        double B = {1.415935e10 - 1652.264};
-        double C = {-5};
-        double D = {0.328038};
-        double E = {1.74654};
+        double B = {14159350000 - 1652.264};
+        double C = {-5.0};
+        double D = {0.157933};
+        double E = {1.83894};
     };
     struct LArERYieldsParameters
     {
@@ -112,15 +112,34 @@ namespace NEST
         LArERExcitonYieldsBetaParameters beta;
         LArERExcitonYieldsGammaParameters gamma;
         LArERExcitonYieldsDokeBirksParameters doke_birks;
-        double p1 = {1};
+        double p1 = {1.0};
         double p2 = {10.304};
-        double p3 = {24.3509};
+        double p3 = {13.0654};
         double p4 = {0.10535};
         double p5 = {0.7};
-        double delta = {10.3842};
-        double let = {-2.11259};
+        double delta = {15.7489};
+        double let = {-2.07763};
     };
 
+    struct LArYieldResult 
+    {
+        double TotalYield;
+        double QuantaYield;
+        double LightYield;
+        double Nph;
+        double Ne;
+        double Nex;
+        double Nion;
+        double Lindhard;
+        double ElectricField;
+    };
+
+    struct LArNESTResult
+    {   
+        LArYieldResult yields;
+        QuantaResult quanta;
+        photonstream photon_times;
+    };
 
     /**
      * @brief 
@@ -292,7 +311,7 @@ namespace NEST
          * @param NuisParam 
          * @return YieldResult 
          */
-        YieldResult GetNRYields(
+        LArYieldResult GetNRYields(
             double energy, double dfield, double density
         ); 
 
@@ -308,15 +327,15 @@ namespace NEST
          * @param energy 
          * @param density 
          * @param dfield 
-         * @return YieldResult 
+         * @return LArYieldResult 
          */
-        YieldResult GetERYields(
+        LArYieldResult GetERYields(
             double energy, double density, double dfield
         );
-        YieldResult GetAlphaYields(
+        LArYieldResult GetAlphaYields(
             double energy, double density, double dfield
         );
-        YieldResult GetYields(
+        LArYieldResult GetYields(
             INTERACTION_TYPE species, double energy, 
             double density, double dfield,
             bool oldModelER=false
@@ -325,7 +344,7 @@ namespace NEST
          * @brief 
          * 
          */
-        NESTresult FullCalculation(
+        LArNESTResult FullCalculation(
             INTERACTION_TYPE species, double energy, 
             double density, double efield,
             bool do_times

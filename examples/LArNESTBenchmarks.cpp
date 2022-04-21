@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
     // set up energy steps
     double energy = atof(argv[2]);
-    int num_energy_steps = 100000;
+    int num_energy_steps = 50000;
     std::vector<double> energy_vals;
     double start_val = .1;
     double end_val = 1000;

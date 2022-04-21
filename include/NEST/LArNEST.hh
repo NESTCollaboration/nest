@@ -59,7 +59,6 @@ namespace NEST
     static constexpr double sqrt2_PI = gcem::sqrt(2. * M_PI);
     static constexpr double inv_sqrt2_PI = 1. / gcem::sqrt(2. * M_PI);
 
-    
     struct LArNRYieldsParameters
     {
         double alpha = {11.10};
@@ -132,23 +131,32 @@ namespace NEST
     public:
         explicit LArNEST(VDetector *detector);
 
-        void setDensity(double density) { fDensity = density; }
-        void setWDefault(double wDefault) { fWDefault = wDefault; }
+        void setDensity(double density)     { fDensity = density; }
+        void setWDefault(double wDefault)   { fWDefault = wDefault; }
         void setRIdealGas(double RIdealGas) { fRIdealGas = RIdealGas; }
-        void setRealGasA(double RealGasA) { fRealGasA = RealGasA; }
-        void setRealGasB(double RealGasB) { fRealGasB = RealGasB; }
+        void setRealGasA(double RealGasA)   { fRealGasA = RealGasA; }
+        void setRealGasB(double RealGasB)   { fRealGasB = RealGasB; }
         void setNuisanceParameters(std::vector<double> nuisanceParameters);
         void setTemperature(std::vector<double> temperature);
         
+        /// setters for various parameters
         void setNRYieldsParameters(LArNRYieldsParameters NRYieldsParameters);
         void setERYieldsParameters(LArERYieldsParameters ERYieldsParameters);
-        void setERExcitonYieldsAlphaParameters(LArERExcitonYieldsAlphaParameters ERExcitonYieldsAlphaParameters);
-        void setERExcitonYieldsBetaParameters(LArERExcitonYieldsBetaParameters ERExcitonYieldsBetaParameters);
-        void setERExcitonYieldsGammaParameters(LArERExcitonYieldsGammaParameters ERExcitonYieldsGammaParameters);
-        void setERExcitonYieldsDokeBirksParameters(LArERExcitonYieldsDokeBirksParameters ERExcitonYieldsDokeBirksParameters);
+        void setERExcitonYieldsAlphaParameters(
+            LArERExcitonYieldsAlphaParameters ERExcitonYieldsAlphaParameters
+        );
+        void setERExcitonYieldsBetaParameters(
+            LArERExcitonYieldsBetaParameters ERExcitonYieldsBetaParameters
+        );
+        void setERExcitonYieldsGammaParameters(
+            LArERExcitonYieldsGammaParameters ERExcitonYieldsGammaParameters
+        );
+        void setERExcitonYieldsDokeBirksParameters(
+            LArERExcitonYieldsDokeBirksParameters ERExcitonYieldsDokeBirksParameters
+        );
 
         /**
-         * @brief NR Total Quanta function:
+         * @brief NR Total Yields function:
          *      Ty = alpha * E^beta
          * 
          * @param energy 
@@ -156,7 +164,7 @@ namespace NEST
          */
         double GetNRTotalYields(double energy);
         /**
-         * @brief NR Exciton Quanta function:
+         * @brief NR Exciton Yields function:
          *      Qy = (gamma * E^delta)*(sqrt(E + eps)^-1)
          *              * (1 - (1 + (E/zeta)^eta))^-1)
          * 
@@ -165,19 +173,82 @@ namespace NEST
          * @return double 
          */
         double GetNRExcitonYields(double energy, double efield);
+        /**
+         * @brief NR Photon Yields function:
+         *      Ly = 
+         * 
+         * @param energy 
+         * @param efield 
+         * @return double 
+         */
         double GetNRPhotonYields(double energy, double efield);
+        /**
+         * @brief NR Photon Yields function (conserved)
+         *      Ly = Ty/E - Qy
+         * 
+         * @param energy 
+         * @param efield 
+         * @return double 
+         */
         double GetNRPhotonYieldsConserved(double energy, double efield);
 
+        /**
+         * @brief ER Total Yields function:
+         *      Ty
+         * 
+         * @param energy 
+         * @return double 
+         */
         double GetERTotalYields(double energy);
+        /**
+         * @brief ER Exciton Yields Alpha function:
+         * 
+         * @param efield 
+         * @param density 
+         * @return double 
+         */
         double GetERExcitonYieldsAlpha(double efield, double density);
+        /**
+         * @brief ER Exciton Yields Beta function:
+         * 
+         * @param efield 
+         * @return double 
+         */
         double GetERExcitonYieldsBeta(double efield);
+        /**
+         * @brief ER Exciton Yields Gamma function:
+         * 
+         * @param efield 
+         * @return double 
+         */
         double GetERExcitonYieldsGamma(double efield);
+        /**
+         * @brief ER Exciton Yields Doke-Birks function:
+         * 
+         * @param efield 
+         * @return double 
+         */
         double GetERExcitonYieldsDokeBirks(double efield);
+        /**
+         * @brief ER Exciton Yields function:
+         * 
+         * @param energy 
+         * @param efield 
+         * @param density 
+         * @return double 
+         */
         double GetERExcitonYields(double energy, double efield, double density);
         
-        double GetWorkFunction();
-        double GetLinearEnergyTransfer(double energy, bool CSDA=false);
+        /// various defined constants
+        inline double GetWorkQuantaFunction();
+        inline double GetWorkIonFunction();
+        inline double GetWorkPhotonFunction();
         inline double GetFanoER();
+        inline double GetNexOverNion(); 
+
+        double GetLinearEnergyTransfer(
+            double energy, bool CSDA=false
+        );
         double GetDensity(
             double Kelvin, double bara, bool &inGas,
             uint64_t evtNum, double molarMass
@@ -190,7 +261,6 @@ namespace NEST
             double molarMass
         );
         double GetPhotonEnergy(bool state);
-        inline double GetNexONi(); 
         double GetPhotonTime(
             INTERACTION_TYPE species, bool exciton,
             double dfield, double energy

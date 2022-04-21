@@ -17,6 +17,7 @@ class LArNESTBenchmarks:
             self.input_file,
             names=['energy', 'efield' , 'photons' , 'electrons'],
             header=0,
+            dtype=float
         )
         self.unique_efield = np.unique(self.data['efield'])
         self.unique_energy = np.unique(self.data['energy'])
@@ -29,13 +30,12 @@ class LArNESTBenchmarks:
     ):
         fig, axs = plt.subplots(figsize=(10,6))
         for efield in self.unique_efield:
-            means = []
-            for energy in self.unique_energy:
-                mask = (self.data['efield'] == efield) & (self.data['energy'] == energy)
-                means.append(np.mean(self.data[yields][mask]))
+            mask = (self.data['efield'] == efield)
+            print(
+                np.array(self.data[yields][mask],dtype=float),self.unique_energy)
             axs.plot(
                 self.unique_energy, 
-                np.array(means) / self.unique_energy,
+                np.array(self.data[yields][mask],dtype=float) / self.unique_energy,
                 label=f"{efield} V/cm"
             )
         axs.set_xlabel("Energy (keV)")

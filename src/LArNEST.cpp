@@ -50,7 +50,7 @@ namespace NEST
     }
     double LArNEST::GetNRPhotonYields(double energy, double efield)
     {
-        return fLArNRYieldsParameters.alpha * pow(energy, fLArNRYieldsParameters.beta - 1) - 
+        return fLArNRYieldsParameters.alpha * pow(energy, fLArNRYieldsParameters.beta - 1.0) - 
                (1.0 / (fLArNRYieldsParameters.gamma * pow(efield, fLArNRYieldsParameters.delta))) *
                (1.0 / sqrt(energy + fLArNRYieldsParameters.epsilon));
     }
@@ -65,7 +65,7 @@ namespace NEST
     // yield is linear with energy, but need to incorporate thermal quenching.
     double LArNEST::GetERTotalYields(double energy)
     {
-        return energy *1e3 / GetWorkFunction();
+        return energy * 1e3 / GetWorkQuantaFunction();
     }
     double LArNEST::GetERExcitonYieldsAlpha(double efield, double density)
     {
@@ -85,7 +85,7 @@ namespace NEST
     double LArNEST::GetERExcitonYieldsGamma(double efield)
     {
         return fLArERYieldsParameters.gamma.A *
-               (fLArERYieldsParameters.gamma.B / GetWorkFunction() + 
+               (fLArERYieldsParameters.gamma.B / GetWorkQuantaFunction() + 
                 fLArERYieldsParameters.gamma.C *
                 (fLArERYieldsParameters.gamma.D + fLArERYieldsParameters.gamma.E / 
                  pow(efield / fLArERYieldsParameters.gamma.F, fLArERYieldsParameters.gamma.G)));
@@ -108,9 +108,24 @@ namespace NEST
                pow(fLArERYieldsParameters.p1 + fLArERYieldsParameters.p2 * pow(energy + 0.5, fLArERYieldsParameters.p3), fLArERYieldsParameters.p4) + 
                fLArERYieldsParameters.delta / (fLArERYieldsParameters.p5 + pow(doke_birks, fLArERYieldsParameters.let));
     }
-    double LArNEST::GetWorkFunction()
+    // various constants
+    double LArNEST::GetWorkQuantaFunction()
     {
-        return 1000. / 51.9;
+        return 19.5;
+    }
+    double LArNEST::GetWorkIonFunction()
+    {
+        return 23.6;
+    }
+    double LArNEST::GetWorkPhotonFunction()
+    {
+        return 14.544;
+    }
+    inline double LArNEST::GetNexOverNion() 
+    {
+        // https://arxiv.org/pdf/1903.05815.pdf
+        // TODO: What is this?
+        return 0.21;  
     }
     inline double LArNEST::GetFanoER() 
     {
@@ -219,12 +234,6 @@ namespace NEST
             return RandomGen::rndm()->rand_gauss(9.69, 0.22);
         }
     }
-    inline double LArNEST::GetNexONi() 
-    {
-        // https://arxiv.org/pdf/1903.05815.pdf
-        // TODO: What is this?
-        return 0.21;  
-    }
     double LArNEST::GetLinearEnergyTransfer(double energy, bool CSDA) 
     {
         double LET;
@@ -292,7 +301,7 @@ namespace NEST
             }
             else {
                 tauR = 0.;  // 28 microseconds comes from Henrique:
-                        // https://doi.org/10.1016/j.astropartphys.2018.04.006
+                // https://doi.org/10.1016/j.astropartphys.2018.04.006
             }
             // from old G4S2Light
             tau3 = 1600.;
@@ -346,11 +355,6 @@ namespace NEST
         double energy, double efield, double density    
     ) 
     {
-        // TODO: Fix these error messages
-        // if (energy > HIGH_E_NR)
-        //     cerr << "\nWARNING: No data out here, you are beyond the AmBe endpoint of "
-        //             "about 300 keV.\n";
-
         double NRTotalYields = GetNRTotalYields(energy);
         double NRExcitonYields = GetNRExcitonYields(energy, efield);
         double NRPhotonYields = GetNRPhotonYields(energy, efield);
@@ -358,19 +362,15 @@ namespace NEST
         if (NRExcitonYields < 0.0) {
             NRExcitonYields = 0.0;
         }
-        // Perhaps don't need this unless energy is negative
-        // if (NRPhotonYields < 0.0) {
-        //     NRPhotonYields = 0.0;
-        // }
         double Ne = NRExcitonYields * energy;
         double Nph = NRPhotonYields * energy;
 
-        double Wq_eV = GetWorkFunction();
-        double L = (NRTotalYields / energy) * Wq_eV * 1e-3;
+        double WQ_eV = GetWorkQuantaFunction();
+        double Lindhard = (NRTotalYields / energy) * WQ_eV * 1e-3;
         YieldResult result{
-            Nph, Ne, GetNexONi(), L, efield, -999
+            Nph, Ne, GetNexOverNion(), Lindhard, efield, -999
         };
-        return YieldResultValidity(result, energy, Wq_eV);  
+        return YieldResultValidity(result, energy, WQ_eV);  
     }
 
     YieldResult LArNEST::GetERYields(
@@ -384,20 +384,16 @@ namespace NEST
         if (ERExcitonYields < 0.0) {
             ERExcitonYields = 0.0;
         }
-        // Perhaps don't need this unless energy is negative
-        // if (ERPhotonYields < 0.0) {
-        //     ERPhotonYields = 0.0;
-        // }
         double Ne = ERExcitonYields * energy;
         double Nph = ERPhotonYields * energy;
 
-        double Wq_eV = GetWorkFunction();
-        double L = (ERTotalYields / energy) * Wq_eV * 1e-3;
+        double WQ_eV = GetWorkQuantaFunction();
+        double Lindhard = (ERTotalYields / energy) * WQ_eV * 1e-3;
 
         YieldResult result{
-            Nph, Ne, GetNexONi(), L, efield, -999
+            Nph, Ne, GetNexOverNion(), Lindhard, efield, -999
         };
-        return YieldResultValidity(result, energy, Wq_eV);  
+        return YieldResultValidity(result, energy, WQ_eV);  
     }
 
     YieldResult LArNEST::GetYields(
@@ -438,8 +434,8 @@ namespace NEST
     //     // TODO: Is this work function independent of
     //     // other parameters?
     //     double alpha = 0.21;
-    //     double Wq_eV = 1000. / 51.9;  // 23.6/1.21; // ~19.2-5 eV
-    //     return Wvalue{.Wq_eV = Wq_eV, .alpha = alpha};
+    //     double WQ_eV = 1000. / 51.9;  // 23.6/1.21; // ~19.2-5 eV
+    //     return Wvalue{.WQ_eV = WQ_eV, .alpha = alpha};
     // }
     QuantaResult LArNEST::GetQuanta(
         const YieldResult &yields, double density

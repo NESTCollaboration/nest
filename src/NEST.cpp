@@ -1166,8 +1166,10 @@ YieldResult NESTcalc::GetYields(
 
 YieldResult NESTcalc::YieldResultValidity(YieldResult &res, const double energy,
                                           const double Wq_eV) {
-  assert(res.ElectronYield != -999 && res.PhotonYield != -999 &&
-         res.ExcitonRatio != -999);
+  assert(res.ElectronYield != -999 && 
+         res.PhotonYield != -999 &&
+         res.ExcitonRatio != -999
+  );
   if (res.PhotonYield > energy / W_SCINT)
     res.PhotonYield =
         energy / W_SCINT;  // yields can never exceed 1 / [ W ~ few eV ]

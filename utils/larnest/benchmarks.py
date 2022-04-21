@@ -4,7 +4,7 @@ Benchmark functions for LArNEST
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
-import csv
+import os
 
 class LArNESTBenchmarks:
     """
@@ -19,8 +19,11 @@ class LArNESTBenchmarks:
             header=0,
             dtype=float
         )
+        self.data.replace([np.inf, -np.inf, np.nan], 0.0)
         self.unique_efield = np.unique(self.data['efield'])
         self.unique_energy = np.unique(self.data['energy'])
+        if not os.path.isdir("plots/"):
+            os.makedirs("plots/")
 
     def plot_yields(self,
         yields:  str='Ne',
@@ -31,8 +34,6 @@ class LArNESTBenchmarks:
         fig, axs = plt.subplots(figsize=(10,6))
         for efield in self.unique_efield:
             mask = (self.data['efield'] == efield)
-            print(
-                np.array(self.data[yields][mask],dtype=float),self.unique_energy)
             axs.plot(
                 self.unique_energy, 
                 np.array(self.data[yields][mask],dtype=float) / self.unique_energy,
@@ -59,7 +60,7 @@ class LArNESTBenchmarks:
         plt.legend()
         plt.tight_layout()
         if save != '':
-            plt.savefig(f"{save}.png")
+            plt.savefig(f"plots/{save}.png")
         if show:
             plt.show()
 
@@ -75,11 +76,33 @@ class LArNESTBenchmarks:
 
 if __name__ == "__main__":
 
-    # larnest_benchmarks = LArNESTBenchmarks(
-    #     "../../build/LArNESTBenchmarks_output_NR.csv"
-    # )
-    # larnest_benchmarks.plot_all_yields("NR")
+    # first make the NR plots
+    nr_file = "../../build/larnest_benchmarks_nr.csv"
     larnest_benchmarks = LArNESTBenchmarks(
-        "../../build/LArNESTBenchmarks_output_ER.csv"
+        nr_file
+    )
+    larnest_benchmarks.plot_all_yields("NR")
+
+    # now the ER plots
+    er_file = "../../build/larnest_benchmarks_er.csv"
+    larnest_benchmarks = LArNESTBenchmarks(
+        er_file
     )
     larnest_benchmarks.plot_all_yields("ER")
+
+    # legacy plots
+    plot_legacy = True
+    if plot_legacy:
+        # first make the NR plots
+        nr_file = "../../build/legacy_larnest_benchmarks_2112.csv"
+        larnest_benchmarks = LArNESTBenchmarks(
+            nr_file
+        )
+        larnest_benchmarks.plot_all_yields("LegacyNR")
+
+        # now the ER plots
+        er_file = "../../build/legacy_larnest_benchmarks_13.csv"
+        larnest_benchmarks = LArNESTBenchmarks(
+            er_file
+        )
+        larnest_benchmarks.plot_all_yields("LegacyER")

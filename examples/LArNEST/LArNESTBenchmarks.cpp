@@ -2,7 +2,7 @@
  * @file legacyLArNEST.cpp
  * @author NEST Collaboration
  * @author Nicholas Carrara [nmcarrara@ucdavis.edu]
- * @brief 
+ * @brief Benchmarks for LAr ER model.  This program generates ...
  * @version 
  * @date 2022-04-14
  */
@@ -19,22 +19,20 @@ int main(int argc, char* argv[])
 {
     // this sample program takes several arguments
     // including
-    //  1) num_events - the number of events to generate
-    //  2) pdgcode - the pdg code of the particle creating the deposition
-    //  3) density - the density of the LAr
-    //  4) track_length - the size of the track length for the deposition
-    // (optional) 5) seed - a seed for the random number generator
-    if (argc < 5) 
+    //  1) num_events - the number of events to generate for each field/energy value
+    //  2) type - NR or ER for now 
+    //  3) density - the density of the LAr to use
+    // (optional) 4) seed - a seed for the random number generator
+    if (argc < 4) 
     {
-        std::cerr << "Error! This program expects six inputs!" << std::endl;
+        std::cerr << "Error! This program expects three inputs!" << std::endl;
         exit(0);
     }
     size_t num_events = atoi(argv[1]);
 
     // set up energy steps
-    double energy = atof(argv[2]);
     int num_energy_steps = 50000;
-    std::vector<double> energy_vals;
+    std::vector<double> energy_vals; 
     double start_val = .1;
     double end_val = 1000;
     double step_size = (end_val - start_val)/num_energy_steps;
@@ -43,13 +41,25 @@ int main(int argc, char* argv[])
         energy_vals.emplace_back(start_val + step_size * i);
     }
     
-    int pdgcode = atoi(argv[2]);
+    std::string particle_type = argv[2];
+    std::vector<double> electric_field;
+    NEST::INTERACTION_TYPE incident_particle;
+    if (particle_type == "NR")
+    {
+        electric_field.insert(electric_field.end(), {
+            1, 50, 100, 200, 500, 1000, 1500, 2000
+        });
+        incident_particle = NEST::NR;
+    }
+    else
+    {
+        electric_field.insert(electric_field.end(), {
+            1, 100, 200, 600, 1000, 1500, 2500, 6000, 9000
+        });
+        incident_particle = NEST::ion;
+    }
+    
     double density = atof(argv[3]);
-    std::vector<double> electric_field = {
-        1, 50, 100, 200, 500, 1000, 1500, 2000
-    };
-
-    double track_length = atof(argv[4]);
     uint64_t seed = 0;
     if (argc > 4) {
         seed = atoi(argv[4]);
@@ -64,12 +74,17 @@ int main(int argc, char* argv[])
     // Construct NEST objects for storing calculation results
     NEST::LArNESTResult result;
     std::ofstream output_file;
-    //output_file.open("LArNESTBenchmarks_output_NR.csv");
-    output_file.open("LArNESTBenchmarks_output_ER.csv");
+    if (particle_type == "NR") {
+        output_file.open("larnest_benchmarks_nr.csv");
+    }
+    else {
+        output_file.open("larnest_benchmarks_er.csv");
+    }
     output_file << "energy,efield,TotalYield,QuantaYield,LightYield,Nph,Ne,Nex,Nion\n";
-    // iterate over number of events
+    // iterate over electric field values
     for (size_t v = 0; v < electric_field.size(); v++)
     {
+        // iterate over energy values
         for (size_t i = 0; i < num_energy_steps; i++)
         {
             std::vector<double> TotalYield(num_events);
@@ -79,11 +94,11 @@ int main(int argc, char* argv[])
             std::vector<double> Ne(num_events);
             std::vector<double> Nex(num_events);
             std::vector<double> Nion(num_events);
+            // collect statistics for each event
             for (size_t j = 0; j < num_events; j++)
             {
                 result = larnest.FullCalculation(
-                    NEST::ion,
-                    //NEST::NR,
+                    incident_particle,
                     energy_vals[i],
                     density,
                     electric_field[v],

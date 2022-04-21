@@ -13,41 +13,6 @@
 #include "NEST.hh"
 #include "RandomGen.hh"
 
-// #define HIGH_E_NR 330.
-// #define W_DEFAULT \
-//   13.4  // default work func, in eV. arXiv:1611.10322. +/- 0.35. 19.5-19.6 eV
-//         // for LAr
-// #define W_SCINT \
-//   8.5e-3  // the *max* possible energy of 1 scint phot, keV. Make this at least
-//           // 10 eV for LAr
-// #define NEST_AVO 6.0221409e+23
-// #define ATOM_NUM \
-//   18.  // period to make float. 18 for LAr. If changed here go to TestSpectra.hh
-//        // too
-
-// #define PHE_MIN 1e-6  // area
-// #define FIELD_MIN 1.  // min elec field to make S2 (in V/cm)
-// #define DENSITY 2.90  // g/cm^3, ref density for dependent effects. ~1.4 for LAr
-
-// #define EPS_GAS \
-//   1.00126  // poly-morphic: make negative to use Aprile/PandaX instead of
-//            // LLNL/PIXeY's e- EE
-// // for GAr it is 1.000574 at least at room T (doi.org/10.1103/PhysRev.34.615)
-// #define EPS_LIQ \
-//   1.85  // LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan
-//         // M. LAr 1.325
-
-// #define SAMPLE_SIZE 10  // nano-seconds
-// #define PULSE_WIDTH 10  // nano-seconds
-// #define PULSEHEIGHT \
-//   0.005                  // threshold height, in PE, for writing to photon_times
-// #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
-// #define PHE_MAX 180      // saturation threshold, in PE per bin i.e. sample
-
-#define ZurichEXOW 1.1716263232
-// Qy Boost Factor to fit EXO-200 Data (error on this quantity is +/- 0.03)
-#define ZurichEXOQ 1.08  
-
 namespace NEST
 {
     static constexpr double LAr_Z{18};
@@ -76,8 +41,8 @@ namespace NEST
         double C = {17.2346};
         double D = {-4.7};
         double E = {0.025115};
-        double F = {3.768456};
-        double G = {-0.242671};
+        double F = {0.26536};
+        double G = {0.242671};
     };
     struct LArERExcitonYieldsBetaParameters
     {
@@ -134,10 +99,21 @@ namespace NEST
         double ElectricField;
     };
 
+    struct LArYieldFluctuationResult
+    {
+        double TotalYieldFluctuation;
+        double QuantaYieldFluctuation;
+        double LightYieldFluctuation;
+        double NphFluctuation;
+        double NeFluctuation;
+        double NexFluctuation;
+        double NionFluctuation;
+    };
+    
     struct LArNESTResult
     {   
         LArYieldResult yields;
-        QuantaResult quanta;
+        LArYieldFluctuationResult fluctuations;
         photonstream photon_times;
     };
 
@@ -150,11 +126,18 @@ namespace NEST
     public:
         explicit LArNEST(VDetector *detector);
 
+        /// set LAr parameters
         void setDensity(double density)     { fDensity = density; }
-        void setWDefault(double wDefault)   { fWDefault = wDefault; }
         void setRIdealGas(double RIdealGas) { fRIdealGas = RIdealGas; }
         void setRealGasA(double RealGasA)   { fRealGasA = RealGasA; }
         void setRealGasB(double RealGasB)   { fRealGasB = RealGasB; }
+        void setWorkQuantaFunction(double workQuantaFunction) { fWorkQuantaFunction = workQuantaFunction; }
+        void setWorkIonFunction(double workIonFunction) { fWorkIonFunction = workIonFunction; }
+        void setWorkPhotonFunction(double workPhotonFunction) { fWorkPhotonFunction = workPhotonFunction; }
+        void setFanoER(double FanoER) { fFanoER = FanoER; }
+        void setNexOverNion(double NexOverNion) { fNexOverNion = NexOverNion; }
+
+        // TODO: do we need nuisance parameters?
         void setNuisanceParameters(std::vector<double> nuisanceParameters);
         void setTemperature(std::vector<double> temperature);
         
@@ -173,6 +156,17 @@ namespace NEST
         void setERExcitonYieldsDokeBirksParameters(
             LArERExcitonYieldsDokeBirksParameters ERExcitonYieldsDokeBirksParameters
         );
+
+        /// get LAr parameters
+        double getDensity() const { return fDensity; }
+        double getRIdealGas() const { return fRIdealGas; }
+        double getRealGasA() const { return fRealGasA; }
+        double getRealGasB() const { return fRealGasB; }
+        double getWorkQuantaFunction() const { return fWorkQuantaFunction; }
+        double getWorkIonFunction() const { return fWorkIonFunction; }
+        double getWorkPhotonFunction() const { return fWorkPhotonFunction; }
+        double getFanoER() const { return fFanoER; }
+        double getNexOverNion() const { return fNexOverNion; }
 
         /**
          * @brief NR Total Yields function:
@@ -258,13 +252,6 @@ namespace NEST
          */
         double GetERExcitonYields(double energy, double efield, double density);
         
-        /// various defined constants
-        inline double GetWorkQuantaFunction();
-        inline double GetWorkIonFunction();
-        inline double GetWorkPhotonFunction();
-        inline double GetFanoER();
-        inline double GetNexOverNion(); 
-
         double GetLinearEnergyTransfer(
             double energy, bool CSDA=false
         );
@@ -285,14 +272,6 @@ namespace NEST
             double dfield, double energy
         );
         
-        /**
-         * @brief 
-         * 
-         */
-        QuantaResult GetQuanta(
-            const YieldResult &yields, double density
-        );
-
         /**
          * @brief Calculate yields for nuclear recoils.  The formulas
          * for these are given by:
@@ -340,6 +319,15 @@ namespace NEST
             double density, double dfield,
             bool oldModelER=false
         );
+
+        /**
+         * @brief Calculate fluctions on the mean yields
+         * 
+         */
+        LArYieldFluctuationResult GetYieldFluctuations(
+            const YieldResult &yields, double density
+        );
+
         /**
          * @brief 
          * 
@@ -360,9 +348,9 @@ namespace NEST
          * 
          * The default value for the dx=track_length is
          * 1/3 mm, which is the standard from Geant4.
-         * @return QuantaResult 
+         * @return LArYieldResult 
          */
-        QuantaResult LegacyCalculation(
+        LArYieldResult LegacyCalculation(
             int pdgcode, double energy,
             double density, double eField, 
             double track_length=0.0003
@@ -370,22 +358,22 @@ namespace NEST
         double LegacyGetLinearEnergyTransfer(double E);
 
     private:
-        double fDensity = {1.4};
-        double fWDefault = {19.5};
-        std::vector<double> fNuisanceParameters = {
-            11.0, 1.1, 0.0480, 
-            -0.0533, 12.6, 0.3, 
-            2., 0.3, 2., 0.5, 
-            1., 1.
-        };
+        double fDensity =   {1.393};        
         double fRIdealGas = {8.31446261815324};
-        double fRealGasA = {0.1355};  // m^6*Pa/mol^2 or m^4*N/mol^2.
-        double fRealGasB = {3.201e-5};  // m^3/mol.
+        double fRealGasA =  {0.1355};  // m^6*Pa/mol^2 or m^4*N/mol^2.
+        double fRealGasB =  {3.201e-5};  // m^3/mol.
 
         std::vector<double> fTemperature = {
            84., 86., 88., 92., 96., 110., 125., 140.
         };
-        
+
+        double fWorkQuantaFunction = {19.5};
+        double fWorkIonFunction =    {23.6};
+        double fWorkPhotonFunction = {14.544};
+
+        double fNexOverNion = {0.21};
+        double fFanoER = {0.1115};
+    
         LArNRYieldsParameters fLArNRYieldsParameters;
         LArERYieldsParameters fLArERYieldsParameters;
     };

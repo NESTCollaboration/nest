@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
     // set up energy steps
     double energy = atof(argv[2]);
-    int num_energy_steps = 10000;
+    int num_energy_steps = 100000;
     std::vector<double> energy_vals;
     double start_val = .1;
     double end_val = 1000;
@@ -82,11 +82,11 @@ int main(int argc, char* argv[])
                     electric_field[v],
                     false
                 );
-                photons[j] = result.quanta.photons;
-                electrons[j] = result.quanta.electrons;
+                photons[j] = result.yields.PhotonYield;                
+                electrons[j] = result.yields.ElectronYield;
             }
-            double photon_mean = std::accumulate(photons.begin(), photons.end(), 0) / num_events;
-            double electron_mean = std::accumulate(electrons.begin(), electrons.end(), 0) / num_events;
+            double photon_mean = std::accumulate(photons.begin(), photons.end(), 0) / double(num_events);
+            double electron_mean = std::accumulate(electrons.begin(), electrons.end(), 0) / double(num_events);
             output_file << energy_vals[i] << ","; 
             output_file << electric_field[v] << ",";
             output_file << photon_mean << "," << electron_mean << "\n";

@@ -86,6 +86,12 @@ namespace NEST
         double let = {-2.07763};
     };
 
+    struct ThomasImelParameters
+    {
+        double A = {0.1};
+        double B = {-0.0932};
+    };
+
     struct LArYieldResult 
     {
         double TotalYield;
@@ -376,5 +382,7 @@ namespace NEST
     
         LArNRYieldsParameters fLArNRYieldsParameters;
         LArERYieldsParameters fLArERYieldsParameters;
+
+        ThomasImelParameters fThomasImelParameters;
     };
 }

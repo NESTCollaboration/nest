@@ -313,15 +313,26 @@ namespace NEST
     {
         double NRTotalYields = GetNRTotalYields(energy);
         double NRExcitonYields = GetNRExcitonYields(energy, efield);
-        double NRPhotonYields = GetNRPhotonYields(energy, efield);
-
         if (NRExcitonYields < 0.0) {
             NRExcitonYields = 0.0;
         }
+        //double NRPhotonYields = NRTotalYields / energy - NRExcitonYields;
+        double NRPhotonYields = GetNRPhotonYields(energy, efield);
+        if (NRPhotonYields < 0.0) {
+            NRPhotonYields = 0.0;
+        }
+
         double Ne = NRExcitonYields * energy;
         double Nph = NRPhotonYields * energy;
-        double Nex = (Ne + Nph)/(1.0 + fNexOverNion);
-        double Nion = (Ne + Nph) - Nex;
+        double Nq = Ne + Nph;
+
+        /// recombination
+        double ThomasImel = fThomasImelParameters.A * pow(efield, fThomasImelParameters.B);
+        double Nion = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
+        double Nex = Nq - Nion;
+
+        // double Nex = (Ne + Nph)/(1.0 + fNexOverNion);
+        // double Nion = (Ne + Nph) - Nex;
 
         double WQ_eV = fWorkQuantaFunction;
         double Lindhard = (NRTotalYields / energy) * WQ_eV * 1e-3;
@@ -339,15 +350,22 @@ namespace NEST
     {  
         double ERTotalYields = GetERTotalYields(energy);
         double ERExcitonYields = GetERExcitonYields(energy, efield, density);
-        double ERPhotonYields = ERTotalYields / energy - ERExcitonYields;
-
         if (ERExcitonYields < 0.0) {
             ERExcitonYields = 0.0;
         }
+        double ERPhotonYields = ERTotalYields / energy - ERExcitonYields;
+        if (ERPhotonYields < 0.0) {
+            ERPhotonYields = 0.0;
+        }
+
         double Ne = ERExcitonYields * energy;
         double Nph = ERPhotonYields * energy;
-        double Nex = (Ne + Nph)/(1.0 + fNexOverNion);
-        double Nion = (Ne + Nph) - Nex;
+        double Nq = Ne + Nph;
+
+        /// recombination
+        double ThomasImel = fThomasImelParameters.A * pow(efield, fThomasImelParameters.B);
+        double Nion = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
+        double Nex = Nq - Nion;
 
         double WQ_eV = fWorkQuantaFunction;
         double Lindhard = (ERTotalYields / energy) * WQ_eV * 1e-3;

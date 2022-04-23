@@ -36,24 +36,31 @@ class LArNESTBenchmarks:
             mask = (self.data['efield'] == efield)
             axs.plot(
                 self.unique_energy, 
-                np.array(self.data[yields][mask],dtype=float) / self.unique_energy,
+                np.array(self.data[yields][mask],dtype=float),
                 label=f"{efield} V/cm"
             )
-        axs.set_xlabel("Energy (keV)")
+        axs.set_xlabel("Energy [keV]")
         if yields == 'TotalYields':
-            axs.set_ylabel("Total Yield (quanta)")
+            axs.set_ylabel("Total Yield [quanta/keV]")
+            axs.set_yscale("log")
         elif yields == 'QuantYields':
-            axs.set_ylabel("Quanta Yield (quanta)")
+            axs.set_ylabel("Quanta Yield [quanta/keV]")
+            axs.set_yscale("linear")
         elif yields == 'LightYields':
-            axs.set_ylabel("Light Yield (quanta)")
+            axs.set_ylabel("Light Yield [quanta/keV]")
+            axs.set_yscale("linear")
         elif yields == 'Nph':
-            axs.set_ylabel("Number of photons (phe)")
+            axs.set_ylabel("Number of photons [photons]")
+            axs.set_yscale("log")
         elif yields == 'Ne':
-            axs.set_ylabel("Number of electrons (e-)")
+            axs.set_ylabel("Number of electrons[electrons]")
+            axs.set_yscale("log")
         elif yields == 'Nex':
-            axs.set_ylabel("Number of excitons (quanta)")
+            axs.set_ylabel("Number of excitons [quanta]")
+            axs.set_yscale("log")
         else:
-            axs.set_ylabel("Number of ions (quanta)")
+            axs.set_ylabel("Number of ions [quanta]")
+            axs.set_yscale("log")
         axs.set_xscale("log")
         if title != '':
             plt.title(title)

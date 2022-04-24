@@ -43,20 +43,27 @@ int main(int argc, char* argv[])
     
     std::string particle_type = argv[2];
     std::vector<double> electric_field;
-    NEST::INTERACTION_TYPE incident_particle;
+    NEST::LArInteraction incident_particle;
     if (particle_type == "NR")
     {
         electric_field.insert(electric_field.end(), {
             1, 50, 100, 200, 500, 1000, 1500, 2000
         });
-        incident_particle = NEST::NR;
+        incident_particle = NEST::LArInteraction::NR;
     }
-    else
+    else if (particle_type == "ER")
     {
         electric_field.insert(electric_field.end(), {
             1, 100, 200, 600, 1000, 1500, 2500, 6000, 9000
         });
-        incident_particle = NEST::ion;
+        incident_particle = NEST::LArInteraction::ER;
+    }
+    else
+    {
+        electric_field.insert(electric_field.end(), {
+            1, 50, 100, 500, 1000, 5000, 10000, 20000
+        });
+        incident_particle = NEST::LArInteraction::Alpha;
     }
     
     double density = atof(argv[3]);
@@ -77,8 +84,11 @@ int main(int argc, char* argv[])
     if (particle_type == "NR") {
         output_file.open("larnest_benchmarks_nr.csv");
     }
-    else {
+    else if (particle_type == "ER") {
         output_file.open("larnest_benchmarks_er.csv");
+    }
+    else {
+        output_file.open("larnest_benchmarks_alpha.csv");
     }
     output_file << "energy,efield,TotalYield,QuantaYield,LightYield,Nph,Ne,Nex,Nion\n";
     // iterate over electric field values
@@ -100,8 +110,8 @@ int main(int argc, char* argv[])
                 result = larnest.FullCalculation(
                     incident_particle,
                     energy_vals[i],
-                    density,
                     electric_field[v],
+                    density,
                     false
                 );
                 TotalYield[j] = result.yields.TotalYield;

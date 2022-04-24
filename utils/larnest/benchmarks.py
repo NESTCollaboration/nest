@@ -97,6 +97,13 @@ if __name__ == "__main__":
     )
     larnest_benchmarks.plot_all_yields("ER")
 
+    # Alpha plots
+    er_file = "../../build/larnest_benchmarks_alpha.csv"
+    larnest_benchmarks = LArNESTBenchmarks(
+        er_file
+    )
+    larnest_benchmarks.plot_all_yields("Alpha")
+
     # legacy plots
     plot_legacy = True
     if plot_legacy:

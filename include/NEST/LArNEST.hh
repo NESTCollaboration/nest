@@ -24,6 +24,13 @@ namespace NEST
     static constexpr double sqrt2_PI = gcem::sqrt(2. * M_PI);
     static constexpr double inv_sqrt2_PI = 1. / gcem::sqrt(2. * M_PI);
 
+    enum class LArInteraction
+    {
+        NR = 0,
+        ER = 1,
+        Alpha = 2,
+    };
+
     struct LArNRYieldsParameters
     {
         double alpha =  {11.10};
@@ -34,7 +41,7 @@ namespace NEST
         double zeta =   {0.3};
         double eta =    {2.94};
     };
-    struct LArERExcitonYieldsAlphaParameters
+    struct LArERElectronYieldsAlphaParameters
     {
         double A = {32.988};
         double B = {-552.988};
@@ -44,7 +51,7 @@ namespace NEST
         double F = {0.26536};
         double G = {0.242671};
     };
-    struct LArERExcitonYieldsBetaParameters
+    struct LArERElectronYieldsBetaParameters
     {
         double A = {0.778482};
         double B = {25.9};
@@ -53,7 +60,7 @@ namespace NEST
         double E = {4.55};
         double F = {-7.502};
     };
-    struct LArERExcitonYieldsGammaParameters
+    struct LArERElectronYieldsGammaParameters
     {
         double A = {0.659509};
         double B = {1000};
@@ -63,7 +70,7 @@ namespace NEST
         double F = {1047.408};
         double G = {0.01851};
     };
-    struct LArERExcitonYieldsDokeBirksParameters
+    struct LArERElectronYieldsDokeBirksParameters
     {
         double A = {1052.264};
         double B = {14159350000 - 1652.264};
@@ -73,10 +80,10 @@ namespace NEST
     };
     struct LArERYieldsParameters
     {
-        LArERExcitonYieldsAlphaParameters alpha;
-        LArERExcitonYieldsBetaParameters beta;
-        LArERExcitonYieldsGammaParameters gamma;
-        LArERExcitonYieldsDokeBirksParameters doke_birks;
+        LArERElectronYieldsAlphaParameters alpha;
+        LArERElectronYieldsBetaParameters beta;
+        LArERElectronYieldsGammaParameters gamma;
+        LArERElectronYieldsDokeBirksParameters doke_birks;
         double p1 = {1.0};
         double p2 = {10.304};
         double p3 = {13.0654};
@@ -84,6 +91,43 @@ namespace NEST
         double p5 = {0.7};
         double delta = {15.7489};
         double let = {-2.07763};
+    };
+
+    struct LArAlphaElectronYieldsParameters
+    {
+        double A = {1.0/6200.0};
+        double B = {64478398.7663};
+        double C = {0.173553719};
+        double D = {1.21};
+        double E = {0.02852};
+        double F = {0.01};
+        double G = {4.71598};
+        double H = {7.72848};
+        double I = {-0.109802};
+        double J = {3.0};
+    };
+
+    struct LArAlphaPhotonYieldsParameters
+    {
+        double A = {1.5};
+        double B = {-0.012};
+        double C = {1.0/6500.0};
+        double D = {278037.250283};
+        double E = {0.173553719};
+        double F = {1.21};
+        double G = {2};
+        double H = {0.653503};
+        double I = {4.98483};
+        double J = {10.0822};
+        double K = {1.2076};
+        double L = {-0.97977};
+        double M = {3.0};
+    };
+
+    struct LArAlphaYieldsParameters
+    {
+        LArAlphaElectronYieldsParameters Ye;
+        LArAlphaPhotonYieldsParameters Yph;
     };
 
     struct ThomasImelParameters
@@ -155,6 +199,7 @@ namespace NEST
     public:
         explicit LArNEST(VDetector *detector);
 
+        //-------------------------Parameters-------------------------//
         /// set LAr parameters
         void setDensity(double density)     { fDensity = density; }
         void setRIdealGas(double RIdealGas) { fRIdealGas = RIdealGas; }
@@ -176,17 +221,17 @@ namespace NEST
         /// setters for various parameters
         void setNRYieldsParameters(LArNRYieldsParameters NRYieldsParameters);
         void setERYieldsParameters(LArERYieldsParameters ERYieldsParameters);
-        void setERExcitonYieldsAlphaParameters(
-            LArERExcitonYieldsAlphaParameters ERExcitonYieldsAlphaParameters
+        void setERElectronYieldsAlphaParameters(
+            LArERElectronYieldsAlphaParameters ERElectronYieldsAlphaParameters
         );
-        void setERExcitonYieldsBetaParameters(
-            LArERExcitonYieldsBetaParameters ERExcitonYieldsBetaParameters
+        void setERElectronYieldsBetaParameters(
+            LArERElectronYieldsBetaParameters ERElectronYieldsBetaParameters
         );
-        void setERExcitonYieldsGammaParameters(
-            LArERExcitonYieldsGammaParameters ERExcitonYieldsGammaParameters
+        void setERElectronYieldsGammaParameters(
+            LArERElectronYieldsGammaParameters ERElectronYieldsGammaParameters
         );
-        void setERExcitonYieldsDokeBirksParameters(
-            LArERExcitonYieldsDokeBirksParameters ERExcitonYieldsDokeBirksParameters
+        void setERElectronYieldsDokeBirksParameters(
+            LArERElectronYieldsDokeBirksParameters ERElectronYieldsDokeBirksParameters
         );
         void setThomasImelParameters(ThomasImelParameters thomasImelParameters);
         void setDriftParameters(DriftParameters driftParameters);
@@ -202,6 +247,33 @@ namespace NEST
         double getFanoER() const { return fFanoER; }
         double getNexOverNion() const { return fNexOverNion; }
 
+        //-------------------------All Yields-------------------------//
+        LArYieldResult GetRecombinationYields(
+            double TotalYields, double ElectronYields, double PhotonYields,
+            double energy, double efield
+        );
+        LArYieldResult GetYields(
+            LArInteraction species, double energy, 
+            double efield, double density
+        );
+        /**
+         * @brief Calculate fluctions on the mean yields
+         * 
+         */
+        LArYieldFluctuationResult GetYieldFluctuations(
+            const YieldResult &yields, double density
+        );
+        /**
+         * @brief 
+         * 
+         */
+        LArNESTResult FullCalculation(
+            LArInteraction species, double energy, 
+            double efield, double density, 
+            bool do_times
+        );
+
+        //-------------------------NR Yields-------------------------//
         /**
          * @brief NR Total Yields function:
          *      Ty = alpha * E^beta
@@ -219,7 +291,7 @@ namespace NEST
          * @param efield 
          * @return double 
          */
-        double GetNRExcitonYields(double energy, double efield);
+        double GetNRElectronYields(double energy, double efield);
         /**
          * @brief NR Photon Yields function:
          *      Ly = 
@@ -238,7 +310,29 @@ namespace NEST
          * @return double 
          */
         double GetNRPhotonYieldsConserved(double energy, double efield);
+        /**
+         * @brief Calculate yields for nuclear recoils.  The formulas
+         * for these are given by:
+         *      Ty = alpha * E^beta
+         *      Qy = (gamma * F^delta)^-1 * (sqrt(E + epsilon)) 
+         *              * (1 - (1 + (E/zeta)^eta)^-1)
+         * 
+         *      Ly = alpha * E^(beta - 1) - (gamma * F^delta)^-1 
+         *              * (sqrt(E + epsilon))^-1
+         * First, we fit the total yield model and take it as fixed.
+         * The model is a simple power law in the deposited energy.  There
+         * is no field dependence.  (J. Mueller and E. Kozlova)
+         * @param energy 
+         * @param density 
+         * @param efield 
+         * @param NuisParam 
+         * @return YieldResult 
+         */
+        LArYieldResult GetNRYields(
+            double energy, double efield, double density
+        ); 
 
+        //-------------------------ER Yields-------------------------//
         /**
          * @brief ER Total Yields function:
          *      Ty
@@ -254,28 +348,28 @@ namespace NEST
          * @param density 
          * @return double 
          */
-        double GetERExcitonYieldsAlpha(double efield, double density);
+        double GetERElectronYieldsAlpha(double efield, double density);
         /**
          * @brief ER Exciton Yields Beta function:
          * 
          * @param efield 
          * @return double 
          */
-        double GetERExcitonYieldsBeta(double efield);
+        double GetERElectronYieldsBeta(double efield);
         /**
          * @brief ER Exciton Yields Gamma function:
          * 
          * @param efield 
          * @return double 
          */
-        double GetERExcitonYieldsGamma(double efield);
+        double GetERElectronYieldsGamma(double efield);
         /**
          * @brief ER Exciton Yields Doke-Birks function:
          * 
          * @param efield 
          * @return double 
          */
-        double GetERExcitonYieldsDokeBirks(double efield);
+        double GetERElectronYieldsDokeBirks(double efield);
         /**
          * @brief ER Exciton Yields function:
          * 
@@ -284,52 +378,9 @@ namespace NEST
          * @param density 
          * @return double 
          */
-        double GetERExcitonYields(double energy, double efield, double density);
-        
-        double GetLinearEnergyTransfer(
-            double energy, bool CSDA=false
-        );
-        double GetDensity(
-            double Kelvin, double bara, bool &inGas,
-            uint64_t evtNum, double molarMass
-        );
-        double GetDriftVelocity_Liquid(
-            double Kelvin, double eField
-        );
-        double GetDriftVelocity_MagBoltz(
-            double density, double efieldinput,
-            double molarMass
-        );
-        double GetPhotonEnergy(bool state);
-        double GetPhotonTime(
-            INTERACTION_TYPE species, bool exciton,
-            double energy
-        );
-        
+        double GetERElectronYields(double energy, double efield, double density);
         /**
-         * @brief Calculate yields for nuclear recoils.  The formulas
-         * for these are given by:
-         *      Ty = alpha * E^beta
-         *      Qy = (gamma * F^delta)^-1 * (sqrt(E + epsilon)) 
-         *              * (1 - (1 + (E/zeta)^eta)^-1)
-         * 
-         *      Ly = alpha * E^(beta - 1) - (gamma * F^delta)^-1 
-         *              * (sqrt(E + epsilon))^-1
-         * First, we fit the total yield model and take it as fixed.
-         * The model is a simple power law in the deposited energy.  There
-         * is no field dependence.  (J. Mueller and E. Kozlova)
-         * @param energy 
-         * @param density 
-         * @param dfield 
-         * @param NuisParam 
-         * @return YieldResult 
-         */
-        LArYieldResult GetNRYields(
-            double energy, double dfield, double density
-        ); 
-
-        /**
-         * @brief Calculate yields for beta particles.  The formulas
+         * @brief Calculate yields for charged particles.  The formulas
          * for these are given by:
          *      Qy = alpha * beta + (gamma - alpha * beta)/(p1 + p2 * E^p3)^p4
          *                        + delta / (p5 + Doke * E^LET)
@@ -339,42 +390,73 @@ namespace NEST
          *      The p1-p5 parameters are stored in ERQuantaParameters.
          * @param energy 
          * @param density 
-         * @param dfield 
+         * @param efield 
          * @return LArYieldResult 
          */
         LArYieldResult GetERYields(
-            double energy, double density, double dfield
+            double energy, double efield, double density
         );
+        //-------------------------Alpha Yields-------------------------//
+        /**
+         * @brief Get the Alpha Total Yields object
+         * 
+         * @param energy 
+         * @return double 
+         */
+        double GetAlphaTotalYields(double energy);
+        /**
+         * @brief Get the Alpha Electron Yields object
+         * 
+         * @param efield 
+         * @return double 
+         */
+        double GetAlphaElectronYields(double efield);
+        /**
+         * @brief Get the Alpha Photon Yields object
+         * 
+         * @param efield 
+         * @return double 
+         */
+        double GetAlphaPhotonYields(double efield);
+        /**
+         * @brief Calculate yields for alpha particles
+         * 
+         * @param energy 
+         * @param efield 
+         * @param density 
+         * @return LArYieldResult 
+         */
         LArYieldResult GetAlphaYields(
-            double energy, double density, double dfield
-        );
-        LArYieldResult GetYields(
-            INTERACTION_TYPE species, double energy, 
-            double density, double dfield,
-            bool oldModelER=false
+            double energy, double efield, double density
         );
 
-        /**
-         * @brief Calculate fluctions on the mean yields
-         * 
-         */
-        LArYieldFluctuationResult GetYieldFluctuations(
-            const YieldResult &yields, double density
+        //-------------------------Photon Times-------------------------//
+        double GetPhotonTime(
+            LArInteraction species, bool exciton,
+            double energy
+        );
+        double GetPhotonEnergy(bool state);
+
+        //-------------------------Drift Velocity-------------------------//
+        double GetDriftVelocity_Liquid(
+            double Kelvin, double eField
+        );
+        double GetDriftVelocity_MagBoltz(
+            double density, double efieldinput,
+            double molarMass
         );
 
-        /**
-         * @brief 
-         * 
-         */
-        LArNESTResult FullCalculation(
-            INTERACTION_TYPE species, double energy, 
-            double density, double efield,
-            bool do_times
+        //-------------------------Utilities-------------------------//
+        double GetLinearEnergyTransfer(
+            double energy, bool CSDA=false
         );
-
-
+        double GetDensity(
+            double Kelvin, double bara, bool &inGas,
+            uint64_t evtNum, double molarMass
+        );
         std::vector<double> CalculateG2(bool verbosity=false);
 
+        //-------------------------Legacy LArNEST-------------------------//
         /**
          * @brief Below are legacy LAr calculation 
          * functions which are almost copied verbadim 
@@ -404,8 +486,9 @@ namespace NEST
         double fNexOverNion = {0.21};
         double fFanoER = {0.1115};
     
-        LArNRYieldsParameters fLArNRYieldsParameters;
-        LArERYieldsParameters fLArERYieldsParameters;
+        LArNRYieldsParameters fNR;
+        LArERYieldsParameters fER;
+        LArAlphaYieldsParameters fAlpha;
 
         ThomasImelParameters fThomasImelParameters;
         DriftParameters fDriftParameters;

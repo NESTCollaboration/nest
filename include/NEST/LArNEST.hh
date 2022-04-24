@@ -471,6 +471,22 @@ namespace NEST
 
         //-------------------------Legacy LArNEST-------------------------//
         /**
+         * @brief 
+         * 
+         * @param energy 
+         * @param efield 
+         * @param yieldFactor 
+         * @param excitationRatio 
+         * @param epsilon 
+         * @param recombProb 
+         * @return LArYieldResult 
+         */
+        LArYieldResult LegacyGetYields(
+            double energy, double efield, 
+            double yieldFactor, double excitationRatio, 
+            double epsilon, double recombProb
+        );
+        /**
          * @brief Below are legacy LAr calculation 
          * functions which are almost copied verbadim 
          * from LArSoft, see - 
@@ -481,8 +497,12 @@ namespace NEST
          */
         LArYieldResult LegacyCalculation(
             int pdgcode, double energy,
-            double density, double eField, 
+            double efield, double density,
             double track_length=0.0003
+        );
+        double LegacyGetRecombinationProbability(
+            double energy, double efield, double density,
+            int pdgcode, double track_length
         );
         double LegacyGetLinearEnergyTransfer(double E);
 

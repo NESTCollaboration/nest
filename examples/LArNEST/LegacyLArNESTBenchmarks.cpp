@@ -50,8 +50,8 @@ int main(int argc, char* argv[])
 
     double track_length = atof(argv[4]);
     uint64_t seed = 0;
-    if (argc > 4) {
-        seed = atoi(argv[4]);
+    if (argc > 5) {
+        seed = atoi(argv[5]);
     }
 
     LArDetector* detector = new LArDetector();
@@ -82,9 +82,9 @@ int main(int argc, char* argv[])
             {
                 result = larnest.LegacyCalculation(
                     pdgcode,
-                    energy_vals[i] / 1000.0,
-                    density,
+                    energy_vals[i],
                     electric_field[v],
+                    density, 
                     track_length
                 );
                 TotalYield[j] = result.TotalYield;

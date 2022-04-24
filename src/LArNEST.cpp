@@ -438,53 +438,29 @@ namespace NEST
     }
 
     //------------------------------------Legacy LArNEST------------------------------------//
-    LArYieldResult LArNEST::LegacyCalculation(
-        int pdgcode, double energy,
-        double density, double efield, 
-        double track_length
+    LArYieldResult LArNEST::LegacyGetYields(
+        double energy, double efield, 
+        double yieldFactor, double excitationRatio, 
+        double epsilon, double recombProb
     )
     {
-        // default quenching factor, for electronic recoils
-        double yieldFactor = 1.0; 
-        // ratio for light particle in LAr, such as e-, mu-, Aprile et. al book
-        double excitationRatio = 0.21; 
-        // set up DokeBirks coefficients
-        double DokeBirks[3];
-        if (efield) {
-            DokeBirks[0] = 0.07 * pow((efield / 1.0e3), -0.85);
-            DokeBirks[2] = 0.00;
-        }
-        else {
-            DokeBirks[0] = 0.0003;
-            DokeBirks[2] = 0.75;
-        }
-        DokeBirks[1] = DokeBirks[0] / (1 - DokeBirks[2]); //B=A/(1-C) (see paper)
-        // nuclear recoil quenching "L" factor: total yield is
-        // reduced for nuclear recoil as per Lindhard theory
-        double epsilon = 11.5 * (energy / 1.e-3 * pow(LAr_Z, (-7. / 3.)));
         // determine ultimate number of quanta from current E-deposition (ph+e-) 
         // total mean number of exc/ions the total number of either quanta produced 
         // is equal to product of the work function, the energy deposited, 
         // and yield reduction, for NR
         double MeanNq = legacy_scint_yield * energy;
         double sigma = sqrt(legacy_resolution_scale * MeanNq); //Fano
+        double leftvar = RandomGen::rndm()->rand_gauss(yieldFactor, 0.25 * yieldFactor);
+        if (leftvar < 0) {
+            leftvar = 0;
+        }
+        if (leftvar > 1.0) {
+            leftvar = 1.0;
+        }
         int Nq = int(floor(RandomGen::rndm()->rand_gauss(MeanNq, sigma) + 0.5));
-
-        if (abs(pdgcode) == 2112) //nuclear recoil
-        {
-            yieldFactor = 0.23 * (1 + exp(-5 * epsilon)); //liquid argon L_eff
-            excitationRatio = 0.69337 + 0.3065 * exp(-0.008806 * pow(efield, 0.76313));
-            
+        if (yieldFactor < 1) {
+            Nq = RandomGen::rndm()->binom_draw(Nq, leftvar);
         }
-
-        double LeffVar = RandomGen::rndm()->rand_gauss(yieldFactor, 0.25 * yieldFactor);
-        LeffVar = clamp(LeffVar, 0., 1.);
-
-        if (yieldFactor < 1) // nuclear recoil
-        {
-            Nq = RandomGen::rndm()->binom_draw(Nq, LeffVar);
-        }
-
         // if Edep below work function, can't make any quanta, and if Nq
         // less than zero because Gaussian fluctuated low, update to zero
         if (energy < 1 / legacy_scint_yield || Nq < 0) { 
@@ -496,55 +472,6 @@ namespace NEST
             Nq, excitationRatio / (1 + excitationRatio)
         );
         double Nion = Nq - Nex;
-
-        // this section calculates recombination following the modified 
-        // Birks'Law of Doke, deposition by deposition, may be overridden 
-        // later in code if a low enough energy necessitates switching to the
-        // Thomas-Imel box model for recombination instead (determined by site)
-        double dE = energy;
-        double dx = 0.0;
-        double LET = 0.0;
-        double recombProb;
-
-        if (abs(pdgcode) != 11 && abs(pdgcode) != 13) 
-        {
-            // e-: 11, e+: -11, mu-: 13, mu+: -13
-            // in other words, if it's a gamma,ion,proton,alpha,pion,et al. do not
-            // use the step length provided by Geant4 because it's not relevant,
-            // instead calculate an estimated LET and range of the electrons that
-            // would have been produced if Geant4 could track them
-            LET = LegacyGetLinearEnergyTransfer(1000 * dE);
-            if (LET) {
-                //find the range based on the LET
-                dx = dE / (density * LET); 
-            }
-            if (abs(pdgcode) == 2112) // nuclear recoils
-            {
-                dx = 0;
-            }
-        }
-        else //normal case of an e-/+ energy deposition recorded by Geant
-        {
-            dx = track_length / 10.;
-            if (dx) 
-            {
-                LET = (dE / dx) * (1 / density); //lin. energy xfer (prop. to dE/dx)
-            }
-            if (LET > 0 && dE > 0 && dx > 0) 
-            {
-                double ratio = LegacyGetLinearEnergyTransfer(dE * 1e3) / LET;
-                if (ratio < 0.7 && pdgcode == 11) 
-                {
-                    dx /= ratio;
-                    LET *= ratio;
-                }
-            }
-        }
-        recombProb = ((DokeBirks[0] * LET) / (1 + DokeBirks[1] * LET) 
-            + DokeBirks[2]) * (density / legacy_density_LAr);
-
-        //check against unphysicality resulting from rounding errors
-        recombProb = clamp(recombProb, 0., 1.);
 
         //use binomial distribution to assign photons, electrons, where photons
         //are excitons plus recombined ionization electrons, while final
@@ -558,6 +485,100 @@ namespace NEST
             Nph, Ne, Nex, Nion, 0.0, efield
         };
         return result;
+    }
+    LArYieldResult LArNEST::LegacyCalculation(
+        int pdgcode, double energy,
+        double efield, double density, 
+        double track_length
+    )
+    {
+        // determine various parameter values, such as the 
+        // yieldfactor, excitationratio, dokebirks parameters,
+        // epislon and the recombination probability
+        // default quenching factor, for electronic recoils
+        double yieldFactor = 1.0; 
+        // ratio for light particle in LAr, such as e-, mu-, Aprile et. al book
+        double excitationRatio = 0.21; 
+        
+        // nuclear recoil quenching "L" factor: total yield is
+        // reduced for nuclear recoil as per Lindhard theory
+        double epsilon = 11.5 * (energy * pow(LAr_Z, (-7. / 3.)));
+        if (abs(pdgcode) == 2112) //nuclear recoil
+        {
+            yieldFactor = 0.23 * (1 + exp(-5 * epsilon)); //liquid argon L_eff
+            excitationRatio = 0.69337 + 0.3065 * exp(-0.008806 * pow(efield, 0.76313));
+        }
+        // get the recombination probability
+        double recombProb = LegacyGetRecombinationProbability(
+            energy, efield, density, pdgcode, track_length
+        );
+        return LegacyGetYields(
+            energy, efield, 
+            yieldFactor, excitationRatio, 
+            epsilon, recombProb
+        );
+    }
+    double LArNEST::LegacyGetRecombinationProbability(
+        double energy, double efield, double density,
+        int pdgcode, double track_length
+    )
+    {
+        // this section calculates recombination following the modified 
+        // Birks'Law of Doke, deposition by deposition, may be overridden 
+        // later in code if a low enough energy necessitates switching to the
+        // Thomas-Imel box model for recombination instead (determined by site)
+        double dE = energy;
+        double dx = 0.0;
+        double LET = 0.0;
+        double recombProb;
+        if (abs(pdgcode) != 11 && abs(pdgcode) != 13) 
+        {
+            // e-: 11, e+: -11, mu-: 13, mu+: -13
+            // in other words, if it's a gamma,ion,proton,alpha,pion,et al. do not
+            // use the step length provided by Geant4 because it's not relevant,
+            // instead calculate an estimated LET and range of the electrons that
+            // would have been produced if Geant4 could track them
+            LET = LegacyGetLinearEnergyTransfer(dE);
+            if (LET) {
+                //find the range based on the LET
+                dx = (dE / 1e3) / (density * LET); 
+            }
+            if (abs(pdgcode) == 2112) // nuclear recoils
+            {
+                dx = 0;
+            }
+        }
+        else //normal case of an e-/+ energy deposition recorded by Geant
+        {
+            dx = track_length / 10.;
+            if (dx) 
+            {
+                LET = ((dE / 1e3) / dx) * (1 / density); //lin. energy xfer (prop. to dE/dx)
+            }
+            if (LET > 0 && dE > 0 && dx > 0) 
+            {
+                double ratio = LegacyGetLinearEnergyTransfer(dE) / LET;
+                if (ratio < 0.7 && pdgcode == 11) 
+                {
+                    dx /= ratio;
+                    LET *= ratio;
+                }
+            }
+        }
+        // set up DokeBirks coefficients
+        double DokeBirksA = 0.07 * pow((efield / 1.0e3), -0.85);
+        double DokeBirksC = 0.00;
+        if (efield == 0.0) {
+            DokeBirksA = 0.0003;
+            DokeBirksC = 0.75;
+        }
+        //B=A/(1-C) (see paper)
+        double DokeBirksB = DokeBirksA / (1 - DokeBirksC); 
+        recombProb = ((DokeBirksA * LET) / (1 + DokeBirksB * LET) 
+            + DokeBirksC) * (density / legacy_density_LAr);
+
+        //check against unphysicality resulting from rounding errors
+        return clamp(recombProb, 0., 1.);
     }
     double LArNEST::LegacyGetLinearEnergyTransfer(double E)
     {

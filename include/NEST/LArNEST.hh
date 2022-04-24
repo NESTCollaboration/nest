@@ -247,6 +247,19 @@ namespace NEST
         double getFanoER() const { return fFanoER; }
         double getNexOverNion() const { return fNexOverNion; }
 
+        LArNRYieldsParameters getNRYieldsParameters() { return fNR; }
+        LArERYieldsParameters getERYieldsParameters() { return fER; }
+        LArERElectronYieldsAlphaParameters getERElectronYieldsAlphaParameters()
+            { return fER.alpha; }
+        LArERElectronYieldsBetaParameters getERElectronYieldsBetaParameters()
+            { return fER.beta; }
+        LArERElectronYieldsGammaParameters getERElectronYieldsGammaParameters()
+            { return fER.gamma; }
+        LArERElectronYieldsDokeBirksParameters getERElectronYieldsDokeBirksParameters()
+            { return fER.doke_birks; }
+        ThomasImelParameters getThomasImelParameters() {return fThomasImelParameters; }
+        DriftParameters getDriftParameters() {return fDriftParameters; }
+
         //-------------------------All Yields-------------------------//
         LArYieldResult GetRecombinationYields(
             double TotalYields, double ElectronYields, double PhotonYields,

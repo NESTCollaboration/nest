@@ -14,9 +14,8 @@ namespace NEST
 {
     LArNEST::LArNEST(VDetector *detector)
     : NESTcalc(detector)
-    {
-    }
-
+    {}
+    
     //-------------------------All Yields-------------------------//
     LArYieldResult LArNEST::GetRecombinationYields(
         double TotalYields, double ElectronYields, double PhotonYields,

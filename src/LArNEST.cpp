@@ -15,16 +15,18 @@ namespace NEST
     LArNEST::LArNEST(VDetector *detector)
     : NESTcalc(detector)
     {
-
     }
     double LArNEST::GetDensity(
         double Kelvin, double bara, bool &inGas,
         uint64_t evtNum, double molarMass
     ) 
     {
-        // currently only for fixed pressure (the saturated vapor pressure); will add
+        // currently only for fixed pressure 
+        // (the saturated vapor pressure); will add
         // pressure dependence later
-        double VaporP_bar = exp(45.973940 - 1464.718291 / Kelvin - 6.539938 * log(Kelvin));
+        double VaporP_bar = exp(
+            45.973940 - (1464.718291 / Kelvin) - (6.539938 * log(Kelvin))
+        );
         if (bara < VaporP_bar || inGas) 
         {
             double p_Pa = bara * 1e5;
@@ -46,66 +48,33 @@ namespace NEST
         }
     }
     double LArNEST::GetDriftVelocity_Liquid(
-        double Kelvin, double eField
+        double Kelvin, double efield
     ) 
     {  
-        // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
-        double speed = 0.0;  
+        // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607 
         if (Kelvin < 84. || Kelvin > 140.) 
         {
             cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
             cerr << "Using value at closest temp for a drift speed estimate\n";
             Kelvin = (double)NESTcalc::clamp(int(Kelvin), 84, 140);
         }
-
-        if (Kelvin >= fTemperature[0] && Kelvin < fTemperature[1]) {
-            speed = exp(0.937729 - 0.0734108 / (eField / 1000) +
-                        0.315338 * log(eField / 1000));
+        for (size_t i = 0; i < fDriftParameters.A.size() - 1; i++)
+        {
+            if (Kelvin >= fDriftParameters.TempLow[i] and Kelvin < fDriftParameters.TempHigh[i+1])
+            {
+                double speed = exp(
+                    fDriftParameters.A[i] + fDriftParameters.B[i] / (efield / 1000)
+                    + fDriftParameters.C[i] * log(efield / 1000)
+                );
+                if (speed > 0.0) {
+                    return speed;
+                }
+                else {
+                    return 0.0;
+                }
+            }
         }
-        else if (Kelvin >= fTemperature[1] && Kelvin < fTemperature[2]) {
-            speed = exp(0.80302379 - 0.06694564 / (eField / 1000) +
-                        0.331798 * log(eField / 1000));
-        }
-        else if (Kelvin >= fTemperature[2] && Kelvin < fTemperature[3]) {
-            speed = exp(0.7795972 - 0.0990952 / (eField / 1000) +
-                        0.320876 * log(eField / 1000));
-        }
-        else if (Kelvin >= fTemperature[3] && Kelvin < fTemperature[4]) {
-            speed = exp(0.6911897 - 0.092997 / (eField / 1000) +
-                        0.3295202 * log(eField / 1000));
-        }
-        else if (Kelvin >= fTemperature[4] && Kelvin < fTemperature[5]) {
-            speed = exp(0.76551511 - 0.0731659 / (eField / 1000) +
-                        0.317972 * log(eField / 1000));
-        }
-        else if (Kelvin >= fTemperature[5] && Kelvin < fTemperature[6]) {
-            speed = exp(0.502022794 - 0.06644517 / (eField / 1000) +
-                        0.3290246 * log(eField / 1000));
-        }
-        else if (Kelvin >= fTemperature[6] && Kelvin <= fTemperature[7]) {
-            speed = exp(0.24207633 - 0.03558428 / (eField / 1000) +
-                        0.33645519 * log(eField / 1000));
-        }
-
-        if (speed < 0.) {
-            speed = 0.;
-        }
-        return speed;
-    }
-    double LArNEST::GetDriftVelocity_MagBoltz(
-        double density, double efieldinput,
-        double molarMass
-    )  
-    {
-        // Nichole Barry UCD 2011
-        // TODO: What is going on here?  molarMass is an input but
-        // is being overwritten.
-        molarMass = 39.948;
-        density *= NEST_AVO / molarMass;
-        double edrift = 0., gasdep = efieldinput / density;
-        edrift = 2.991205 * pow(1.00113657, 1. / (gasdep * 1.e17)) *
-                pow(gasdep * 1.e17, 0.2570253);
-        return edrift;
+        return 0.0;
     }
     double LArNEST::GetPhotonEnergy(bool state) 
     {
@@ -164,7 +133,7 @@ namespace NEST
 
     double LArNEST::GetPhotonTime(
         INTERACTION_TYPE species, bool exciton,
-        double efield, double energy
+        double energy
     ) 
     {
         // arXiv:1802.06162. NR may need tauR ~0.5-1ns instead of 0
@@ -177,19 +146,19 @@ namespace NEST
         double tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8);  // error from weighted average
         double tau3 = RandomGen::rndm()->rand_gauss(1300, 50);  // ibid.
         double tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2);  // Kubota 1979
-        if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) 
+        if (energy < fWorkQuantaFunction * 0.001) 
         {
+            // from old G4S2Light
+            tau1 = 6.; 
+            tau3 = 1600.;
             SingTripRatio = 0.1;
-            if (fdetector->get_inGas() && !exciton) {
+            if (!exciton) {
                 tauR = 28e3;
             }
             else {
                 tauR = 0.;  // 28 microseconds comes from Henrique:
                 // https://doi.org/10.1016/j.astropartphys.2018.04.006
             }
-            // from old G4S2Light
-            tau3 = 1600.;
-            tau1 = 6.; 
         }
         else
         {
@@ -204,11 +173,14 @@ namespace NEST
             } 
             else 
             {
-                if (LET < 3. && !exciton) {
-                    SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2);
-                }
-                else if (LET < 3. && exciton) {
-                    SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06);
+                if (LET < 3.) 
+                {
+                    if (!exciton) {
+                        SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2);
+                    }
+                    else if (exciton) {
+                        SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06);
+                    }
                 }
                 else 
                 {
@@ -219,9 +191,7 @@ namespace NEST
                 }
             }  // lastly is ER for LAr
         }
-        if (tauR < 0.) {
-            tauR = 0.;  
-        } // in case varied with Gaussian earlier
+        // in case varied with Gaussian earlier
         // the recombination time is non-exponential, but approximates
         // to exp at long timescales (see Kubota '79)
         double time_ns = tauR * (1.0 / RandomGen::rndm()->rand_uniform() - 1.);
@@ -470,13 +440,6 @@ namespace NEST
         // nuclear recoil quenching "L" factor: total yield is
         // reduced for nuclear recoil as per Lindhard theory
         double epsilon = 11.5 * (energy / 1.e-3 * pow(LAr_Z, (-7. / 3.)));
-
-        if (abs(pdgcode) == 2112) //nuclear recoil
-        {
-            yieldFactor = 0.23 * (1 + exp(-5 * epsilon)); //liquid argon L_eff
-            excitationRatio = 0.69337 + 0.3065 * exp(-0.008806 * pow(efield, 0.76313));
-        }
-
         // determine ultimate number of quanta from current E-deposition (ph+e-) 
         // total mean number of exc/ions the total number of either quanta produced 
         // is equal to product of the work function, the energy deposited, 
@@ -484,6 +447,14 @@ namespace NEST
         double MeanNq = legacy_scint_yield * energy;
         double sigma = sqrt(legacy_resolution_scale * MeanNq); //Fano
         int Nq = int(floor(RandomGen::rndm()->rand_gauss(MeanNq, sigma) + 0.5));
+
+        if (abs(pdgcode) == 2112) //nuclear recoil
+        {
+            yieldFactor = 0.23 * (1 + exp(-5 * epsilon)); //liquid argon L_eff
+            excitationRatio = 0.69337 + 0.3065 * exp(-0.008806 * pow(efield, 0.76313));
+            
+        }
+
         double LeffVar = RandomGen::rndm()->rand_gauss(yieldFactor, 0.25 * yieldFactor);
         LeffVar = clamp(LeffVar, 0., 1.);
 
@@ -492,9 +463,11 @@ namespace NEST
             Nq = RandomGen::rndm()->binom_draw(Nq, LeffVar);
         }
 
-        //if Edep below work function, can't make any quanta, and if Nq
-        //less than zero because Gaussian fluctuated low, update to zero
-        if (energy < 1 / legacy_scint_yield || Nq < 0) { Nq = 0; }
+        // if Edep below work function, can't make any quanta, and if Nq
+        // less than zero because Gaussian fluctuated low, update to zero
+        if (energy < 1 / legacy_scint_yield || Nq < 0) { 
+            Nq = 0; 
+        }
 
         // next section binomially assigns quanta to excitons and ions
         double Nex = RandomGen::rndm()->binom_draw(
@@ -519,7 +492,6 @@ namespace NEST
             // instead calculate an estimated LET and range of the electrons that
             // would have been produced if Geant4 could track them
             LET = LegacyGetLinearEnergyTransfer(1000 * dE);
-
             if (LET) {
                 //find the range based on the LET
                 dx = dE / (density * LET); 
@@ -546,9 +518,8 @@ namespace NEST
                 }
             }
         }
-        recombProb = (DokeBirks[0] * LET) / (1 + DokeBirks[1] * LET) +
-                    DokeBirks[2]; //Doke/Birks' Law as spelled out in the NEST pape
-        recombProb *= (density / legacy_density_LAr);
+        recombProb = ((DokeBirks[0] * LET) / (1 + DokeBirks[1] * LET) 
+            + DokeBirks[2]) * (density / legacy_density_LAr);
 
         //check against unphysicality resulting from rounding errors
         recombProb = clamp(recombProb, 0., 1.);

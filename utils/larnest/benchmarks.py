@@ -43,7 +43,7 @@ class LArNESTBenchmarks:
         if yields == 'TotalYields':
             axs.set_ylabel("Total Yield [quanta/keV]")
             axs.set_yscale("log")
-        elif yields == 'QuantYields':
+        elif yields == 'QuantaYields':
             axs.set_ylabel("Quanta Yield [quanta/keV]")
             axs.set_yscale("linear")
         elif yields == 'LightYields':
@@ -53,7 +53,7 @@ class LArNESTBenchmarks:
             axs.set_ylabel("Number of photons [photons]")
             axs.set_yscale("log")
         elif yields == 'Ne':
-            axs.set_ylabel("Number of electrons[electrons]")
+            axs.set_ylabel("Number of electrons [electrons]")
             axs.set_yscale("log")
         elif yields == 'Nex':
             axs.set_ylabel("Number of excitons [quanta]")

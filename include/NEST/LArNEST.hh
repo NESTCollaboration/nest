@@ -92,6 +92,29 @@ namespace NEST
         double B = {-0.0932};
     };
 
+    struct DriftParameters
+    {
+        std::vector<double> A = {
+            0.937729, 0.80302379, 0.7795972, 0.6911897,
+            0.76551511, 0.502022794, 0.24207633
+        };
+        std::vector<double> B = {
+            -0.0734108, -0.06694564, -0.0990952, -0.092997,
+            -0.0731659, -0.06644517, -0.03558428
+        };
+        std::vector<double> C = {
+            0.315338, 0.331798, 0.320876, 0.3295202,
+            0.317972, 0.3290246, 0.33645519
+        };
+
+        std::vector<double> TempLow = {
+            84., 86., 88., 92., 96., 110., 125.
+        };
+        std::vector<double> TempHigh = {
+            86., 88., 92., 96., 110., 125., 140.
+        };
+    };
+
     struct LArYieldResult 
     {
         double TotalYield;
@@ -137,9 +160,12 @@ namespace NEST
         void setRIdealGas(double RIdealGas) { fRIdealGas = RIdealGas; }
         void setRealGasA(double RealGasA)   { fRealGasA = RealGasA; }
         void setRealGasB(double RealGasB)   { fRealGasB = RealGasB; }
-        void setWorkQuantaFunction(double workQuantaFunction) { fWorkQuantaFunction = workQuantaFunction; }
-        void setWorkIonFunction(double workIonFunction) { fWorkIonFunction = workIonFunction; }
-        void setWorkPhotonFunction(double workPhotonFunction) { fWorkPhotonFunction = workPhotonFunction; }
+        void setWorkQuantaFunction(double workQuantaFunction) 
+        { fWorkQuantaFunction = workQuantaFunction; }
+        void setWorkIonFunction(double workIonFunction) 
+        { fWorkIonFunction = workIonFunction; }
+        void setWorkPhotonFunction(double workPhotonFunction) 
+        { fWorkPhotonFunction = workPhotonFunction; }
         void setFanoER(double FanoER) { fFanoER = FanoER; }
         void setNexOverNion(double NexOverNion) { fNexOverNion = NexOverNion; }
 
@@ -162,6 +188,8 @@ namespace NEST
         void setERExcitonYieldsDokeBirksParameters(
             LArERExcitonYieldsDokeBirksParameters ERExcitonYieldsDokeBirksParameters
         );
+        void setThomasImelParameters(ThomasImelParameters thomasImelParameters);
+        void setDriftParameters(DriftParameters driftParameters);
 
         /// get LAr parameters
         double getDensity() const { return fDensity; }
@@ -275,7 +303,7 @@ namespace NEST
         double GetPhotonEnergy(bool state);
         double GetPhotonTime(
             INTERACTION_TYPE species, bool exciton,
-            double dfield, double energy
+            double energy
         );
         
         /**
@@ -369,10 +397,6 @@ namespace NEST
         double fRealGasA =  {0.1355};  // m^6*Pa/mol^2 or m^4*N/mol^2.
         double fRealGasB =  {3.201e-5};  // m^3/mol.
 
-        std::vector<double> fTemperature = {
-           84., 86., 88., 92., 96., 110., 125., 140.
-        };
-
         double fWorkQuantaFunction = {19.5};
         double fWorkIonFunction =    {23.6};
         double fWorkPhotonFunction = {14.544};
@@ -384,5 +408,6 @@ namespace NEST
         LArERYieldsParameters fLArERYieldsParameters;
 
         ThomasImelParameters fThomasImelParameters;
+        DriftParameters fDriftParameters;
     };
 }

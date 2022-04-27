@@ -98,7 +98,7 @@ G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t,
     G4ThreeVector(efield_vec[0], efield_vec[1], efield_vec[2]);
 
   if (efield_here > 0) {
-    G4ParticleMomentum electronMomentum = efield_here * efield_dir_here.unit();
+    G4ParticleMomentum electronMomentum = efield_dir_here.unit();
     G4DynamicParticle* aQuantum = new G4DynamicParticle(
         NESTThermalElectron::ThermalElectron(), electronMomentum);
     aQuantum->SetKineticEnergy(kin_E);

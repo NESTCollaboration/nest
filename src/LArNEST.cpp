@@ -3,6 +3,7 @@
  * @author NEST Collaboration
  * @author Nicholas Carrara [nmcarrara@ucdavis.edu]
  * @author Justin Mueller [Justin.Mueller@colostate.edu]
+ * @author Ekaterina Kozlova [aspelene@gmail.com]
  * @author Michael Mooney [mrmooney@colostate.edu]
  * @brief 
  * @version
@@ -28,6 +29,9 @@ namespace NEST
         /// recombination
         double ThomasImel = fThomasImelParameters.A * pow(efield, fThomasImelParameters.B);
         double Nion = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
+        if (Nion < 0.0) {
+            Nion = 0.0;
+        }
         double Nex = Nq - Nion;
 
         double WQ_eV = fWorkQuantaFunction;
@@ -117,7 +121,6 @@ namespace NEST
         if (NRElectronYields < 0.0) {
             NRElectronYields = 0.0;
         }
-        //double NRPhotonYields = NRTotalYields / energy - NRElectronYields;
         double NRPhotonYields = GetNRPhotonYields(energy, efield);
         if (NRPhotonYields < 0.0) {
             NRPhotonYields = 0.0;

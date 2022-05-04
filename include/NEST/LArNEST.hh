@@ -3,6 +3,7 @@
  * @author NEST Collaboration
  * @author Nicholas Carrara [nmcarrara@ucdavis.edu]
  * @author Justin Mueller [Justin.Mueller@colostate.edu]
+ * @author Ekaterina Kozlova [aspelene@gmail.com]
  * @author Michael Mooney [mrmooney@colostate.edu]
  * @brief 
  * @version 
@@ -35,7 +36,7 @@ namespace NEST
     {
         double alpha =  {11.10};
         double beta =   {1.087};
-        double gamma =  {0.1};
+        double gamma =  {0.087};
         double delta =  {-0.0932};
         double epsilon ={2.998};
         double zeta =   {0.3};

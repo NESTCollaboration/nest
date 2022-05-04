@@ -34,6 +34,10 @@ class LArNESTBenchmarks:
         fig, axs = plt.subplots(figsize=(10,6))
         for efield in self.unique_efield:
             mask = (self.data['efield'] == efield)
+            if yields == 'LightYields':
+                print(yields, self.input_file)
+                print(mask)
+                print(np.array(self.data[yields][mask],dtype=float))
             axs.plot(
                 self.unique_energy, 
                 np.array(self.data[yields][mask],dtype=float),
@@ -70,6 +74,7 @@ class LArNESTBenchmarks:
             plt.savefig(f"plots/{save}.png")
         if show:
             plt.show()
+        plt.close()
 
     def plot_all_yields(self,
         recoil: str="NR",

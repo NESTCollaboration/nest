@@ -97,13 +97,13 @@ int main(int argc, char* argv[])
         // iterate over energy values
         for (size_t i = 0; i < num_energy_steps; i++)
         {
-            std::vector<double> TotalYield(num_events);
-            std::vector<double> QuantaYield(num_events);
-            std::vector<double> LightYield(num_events);
-            std::vector<double> Nph(num_events);
-            std::vector<double> Ne(num_events);
-            std::vector<double> Nex(num_events);
-            std::vector<double> Nion(num_events);
+            std::vector<double> TotalYield(num_events, 0.0);
+            std::vector<double> QuantaYield(num_events, 0.0);
+            std::vector<double> LightYield(num_events, 0.0);
+            std::vector<double> Nph(num_events, 0.0);
+            std::vector<double> Ne(num_events, 0.0);
+            std::vector<double> Nex(num_events, 0.0);
+            std::vector<double> Nion(num_events, 0.0);
             // collect statistics for each event
             for (size_t j = 0; j < num_events; j++)
             {
@@ -122,13 +122,13 @@ int main(int argc, char* argv[])
                 Nex[j] = result.yields.Nex;
                 Nion[j] = result.yields.Nion;
             }
-            double TotalYield_mean = std::accumulate(TotalYield.begin(), TotalYield.end(), 0.0) / double(num_events);
-            double QuantaYield_mean = std::accumulate(QuantaYield.begin(), QuantaYield.end(), 0.0) / double(num_events);
-            double LightYield_mean = std::accumulate(LightYield.begin(), LightYield.end(), 0.0) / double(num_events);
-            double Nph_mean = std::accumulate(Nph.begin(), Nph.end(), 0.0) / double(num_events);
-            double Ne_mean = std::accumulate(Ne.begin(), Ne.end(), 0.0) / double(num_events);
-            double Nex_mean = std::accumulate(Nex.begin(), Nex.end(), 0.0) / double(num_events);
-            double Nion_mean = std::accumulate(Nion.begin(), Nion.end(), 0.0) / double(num_events);
+            double TotalYield_mean = std::accumulate(TotalYield.begin(), TotalYield.end(), 0.0) / num_events;
+            double QuantaYield_mean = std::accumulate(QuantaYield.begin(), QuantaYield.end(), 0.0) / num_events;
+            double LightYield_mean = std::accumulate(LightYield.begin(), LightYield.end(), 0.0) / num_events;
+            double Nph_mean = std::accumulate(Nph.begin(), Nph.end(), 0.0) / num_events;
+            double Ne_mean = std::accumulate(Ne.begin(), Ne.end(), 0.0) / num_events;
+            double Nex_mean = std::accumulate(Nex.begin(), Nex.end(), 0.0) / num_events;
+            double Nion_mean = std::accumulate(Nion.begin(), Nion.end(), 0.0) / num_events;
             output_file << energy_vals[i] << ","; 
             output_file << electric_field[v] << ",";
             output_file << TotalYield_mean << "," << QuantaYield_mean << "," << LightYield_mean << ",";

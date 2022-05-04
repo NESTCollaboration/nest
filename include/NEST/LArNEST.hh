@@ -49,7 +49,7 @@ namespace NEST
         double C = {17.2346};
         double D = {-4.7};
         double E = {0.025115};
-        double F = {0.26536};
+        double F = {0.265360653};
         double G = {0.242671};
     };
     struct LArERElectronYieldsBetaParameters

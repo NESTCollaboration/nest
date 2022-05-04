@@ -101,7 +101,7 @@ namespace NEST
     }
     double LArNEST::GetNRPhotonYields(double energy, double efield)
     {
-        return fNR.alpha * pow(energy, fNR.beta - 1.0) - 
+        return fNR.alpha * pow(energy, fNR.beta) - 
                (1.0 / (fNR.gamma * pow(efield, fNR.delta))) *
                (1.0 / sqrt(energy + fNR.epsilon));
     }

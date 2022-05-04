@@ -35,8 +35,8 @@ namespace NEST
     struct LArNRYieldsParameters
     {
         double alpha =  {11.10};
-        double beta =   {1.087};
-        double gamma =  {0.087};
+        double beta =   {0.087};
+        double gamma =  {0.1};
         double delta =  {-0.0932};
         double epsilon ={2.998};
         double zeta =   {0.3};

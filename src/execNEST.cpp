@@ -27,7 +27,7 @@
 using namespace std;
 using namespace NEST;
 
-vector<double> FreeParam, NuisParam;
+vector<double> FreeParam, NuisParam, ERWeightParam;
 double band[NUMBINS_MAX][7], energies[3],
     AnnModERange[2] = {1.5, 6.5};  // keVee or nr (recon)
 bool BeenHere = false;
@@ -115,6 +115,7 @@ int main(int argc, char** argv) {
     no_seed = false;
     FreeParam.clear();
     NuisParam.clear();
+    ERWeightParam.clear();
     verbosity = false;
     
     NuisParam.push_back(0.0);
@@ -131,13 +132,26 @@ int main(int argc, char** argv) {
     NuisParam.push_back(atof(argv[3]));
     NuisParam.push_back(atof(argv[4]));
     
-    FreeParam.push_back(-atof(argv[5]));
-    FreeParam.push_back(atof(argv[6]));
-    FreeParam.push_back(atof(argv[7]));
-    FreeParam.push_back(atof(argv[8]));
-    FreeParam.push_back(atof(argv[9]));
-    FreeParam.push_back(atof(argv[10]));
-    FreeParam.push_back(atof(argv[11]));
+    ERWeightParam.push_back(-atof(argv[5]));
+    ERWeightParam.push_back(atof(argv[6]));
+    ERWeightParam.push_back(atof(argv[7]));
+    ERWeightParam.push_back(atof(argv[8]));
+    ERWeightParam.push_back(atof(argv[9]));
+    ERWeightParam.push_back(atof(argv[10]));
+    ERWeightParam.push_back(atof(argv[11]));
+
+    FreeParam.push_back(1.00);  // Leave fluctuations parameters
+    FreeParam.push_back(1.00);  // fixed for now
+    FreeParam.push_back(0.10);  
+    FreeParam.push_back(0.50);  
+    FreeParam.push_back(0.19);  
+    FreeParam.push_back(2.25);  
+    FreeParam.push_back( 0.0015 ); 
+    FreeParam.push_back( 0.0553 ); 
+    FreeParam.push_back( 0.205 );
+    FreeParam.push_back( 0.45 );
+    FreeParam.push_back( -0.2 );
+    
     
   } else {
     numEvts = (uint64_t)atof(argv[1]);
@@ -165,25 +179,32 @@ int main(int argc, char** argv) {
 
     FreeParam.clear();
     NuisParam.clear();
-    if (type == "ER") {  // Based on XELDA L-shell 5.2 keV yields
+    ERWeightParam.clear();
+    FreeParam.push_back(1.00);  // NR Fi (Fano factor for ionization)
+    FreeParam.push_back(1.00);  // NR Fex
+    FreeParam.push_back(
+        0.10);  // amplitude for non-binomial NR recombination fluctuations
+    FreeParam.push_back(0.50);  // center in e-Frac (NR)
+    FreeParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
+    FreeParam.push_back(2.25);  // raw skewness, for NR
+    FreeParam.push_back( 0.0015 ); //ER Fano normalization for non-density dependence
+    FreeParam.push_back( 0.0553 ); //Minimum amplitude for ER non-binom recomb flucts
+    FreeParam.push_back( 0.205 ); // center in e-frac (ER)
+    FreeParam.push_back( 0.45 );  // width parameter
+    FreeParam.push_back( -0.2 );  // ER non-binom skewness in e-frac
+
+
+    // if (type == "ER") {  // Based on XELDA L-shell 5.2 keV yields
                          // https://arxiv.org/abs/2109.11487
-      FreeParam.push_back(0.23);   // 0.5 for LUX Run03
-      FreeParam.push_back(0.77);   // 0.5
-      FreeParam.push_back(2.95);   // 1.1
-      FreeParam.push_back(-1.44);  //-5.
-      FreeParam.push_back(1.0);    // 1.01
-      FreeParam.push_back(1.0);    // 0.95
-      FreeParam.push_back(0.);     // 1.4e-2
-      FreeParam.push_back(0.);     // 1.8e-2
-    } else {
-      FreeParam.push_back(1.00);  // Fi (Fano factor for ionization)
-      FreeParam.push_back(1.00);  // Fex
-      FreeParam.push_back(
-          0.10);  // amplitude for non-binomial recombination fluctuations
-      FreeParam.push_back(0.50);  // center in e-Frac
-      FreeParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
-      FreeParam.push_back(2.25);  // raw skewness, for NR
-    }
+    ERWeightParam.push_back(0.23);   // 0.5 for LUX Run03
+    ERWeightParam.push_back(0.77);   // 0.5
+    ERWeightParam.push_back(2.95);   // 1.1
+    ERWeightParam.push_back(-1.44);  //-5.
+    ERWeightParam.push_back(1.0);    // 1.01
+    ERWeightParam.push_back(1.0);    // 0.95
+    ERWeightParam.push_back(0.);     // 1.4e-2
+    ERWeightParam.push_back(0.);     // 1.8e-2
+     
     if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {  // liquid Ar
       NuisParam.push_back(
           11.1025);  // +/-1.10 Everything from
@@ -238,7 +259,7 @@ NESTObservableArray runNESTvec(
   double x, y, z, driftTime, vD;
   RandomGen::rndm()->SetSeed(seed);
   NuisParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
-  FreeParam = {1., 1., 0.10, 0.5, 0.19, 2.25};
+  FreeParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2};
   vector<double> scint, scint2, wf_amp;
   vector<int64_t> wf_time;
   NESTObservableArray OutputResults;
@@ -896,10 +917,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	  NuisParam[11] = 0.; //use w/[10] for dE/dx = [10]*keV^[11] e.g. 50 & -0.5
 	  NuisParam[12] = 0.; //fractional variation: e.g .15 = 15%
 	}
-	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable, FreeParam);
+	result = n.GetYieldERdEOdxBasis(NuisParam, posiMuon, vTable, ERWeightParam);
 	yields = result.yields;
 	quanta = result.quanta;
-	if ( FreeParam[0] >= 0. )
+	if ( ERWeightParam[0] >= 0. )
 	  driftTime = 0.00;
 	else
 	  driftTime = (detector->get_TopDrift() - pos_z) / vD_middle;
@@ -913,10 +934,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                       "of ER? This is a weighted average of the beta and gamma "
                       "models"
                    << endl;
-              cerr << "with weight values of " << FreeParam[0] << " "
-                   << FreeParam[1] << " " << FreeParam[2] << " " << FreeParam[3]
-                   << " " << FreeParam[4] << " " << FreeParam[5] << " "
-                   << FreeParam[6] << " " << FreeParam[7]
+              cerr << "with weight values of " << ERWeightParam[0] << " "
+                   << ERWeightParam[1] << " " << ERWeightParam[2] << " " << ERWeightParam[3]
+                   << " " << ERWeightParam[4] << " " << ERWeightParam[5] << " "
+                   << ERWeightParam[6] << " " << ERWeightParam[7]
                    << " for Xe-127 L-/M-shell captures at 1.1,5.2keV or "
                       "Xe-129/131m, at low field"
                    << endl;
@@ -934,7 +955,9 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             FreeParam.clear();
             FreeParam = {
                 1.00, 1.00, 0.,
-                0.50, 0.19, 0.};  // zero out non-binom recomb fluct & skew (NR)
+                0.50, 0.19, 0.,
+                0.0015, 0.0553, 
+                0.205, 0.45, -0.2};  // zero out non-binom recomb fluct & skew (NR)
           }
           if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, FreeParam);
         } else {

@@ -21,16 +21,16 @@ bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 const std::vector<double> NESTcalc::default_NuisParam = {
     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
 const std::vector<double> NESTcalc::default_FreeParam = {
-    1.,   1.,  0.1, 0.5,
-    0.19, 2.25};  // Fano factor of ~3 at least for ionization when using
-                  // OldW13eV (look at first 2 values)
+    1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2};
+             // Fano factor of ~3 at least for ionization when using
+             // OldW13eV (look at first 2 values)
 
 NESTresult NESTcalc::FullCalculation(
     INTERACTION_TYPE species, double energy, double density, double dfield,
     double A, double Z,
     const std::vector<double>
         &NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
+    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/,
     bool do_times /*=true*/) {
   if (density < 1.) fdetector->set_inGas(true);
   NESTresult result;
@@ -180,7 +180,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 
 double NESTcalc::RecombOmegaNR(
     double elecFrac,
-    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/) {
+    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/) {
   double omega = FreeParam[2] * exp(-0.5 * pow(elecFrac - FreeParam[3], 2.) /
                                     (FreeParam[4] * FreeParam[4]));
   if (omega < 0.) omega = 0;
@@ -192,16 +192,17 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac,
                                bool oldModel) {
   double ampl;
   if (!oldModel)
-    ampl = 0.086036 + (0.0553 - 0.086036) / pow(1. + pow(efield / 295.2, 251.6),
+    ampl = 0.086036 + (FreeParam[7] - 0.086036) / pow(1. + pow(efield / 295.2, 251.6),
                                                 0.0069114);  // NEW(GregR)
+    //FreeParam[7] sets the lower-asymptote of field-dependence of ampl
   else
     ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));  // OLD
   if (ampl < 0.) ampl = 0.;
-  double wide = .205;  // or: FreeParam #2, like amplitude (#1)
-  double cntr = 0.45;  // NEW(GregR) FreeParam #3 (OLD value of 0.50 for OLD
+  double wide = FreeParam[8];  // Width of omega vs. electron-fraction (i.e. recomb. prob.)
+  double cntr = FreeParam[9];  // NEW(GregR) Center of omega vs. elec-frac (OLD value of 0.50 for OLD
                        // ampl above 0.14...)
   if (oldModel) cntr = 0.50;
-  double skew = -0.2;  // FreeParam #4
+  double skew = FreeParam[10];  // Skewness of omega vs. elec-frac distribution
   double mode = cntr + 2. * inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
   double norm =
       1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
@@ -214,7 +215,8 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac,
   return omega;
 }
 
-double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
+double NESTcalc::FanoER(double density, double Nq_mean, double efield,
+                       const std::vector<double> &FreeParam) {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))  // liquid argon
     return 0.1115;  // T&I. conflicting reports of .107 (Doke) & ~0.1 elsewhere
   double Fano =
@@ -226,21 +228,21 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
           pow(density,
               3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
   if (!fdetector->get_inGas())
-    Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
+    Fano += FreeParam[6] * sqrt(Nq_mean) * pow(efield, 0.5);
   return Fano;
 }
 
 QuantaResult NESTcalc::GetQuanta(
     const YieldResult &yields, double density,
-    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
+    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/,
     bool oldModelER) {
   QuantaResult result{};
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
 
-  if (FreeParam.size() < 6) {
+  if (FreeParam.size() < 11) {
     throw std::runtime_error(
-        "ERROR: You need a minimum of 6 free parameters for the resolution "
+        "ERROR: You need a minimum of 11 free parameters for the resolution "
         "model.");
   }
 
@@ -263,7 +265,7 @@ QuantaResult NESTcalc::GetQuanta(
   }
 
   if (ValidityTests::nearlyEqual(yields.Lindhard, 1.)) {
-    double Fano = FanoER(density, Nq_mean, yields.ElectricField);
+    double Fano = FanoER(density, Nq_mean, yields.ElectricField, FreeParam);
     Nq_actual = int(floor(
         RandomGen::rndm()->rand_gauss(Nq_mean, sqrt(Fano * Nq_mean)) + 0.5));
     if (Nq_actual < 0 || ValidityTests::nearlyEqual(Nq_mean, 0.)) Nq_actual = 0;
@@ -577,7 +579,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
       Ne += result.quanta.electrons;
     }
     else
-      result.quanta = GetQuanta(result.yields, rho, FreeParam, true);
+      result.quanta = GetQuanta(result.yields, rho, default_FreeParam, true);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else {
@@ -1061,10 +1063,10 @@ YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
                          const std::vector<double> &NuisParam) {
   bool oldModelER = false;
-  if (RecombOmegaER(0.0, 0.5, NuisParam, oldModelER) < 0.05)
+  /*if (RecombOmegaER(0.0, 0.5, NuisParam, oldModelER) < 0.05)
     cerr << "WARNING! You need to change RecombOmegaER to go along with "
             "GetYieldBetaGR"
-         << endl;
+         << endl;*/
 
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());

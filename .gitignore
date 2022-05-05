@@ -4,3 +4,5 @@ nbproject/*
 build/
 *.png
 utils/larnest/data/
+*.pyc
+*__pycache__/

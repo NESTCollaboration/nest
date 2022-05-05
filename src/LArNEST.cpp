@@ -32,6 +32,9 @@ namespace NEST
         if (Nion < 0.0) {
             Nion = 0.0;
         }
+        if (Nion > Nq) {
+            Nion = Nq;
+        }
         double Nex = Nq - Nion;
 
         double WQ_eV = fWorkQuantaFunction;

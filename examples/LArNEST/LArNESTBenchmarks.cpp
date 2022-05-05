@@ -17,18 +17,18 @@
 
 int main(int argc, char* argv[])
 {
-    // this sample program takes several arguments
-    // including
-    //  1) num_events - the number of events to generate for each field/energy value
-    //  2) type - NR or ER for now 
-    //  3) density - the density of the LAr to use
-    // (optional) 4) seed - a seed for the random number generator
-    if (argc < 4) 
-    {
-        std::cerr << "Error! This program expects three inputs!" << std::endl;
-        exit(0);
+    // this sample program takes can take two arguments,
+    // (optional) 1) density - the density of the LAr to use
+    // (optional) 2) seed - a seed for the random number generator
+
+    double density = 1.393;
+    uint64_t seed = 0;
+    if (argc > 1) {
+        density = atof(argv[1]);
     }
-    size_t num_events = atoi(argv[1]);
+    if (argc > 2) {
+        seed = atoi(argv[2]);
+    }
 
     // set up energy steps
     int num_energy_steps = 50000;
@@ -36,41 +36,17 @@ int main(int argc, char* argv[])
     double start_val = .1;
     double end_val = 1000;
     double step_size = (end_val - start_val)/num_energy_steps;
+
     for (size_t i = 0; i < num_energy_steps; i++)
     {
         energy_vals.emplace_back(start_val + step_size * i);
     }
-    
-    std::string particle_type = argv[2];
-    std::vector<double> electric_field;
-    NEST::LArInteraction incident_particle;
-    if (particle_type == "NR")
-    {
-        electric_field.insert(electric_field.end(), {
-            1, 50, 100, 200, 500, 1000, 1500, 2000
-        });
-        incident_particle = NEST::LArInteraction::NR;
-    }
-    else if (particle_type == "ER")
-    {
-        electric_field.insert(electric_field.end(), {
-            1, 100, 200, 600, 1000, 1500, 2500, 6000, 9000
-        });
-        incident_particle = NEST::LArInteraction::ER;
-    }
-    else
-    {
-        electric_field.insert(electric_field.end(), {
-            1, 50, 100, 500, 1000, 5000, 10000, 20000
-        });
-        incident_particle = NEST::LArInteraction::Alpha;
-    }
-    
-    double density = atof(argv[3]);
-    uint64_t seed = 0;
-    if (argc > 4) {
-        seed = atoi(argv[4]);
-    }
+    std::vector<NEST::LArInteraction> particle_types = {
+        NEST::LArInteraction::NR, NEST::LArInteraction::ER, NEST::LArInteraction::Alpha
+    };
+    std::vector<std::string> particle_type = {
+        "NR", "ER", "Alpha"
+    };
 
     LArDetector* detector = new LArDetector();
     // Construct NEST class using detector object
@@ -81,58 +57,55 @@ int main(int argc, char* argv[])
     // Construct NEST objects for storing calculation results
     NEST::LArNESTResult result;
     std::ofstream output_file;
-    if (particle_type == "NR") {
-        output_file.open("larnest_benchmarks_nr.csv");
-    }
-    else if (particle_type == "ER") {
-        output_file.open("larnest_benchmarks_er.csv");
-    }
-    else {
-        output_file.open("larnest_benchmarks_alpha.csv");
-    }
-    output_file << "energy,efield,TotalYield,QuantaYield,LightYield,Nph,Ne,Nex,Nion\n";
+
+    output_file.open("benchmarks.csv");
+    output_file << "type,energy,efield,TotalYield,QuantaYield,LightYield,Nph,Ne,Nex,Nion\n";
+
     // iterate over electric field values
-    for (size_t v = 0; v < electric_field.size(); v++)
+    for (size_t k = 0; k < particle_types.size(); k++)
     {
-        // iterate over energy values
-        for (size_t i = 0; i < num_energy_steps; i++)
+        std::vector<double> electric_field;
+        if (particle_types[k] == NEST::LArInteraction::NR)
         {
-            std::vector<double> TotalYield(num_events, 0.0);
-            std::vector<double> QuantaYield(num_events, 0.0);
-            std::vector<double> LightYield(num_events, 0.0);
-            std::vector<double> Nph(num_events, 0.0);
-            std::vector<double> Ne(num_events, 0.0);
-            std::vector<double> Nex(num_events, 0.0);
-            std::vector<double> Nion(num_events, 0.0);
-            // collect statistics for each event
-            for (size_t j = 0; j < num_events; j++)
+            electric_field.insert(electric_field.end(), {
+                1, 50, 100, 200, 500, 1000, 1500, 2000
+            });
+        }
+        else if (particle_types[k] == NEST::LArInteraction::ER)
+        {
+            electric_field.insert(electric_field.end(), {
+                1, 100, 200, 600, 1000, 1500, 2500, 6000, 9000
+            });
+        }
+        else
+        {
+            electric_field.insert(electric_field.end(), {
+                1, 50, 100, 500, 1000, 5000, 10000, 20000
+            });
+        }
+        for (size_t v = 0; v < electric_field.size(); v++)
+        {
+            // iterate over energy values
+            for (size_t i = 0; i < num_energy_steps; i++)
             {
                 result = larnest.FullCalculation(
-                    incident_particle,
+                    particle_types[k],
                     energy_vals[i],
                     electric_field[v],
                     density,
                     false
                 );
-                TotalYield[j] = result.yields.TotalYield;
-                QuantaYield[j] = result.yields.QuantaYield;
-                LightYield[j] = result.yields.LightYield;
-                Nph[j] = result.yields.Nph;                
-                Ne[j] = result.yields.Ne;
-                Nex[j] = result.yields.Nex;
-                Nion[j] = result.yields.Nion;
+                output_file << particle_type[k] << ",";
+                output_file << energy_vals[i] << ","; 
+                output_file << electric_field[v] << ",";
+                output_file << result.yields.TotalYield << ",";
+                output_file << result.yields.QuantaYield << ",";
+                output_file << result.yields.LightYield << ",";
+                output_file << result.yields.Nph << ",";
+                output_file << result.yields.Ne << ",";
+                output_file << result.yields.Nex << ",";
+                output_file << result.yields.Nion << "\n";
             }
-            double TotalYield_mean = std::accumulate(TotalYield.begin(), TotalYield.end(), 0.0) / num_events;
-            double QuantaYield_mean = std::accumulate(QuantaYield.begin(), QuantaYield.end(), 0.0) / num_events;
-            double LightYield_mean = std::accumulate(LightYield.begin(), LightYield.end(), 0.0) / num_events;
-            double Nph_mean = std::accumulate(Nph.begin(), Nph.end(), 0.0) / num_events;
-            double Ne_mean = std::accumulate(Ne.begin(), Ne.end(), 0.0) / num_events;
-            double Nex_mean = std::accumulate(Nex.begin(), Nex.end(), 0.0) / num_events;
-            double Nion_mean = std::accumulate(Nion.begin(), Nion.end(), 0.0) / num_events;
-            output_file << energy_vals[i] << ","; 
-            output_file << electric_field[v] << ",";
-            output_file << TotalYield_mean << "," << QuantaYield_mean << "," << LightYield_mean << ",";
-            output_file << Nph_mean << "," << Ne_mean << "," << Nex_mean << "," << Nion_mean << "\n";
         }
     }
     output_file.close();

@@ -27,7 +27,7 @@
 using namespace std;
 using namespace NEST;
 
-vector<double> ERNRWidthsParam, NRYieldsParam, ERWeightParam;
+vector<double> NRERWidthsParam, NRYieldsParam, ERWeightParam;
 double band[NUMBINS_MAX][7], energies[3],
     AnnModERange[2] = {1.5, 6.5};  // keVee or nr (recon)
 bool BeenHere = false;
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
     fPos = -1.;
     seed = 0;
     no_seed = false;
-    ERNRWidthsParam.clear();
+    NRERWidthsParam.clear();
     NRYieldsParam.clear();
     ERWeightParam.clear();
     verbosity = false;
@@ -140,17 +140,17 @@ int main(int argc, char** argv) {
     ERWeightParam.push_back(atof(argv[10]));
     ERWeightParam.push_back(atof(argv[11]));
 
-    ERNRWidthsParam.push_back(1.00);  // Leave fluctuations parameters
-    ERNRWidthsParam.push_back(1.00);  // fixed for now
-    ERNRWidthsParam.push_back(0.10);  
-    ERNRWidthsParam.push_back(0.50);  
-    ERNRWidthsParam.push_back(0.19);  
-    ERNRWidthsParam.push_back(2.25);  
-    ERNRWidthsParam.push_back( 0.0015 ); 
-    ERNRWidthsParam.push_back( 0.0553 ); 
-    ERNRWidthsParam.push_back( 0.205 );
-    ERNRWidthsParam.push_back( 0.45 );
-    ERNRWidthsParam.push_back( -0.2 );
+    NRERWidthsParam.push_back(1.00);  // Leave fluctuations parameters
+    NRERWidthsParam.push_back(1.00);  // fixed for now
+    NRERWidthsParam.push_back(0.10);  
+    NRERWidthsParam.push_back(0.50);  
+    NRERWidthsParam.push_back(0.19);  
+    NRERWidthsParam.push_back(2.25);  
+    NRERWidthsParam.push_back( 0.0015 ); 
+    NRERWidthsParam.push_back( 0.0553 ); 
+    NRERWidthsParam.push_back( 0.205 );
+    NRERWidthsParam.push_back( 0.45 );
+    NRERWidthsParam.push_back( -0.2 );
     
     
   } else {
@@ -177,21 +177,21 @@ int main(int argc, char** argv) {
       no_seed = true;
     }
 
-    ERNRWidthsParam.clear();
+    NRERWidthsParam.clear();
     NRYieldsParam.clear();
     ERWeightParam.clear();
-    ERNRWidthsParam.push_back(1.00);  // NR Fi (Fano factor for ionization)
-    ERNRWidthsParam.push_back(1.00);  // NR Fex
-    ERNRWidthsParam.push_back(
+    NRERWidthsParam.push_back(1.00);  // NR Fi (Fano factor for ionization)
+    NRERWidthsParam.push_back(1.00);  // NR Fex
+    NRERWidthsParam.push_back(
         0.10);  // amplitude for non-binomial NR recombination fluctuations
-    ERNRWidthsParam.push_back(0.50);  // center in e-Frac (NR)
-    ERNRWidthsParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
-    ERNRWidthsParam.push_back(2.25);  // raw skewness, for NR
-    ERNRWidthsParam.push_back( 0.0015 ); //ER Fano normalization for non-density dependence
-    ERNRWidthsParam.push_back( 0.0553 ); //Minimum amplitude for ER non-binom recomb flucts
-    ERNRWidthsParam.push_back( 0.205 ); // center in e-frac (ER)
-    ERNRWidthsParam.push_back( 0.45 );  // width parameter
-    ERNRWidthsParam.push_back( -0.2 );  // ER non-binom skewness in e-frac
+    NRERWidthsParam.push_back(0.50);  // center in e-Frac (NR)
+    NRERWidthsParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
+    NRERWidthsParam.push_back(2.25);  // raw skewness, for NR
+    NRERWidthsParam.push_back( 0.0015 ); //ER Fano normalization for non-density dependence
+    NRERWidthsParam.push_back( 0.0553 ); //Minimum amplitude for ER non-binom recomb flucts
+    NRERWidthsParam.push_back( 0.205 ); // center in e-frac (ER)
+    NRERWidthsParam.push_back( 0.45 );  // width parameter
+    NRERWidthsParam.push_back( -0.2 );  // ER non-binom skewness in e-frac
 
 
     // if (type == "ER") {  // Based on XELDA L-shell 5.2 keV yields
@@ -259,7 +259,7 @@ NESTObservableArray runNESTvec(
   double x, y, z, driftTime, vD;
   RandomGen::rndm()->SetSeed(seed);
   NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
-  ERNRWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2};
+  NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2};
   vector<double> scint, scint2, wf_amp;
   vector<int64_t> wf_time;
   NESTObservableArray OutputResults;
@@ -280,7 +280,7 @@ NESTObservableArray runNESTvec(
                                      // function caused by smearing
     result = n.FullCalculation(particleType, eList[i], rho, useField,
                                detector->get_molarMass(), ATOM_NUM, NRYieldsParam,
-                               ERNRWidthsParam, verbosity);
+                               NRERWidthsParam, verbosity);
     quanta = result.quanta;
     vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, useField);
     scint = n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0],
@@ -952,14 +952,14 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           }
           if (type_num == ion) {  // alphas +other nuclei, lighter/heavier than
                                   // medium's default nucleus
-            ERNRWidthsParam.clear();
-            ERNRWidthsParam = {
+            NRERWidthsParam.clear();
+            NRERWidthsParam = {
                 1.00, 1.00, 0.,
                 0.50, 0.19, 0.,
                 0.0015, 0.0553, 
                 0.205, 0.45, -0.2};  // zero out non-binom recomb fluct & skew (NR)
           }
-          if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, ERNRWidthsParam);
+          if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, NRERWidthsParam);
         } else {
           yields.PhotonYield = 0.;
           yields.ElectronYield = 0.;
@@ -1010,7 +1010,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                        g2_params);
       if ( dEOdxBasis && !loopNEST ) {
         driftTime = (detector->get_TopDrift() - pos_z) / vD_middle;
-	if ( scint2[7] != -PHE_MIN && ERNRWidthsParam[0] >= 0. )
+	if ( scint2[7] != -PHE_MIN && NRERWidthsParam[0] >= 0. )
 	  scint2[7] *= exp(driftTime / detector->get_eLife_us());
       }
 

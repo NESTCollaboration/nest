@@ -110,6 +110,7 @@ er_light_yield_default = {
         "Lippincott 2010":  [0],
         "WARP 2005":    [0],
         "Kimura 2019":  [0],
+        "Kimura LIDINE":[0],
     },
     100: {
         "ARIS 2018":    [50,100],

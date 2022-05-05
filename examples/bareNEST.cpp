@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
   NEST::QuantaResult quanta;
 
   // Declare needed temporary variables
-  vector<double> vTable, YieldParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3,
+  vector<double> vTable, NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3,
                                       2.,  0.3, 2.,     0.5,     1.,   1.};
   int index;  // index for Z step (for getting pre-calculated drift field)
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD, vD_middle;
@@ -182,9 +182,9 @@ int main(int argc, char** argv) {
 
   // Get yields from NEST calculator, along with number of quanta
   yields = n.GetYields(type_num, keV, rho, field, double(massNum),
-                       double(atomNum), YieldParam);
-  vector<double> WidthParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}; 
-  quanta = n.GetQuanta(yields, rho, WidthParam);
+                       double(atomNum), NRYieldsParam);
+  vector<double> ERNRWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}; 
+  quanta = n.GetQuanta(yields, rho, ERNRWidthsParam);
 
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =

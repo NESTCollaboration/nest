@@ -205,19 +205,19 @@ class NESTcalc {
   virtual ~NESTcalc();
 
   static const std::vector<double>
-      default_YieldParam; /* =
+      default_NRYieldsParam; /* =
                             {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
   static const std::vector<double>
-      default_WidthParam; /* = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2} */
+      default_ERNRWidthsParam; /* = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2} */
 
   NESTresult FullCalculation(
       INTERACTION_TYPE species, double energy, double density, double dfield,
       double A, double Z,
-      const std::vector<double> &YieldParam =
-          default_YieldParam, /* =
+      const std::vector<double> &NRYieldsParam =
+          default_NRYieldsParam, /* =
                                 {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
-      const std::vector<double> &WidthParam =
-          default_WidthParam, /* = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2} */
+      const std::vector<double> &ERNRWidthsParam =
+          default_ERNRWidthsParam, /* = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2} */
       bool do_times =
           true);  // the so-called full NEST calculation puts together all the
                   // individual functions/calculations below
@@ -243,7 +243,7 @@ class NESTcalc {
   YieldResult GetYields(
       INTERACTION_TYPE species, double energy, double density, double dfield,
       double A, double Z,
-      const std::vector<double> &YieldParam = {11., 1.1, 0.0480, -0.0533, 12.6,
+      const std::vector<double> &NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6,
                                               0.3, 2., 0.3, 2., 0.5, 1., 1.},
       bool oldModelER = false);
   // the innermost heart of NEST, this provides floating-point average values
@@ -256,19 +256,19 @@ class NESTcalc {
 
   virtual YieldResult GetYieldERWeighted(double energy, double density,
                                          double dfield,
-                                         const std::vector<double> &YieldParam);
+                                         const std::vector<double> &NRYieldsParam);
   // Weights beta/gamma models to account for ER sources with differing
   // recombination profiles (such as L-shell electron-capture interactions)
   
-  virtual NESTresult GetYieldERdEOdxBasis(const std::vector<double> &YieldParam,
+  virtual NESTresult GetYieldERdEOdxBasis(const std::vector<double> &NRYieldsParam,
 					  string muonInitPos,
 					  vector<double> eDriftVelTable,
-					  const std::vector<double> &WidthParam);
+					  const std::vector<double> &ERNRWidthsParam);
   // Use dE/dx-based yield models instead of energy-based, as everywhere else
   
   virtual YieldResult GetYieldNR(double energy, double density, double dfield,
                                  double massNum,
-                                 const std::vector<double> &YieldParam = {
+                                 const std::vector<double> &NRYieldsParam = {
                                      11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2.,
                                      0.3, 2., 0.5, 1., 1.});
   // Called by GetYields in the NR (and related) cases
@@ -279,7 +279,7 @@ class NESTcalc {
 
   virtual YieldResult GetYieldIon(double energy, double density, double dfield,
                                   double massNum, double atomNum,
-                                  const std::vector<double> &YieldParam = {
+                                  const std::vector<double> &NRYieldsParam = {
                                       11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2.,
                                       0.3, 2., 0.5, 1., 1.});
   // Called by GetYields in the ion case
@@ -296,7 +296,7 @@ class NESTcalc {
 
   virtual YieldResult GetYieldBetaGR(double energy, double density,
                                      double dfield,
-                                     const std::vector<double> &YieldParam);
+                                     const std::vector<double> &NRYieldsParam);
   // Greg R. version: arXiv:1910.04211
 
   virtual YieldResult YieldResultValidity(YieldResult &res, const double energy,
@@ -305,7 +305,7 @@ class NESTcalc {
 
   virtual QuantaResult GetQuanta(
       const YieldResult &yields, double density,
-      const std::vector<double> &WidthParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2},
+      const std::vector<double> &ERNRWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2},
       bool oldModelER = false);
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
@@ -314,18 +314,18 @@ class NESTcalc {
 
   virtual double RecombOmegaNR(
       double elecFrac,
-      const std::vector<double> &WidthParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/);
+      const std::vector<double> &ERNRWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/);
   // Calculates the Omega parameter governing non-binomial recombination
   // fluctuations for nuclear recoils and ions (Lindhard<1)
 
   virtual double RecombOmegaER(double efield, double elecFrac,
-                               const std::vector<double> &WidthParam,
+                               const std::vector<double> &ERNRWidthsParam,
                                bool oldModel = false);
   // Calculates the Omega parameter governing non-binomial recombination
   // fluctuations for gammas and betas (Lindhard==1)
 
   virtual double FanoER(double density, double Nq_mean, double efield,
-      const std::vector<double> &WidthParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/);
+      const std::vector<double> &ERNRWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/);
   // Fano-factor (and Fano-like additional energy resolution model) for gammas
   // and betas (Lindhard==1)
 

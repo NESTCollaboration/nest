@@ -23,7 +23,9 @@ class LArDataset:
         self.benchmarks_file = benchmarks_file
         self.plot_config = plot_config
         # set up datasets
-        #self.datasets = np.load(self.dataset_file, allow_pickle=True)
+        self.data = dict(np.load(self.dataset_file, allow_pickle=True))
+        self.datasets = {key: self.data[key].item() for key in self.data}
+
         self.benchmarks = pd.read_csv(
             self.benchmarks_file,
             names=[
@@ -106,14 +108,19 @@ class LArDataset:
         }
 
         # create plotting directory
-        if not os.path.isdir("plots/"):
-            os.makedirs("plots/")
+        if not os.path.isdir("plots/mean_yields/"):
+            os.makedirs("plots/mean_yields")
+        if not os.path.isdir("plots/data/"):
+            os.makedirs("plots/data")
 
     def plot_data_grid(self,
         dataset_type:   str='nr_total'
     ):
+        if (len(self.plot_config[dataset_type].keys()) == 1):
+            return self.plot_data(dataset_type)
         fig, axs = generate_plot_grid(
             len(self.plot_config[dataset_type].keys()),
+            figsize=(20,12)
         )
         for ii, efield in enumerate(self.plot_config[dataset_type]):
             # plot the benchmark values for the given efield
@@ -122,31 +129,47 @@ class LArDataset:
             yields = self.benchmarks[self.benchmark_types[dataset_type][1]][benchmark_mask]
             axs.flat[ii].plot(energy, yields, label=f"NEST - {efield} V/cm")
             # plot the corresponding data points for this efield
-            for jj, dataset in self.plot_config[dataset_type][efield]:
-                for kk, field in self.plot_config[dataset_type][efield][dataset]:
-                    dataset_mask = (self.datasets[dataset_type]['Dataset'] == dataset) & (self.datasets[dataset_type]['efield'] == field)
+            for jj, dataset in enumerate(self.plot_config[dataset_type][efield]):
+                if (len(self.plot_config[dataset_type][efield][dataset]) < 4):
+                    for kk, field in enumerate(self.plot_config[dataset_type][efield][dataset]):
+                        dataset_mask = (self.datasets[dataset_type]['Dataset'] == dataset) & (self.datasets[dataset_type]['field'] == field)
+                        dataset_energy = self.datasets[dataset_type]['energy'][dataset_mask]
+                        dataset_energy_sl = self.datasets[dataset_type]['energy_sl'][dataset_mask]
+                        dataset_energy_sh = self.datasets[dataset_type]['energy_sh'][dataset_mask]
+                        dataset_yields = self.datasets[dataset_type]['yield'][dataset_mask]
+                        dataset_yields_sl = self.datasets[dataset_type]['yield_sl'][dataset_mask]
+                        dataset_yields_sh = self.datasets[dataset_type]['yield_sh'][dataset_mask]
+                        axs.flat[ii].errorbar(
+                            dataset_energy, dataset_yields,
+                            xerr=[dataset_energy_sl, dataset_energy_sh],
+                            yerr=[dataset_yields_sl, dataset_yields_sh],
+                            linestyle='', marker='.',
+                            label=f"{dataset} - {field} V/cm"
+                        )
+                else:
+                    dataset_mask = (self.datasets[dataset_type]['Dataset'] == str(dataset)) & np.isin(np.array(self.datasets[dataset_type]['field']),self.plot_config[dataset_type][efield][dataset])
                     dataset_energy = self.datasets[dataset_type]['energy'][dataset_mask]
                     dataset_energy_sl = self.datasets[dataset_type]['energy_sl'][dataset_mask]
                     dataset_energy_sh = self.datasets[dataset_type]['energy_sh'][dataset_mask]
-                    dataset_yields = self.datasets[dataset_type]['yields'][dataset_mask]
-                    dataset_yields_sl = self.datasets[dataset_type]['yields_sl'][dataset_mask]
-                    dataset_yields_sh = self.datasets[dataset_type]['yields_sh'][dataset_mask]
+                    dataset_yields = self.datasets[dataset_type]['yield'][dataset_mask]
+                    dataset_yields_sl = self.datasets[dataset_type]['yield_sl'][dataset_mask]
+                    dataset_yields_sh = self.datasets[dataset_type]['yield_sh'][dataset_mask]
                     axs.flat[ii].errorbar(
                         dataset_energy, dataset_yields,
                         xerr=[dataset_energy_sl, dataset_energy_sh],
                         yerr=[dataset_yields_sl, dataset_yields_sh],
                         linestyle='', marker='.',
-                        label=f"{dataset} - {field} V/cm"
+                        label=f"{dataset} - {min(self.plot_config[dataset_type][efield][dataset])}-{max(self.plot_config[dataset_type][efield][dataset])} V/cm"
                     )
             axs.flat[ii].set_xscale("log")
             if ("_n" in dataset_type):
                 axs.flat[ii].set_yscale("log")
             axs.flat[ii].legend()
-        plt.supxlabel("Energy [keV]")
-        plt.supylabel(self.ylabels[dataset_type])
+        fig.supxlabel("Energy [keV]")
+        fig.supylabel(self.ylabels[dataset_type])
         plt.suptitle(self.titles[dataset_type])
         plt.tight_layout()
-        plt.savefig(f"plots/{dataset_type}_data.png")
+        plt.savefig(f"plots/data/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_Data.png")
         plt.close()
 
     def plot_data(self,
@@ -160,21 +183,37 @@ class LArDataset:
             yields = self.benchmarks[self.benchmark_types[dataset_type][1]][benchmark_mask]
             axs.plot(energy, yields, label=f"NEST - {efield} V/cm")
             # plot the corresponding data points for this efield
-            for jj, dataset in self.plot_config[dataset_type][efield]:
-                for kk, field in self.plot_config[dataset_type][efield][dataset]:
-                    dataset_mask = (self.datasets[dataset_type]['Dataset'] == dataset) & (self.datasets[dataset_type]['efield'] == field)
+            for jj, dataset in enumerate(self.plot_config[dataset_type][efield]):
+                if (len(self.plot_config[dataset_type][efield][dataset]) < 4):
+                    for kk, field in enumerate(self.plot_config[dataset_type][efield][dataset]):
+                        dataset_mask = (self.datasets[dataset_type]['Dataset'] == str(dataset)) & (self.datasets[dataset_type]['field'] == field)
+                        dataset_energy = self.datasets[dataset_type]['energy'][dataset_mask]
+                        dataset_energy_sl = self.datasets[dataset_type]['energy_sl'][dataset_mask]
+                        dataset_energy_sh = self.datasets[dataset_type]['energy_sh'][dataset_mask]
+                        dataset_yields = self.datasets[dataset_type]['yield'][dataset_mask]
+                        dataset_yields_sl = self.datasets[dataset_type]['yield_sl'][dataset_mask]
+                        dataset_yields_sh = self.datasets[dataset_type]['yield_sh'][dataset_mask]
+                        axs.errorbar(
+                            dataset_energy, dataset_yields,
+                            xerr=[dataset_energy_sl, dataset_energy_sh],
+                            yerr=[dataset_yields_sl, dataset_yields_sh],
+                            linestyle='', marker='.',
+                            label=f"{dataset} - {field} V/cm"
+                        )
+                else:
+                    dataset_mask = (self.datasets[dataset_type]['Dataset'] == str(dataset)) & np.isin(np.array(self.datasets[dataset_type]['field']),self.plot_config[dataset_type][efield][dataset])
                     dataset_energy = self.datasets[dataset_type]['energy'][dataset_mask]
                     dataset_energy_sl = self.datasets[dataset_type]['energy_sl'][dataset_mask]
                     dataset_energy_sh = self.datasets[dataset_type]['energy_sh'][dataset_mask]
-                    dataset_yields = self.datasets[dataset_type]['yields'][dataset_mask]
-                    dataset_yields_sl = self.datasets[dataset_type]['yields_sl'][dataset_mask]
-                    dataset_yields_sh = self.datasets[dataset_type]['yields_sh'][dataset_mask]
+                    dataset_yields = self.datasets[dataset_type]['yield'][dataset_mask]
+                    dataset_yields_sl = self.datasets[dataset_type]['yield_sl'][dataset_mask]
+                    dataset_yields_sh = self.datasets[dataset_type]['yield_sh'][dataset_mask]
                     axs.errorbar(
                         dataset_energy, dataset_yields,
                         xerr=[dataset_energy_sl, dataset_energy_sh],
                         yerr=[dataset_yields_sl, dataset_yields_sh],
                         linestyle='', marker='.',
-                        label=f"{dataset} - {field} V/cm"
+                        label=f"{dataset} - {min(self.plot_config[dataset_type][efield][dataset])}-{max(self.plot_config[dataset_type][efield][dataset])} V/cm"
                     )
             axs.set_xscale("log")
             if ("_n" in dataset_type):
@@ -184,7 +223,7 @@ class LArDataset:
             axs.set_ylabel(self.ylabels[dataset_type])
             plt.title(self.titles[dataset_type])
             plt.tight_layout()
-            plt.savefig(f"plots/{dataset_type}_{efield}_data.png")
+            plt.savefig(f"plots/data/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_{efield}_Data.png")
             plt.close()
     
     def plot_yields(self,
@@ -207,7 +246,7 @@ class LArDataset:
         axs.set_ylabel(self.ylabels[dataset_type])
         plt.title(self.titles[dataset_type])
         plt.tight_layout()
-        plt.savefig(f"plots/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}.png")
+        plt.savefig(f"plots/mean_yields/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}.png")
         plt.close()
     
     def plot_all_yields(self,

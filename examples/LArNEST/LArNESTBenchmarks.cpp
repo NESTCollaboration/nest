@@ -68,13 +68,13 @@ int main(int argc, char* argv[])
         if (particle_types[k] == NEST::LArInteraction::NR)
         {
             electric_field.insert(electric_field.end(), {
-                1, 50, 100, 200, 500, 1000, 1500, 2000
+                1, 50, 100, 200, 250, 500, 1000, 1500, 1750, 2000
             });
         }
         else if (particle_types[k] == NEST::LArInteraction::ER)
         {
             electric_field.insert(electric_field.end(), {
-                1, 100, 200, 600, 1000, 1500, 2500, 6000, 9000
+                1, 100, 200, 600, 1000, 1500, 2500, 6000, 9000, 9500
             });
         }
         else

@@ -23,3 +23,18 @@ if __name__ == "__main__":
 
     # make benchmark plots
     lar_dataset.plot_all_yields()
+
+    # plot with data
+    # nr yields
+    lar_dataset.plot_data('nr_total')
+    lar_dataset.plot_data_grid('nr_total')
+    lar_dataset.plot_data('nr_charge')
+    lar_dataset.plot_data_grid('nr_charge')
+    lar_dataset.plot_data('nr_light')
+    lar_dataset.plot_data_grid('nr_light')
+
+    # er yields
+    lar_dataset.plot_data('er_charge')
+    lar_dataset.plot_data_grid('er_charge')
+    lar_dataset.plot_data('er_light')
+    lar_dataset.plot_data_grid('er_light')

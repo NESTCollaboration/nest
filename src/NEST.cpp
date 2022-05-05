@@ -18,24 +18,24 @@ static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1
 
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 
-const std::vector<double> NESTcalc::default_NuisParam = {
+const std::vector<double> NESTcalc::default_NRYieldsParam = {
     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
-const std::vector<double> NESTcalc::default_FreeParam = {
-    1.,   1.,  0.1, 0.5,
-    0.19, 2.25};  // Fano factor of ~3 at least for ionization when using
-                  // OldW13eV (look at first 2 values)
+const std::vector<double> NESTcalc::default_ERNRWidthsParam = {
+    1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2};
+             // Fano factor of ~3 at least for ionization when using
+             // OldW13eV (look at first 2 values)
 
 NESTresult NESTcalc::FullCalculation(
     INTERACTION_TYPE species, double energy, double density, double dfield,
     double A, double Z,
     const std::vector<double>
-        &NuisParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
+        &NRYieldsParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+    const std::vector<double> &ERNRWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/,
     bool do_times /*=true*/) {
   if (density < 1.) fdetector->set_inGas(true);
   NESTresult result;
-  result.yields = GetYields(species, energy, density, dfield, A, Z, NuisParam);
-  result.quanta = GetQuanta(result.yields, density, FreeParam);
+  result.yields = GetYields(species, energy, density, dfield, A, Z, NRYieldsParam);
+  result.quanta = GetQuanta(result.yields, density, ERNRWidthsParam);
   if (do_times)
     result.photon_times = GetPhotonTimes(
         species, result.quanta.photons, result.quanta.excitons, dfield, energy);
@@ -180,28 +180,29 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 
 double NESTcalc::RecombOmegaNR(
     double elecFrac,
-    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/) {
-  double omega = FreeParam[2] * exp(-0.5 * pow(elecFrac - FreeParam[3], 2.) /
-                                    (FreeParam[4] * FreeParam[4]));
+    const std::vector<double> &ERNRWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/) {
+  double omega = ERNRWidthsParam[2] * exp(-0.5 * pow(elecFrac - ERNRWidthsParam[3], 2.) /
+                                    (ERNRWidthsParam[4] * ERNRWidthsParam[4]));
   if (omega < 0.) omega = 0;
   return omega;
 }
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac,
-                               const std::vector<double> &FreeParam,
+                               const std::vector<double> &ERNRWidthsParam,
                                bool oldModel) {
   double ampl;
   if (!oldModel)
-    ampl = 0.086036 + (0.0553 - 0.086036) / pow(1. + pow(efield / 295.2, 251.6),
+    ampl = 0.086036 + (ERNRWidthsParam[7] - 0.086036) / pow(1. + pow(efield / 295.2, 251.6),
                                                 0.0069114);  // NEW(GregR)
+    //ERNRWidthsParam[7] sets the lower-asymptote of field-dependence of ampl
   else
     ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));  // OLD
   if (ampl < 0.) ampl = 0.;
-  double wide = .205;  // or: FreeParam #2, like amplitude (#1)
-  double cntr = 0.45;  // NEW(GregR) FreeParam #3 (OLD value of 0.50 for OLD
+  double wide = ERNRWidthsParam[8];  // Width of omega vs. electron-fraction (i.e. recomb. prob.)
+  double cntr = ERNRWidthsParam[9];  // NEW(GregR) Center of omega vs. elec-frac (OLD value of 0.50 for OLD
                        // ampl above 0.14...)
   if (oldModel) cntr = 0.50;
-  double skew = -0.2;  // FreeParam #4
+  double skew = ERNRWidthsParam[10];  // Skewness of omega vs. elec-frac distribution
   double mode = cntr + 2. * inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
   double norm =
       1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
@@ -214,7 +215,8 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac,
   return omega;
 }
 
-double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
+double NESTcalc::FanoER(double density, double Nq_mean, double efield,
+                       const std::vector<double> &ERNRWidthsParam) {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))  // liquid argon
     return 0.1115;  // T&I. conflicting reports of .107 (Doke) & ~0.1 elsewhere
   double Fano =
@@ -226,21 +228,21 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield) {
           pow(density,
               3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
   if (!fdetector->get_inGas())
-    Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
+    Fano += ERNRWidthsParam[6] * sqrt(Nq_mean) * pow(efield, 0.5);
   return Fano;
 }
 
 QuantaResult NESTcalc::GetQuanta(
     const YieldResult &yields, double density,
-    const std::vector<double> &FreeParam /*={1.,1.,0.1,0.5,0.19,2.25}*/,
+    const std::vector<double> &ERNRWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/,
     bool oldModelER) {
   QuantaResult result{};
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
 
-  if (FreeParam.size() < 6) {
+  if (ERNRWidthsParam.size() < 11) {
     throw std::runtime_error(
-        "ERROR: You need a minimum of 6 free parameters for the resolution "
+        "ERROR: You need a minimum of 11 free parameters for the resolution "
         "model.");
   }
 
@@ -263,7 +265,7 @@ QuantaResult NESTcalc::GetQuanta(
   }
 
   if (ValidityTests::nearlyEqual(yields.Lindhard, 1.)) {
-    double Fano = FanoER(density, Nq_mean, yields.ElectricField);
+    double Fano = FanoER(density, Nq_mean, yields.ElectricField, ERNRWidthsParam);
     Nq_actual = int(floor(
         RandomGen::rndm()->rand_gauss(Nq_mean, sqrt(Fano * Nq_mean)) + 0.5));
     if (Nq_actual < 0 || ValidityTests::nearlyEqual(Nq_mean, 0.)) Nq_actual = 0;
@@ -272,12 +274,12 @@ QuantaResult NESTcalc::GetQuanta(
     Nex = Nq_actual - Ni;
 
   } else {
-    double Fano = FreeParam[0];
+    double Fano = ERNRWidthsParam[0];
     Ni = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean * alf,
                                                  sqrt(Fano * Nq_mean * alf)) +
                    0.5));
     if (Ni < 0) Ni = 0;
-    Fano = FreeParam[1];
+    Fano = ERNRWidthsParam[1];
     Nex = int(floor(RandomGen::rndm()->rand_gauss(
                         Nq_mean * excitonRatio * alf,
                         sqrt(Fano * Nq_mean * excitonRatio * alf)) +
@@ -319,8 +321,8 @@ QuantaResult NESTcalc::GetQuanta(
   // set omega (non-binomial recombination fluctuations parameter) according to
   // whether the Lindhard <1, i.e. this is NR.
   double omega = yields.Lindhard < 1
-                     ? RecombOmegaNR(elecFrac, FreeParam)
-                     : RecombOmegaER(yields.ElectricField, elecFrac, FreeParam,
+                     ? RecombOmegaNR(elecFrac, ERNRWidthsParam)
+                     : RecombOmegaER(yields.ElectricField, elecFrac, ERNRWidthsParam,
                                      oldModelER);
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     omega = 0.0;  // Ar has no non-binom sauce
@@ -356,7 +358,7 @@ QuantaResult NESTcalc::GetQuanta(
                      exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
       // if ( std::abs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
     } else {
-      skewness = FreeParam[5];  // 2.25 but ~5-20 also good (for NR). All better
+      skewness = ERNRWidthsParam[5];  // 2.25 but ~5-20 also good (for NR). All better
                                 // than zero, but 0 is OK too
     }  // note to self: find way to make 0 for ion (wall BG) incl. alphas?
   }
@@ -434,14 +436,14 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density,
 
 YieldResult NESTcalc::GetYieldERWeighted(double energy, double density,
                                          double dfield,
-                                         const std::vector<double> &NuisParam) {
+                                         const std::vector<double> &NRYieldsParam) {
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
 
   const std::vector<double> EnergyParams = {0.23, 0.77, 2.95, -1.44};
   const std::vector<double> FieldParams = {421.15, 3.27};
-  YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, NuisParam);
+  YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, NRYieldsParam);
   YieldResult yieldsG = GetYieldGamma(energy, density, dfield);
   double weightG =
       EnergyParams[0] +
@@ -466,24 +468,24 @@ YieldResult NESTcalc::GetYieldERWeighted(double energy, double density,
   return YieldResultValidity(result, energy, Wq_eV);
 }
 
-NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
+NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NRYieldsParam,
 					  string muonInitPos,
 					  vector<double> vTable,
-					  const std::vector<double> &FreeParam) {
-  Wvalue wvalue = WorkFunction(NuisParam[8], fdetector->get_molarMass(),
+					  const std::vector<double> &ERNRWidthsParam) {
+  Wvalue wvalue = WorkFunction(NRYieldsParam[8], fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
-  double Wq_eV = wvalue.Wq_eV; double rho = NuisParam[8];
+  double Wq_eV = wvalue.Wq_eV; double rho = NRYieldsParam[8];
   double xi = -999., yi = -999., zi = fdetector->get_TopDrift();
   double xf, yf, zf, pos_x, pos_y, pos_z, r, phi, field,
-    eMin = NuisParam[4], z_step = NuisParam[5], inField = NuisParam[6];
+    eMin = NRYieldsParam[4], z_step = NRYieldsParam[5], inField = NRYieldsParam[6];
   if(ValidityTests::nearlyEqual(eMin, 0.) || std::isnan(eMin))
     throw std::runtime_error("Energy cannot be zero or undefined");
   NESTresult result{};
-  xf = NuisParam[0];
-  yf = NuisParam[1];
-  zf = NuisParam[2];
-  if (ValidityTests::nearlyEqual(NuisParam[3], -1.)) {
-    if ( FreeParam[0] < 0. && eMin < 0. ) {
+  xf = NRYieldsParam[0];
+  yf = NRYieldsParam[1];
+  zf = NRYieldsParam[2];
+  if (ValidityTests::nearlyEqual(NRYieldsParam[3], -1.)) {
+    if ( ERNRWidthsParam[0] < 0. && eMin < 0. ) {
       xi = xf - 10.;
       yi = yf;
       zi = zf;
@@ -514,16 +516,16 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
   double dEOdx, eStep, refEnergy;
   if (eMin < 0.) {
     refEnergy = -eMin;
-    if ( NuisParam[10] > 0. && NuisParam[11] != 0. ) {
-      dEOdx = NuisParam[10]*pow(-eMin,NuisParam[11]);
-      if ( NuisParam[12] > 0. )
-	dEOdx = RandomGen::rndm()->rand_gauss(dEOdx,NuisParam[12]*dEOdx,true);
+    if ( NRYieldsParam[10] > 0. && NRYieldsParam[11] != 0. ) {
+      dEOdx = NRYieldsParam[10]*pow(-eMin,NRYieldsParam[11]);
+      if ( NRYieldsParam[12] > 0. )
+	dEOdx = RandomGen::rndm()->rand_gauss(dEOdx,NRYieldsParam[12]*dEOdx,true);
     }
     else
-      dEOdx = CalcElectronLET(-eMin, ATOM_NUM, NuisParam[10]);
+      dEOdx = CalcElectronLET(-eMin, ATOM_NUM, NRYieldsParam[10]);
     eStep =dEOdx * rho * z_step * 1e2;
   } else {
-    refEnergy = NuisParam[9];
+    refEnergy = NRYieldsParam[9];
     eStep = eMin * rho * z_step * 1e2;
   }
   double driftTime, vD, keV = 0., Nq_mean;
@@ -550,38 +552,38 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     else field = inField;
     if (eMin < 0.) {
       if ((keV + eStep) > -eMin) eStep = -eMin - keV;
-      if ( FreeParam[0] < 0. ) {
-	YieldResult yields{}; Nq_mean = -FreeParam[0] * eStep;
-	double Ni_mean = Nq_mean/(1.+FreeParam[1]); xi_tib = Ni_mean*(FreeParam[3]/4.)*pow(eStep,FreeParam[4]-1.);
-	yields.PhotonYield = Ni_mean * (1.+FreeParam[1]-log(FreeParam[2]+xi_tib)/xi_tib);
+      if ( ERNRWidthsParam[0] < 0. ) {
+	YieldResult yields{}; Nq_mean = -ERNRWidthsParam[0] * eStep;
+	double Ni_mean = Nq_mean/(1.+ERNRWidthsParam[1]); xi_tib = Ni_mean*(ERNRWidthsParam[3]/4.)*pow(eStep,ERNRWidthsParam[4]-1.);
+	yields.PhotonYield = Ni_mean * (1.+ERNRWidthsParam[1]-log(ERNRWidthsParam[2]+xi_tib)/xi_tib);
 	yields.ElectronYield = Nq_mean - yields.PhotonYield;
-	yields.ExcitonRatio = FreeParam[1]; yields.Lindhard = 1.;
+	yields.ExcitonRatio = ERNRWidthsParam[1]; yields.Lindhard = 1.;
 	yields.ElectricField = field; yields.DeltaT_Scint = -999; result.yields = yields;
       }
       else
-	result.yields = GetYieldBetaGR(eStep, rho, field, NuisParam);
+	result.yields = GetYieldBetaGR(eStep, rho, field, NRYieldsParam);
     } else
-      result.yields = GetYieldBetaGR(refEnergy, rho, field, NuisParam);
-    if ( eMin < 0. && FreeParam[0] < 0. ) {
+      result.yields = GetYieldBetaGR(refEnergy, rho, field, NRYieldsParam);
+    if ( eMin < 0. && ERNRWidthsParam[0] < 0. ) {
       QuantaResult quanta{};
       if ( Nq_mean < 1. ) Nq = 0;
-      else Nq = int(ceil(RandomGen::rndm()->rand_gauss(Nq_mean,sqrt(FreeParam[5]*Nq_mean),true)-0.5));
+      else Nq = int(ceil(RandomGen::rndm()->rand_gauss(Nq_mean,sqrt(ERNRWidthsParam[5]*Nq_mean),true)-0.5));
       if ( result.yields.PhotonYield < 1. || Nq <= 0 ) quanta.photons = 0;
-      else quanta.photons = int(ceil(RandomGen::rndm()->rand_gauss(result.yields.PhotonYield,sqrt(FreeParam[6]*result.yields.PhotonYield),true)-0.5));
+      else quanta.photons = int(ceil(RandomGen::rndm()->rand_gauss(result.yields.PhotonYield,sqrt(ERNRWidthsParam[6]*result.yields.PhotonYield),true)-0.5));
       quanta.electrons = Nq - quanta.photons;
-      quanta.ions = int(ceil(double(Nq)/(1.+FreeParam[1])-0.5));
+      quanta.ions = int(ceil(double(Nq)/(1.+ERNRWidthsParam[1])-0.5));
       quanta.excitons = Nq - quanta.ions;
-      quanta.recombProb = 1. - log ( FreeParam[2] + xi_tib ) / xi_tib;
-      quanta.Variance = FreeParam[6] * result.yields.PhotonYield;
+      quanta.recombProb = 1. - log ( ERNRWidthsParam[2] + xi_tib ) / xi_tib;
+      quanta.Variance = ERNRWidthsParam[6] * result.yields.PhotonYield;
       result.quanta = quanta;
       Ne += result.quanta.electrons;
     }
     else
-      result.quanta = GetQuanta(result.yields, rho, FreeParam, true);
+      result.quanta = GetQuanta(result.yields, rho, default_ERNRWidthsParam, true);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else {
-      if ( FreeParam[0] >= 0. ) {
+      if ( ERNRWidthsParam[0] >= 0. ) {
 	Nq = result.quanta.photons + result.quanta.electrons;
 	double FanoOverall = 0.0015 * sqrt((-1e3*eMin/Wq_eV)*field);
 	double FanoScint = 20. * FanoOverall;
@@ -595,11 +597,11 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     int index = int(floor(zz / z_step + 0.5));
     if (index >= vTable.size()) index = vTable.size() - 1;
     if (vTable.size() == 0)
-      vD = NuisParam[7];
+      vD = NRYieldsParam[7];
     else
       vD = vTable[index];
     driftTime = (fdetector->get_TopDrift() - zz) / vD;
-    if ( zz >= fdetector->get_cathode() && FreeParam[0] >= 0. ) {
+    if ( zz >= fdetector->get_cathode() && ERNRWidthsParam[0] >= 0. ) {
       if (eMin > 0.)
 	Ne += result.quanta.electrons * (eStep / refEnergy) * exp(-driftTime / fdetector->get_eLife_us());
       else
@@ -612,13 +614,13 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &NuisParam,
     zz += norm[2] * z_step;
     if (eMin < 0.) {
       refEnergy -= eStep;
-      if ( NuisParam[10] > 0. && NuisParam[11] != 0. ) {
-	dEOdx = NuisParam[10]*pow(refEnergy,NuisParam[11]);
-	if ( NuisParam[12] > 0. )
-	  dEOdx = RandomGen::rndm()->rand_gauss(dEOdx,NuisParam[12]*dEOdx,true);
+      if ( NRYieldsParam[10] > 0. && NRYieldsParam[11] != 0. ) {
+	dEOdx = NRYieldsParam[10]*pow(refEnergy,NRYieldsParam[11]);
+	if ( NRYieldsParam[12] > 0. )
+	  dEOdx = RandomGen::rndm()->rand_gauss(dEOdx,NRYieldsParam[12]*dEOdx,true);
       }
       else
-	dEOdx = CalcElectronLET(refEnergy, ATOM_NUM, NuisParam[10]);
+	dEOdx = CalcElectronLET(refEnergy, ATOM_NUM, NRYieldsParam[10]);
       eStep = dEOdx * rho * z_step * 1e2;
     }
     // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << "\t" << Nph << "\t" << Ne << endl;
@@ -713,11 +715,11 @@ YieldResult NESTcalc::GetYieldNROld(
 YieldResult NESTcalc::GetYieldNR(
     double energy, double density, double dfield, double massNum,
     const std::vector<double>
-        &NuisParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
+        &NRYieldsParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     massNum = fdetector->get_molarMass();
 
-  if (NuisParam.size() < 12) {
+  if (NRYieldsParam.size() < 12) {
     throw std::runtime_error(
         "ERROR: You need a minimum of 12 nuisance parameters for the mean "
         "yields.");
@@ -734,21 +736,21 @@ YieldResult NESTcalc::GetYieldNR(
   }
   ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double)massNumber);
   ScaleFactor[1] = ScaleFactor[0];
-  double Nq = NuisParam[0] * pow(energy, NuisParam[1]);
+  double Nq = NRYieldsParam[0] * pow(energy, NRYieldsParam[1]);
   if (!fdetector->get_OldW13eV()) Nq *= ZurichEXOW;
   double ThomasImel =
-      NuisParam[2] * pow(dfield, NuisParam[3]) * pow(density / DENSITY, 0.3);
-  double Qy = 1. / (ThomasImel * pow(energy + NuisParam[4], NuisParam[9]));
-  Qy *= 1. - 1. / pow(1. + pow((energy / NuisParam[5]), NuisParam[6]),
-                      NuisParam[10]);
+      NRYieldsParam[2] * pow(dfield, NRYieldsParam[3]) * pow(density / DENSITY, 0.3);
+  double Qy = 1. / (ThomasImel * pow(energy + NRYieldsParam[4], NRYieldsParam[9]));
+  Qy *= 1. - 1. / pow(1. + pow((energy / NRYieldsParam[5]), NRYieldsParam[6]),
+                      NRYieldsParam[10]);
   if (!fdetector->get_OldW13eV()) Qy *= ZurichEXOQ;
   double Ly = Nq / energy - Qy;
   if (Qy < 0.0) Qy = 0.0;
   if (Ly < 0.0) Ly = 0.0;
   double Ne = Qy * energy * ScaleFactor[1];
   double Nph = Ly * energy * ScaleFactor[0] *
-               (1. - 1. / pow(1. + pow((energy / NuisParam[7]), NuisParam[8]),
-                              NuisParam[11]));
+               (1. - 1. / pow(1. + pow((energy / NRYieldsParam[7]), NRYieldsParam[8]),
+                              NRYieldsParam[11]));
   Nq = Nph + Ne;
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) *
@@ -795,7 +797,7 @@ YieldResult NESTcalc::GetYieldIon(
     double energy, double density, double dfield, double massNum,
     double atomNum,
     const std::vector<double> &
-        NuisParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {  // simply uses the original Lindhard model, but as cited by Hitachi in:
+        NRYieldsParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {  // simply uses the original Lindhard model, but as cited by Hitachi in:
   // https://indico.cern.ch/event/573069/sessions/230063/attachments/1439101/2214448/Hitachi_XeSAT2017_DM.pdf
 
   double A1 = massNum, A2 = RandomGen::rndm()->SelectRanXeAtom();
@@ -1059,12 +1061,12 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density,
 
 YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
-                         const std::vector<double> &NuisParam) {
+                         const std::vector<double> &NRYieldsParam) {
   bool oldModelER = false;
-  if (RecombOmegaER(0.0, 0.5, NuisParam, oldModelER) < 0.05)
+  /*if (RecombOmegaER(0.0, 0.5, NRYieldsParam, oldModelER) < 0.05)
     cerr << "WARNING! You need to change RecombOmegaER to go along with "
             "GetYieldBetaGR"
-         << endl;
+         << endl;*/
 
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
@@ -1073,7 +1075,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
 
   double Nq = energy * 1e3 / Wq_eV;
   double m1 = 30.66 + (6.1978 - 30.66) / pow(1. + pow(dfield / 73.855, 2.0318),
-                                             0.41883);  // NuisParam[0];
+                                             0.41883);  // NRYieldsParam[0];
   double m5 = Nq / energy / (1 + alpha * erf(0.05 * energy)) - m1;
   double m10 =
       (0.0508273937 + (0.1166087199 - 0.0508273937) /
@@ -1122,7 +1124,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
 YieldResult NESTcalc::GetYields(
     INTERACTION_TYPE species, double energy, double density, double dfield,
     double massNum, double atomNum,
-    const std::vector<double> &NuisParam
+    const std::vector<double> &NRYieldsParam
     /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
     bool oldModelER) {
   switch (species) {
@@ -1136,12 +1138,12 @@ YieldResult NESTcalc::GetYields(
       // statement. Same intrinsic yields, but different energy spectra
       // (TestSpectra)
 
-      return GetYieldNR(energy, density, dfield, massNum, NuisParam);
+      return GetYieldNR(energy, density, dfield, massNum, NRYieldsParam);
 
       // return GetYieldNROld ( energy, 1 );
       break;
     case ion:
-      return GetYieldIon(energy, density, dfield, massNum, atomNum, NuisParam);
+      return GetYieldIon(energy, density, dfield, massNum, atomNum, NRYieldsParam);
       break;
     case gammaRay:
       return GetYieldGamma(energy, density, dfield);
@@ -1159,7 +1161,7 @@ YieldResult NESTcalc::GetYields(
       if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) || oldModelER)
         return GetYieldBeta(energy, density, dfield);  // OLD
       else
-        return GetYieldBetaGR(energy, density, dfield, NuisParam);  // NEW
+        return GetYieldBetaGR(energy, density, dfield, NRYieldsParam);  // NEW
       break;
   }
 }

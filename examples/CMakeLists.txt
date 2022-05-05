@@ -9,6 +9,8 @@ target_link_libraries(bareNEST PUBLIC NEST::Core)
 
 set(EXAMPLES bareNEST)
 
+add_subdirectory("LArNEST/")
+
 # ROOT example
 if(BUILD_ROOT)
 # https://cliutils.gitlab.io/modern-cmake/examples/root-simple/

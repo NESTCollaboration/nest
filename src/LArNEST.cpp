@@ -202,6 +202,7 @@ namespace NEST
     //-------------------------Alpha Yields-------------------------//
     double LArNEST::GetAlphaTotalYields(double energy)
     {
+        return 0;
     }  
     double LArNEST::GetAlphaElectronYields(double efield)
     {
@@ -343,7 +344,12 @@ namespace NEST
         {
             cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
             cerr << "Using value at closest temp for a drift speed estimate\n";
-            Kelvin = (double)NESTcalc::clamp(int(Kelvin), 84, 140);
+            if (Kelvin < 84.) {
+                Kelvin = 84.;
+            }
+            else {
+                Kelvin = 140.;
+            }
         }
         for (size_t i = 0; i < fDriftParameters.A.size() - 1; i++)
         {
@@ -440,7 +446,8 @@ namespace NEST
         return LET;
     }
     std::vector<double> LArNEST::CalculateG2(bool verbosity) 
-    {
+    {   
+        return std::vector<double>();
     }
 
     //------------------------------------Legacy LArNEST------------------------------------//
@@ -584,7 +591,13 @@ namespace NEST
             + DokeBirksC) * (density / legacy_density_LAr);
 
         //check against unphysicality resulting from rounding errors
-        return clamp(recombProb, 0., 1.);
+        if (recombProb < 0.0) {
+            recombProb = 0.0;
+        }
+        if (recombProb > 1.0) {
+            recombProb = 1.0;
+        }
+        return recombProb;
     }
     double LArNEST::LegacyGetLinearEnergyTransfer(double E)
     {

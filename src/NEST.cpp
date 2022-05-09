@@ -769,8 +769,8 @@ YieldResult NESTcalc::GetYieldNR(
     Ni = Nq / (1. + NexONi);
     Nex = Nq - Ni;
   }
-
-  if (Nex < 0.)
+  
+  if ( Nex < 0. && density >= 1. )
     cerr << "\nCAUTION: You are approaching the border of NEST's validity for "
             "high-energy (OR, for LOW) NR, or are beyond it, at "
          << energy << " keV." << endl;

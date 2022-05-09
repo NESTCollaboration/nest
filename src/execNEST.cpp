@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
     type = "MIP";
     dEOdxBasis = true;
     eMin = -TestSpectra::CH3T_spectrum(0.,18.6);
-    //s1CalculationMode = NEST::S1CalculationMode::Parametric;
+    s1CalculationMode = NEST::S1CalculationMode::Parametric;
     eMax = -1.;
     inField = 180.;
     position = "-1";

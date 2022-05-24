@@ -7,7 +7,7 @@
 #Search the word "loopNEST" in src/execNEST.cpp for more info on what each of these input arguments is doing
 
 #First declare ranges for each of the free parameters
-#Here, in several for-loops, using 11 parameters with set ranges
+#Here, in several for-loops, using 11 parameters with set ranges. 3H Run3 best: .00426 43.4 -.524 .775 74 .00989 2.95 .0967 .541 .648 .949. 2e5 skew S1 Hybrid
 for a in 0.001 0.002 0.005 #step size in mm
 do
 for b in 30 40 50 #base for dE/dx power law at high energies

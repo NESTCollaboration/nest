@@ -76,7 +76,7 @@ G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
       new G4DynamicParticle(G4OpticalPhoton::OpticalPhoton(), photonMomentum);
   aQuantum->SetPolarization(photonPolarization.x(), photonPolarization.y(),
                             photonPolarization.z());
-  aQuantum->SetKineticEnergy(sampledEnergy);
+  aQuantum->SetKineticEnergy(sampledEnergy*eV);
   // calculate time
 
   return new G4Track(aQuantum, t, xyz);

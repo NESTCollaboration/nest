@@ -261,9 +261,9 @@ namespace NEST
 
         double LET = GetLinearEnergyTransfer(energy);
         // copied from 2013 NEST version for LAr on LBNE
-        double tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8);  // error from weighted average
-        double tau3 = RandomGen::rndm()->rand_gauss(1300, 50);  // ibid.
-        double tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2);  // Kubota 1979
+        double tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8, true);  // error from weighted average
+        double tau3 = RandomGen::rndm()->rand_gauss(1300, 50, true);  // ibid.
+        double tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2, true);  // Kubota 1979
         if (energy < fWorkQuantaFunction * 0.001) 
         {
             // from old G4S2Light
@@ -294,10 +294,10 @@ namespace NEST
                 if (LET < 3.) 
                 {
                     if (!exciton) {
-                        SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2);
+		      SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2, true);
                     }
                     else if (exciton) {
-                        SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06);
+		      SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06, true);
                     }
                 }
                 else 
@@ -327,10 +327,10 @@ namespace NEST
         // liquid Argon
         // TODO: What is this function about?
         if (state) {
-            return RandomGen::rndm()->rand_gauss(9.7, 0.2);
+	  return RandomGen::rndm()->rand_zero_trunc_gauss(9.7, 0.2);
         }
         else {
-            return RandomGen::rndm()->rand_gauss(9.69, 0.22);
+	  return RandomGen::rndm()->rand_zero_trunc_gauss(9.69, 0.22);
         }
     }
 
@@ -463,14 +463,11 @@ namespace NEST
         // and yield reduction, for NR
         double MeanNq = legacy_scint_yield * energy;
         double sigma = sqrt(legacy_resolution_scale * MeanNq); //Fano
-        double leftvar = RandomGen::rndm()->rand_gauss(yieldFactor, 0.25 * yieldFactor);
-        if (leftvar < 0) {
-            leftvar = 0;
-        }
+        double leftvar = RandomGen::rndm()->rand_gauss(yieldFactor, 0.25 * yieldFactor, true);
         if (leftvar > 1.0) {
             leftvar = 1.0;
         }
-        int Nq = int(floor(RandomGen::rndm()->rand_gauss(MeanNq, sigma) + 0.5));
+        int Nq = int(floor(RandomGen::rndm()->rand_gauss(MeanNq, sigma, true) + 0.5));
         if (yieldFactor < 1) {
             Nq = RandomGen::rndm()->binom_draw(Nq, leftvar);
         }

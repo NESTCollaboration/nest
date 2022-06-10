@@ -65,9 +65,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     // copied from 2013 NEST version for LAr on LBNE
     tau1 =
-        RandomGen::rndm()->rand_gauss(6.5, 0.8);  // error from weighted average
-    tau3 = RandomGen::rndm()->rand_gauss(1300, 50);  // ibid.
-    tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2);  // Kubota 1979
+      RandomGen::rndm()->rand_gauss(6.5, 0.8, true);  // error from weighted average
+    tau3 = RandomGen::rndm()->rand_gauss(1300, 50, true);  // ibid.
+    tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2, true);  // Kubota 1979
     if (species <= Cf)
       SingTripRatio = 0.22218 * pow(energy, 0.48211);
     else if (species == ion) {  // really only alphas here
@@ -78,9 +78,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
       SingTripRatio = 0.2701 + 0.003379 * LET - 4.7338e-5 * pow(LET, 2.) +
                       8.1449e-6 * pow(LET, 3.);
       if (LET < 3. && !exciton)
-        SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2);
+        SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2, true);
       if (LET < 3. && exciton)
-        SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06);
+        SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06, true);
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf)  // NR
@@ -265,26 +265,26 @@ QuantaResult NESTcalc::GetQuanta(
   }
 
   if (ValidityTests::nearlyEqual(yields.Lindhard, 1.)) {
-    double Fano = FanoER(density, Nq_mean, yields.ElectricField, NRERWidthsParam);
-    Nq_actual = int(floor(
-        RandomGen::rndm()->rand_gauss(Nq_mean, sqrt(Fano * Nq_mean)) + 0.5));
-    if (Nq_actual < 0 || ValidityTests::nearlyEqual(Nq_mean, 0.)) Nq_actual = 0;
-
+    if (ValidityTests::nearlyEqual(Nq_mean, 0.)) Nq_actual = 0;
+    else {
+      double Fano = FanoER(density, Nq_mean, yields.ElectricField, NRERWidthsParam);
+      Nq_actual = int(floor(
+      RandomGen::rndm()->rand_gauss(Nq_mean, sqrt(Fano * Nq_mean), true) + 0.5));
+    }
+    
     Ni = RandomGen::rndm()->binom_draw(Nq_actual, alf);
     Nex = Nq_actual - Ni;
 
   } else {
     double Fano = NRERWidthsParam[0];
     Ni = int(floor(RandomGen::rndm()->rand_gauss(Nq_mean * alf,
-                                                 sqrt(Fano * Nq_mean * alf)) +
+                                                 sqrt(Fano * Nq_mean * alf), true) +
                    0.5));
-    if (Ni < 0) Ni = 0;
     Fano = NRERWidthsParam[1];
     Nex = int(floor(RandomGen::rndm()->rand_gauss(
                         Nq_mean * excitonRatio * alf,
-                        sqrt(Fano * Nq_mean * excitonRatio * alf)) +
+                        sqrt(Fano * Nq_mean * excitonRatio * alf), true) +
                     0.5));
-    if (Nex < 0) Nex = 0;
     Nq_actual = Nex + Ni;
   }
 
@@ -377,7 +377,7 @@ QuantaResult NESTcalc::GetQuanta(
                    0.5));
   else {
     Ne = int(floor(
-        RandomGen::rndm()->rand_gauss((1. - recombProb) * Ni, sqrt(Variance)) +
+		   RandomGen::rndm()->rand_gauss((1. - recombProb) * Ni, sqrt(Variance), true) +
         0.5));
   }
 
@@ -1271,16 +1271,9 @@ const vector<double> &NESTcalc::GetS1(
     current_mode =
         energy < 100. ? S1CalculationMode::Full : S1CalculationMode::Parametric;
   }
-
-  // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
-  double TruncGaussAlpha = -1. / fdetector->get_sPEres();
-  double LittlePhi_Alpha =
-      inv_sqrt2_PI * exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha);
-  double BigPhi_Alpha = 0.5 * (1. + erf(TruncGaussAlpha / sqrt2));
-  double NewMean =
-      1. + (LittlePhi_Alpha / (1. - BigPhi_Alpha)) * fdetector->get_sPEres();
-  switch (current_mode) {
-    case S1CalculationMode::Full:
+  
+  double NewMean = RandomGen::rndm()->FindNewMean(fdetector->get_sPEres());
+  switch (current_mode) { case S1CalculationMode::Full:
     case S1CalculationMode::Waveform: {
       // Step through the pmt hits
       for (int i = 0; i < nHits; ++i) {
@@ -1291,7 +1284,8 @@ const vector<double> &NESTcalc::GetS1(
 
         double phe1 = TruncGauss + RandomGen::rndm()->rand_gauss(
                                        fdetector->get_noiseBaseline()[0],
-                                       fdetector->get_noiseBaseline()[1]);
+                                       fdetector->get_noiseBaseline()[1],
+								 false);
         ++Nphe;
         if (phe1 > DBL_MAX) {
           phe1 = 1.;  // for Box-Mueller fuck-ups
@@ -1312,7 +1306,8 @@ const vector<double> &NESTcalc::GetS1(
 
           phe2 = TruncGauss + RandomGen::rndm()->rand_gauss(
                                   fdetector->get_noiseBaseline()[0],
-                                  fdetector->get_noiseBaseline()[1]);
+                                  fdetector->get_noiseBaseline()[1],
+							    false);
           ++Nphe;
           if (phe2 > DBL_MAX) {
             phe2 = 1.;
@@ -1390,7 +1385,7 @@ const vector<double> &NESTcalc::GetS1(
           Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())));
       // take into account the truncation of the PE distributions
       pulseArea = RandomGen::rndm()->rand_gauss(
-          Nphe_det * (1. / NewMean), fdetector->get_sPEres() * sqrt(Nphe_det));
+      Nphe_det * (1. / NewMean), fdetector->get_sPEres() * sqrt(Nphe_det), true);
       spike = static_cast<double>(RandomGen::rndm()->binom_draw(
           nHits, eff * (1. - belowThresh_percentile)));
 
@@ -1518,10 +1513,10 @@ const vector<double> &NESTcalc::GetS1(
         pulseArea,
         sqrt(
             pow(fdetector->get_noiseQuadratic()[0] * pulseArea * pulseArea, 2) +
-            pow(fdetector->get_noiseLinear()[0] * pulseArea, 2)));
+            pow(fdetector->get_noiseLinear()[0] * pulseArea, 2)), true);
   } else {
     pulseArea = RandomGen::rndm()->rand_gauss(
-        pulseArea, fdetector->get_noiseLinear()[0] * pulseArea);
+					      pulseArea, fdetector->get_noiseLinear()[0] * pulseArea, true);
   }
   pulseArea -= (subtract[0] + subtract[1]);
   if (pulseArea < fdetector->get_sPEthr()) pulseArea = 0.;
@@ -1730,8 +1725,8 @@ const vector<double> &NESTcalc::GetS2(
     double min = 1e100;
     for (i = 0; i < stopPoint; ++i) {
       elecTravT = 0.;  // resetting for the current electron
-      DL = RandomGen::rndm()->rand_gauss(0., sigmaDL);
-      DT = std::abs(RandomGen::rndm()->rand_gauss(0., sigmaDT));
+      DL = RandomGen::rndm()->rand_gauss(0., sigmaDL, false);
+      DT = std::abs(RandomGen::rndm()->rand_gauss(0., sigmaDT, false));
       phi = two_PI * RandomGen::rndm()->rand_uniform();
       sigX = DT * cos(phi);
       sigY = DT * sin(phi);
@@ -1772,8 +1767,8 @@ const vector<double> &NESTcalc::GetS2(
       SE += (double)RandomGen::rndm()->binom_draw(uint64_t(SE),
                                                   fdetector->get_P_dphe());
       Nphe += uint64_t(SE);
-      DL = RandomGen::rndm()->rand_gauss(0., sigmaDLg);
-      DT = RandomGen::rndm()->rand_gauss(0., sigmaDTg);
+      DL = RandomGen::rndm()->rand_gauss(0., sigmaDLg, false);
+      DT = std::abs(RandomGen::rndm()->rand_gauss(0., sigmaDTg, false));
       phi = two_PI * RandomGen::rndm()->rand_uniform();
       sigX = DT * cos(phi);
       sigY = DT * sin(phi);
@@ -1797,7 +1792,7 @@ const vector<double> &NESTcalc::GetS2(
         }
       }
       for (double j = 0.; j < SE; j += 1.) {
-        double phe = RandomGen::rndm()->rand_gauss(1., fdetector->get_sPEres());
+        double phe = RandomGen::rndm()->rand_zero_trunc_gauss(1./RandomGen::rndm()->FindNewMean(fdetector->get_sPEres()), fdetector->get_sPEres());
         if (i < Nee || !eTrain) pulseArea += phe;
         origin = fdetector->get_TopDrift() +
                  gasGap * RandomGen::rndm()->rand_uniform();
@@ -1886,7 +1881,7 @@ const vector<double> &NESTcalc::GetS2(
     Nphe =
         nHits + RandomGen::rndm()->binom_draw(nHits, fdetector->get_P_dphe());
     pulseArea = RandomGen::rndm()->rand_gauss(
-        Nphe, fdetector->get_sPEres() * sqrt(Nphe));
+					      Nphe/RandomGen::rndm()->FindNewMean(fdetector->get_sPEres()), fdetector->get_sPEres() * sqrt(Nphe), true);
   }
 
   if (fdetector->get_noiseLinear()[1] >= 0.1)
@@ -1897,10 +1892,10 @@ const vector<double> &NESTcalc::GetS2(
     pulseArea = RandomGen::rndm()->rand_gauss(
         pulseArea,
         sqrt(pow(fdetector->get_noiseQuadratic()[1] * pow(pulseArea, 2), 2) +
-             pow(fdetector->get_noiseLinear()[1] * pulseArea, 2)));
+             pow(fdetector->get_noiseLinear()[1] * pulseArea, 2)), true);
   } else {
     pulseArea = RandomGen::rndm()->rand_gauss(
-        pulseArea, fdetector->get_noiseLinear()[1] * pulseArea);
+					      pulseArea, fdetector->get_noiseLinear()[1] * pulseArea, true);
   }
   pulseArea -= (subtract[0] + subtract[1]);
   double pulseAreaC =
@@ -1911,7 +1906,7 @@ const vector<double> &NESTcalc::GetS2(
   double S2b = RandomGen::rndm()->rand_gauss(
       fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1] * pulseArea,
       sqrt(fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1] * pulseArea *
-           (1. - fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1])));
+        (1. - fdetector->FitTBA(truthPosX, truthPosY, truthPosZ)[1])), true);
   double S2bc =
       S2b / exp(-dt / fdetector->get_eLife_us()) /
       posDepSm;  // for detectors using S2 bottom-only in their analyses
@@ -2083,16 +2078,16 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
       Nphe =
           nHits + RandomGen::rndm()->binom_draw(nHits, fdetector->get_P_dphe());
       pulseArea = RandomGen::rndm()->rand_gauss(
-          Nphe, fdetector->get_sPEres() * sqrt(Nphe));
+			    Nphe, fdetector->get_sPEres() * sqrt(Nphe), true);
       if (fdetector->get_noiseQuadratic()[1] != 0) {
         pulseArea = RandomGen::rndm()->rand_gauss(
             pulseArea,
             sqrt(
                 pow(fdetector->get_noiseQuadratic()[1] * pow(pulseArea, 2), 2) +
-                pow(fdetector->get_noiseLinear()[1] * pulseArea, 2)));
+                pow(fdetector->get_noiseLinear()[1] * pulseArea, 2)), true);
       } else {
         pulseArea = RandomGen::rndm()->rand_gauss(
-            pulseArea, fdetector->get_noiseLinear()[1] * pulseArea);
+						  pulseArea, fdetector->get_noiseLinear()[1] * pulseArea, true);
       }
       if (fdetector->get_s2_thr() < 0.)
         pulseArea = RandomGen::rndm()->rand_gauss(
@@ -2102,7 +2097,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
                 fdetector->FitTBA(0.0, 0.0, fdetector->get_TopDrift() / 2.)[1] *
                 pulseArea *
                 (1. - fdetector->FitTBA(0.0, 0.0,
-                                        fdetector->get_TopDrift() / 2.)[1])));
+                                        fdetector->get_TopDrift() / 2.)[1])), true);
       pulseAreaC = pulseArea / posDep;
       NphdC = pulseAreaC / (1. + fdetector->get_P_dphe());
       StdDev += (SE - NphdC) * (SE - NphdC);
@@ -2143,12 +2138,7 @@ const vector<double> &NESTcalc::GetSpike(int Nph, double dx, double dy,
     newSpike[1] = oldScint[5];
     return newSpike;
   }
-  newSpike[0] = std::abs(oldScint[6]);
-  double TruncGauss = 0.;
-  while (TruncGauss <= 0.)
-    TruncGauss = RandomGen::rndm()->rand_gauss(
-        newSpike[0], (fdetector->get_sPEres() / 4.) * sqrt(newSpike[0]));
-  newSpike[0] = TruncGauss;
+  newSpike[0] = RandomGen::rndm()->rand_zero_trunc_gauss(oldScint[6], (fdetector->get_sPEres()/4.)*sqrt(std::abs(oldScint[6])));
   if (XYcorr == 0 || XYcorr == 2) {
     dx = 0.;
     dy = 0.;
@@ -2502,7 +2492,7 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
                 9.);  // σ_vertex^2 = ((r_vertex/r_S2)*σ_(x,y))^2 + σ_sys^2
 
   double phi = two_PI * RandomGen::rndm()->rand_uniform();
-  sigmaR = std::abs(RandomGen::rndm()->rand_gauss(0.0, sigmaR));
+  sigmaR = std::abs(RandomGen::rndm()->rand_gauss(0.0, sigmaR, false));
   double sigmaX = sigmaR * cos(phi);
   double sigmaY = sigmaR * sin(phi);
 
@@ -2530,24 +2520,24 @@ double NESTcalc::PhotonEnergy(bool s2Flag, bool state, double tempK) {
 
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     // liquid Argon
-    if (state) return RandomGen::rndm()->rand_gauss(9.7, 0.2);
-    return RandomGen::rndm()->rand_gauss(9.69, 0.22);
+    if (state) return RandomGen::rndm()->rand_zero_trunc_gauss(9.7, 0.2);
+    return RandomGen::rndm()->rand_zero_trunc_gauss(9.69, 0.22);
   }
 
   if (!state)  // liquid or solid
-    wavelength = RandomGen::rndm()->rand_gauss(
-        178., 14. / 2.355);  // taken from Jortner JchPh 42 '65
+    wavelength = RandomGen::rndm()->rand_zero_trunc_gauss(
+					       178., 14. / 2.355);  // taken from Jortner JchPh 42 '65
   else {                     // gas
     wavelength =
-        RandomGen::rndm()->rand_gauss(175., 5.);  // G4S1Light, probably Doke
+      RandomGen::rndm()->rand_zero_trunc_gauss(175., 5.);  // G4S1Light, probably Doke
   }
   if (s2Flag) {
     // S2 different from ordinary gas (or just measurement error?)
     if (tempK < 200.)  // cold gas
-      wavelength = RandomGen::rndm()->rand_gauss(
-          179., 5.);  // source is G4S2Light.cc from the old NEST
+      wavelength = RandomGen::rndm()->rand_zero_trunc_gauss(
+						 179., 5.);  // source is G4S2Light.cc from the old NEST
     else {
-      wavelength = RandomGen::rndm()->rand_gauss(174., 5.);  // ditto
+      wavelength = RandomGen::rndm()->rand_zero_trunc_gauss(174., 5.);  // ditto
     }
   }
 
@@ -2691,10 +2681,7 @@ double NESTcalc::GetDiffLong_Liquid(
 
   // Use the standard NEST parametrization
   if (!highFieldModel) {
-    output = 345.92 * pow(dfield, -0.47880) *
-             exp(-81.3230 / dfield);  // fit to Aprile & Doke review
-                                      // paper and to arXiv:1102.2865;
-                                      // plus, LUX Run02+03
+    output = 57.381*pow(dfield,-0.22221)+127.27*exp(-dfield/32.821); //fit to Aprile & Doke rev & arXiv:1102.2865 (Peter: XENON10/100); plus, LUX Run03 (181V/cm) & 1911.11580
   }
   // Use the Boyle model, which is drastically different at high (>5kV/cm)
   // fields. Note here that the Boyle model is only at one temperature. First

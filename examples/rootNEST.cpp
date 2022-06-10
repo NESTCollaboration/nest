@@ -424,8 +424,8 @@ int main(int argc, char** argv) {
         if (loopNEST) {  // abbreviated #only version
           cout << chi2[0] << "\t" << chi2[1] << "\t"
                << 0.5 * (chi2[0] + chi2[1]) << "\t"
-               << pow(chi2[0] * chi2[1], 0.5) << "\t" << chi2[2] << "\t"
-               << chi2[3] << "\t" << band[0][2] << "\t" << band[0][3] << endl;
+               << pow(chi2[0] * chi2[1], 0.5) << "\t" << -chi2[2] << "\t"
+               << -chi2[3] << "\t" << band[0][2] << "\t" << band[0][3] << endl;
         } else {
           cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and "
                << chi2[1] << " for width. ";

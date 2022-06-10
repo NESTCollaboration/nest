@@ -161,10 +161,10 @@ class DetectorExample_XED : public VDetector {
     }
 
     double sig = RandomGen::rndm()->rand_gauss(
-        3.84, .09);  // includes stat unc but not syst
+					       3.84, .09, true);  // includes stat unc but not syst
     phoTravT += RandomGen::rndm()->rand_gauss(
         0.00,
-        sig);  // the overall width added to photon time spectra by the effects
+        sig, false);  // the overall width added to photon time spectra by the effects
                // in the electronics and the data reduction pipeline
 
     if (phoTravT > DBL_MAX) phoTravT = tau_a;

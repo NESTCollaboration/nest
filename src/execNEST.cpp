@@ -688,8 +688,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
               if (eMax > eMin)
                 keV = eMin + (eMax - eMin) * RandomGen::rndm()->rand_uniform();
               else  // polymorphic feature: Gauss E distribution
-                keV = RandomGen::rndm()->rand_gauss(eMin, eMax);
-              if (keV < 0.) keV = 1e-3 * Wq_eV;
+                keV = RandomGen::rndm()->rand_zero_trunc_gauss(eMin, eMax);
             } else {  // negative eMax signals to NEST that you want to use an
               // exponential energy spectrum profile
               if (ValidityTests::nearlyEqual(eMin, 0.)) return 1;
@@ -978,7 +977,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           detector->get_noiseBaseline()[3] != 0.)
         quanta.electrons += int(floor(
             RandomGen::rndm()->rand_gauss(detector->get_noiseBaseline()[2],
-                                          detector->get_noiseBaseline()[3]) +
+                                          detector->get_noiseBaseline()[3],false) +
             0.5));
 
       // If we want the smeared positions (non-MC truth), then implement

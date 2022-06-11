@@ -532,11 +532,12 @@ The executable will print S1 and S2 areas to screen in addition to the number of
 	```cpp
 	SetUserAction(new NESTStackingAction());
 	```
+	Put this line after all other lines in Build(), else you may only ever run precisely one event.
 
-5. In your physics list, you'll want code that looks like this:
+5. In your physics list, you'll want code that looks like this in your G4VPhysicsConstructer::ConstructProcess() method:
 
 	```cpp
-	NEST::NESTProc* theNEST2ScintillationProcess = new NEST::NESTProc("S1",fElectromagnetic,[your electric field]);
+	NEST::NESTProc* theNEST2ScintillationProcess = new NEST::NESTProc("S1",fElectromagnetic,[your VDetector]);
 	if (theNEST2ScintillationProcess->IsApplicable(*particle)) {
 	   pmanager->AddProcess(theScintillationProcess, ordDefault + 1, ordInActive, ordDefault + 1);
 	}

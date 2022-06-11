@@ -791,7 +791,8 @@ void GetFile(char* fileName) {
       S2cor_phd.push_back(-999.);
     }
   }
-  fclose(ifp); if ( E_keV.size() < 100000 ) { skewness = 0; cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so doing Gaussian" << endl; }
+  fclose(ifp);
+  if ( E_keV.size() < 100000 && numBins > 1 ) { skewness = 0; cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so doing Gaussian" << endl; }
   
   if (numBins == 1) {
     TH1F* HistogramArray = new TH1F[3];

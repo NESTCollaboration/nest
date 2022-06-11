@@ -585,8 +585,8 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &dEOdxParam,
     else {
       if ( NRERWidthsParam[0] >= 0. ) {
 	Nq = result.quanta.photons + result.quanta.electrons;
-	double FanoOverall = 0.0015 * sqrt((-1e3*eMin/Wq_eV)*field);
-	double FanoScint = 20. * FanoOverall;
+	double FanoOverall = 1.; //use 6 for ~0.7% energy resolution at 2.6 MeV and 190 V/cm
+	double FanoScint = 200.; //standin for recombination fluctuations in this approach
 	Nq = int(floor(RandomGen::rndm()->rand_gauss(Nq,sqrt(FanoOverall*Nq),false)+0.5));
 	result.quanta.photons = int(floor(RandomGen::rndm()->rand_gauss(
 		 result.quanta.photons,sqrt(FanoScint*result.quanta.photons),false)+0.5));
@@ -603,7 +603,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &dEOdxParam,
     driftTime = (fdetector->get_TopDrift() - zz) / vD;
     if ( zz >= fdetector->get_cathode() && NRERWidthsParam[0] >= 0. ) {
       if (eMin > 0.)
-	Ne += result.quanta.electrons * (eStep / refEnergy) * exp(-driftTime / fdetector->get_eLife_us());
+	Ne += result.quanta.electrons * exp(-driftTime / fdetector->get_eLife_us()) * (eStep / refEnergy);
       else
 	Ne += result.quanta.electrons *
 	  exp(-driftTime / fdetector->get_eLife_us());

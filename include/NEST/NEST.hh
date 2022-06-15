@@ -306,7 +306,7 @@ class NESTcalc {
   virtual QuantaResult GetQuanta(const YieldResult &yields, double density,
                                  const std::vector<double> &NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2},
                                  bool oldModelER = false,
-                                 bool disableSkewnessEr=false);
+                                 bool disableSkewnessEr = false);
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
   // photons and electrons

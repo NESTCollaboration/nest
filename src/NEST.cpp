@@ -35,7 +35,7 @@ NESTresult NESTcalc::FullCalculation(
   if (density < 1.) fdetector->set_inGas(true);
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NRYieldsParam);
-  result.quanta = GetQuanta(result.yields, density, NRERWidthsParam);
+  result.quanta =  GetQuanta(result.yields, density, NRERWidthsParam, false, false);
   if (do_times)
     result.photon_times = GetPhotonTimes(
         species, result.quanta.photons, result.quanta.excitons, dfield, energy);
@@ -232,10 +232,8 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield,
   return Fano;
 }
 
-QuantaResult NESTcalc::GetQuanta(
-    const YieldResult &yields, double density,
-    const std::vector<double> &NRERWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/,
-    bool oldModelER) {
+QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density, const std::vector<double> &NRERWidthsParam,
+                                 bool oldModelER, bool disableSkewnessEr) {
   QuantaResult result{};
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -351,11 +349,22 @@ QuantaResult NESTcalc::GetQuanta(
     skewness = 0.;
 
     if (ValidityTests::nearlyEqual(yields.Lindhard, 1.)) {
-      skewness = 1. / (1. + exp((engy - E2) / E3)) *
-                     (alpha0 +
-                      cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
-                 1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 *
-                     exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
+
+        if (disableSkewnessEr) {
+            skewness = 0;
+        }
+        else {
+            skewness = 1. / (1. + exp((engy - E2) / E3)) *
+                       (alpha0 +
+                        cc0 * exp(-1. * fld / F0) * (1. - exp(-1. * engy / E0))) +
+                       1. / (1. + exp(-1. * (engy - E2) / E3)) * cc1 *
+                       exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
+        }
+
+        cout<<disableSkewnessEr<< "   "<< skewness<<endl;
+
+        exit(1);
+
       // if ( std::abs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
     } else {
       skewness = NRERWidthsParam[5];  // 2.25 but ~5-20 also good (for NR). All better
@@ -579,7 +588,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &dEOdxParam,
       Ne += result.quanta.electrons;
     }
     else
-      result.quanta = GetQuanta(result.yields, rho, default_NRERWidthsParam, true);
+      result.quanta = GetQuanta(result.yields, rho, default_NRERWidthsParam, true, false);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else {

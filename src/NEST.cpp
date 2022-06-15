@@ -361,10 +361,6 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density, cons
                        exp(-1. * engy / E1) * exp(-1. * sqrt(fld) / sqrt(F1));
         }
 
-        cout<<disableSkewnessEr<< "   "<< skewness<<endl;
-
-        exit(1);
-
       // if ( std::abs(skewness) <= DBL_MIN ) skewness = DBL_MIN;
     } else {
       skewness = NRERWidthsParam[5];  // 2.25 but ~5-20 also good (for NR). All better

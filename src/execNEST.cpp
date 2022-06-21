@@ -958,7 +958,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                 0.0015, 0.0553, 
                 0.205, 0.45, -0.2};  // zero out non-binom recomb fluct & skew (NR)
           }
-          if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, false);
+          if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, -999.);
         } else {
           yields.PhotonYield = 0.;
           yields.ElectronYield = 0.;

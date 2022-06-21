@@ -35,7 +35,7 @@ NESTresult NESTcalc::FullCalculation(
   if (density < 1.) fdetector->set_inGas(true);
   NESTresult result;
   result.yields = GetYields(species, energy, density, dfield, A, Z, NRYieldsParam);
-  result.quanta =  GetQuanta(result.yields, density, NRERWidthsParam, false, false);
+  result.quanta =  GetQuanta(result.yields, density, NRERWidthsParam, false, -999.);
   if (do_times)
     result.photon_times = GetPhotonTimes(
         species, result.quanta.photons, result.quanta.excitons, dfield, energy);
@@ -233,7 +233,7 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield,
 }
 
 QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density, const std::vector<double> &NRERWidthsParam,
-                                 bool oldModelER, bool disableSkewnessEr) {
+                                 bool oldModelER, double SkewnessER) {
   QuantaResult result{};
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -350,8 +350,8 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density, cons
 
     if (ValidityTests::nearlyEqual(yields.Lindhard, 1.)) {
 
-        if (disableSkewnessEr) {
-            skewness = 0;
+        if ( SkewnessER != -999. ) {
+            skewness = SkewnessER;
         }
         else {
             skewness = 1. / (1. + exp((engy - E2) / E3)) *
@@ -584,7 +584,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &dEOdxParam,
       Ne += result.quanta.electrons;
     }
     else
-      result.quanta = GetQuanta(result.yields, rho, default_NRERWidthsParam, true, false);
+      result.quanta = GetQuanta(result.yields, rho, default_NRERWidthsParam, true, -999.);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else {
@@ -991,7 +991,6 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
 
 YieldResult NESTcalc::GetYieldBeta(double energy, double density,
                                    double dfield) {  // OLD
-
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Qy, Nq;
@@ -1159,7 +1158,7 @@ YieldResult NESTcalc::GetYields(
       break;
     default:  // beta, CH3T, 14C, the pp solar neutrino background, and
               // Compton/PP spectra of fullGamma
-      if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) || oldModelER)
+      if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) || oldModelER || fdetector->get_inGas())
         return GetYieldBeta(energy, density, dfield);  // OLD
       else
         return GetYieldBetaGR(energy, density, dfield, NRYieldsParam);  // NEW

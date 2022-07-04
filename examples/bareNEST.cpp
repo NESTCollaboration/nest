@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
   double Nphd_S2 =
       g2 * quanta.electrons * exp(-driftTime / detector->get_eLife_us());
 
-  // Vectors for saving times and amplitudes of waveforms (with calculationMode
+  // Vectors for saving times and amplitudes of waveforms (with (S1/S2)CalculationMode
   // set to "Waveform" and the verbosity >= 1 in analysis.hh)
   vector<double> wf_amp;
   vector<int64_t> wf_time;

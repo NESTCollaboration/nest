@@ -213,6 +213,8 @@ int main(int argc, char** argv) {
 	cin >> response;
 	if ( response[0] == 'n' || response[0] == 'N' )
 	  return EXIT_FAILURE;
+	else
+	  break;
       }
     }
     if (fitf->GetChisquare() > 1.3 && verbosity > 0)
@@ -308,8 +310,9 @@ int main(int argc, char** argv) {
         xSect[masses];  // arrays for the fraction of WIMP
     // signal events above threshold
     // and for the cross-sections
-    cout << "\nWIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
-
+    if ( verbosity >= 2 ) cout << "Upper Limit" << "\t";
+    cout << "WIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
+    
     i = 0;
     while (mass[i] < massMax) {  // Iterate across each sample wimp Mass
       sigAboveThr[i] = 0.;
@@ -334,7 +337,6 @@ int main(int argc, char** argv) {
       }
       // CUSTOMIZE: your upper limit here (to mimic a PLR for example)
       if ( Ul < 0.5 ) Ul = 0.5;  // maintain what is physically possible, mathematically/statistically
-      if ( verbosity == 0 && !i ) cerr << "Upper limit = " << Ul << endl;
       xSect[i] = 1e-36 * Ul /
                  (sigAboveThr[i] * fidMass *
                   time);  // derive the cross-section based upon the
@@ -354,10 +356,12 @@ int main(int argc, char** argv) {
       ++i;
       if (xSect[i - 1] < DBL_MAX && xSect[i - 1] > 0. &&
           !std::isnan(
-              xSect[i - 1]))  // Print the results, skipping any weirdness
+		      xSect[i - 1])) {  // Print the results, skipping any weirdness
         // (low WIMP masses prone)
+	if ( verbosity > 1 ) cout << Ul << "\t";
         cout << mass[i - 1] << "\t\t\t" << xSect[i - 1]
              << endl;  // final answer
+      }
     }
     int iMax = i;
 

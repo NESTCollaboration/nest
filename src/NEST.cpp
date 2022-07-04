@@ -2502,7 +2502,7 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 
   if (sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
       std::abs(sigmaX) > 1e2 || std::abs(sigmaY) > 1e2) {
-    if (A_top > 30.) {
+    if (A_top > 30.) { // roughly 1.5 S2 electrons in most detectors
       cerr << "WARNING: your position resolution is worse than 10 cm. Is that "
               "correct?!"
            << endl;

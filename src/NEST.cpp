@@ -1207,7 +1207,7 @@ const vector<double> &NESTcalc::GetS1(
     double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
     double driftVelocity, double dV_mid, INTERACTION_TYPE type_num,
     uint64_t evtNum, double dfield, double energy, S1CalculationMode mode,
-    bool outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp) {
+    int outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp) {
   int Nph = quanta.photons;
   double subtract[2] = {0., 0.};
 
@@ -1417,7 +1417,7 @@ const vector<double> &NESTcalc::GetS1(
     photonstream photon_times = AddPhotonTransportTime(
         photon_emission_times, truthPosX, truthPosY, truthPosZ);
 
-    if (outputTiming && !pulseFile.is_open()) {
+    if (outputTiming > 0 && !pulseFile.is_open()) {
       pulseFile.open("photon_times.txt");
       // pulseFile << "Event#\tt [ns]\tA [PE]" << endl;
       pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
@@ -1472,7 +1472,7 @@ const vector<double> &NESTcalc::GetS1(
       wf_time.emplace_back((ii - numPts / 2) * SAMPLE_SIZE);
       wf_amp.emplace_back(AreaTable[0][ii] + AreaTable[1][ii]);
 
-      if (outputTiming) {
+      if (outputTiming > 0) {
         char line[80];
         if (AreaTable[0][ii] > PHE_MAX) {
           subtract[0] = AreaTable[0][ii] - PHE_MAX;
@@ -1626,7 +1626,7 @@ const vector<double> &NESTcalc::GetS2(
     int Ne, double truthPosX, double truthPosY, double truthPosZ,
     double smearPosX, double smearPosY, double smearPosZ, double dt,
     double driftVelocity, uint64_t evtNum, double dfield,
-    S2CalculationMode mode, bool outputTiming, vector<int64_t> &wf_time,
+    S2CalculationMode mode, int outputTiming, vector<int64_t> &wf_time,
     vector<double> &wf_amp, const vector<double> &g2_params) {
   double elYield = g2_params[0];
   double ExtEff = g2_params[1];
@@ -1856,7 +1856,7 @@ const vector<double> &NESTcalc::GetS2(
       wf_time.emplace_back(k * SAMPLE_SIZE + int64_t(min + SAMPLE_SIZE / 2.));
       wf_amp.emplace_back(AreaTableBot[1][k] + AreaTableTop[1][k]);
 
-      if (outputTiming) {
+      if (outputTiming > 0) {
         char line[80];
         if (AreaTableBot[1][k] > PHE_MAX)
           subtract[0] = AreaTableBot[1][k] - PHE_MAX;
@@ -1961,7 +1961,7 @@ const vector<double> &NESTcalc::GetS2(
   return ionization;
 }
 
-vector<double> NESTcalc::CalculateG2(bool verbosity) {
+vector<double> NESTcalc::CalculateG2(int verbosity) {
   vector<double> g2_params(5);
 
   // Set parameters for calculating EL yield and extraction
@@ -2064,7 +2064,7 @@ vector<double> NESTcalc::CalculateG2(bool verbosity) {
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r, x, y;
   int Nph, nHits;
-  if (verbosity) {
+  if (verbosity > 0) {
     for (int i = 0; i < 10000; ++i) {
       // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(
@@ -2502,7 +2502,7 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 
   if (sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
       std::abs(sigmaX) > 1e2 || std::abs(sigmaY) > 1e2) {
-    if (A_top > 20.) {
+    if (A_top > 30.) {
       cerr << "WARNING: your position resolution is worse than 10 cm. Is that "
               "correct?!"
            << endl;

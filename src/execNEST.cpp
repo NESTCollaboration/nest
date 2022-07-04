@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
   auto* detector = new DetectorExample_LUX_RUN03();
-  if (verbosity) cerr << "*** Detector definition message ***" << endl;
-  if (verbosity)
+  if (verbosity > 0) cerr << "*** Detector definition message ***" << endl;
+  if (verbosity > 0)
     cerr << "You are currently using the LUX Run03 template detector." << endl
          << endl;
   // Custom parameter modification functions
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     detector->set_molarMass(39.948);
-    if (verbosity)
+    if (verbosity > 0)
       cerr << "\nWARNING: Argon is currently only in alpha testing mode!! Many "
               "features copied over from Xenon wholesale still. Use models at "
               "your own risk.\n"
@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
     NRERWidthsParam.clear();
     NRYieldsParam.clear();
     ERWeightParam.clear();
-    verbosity = false;
+    verbosity = -1;
     
     NRYieldsParam.push_back(0.0);
     NRYieldsParam.push_back(0.);
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
   } else {
     numEvts = (uint64_t)atof(argv[1]);
     if (numEvts <= 0) {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << "ERROR, you must simulate at least 1 event, or 1 kg*day"
              << endl;
       return 1;
@@ -252,7 +252,7 @@ NESTObservableArray runNESTvec(
         particleType,  // func suggested by Xin Xiang, PD Brown U. for RG, LZ
     vector<double> eList, vector<vector<double>> pos3dxyz, double inField,
     int seed) {
-  verbosity = false;
+  verbosity = -1;
   NESTcalc n(detector);
   NESTresult result;
   QuantaResult quanta;
@@ -348,7 +348,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 
   if (detector->get_TopDrift() <= 0. || detector->get_anode() <= 0. ||
       detector->get_gate() <= 0.) {
-    if (verbosity)
+    if (verbosity > 0)
       cerr << "ERROR, unphysical value(s) of position within the detector "
               "geometry.";  // negative or 0 for cathode position is OK (e.g.,
                             // LZ)
@@ -382,7 +382,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     eMax = hiEregime;  // the default energy max
   if (ValidityTests::nearlyEqual(eMax, 0.) && type != "muon" && type != "MIP" &&
       type != "LIP" && type != "mu" && type != "mu-") {
-    if (verbosity)
+    if (verbosity > 0)
       cerr << "ERROR: The maximum energy (or Kr time sep) cannot be 0 keV (or "
               "0 ns)!"
            << endl;
@@ -397,7 +397,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     type_num = NR;  //-1: default particle type is also NR
   else if (type == "WIMP") {
     if (eMin < 0.44) {  // here eMin is WIMP mass
-      if (verbosity) cerr << "WIMP mass too low, you're crazy!" << endl;
+      if (verbosity > 0) cerr << "WIMP mass too low, you're crazy!" << endl;
       return 1;
     }
     type_num = WIMP;
@@ -462,18 +462,18 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     numEvts = RandomGen::rndm()->poisson_draw(1.5764e-7 * double(numEvts));
   } else if (type == "fullGamma") {
     type_num = fullGamma;
-    if (verbosity)
+    if (verbosity > 0)
       cerr << "Please choose gamma source. The allowed sources "
               "are:\n\"Co57\"\n\"Co60\"\n\"Cs137\"\nSource: ";
     cin >> gamma_source;
-    if (gamma_source == "Co60" && verbosity) {
+    if (gamma_source == "Co60" && verbosity > 0) {
       cerr << "WARNING: This source is in the pair production range. "
               "Electron/positron pairs are not accounted for after initial "
               "interaction, and some "
            << "photons and electrons may go unaccounted." << endl;
     }
   } else {
-    if (verbosity) {
+    if (verbosity > 0) {
       string particleTypes =
           "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:\n"
           "NR or neutron,\n"
@@ -508,11 +508,11 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         eMin != eMax) {
       maxTimeSep = eMax;
       if (eMax <= 0.) {
-        if (verbosity) cerr << "Max t sep must be +." << endl;
+        if (verbosity > 0) cerr << "Max t sep must be +." << endl;
         return 1;
       }
     } else {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << "ERROR: For Kr83m, put E_min as 9.4, 32.1, or 41.5 keV and "
                 "E_max as the max time-separation [ns] between the two decays "
                 "please."
@@ -521,7 +521,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     }
   }
 
-  if ((eMin < 10. || eMax < 10.) && type_num == gammaRay && verbosity) {
+  if ((eMin < 10. || eMax < 10.) && type_num == gammaRay && verbosity > 0) {
     cerr << "WARNING: Typically beta model works better for ER BG at low "
             "energies as in a WS."
          << endl;
@@ -533,7 +533,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
   double rho = n.SetDensity(detector->get_T_Kelvin(), detector->get_p_bar());
   if (rho <= 0. || detector->get_T_Kelvin() <= 0. ||
       detector->get_p_bar() <= 0.) {
-    if (verbosity) cerr << "ERR: Unphysical thermodynamic property!";
+    if (verbosity > 0) cerr << "ERR: Unphysical thermodynamic property!";
     return 1;
   }
   if (rho < 1.75 && ValidityTests::nearlyEqual(ATOM_NUM, 54.))
@@ -582,7 +582,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                               double(massNum), double(atomNum), NRYieldsParam);
   }
   if ((g1 * yieldsMax.PhotonYield) > (2. * maxS1) && eMin != eMax &&
-      type_num != Kr83m && verbosity && !dEOdxBasis)
+      type_num != Kr83m && verbosity > 0 && !dEOdxBasis)
     cerr
         << "\nWARNING: Your energy maximum may be too high given your maxS1.\n";
   
@@ -708,12 +708,12 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 
       if (!dEOdxBasis) {
         if (keV < 0) {
-          if (verbosity)
+          if (verbosity > 0)
             cerr << "ERROR: Get ready for time travel or FTL--negative energy!"
                  << endl;
           return 1;
         }
-        if (ValidityTests::nearlyEqual(keV, 0.) && verbosity) {
+        if (ValidityTests::nearlyEqual(keV, 0.) && verbosity > 0) {
           cerr << "WARNING: Zero energy has occurred, and this is not normal"
                << endl;
         }
@@ -746,12 +746,12 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           if (pos_x != -999. && pos_y != -999. &&
               (pos_x * pos_x + pos_y * pos_y) >
                   detector->get_radius() * detector->get_radius() &&
-              j == 0 && verbosity)
+              j == 0 && verbosity > 0)
             cerr << "WARNING: outside fiducial radius." << endl;
           if (pos_x != -999. && pos_y != -999. &&
               (pos_x * pos_x + pos_y * pos_y) >
                   detector->get_radmax() * detector->get_radmax()) {
-            if (verbosity)
+            if (verbosity > 0)
               cerr << "\nERROR: outside physical radius!!!" << endl;
             return EXIT_FAILURE;
           }
@@ -778,17 +778,17 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         field = inField;  // no fringing
 
       if (field < 0. || detector->get_E_gas() < 0.) {
-        if (verbosity)
+        if (verbosity > 0)
           cerr << "\nERROR: Neg field is not permitted. We don't simulate "
                   "field dir (yet). Put in magnitude.\n";
         return 1;
       }
       if ((ValidityTests::nearlyEqual(field, 0.) || std::isnan(field)) &&
-          verbosity)
+          verbosity > 0)
         cerr
             << "\nWARNING: A LITERAL ZERO (or undefined) FIELD MAY YIELD WEIRD "
                "RESULTS. USE A SMALL VALUE INSTEAD.\n";
-      if ((field > 12e3 || detector->get_E_gas() > 17e3) && verbosity)
+      if ((field > 12e3 || detector->get_E_gas() > 17e3) && verbosity > 0)
         cerr << "\nWARNING: Your field is >12,000 V/cm. No data out here. Are "
                 "you sure about this?\n";
 
@@ -805,7 +805,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
               n.SetDriftVelocity(detector->get_T_Kelvin(), rho, inField);
           vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, field);
         }
-        if (verbosity) {
+        if (verbosity > 0) {
           cout << "Density = " << rho << " g/mL"
                << "\t";
           cout << "central vDrift = " << vD_middle << " mm/us\n";
@@ -820,7 +820,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           if ((ValidityTests::nearlyEqual(eMax, eMin) || type_num == Kr83m) &&
               numBins == 1 && MCtruthE) {
             MCtruthE = false;
-            if (verbosity)
+            if (verbosity > 0)
               fprintf(stderr,
                       "Simulating a mono-E peak; setting MCtruthE false.\n");
           }
@@ -860,7 +860,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       if (inField != -1. &&
           detector->get_dt_min() > (detector->get_TopDrift() - 0.) / vD &&
           field >= FIELD_MIN) {
-        if (verbosity)
+        if (verbosity > 0)
           cerr << "ERROR: dt_min is too restrictive (too large)" << endl;
         return 1;
       }
@@ -871,7 +871,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           field >= FIELD_MIN)
         goto Z_NEW;
       if (detector->get_dt_max() > (detector->get_TopDrift() - 0.) / vD && !j &&
-          field >= FIELD_MIN && verbosity) {
+          field >= FIELD_MIN && verbosity > 0) {
         cerr << "WARNING: dt_max is greater than max possible" << endl;
       }
 
@@ -879,7 +879,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       // code-block dealing with user error (rounding another possible culprit)
       if (!dEOdxBasis) {
         if (pos_z <= 0) {
-          if (verbosity)
+          if (verbosity > 0)
             cerr << "WARNING: unphysically low Z coordinate (vertical axis of "
                     "detector) of "
                  << pos_z << " mm" << endl;  // warn user on screen
@@ -887,7 +887,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         }
         if ((pos_z > (detector->get_TopDrift() + z_step) || driftTime < 0.0) &&
             field >= FIELD_MIN) {
-          if (verbosity)
+          if (verbosity > 0)
             cerr << "WARNING: unphysically big Z coordinate (vertical axis of "
                     "detector) of "
                  << pos_z << " mm" << endl;  // give the specifics
@@ -928,7 +928,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       } else {
         if (keV > 0.001 * Wq_eV) {
           if (type == "ER") {
-            if (verbosity && j == 0) {
+            if (verbosity > 0 && j == 0) {
               cerr << "CAUTION: Are you sure you don't want beta model instead "
                       "of ER? This is a weighted average of the beta and gamma "
                       "models"
@@ -1031,7 +1031,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       if ((useS2 == 0 && logMax <= log10(maxS2 / maxS1)) ||
           (useS2 == 1 && logMax <= log10(maxS2)) ||
           (useS2 == 2 && logMax <= log10(maxS2 / maxS1))) {
-        if (j == 0 && verbosity)
+        if (j == 0 && verbosity > 0)
           cerr << "err: You may be chopping off the upper half of your (ER?) "
                   "band; increase logMax and/or maxS2"
                << endl;
@@ -1039,7 +1039,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       if ((useS2 == 0 && logMin >= log10(lowest2 / lowest1)) ||
           (useS2 == 1 && logMin >= log10(lowest2)) ||
           (useS2 == 2 && logMin >= log10(lowest2 / lowest1))) {
-        if (j == 0 && verbosity)
+        if (j == 0 && verbosity > 0)
           cerr << "err: You may be chopping off the lower half of your (NR?) "
                   "band; decrease logMin and/or minS2"
                << endl;
@@ -1054,10 +1054,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 
       if (ValidityTests::nearlyEqual(eMin, eMax) || type_num == Kr83m) {
         if ((scint[3] > maxS1 || scint[5] > maxS1 || scint[7] > maxS1) &&
-            j < 10 && verbosity)
+            j < 10 && verbosity > 0)
           cerr << "WARNING: Some S1 pulse areas are greater than maxS1" << endl;
         if ((scint2[5] > maxS2 || scint2[7] > maxS2) && j < 10 &&
-            verbosity)  // don't repeat too much: only if within first 10 events
+            verbosity > 0)  // don't repeat too much: only if within first 10 events
                         // then show (+above)
           cerr << "WARNING: Some S2 pulse areas are greater than maxS2" << endl;
       }
@@ -1157,7 +1157,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         signal1.pop_back();
         signal2.pop_back();
         signalE.pop_back();
-        if (verbosity) {
+        if (verbosity > 0) {
           cerr << endl
                << "CAUTION: Efficiency seems to have been zero, so trying "
                   "again with full S1 and S2 ranges."
@@ -1213,10 +1213,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       // scint2[8] = g2; // g2 = ExtEff * SE, light collection efficiency of EL
       // in gas gap (from CalculateG2)
 
-      if (truthPos[2] < detector->get_cathode() && verbosity && !BeenHere &&
+      if (truthPos[2] < detector->get_cathode() && verbosity > 0 && !BeenHere &&
           !dEOdxBasis) {
         BeenHere = true;
-        if (verbosity)
+        if (verbosity > 0)
           fprintf(
               stderr,
               "gamma-X i.e. MSSI may be happening. This may be why even high-E "
@@ -1234,9 +1234,9 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         // other suggestions: minS1, minS2 (or s2_thr) for tighter cuts
         // depending on analysis.hh settings (think of as analysis v. trigger
         // thresholds) and using max's too, pinching both ends
-        if (type_num == Kr83m && verbosity && (eMin < 10. || eMin > 40.))
+        if (type_num == Kr83m && verbosity > 0 && (eMin < 10. || eMin > 40.))
           printf("%.6f\t", yields.DeltaT_Scint);
-        if (timeStamp > tZero && verbosity) {
+        if (timeStamp > tZero && verbosity > 0) {
           printf("%.6f\t", timeStamp);
           if (keV > AnnModERange[0] && keV < AnnModERange[1])
             SaveTheDates[int(timeStamp) % tMax]++;
@@ -1278,7 +1278,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
          // place-holder
       // in case you want to drop all sub-threshold data
     } catch (exception& e) {
-      if (verbosity) cerr << e.what() << endl;
+      if (verbosity > 0) cerr << e.what() << endl;
       return 1;
     }
   }  // end of the gigantic primary event number loop
@@ -1289,7 +1289,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     }
   }
 
-  if (verbosity) {
+  if (verbosity >= 0) {
     if (eMin != eMax && type_num != Kr83m) {
       if (useS2 == 2)
         GetBand(signal2, signal1, false, detector->get_coinLevel());
@@ -1307,7 +1307,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             std::isnan(band[j][0]) || std::isnan(band[j][1]) ||
             std::isnan(band[j][2]) || std::isnan(band[j][3]) ||
             std::isnan(band[j][4]) || std::isnan(band[j][5])) {
-          if (eMax != -999. && verbosity) {
+          if (eMax != -999. && verbosity > 0) {
             if (((g1 * yieldsMax.PhotonYield) < maxS1 ||
                  (g2 * yieldsMax.ElectronYield) < maxS2) &&
                 j != 0)
@@ -1328,7 +1328,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
       if (type_num == NR || type_num == WIMP || type_num == B8 ||
           type_num == DD || type_num == AmBe || type_num == Cf ||
           type_num == ion) {
-        fprintf(stderr,
+        if (verbosity > 0) fprintf(stderr,
                 "S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc "
                 "[keVnr]\tEc Res[%%]\tEff[%%>thr]\tEc [keVee]\n");
         keVee /= numEvts;
@@ -1351,17 +1351,19 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
              std::isnan(band[j][1]) || std::isnan(band[j][2]) ||
              std::isnan(band[j][3])) &&
             field >= FIELD_MIN) {
-          if (numEvts > 1)
-            cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to "
-                    "be too restrictive, please check.\n";
-          else
-            cerr << "CAUTION: Poor stats. You must have at least 2 events to "
-                    "calculate S1 and S2 and E resolutions.\n";
+	  if (verbosity > 0) {
+	    if (numEvts > 1)
+	      cerr << "CAUTION: YOUR S1 and/or S2 MIN and/or MAX may be set to "
+		"be too restrictive, please check.\n";
+	    else
+	      cerr << "CAUTION: Poor stats. You must have at least 2 events to "
+		"calculate S1 and S2 and E resolutions.\n";
+	  }
         } else if ((ValidityTests::nearlyEqual(energies[0], eMin) ||
                     ValidityTests::nearlyEqual(energies[0], eMax) ||
                     energies[1] <= 1E-6) &&
                    field >= FIELD_MIN)
-          if (verbosity)
+          if (verbosity > 0)
             cerr << "If your energy resolution is 0% then you probably still "
                     "have MC truth energy on."
                  << endl;
@@ -1374,7 +1376,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,
                                bool resol, int nFold) {
   if (numBins > NUMBINS_MAX) {
-    if (verbosity)
+    if (verbosity > 0)
       cerr << "ERROR: Too many bins. Decrease numBins (analysis.hh) or "
               "increase NUMBINS_MAX (TestSpectra.hh)"
            << endl;

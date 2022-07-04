@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   bool corrected = true;
   if (atoi(argv[3]) == 0)
     corrected = false;
-  if (verbosity) {
+  if (verbosity > 0) {
     if (corrected)
       cout << "S1c [phd]\tS2c [phd]\tnScatters" << endl;
     else
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
   int ch, nLines = 0;
   vector<double> S1a, S2a;
   vector<double> S1a_corFactor, S2a_corFactor;
-  if (verbosity) {
+  if (verbosity > 0) {
     while (EOF != (ch = getc(file1))) {
       if ('\n' == ch && nLines)
         break;
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     double a2, b2, c2, d2, e2, f2, g2, h2, i2, j2, k2, l2, m2, n2;
     vector<double> S1b, S2b;
     vector<double> S1b_corFactor, S2b_corFactor;
-    if (verbosity) {
+    if (verbosity > 0) {
       while (EOF != (ch = getc(file2))) {
         if ('\n' == ch && nLines)
           break;

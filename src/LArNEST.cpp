@@ -445,7 +445,7 @@ namespace NEST
         }
         return LET;
     }
-    std::vector<double> LArNEST::CalculateG2(bool verbosity) 
+    std::vector<double> LArNEST::CalculateG2(int verbosity)
     {   
         return std::vector<double>();
     }

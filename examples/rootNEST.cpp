@@ -358,7 +358,7 @@ int main(int argc, char** argv) {
           !std::isnan(
 		      xSect[i - 1])) {  // Print the results, skipping any weirdness
         // (low WIMP masses prone)
-	if ( verbosity > 1 ) cout << Ul << "\t";
+	if ( verbosity > 1 ) cout << Ul << "\t\t";
         cout << mass[i - 1] << "\t\t\t" << xSect[i - 1]
              << endl;  // final answer
       }

@@ -13,4 +13,4 @@ do
 
 done
 
-#make sure to use the "2>" operator to redirect the terminal screen output of this script to a text file to save it
+#make sure to use the "2>" operator to redirect the terminal screen output of this script to a text file to save it. Lastly, copy/paste results from Excel into txt in terminal.

@@ -584,7 +584,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &dEOdxParam,
       Ne += result.quanta.electrons;
     }
     else
-      result.quanta = GetQuanta(result.yields, rho, default_NRERWidthsParam, true, -999.);
+      result.quanta = GetQuanta(result.yields, rho, default_NRERWidthsParam, false, -999.);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else {
@@ -1389,7 +1389,7 @@ const vector<double> &NESTcalc::GetS1(
           Nphe, 1. - (1. - eff) / (1. + fdetector->get_P_dphe())));
       // take into account the truncation of the PE distributions
       pulseArea = RandomGen::rndm()->rand_gauss(
-      Nphe_det * (1. / NewMean), fdetector->get_sPEres() * sqrt(Nphe_det), true);
+      Nphe_det * (1. / NewMean), fdetector->get_sPEres() * sqrt(Nphe_det/NewMean), true);
       spike = static_cast<double>(RandomGen::rndm()->binom_draw(
           nHits, eff * (1. - belowThresh_percentile)));
 
@@ -1884,8 +1884,9 @@ const vector<double> &NESTcalc::GetS2(
         RandomGen::rndm()->binom_draw(Nph, fdetector->get_g1_gas() * posDep);
     Nphe =
         nHits + RandomGen::rndm()->binom_draw(nHits, fdetector->get_P_dphe());
+    double NewMean = RandomGen::rndm()->FindNewMean(fdetector->get_sPEres());
     pulseArea = RandomGen::rndm()->rand_gauss(
-					      Nphe/RandomGen::rndm()->FindNewMean(fdetector->get_sPEres()), fdetector->get_sPEres() * sqrt(Nphe), true);
+					      Nphe/NewMean, fdetector->get_sPEres() * sqrt(Nphe/NewMean), true);
   }
 
   if (fdetector->get_noiseLinear()[1] >= 0.1)
@@ -2502,7 +2503,7 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 
   if (sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
       std::abs(sigmaX) > 1e2 || std::abs(sigmaY) > 1e2) {
-    if (A_top > 30.) { // roughly 1.5 S2 electrons in most detectors
+    if (A_top > 40.) { // roughly two S2 electrons in most detectors (~1e- in LZ)
       cerr << "WARNING: your position resolution is worse than 10 cm. Is that "
               "correct?!"
            << endl;
@@ -2565,7 +2566,7 @@ double NESTcalc::CalcElectronLET(double E, int Z, bool CSDA) {
       LET=1.8106-0.45086*log10(E)-.33151*pow(log10(E),2.)+.25916*pow(log10(E),3.)-0.2051*pow(log10(E),4.)+0.15279*pow(log10(E),5.)-.084659*pow(log10(E),6.)
 	+0.030441*pow(log10(E),7.)-.0058953*pow(log10(E),8.)+0.00045633*pow(log10(E),9.);
     LET = pow(10.,LET);
-    if ( std::isnan(LET) || LET <= 0. ) LET = 1e2;
+    if ( std::isnan(LET) || LET <= 1. ) LET = 1e2;
     return LET;
   }
   

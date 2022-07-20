@@ -468,7 +468,7 @@ namespace NEST
             double Kelvin, double bara, bool &inGas,
             uint64_t evtNum, double molarMass
         );
-        std::vector<double> CalculateG2(bool verbosity=false);
+        std::vector<double> CalculateG2(int verbosity=-1);
 
         //-------------------------Legacy LArNEST-------------------------//
         /**
@@ -489,7 +489,7 @@ namespace NEST
         );
         /**
          * @brief Below are legacy LAr calculation 
-         * functions which are almost copied verbadim 
+         * functions which are almost copied verbatim 
          * from LArSoft, see - 
          * 
          * The default value for the dx=track_length is

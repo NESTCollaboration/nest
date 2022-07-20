@@ -57,7 +57,7 @@
    calculations with other doubles as a mixture
    The interaction type ("species") is a new type defined for use in NEST that
    attempts to cover all possible kinds of particle/scatter
-   For waveforms (with output timing set to TRUE) the unit is PE per bin
+   For waveforms (with output timing set to >=1) the unit is PE per bin
    (sample, usually 10 ns) but has option of total area in PE
 
 */
@@ -303,10 +303,10 @@ class NESTcalc {
                                           const double Wq_eV);
   // Confirms and sometimes adjusts YieldResult to make physical sense
 
-  virtual QuantaResult GetQuanta(
-      const YieldResult &yields, double density,
-      const std::vector<double> &NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2},
-      bool oldModelER = false);
+  virtual QuantaResult GetQuanta(const YieldResult &yields, double density,
+                                 const std::vector<double> &NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2},
+                                 bool oldModelER = false,
+                                 double SkewnessER = -999.);
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
   // photons and electrons
@@ -334,7 +334,7 @@ class NESTcalc {
       double truthPosZ, double smearPosX, double smearPosY, double smearPosZ,
       double driftSpeed, double dS_mid, INTERACTION_TYPE species,
       uint64_t evtNum, double dfield, double energy, S1CalculationMode mode,
-      bool outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp);
+      int outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp);
   // Very comprehensive conversion of the "original" intrinsic scintillation
   // photons into the many possible definitions of S1 as measured by
   // photo-sensors
@@ -349,7 +349,7 @@ class NESTcalc {
       int Ne, double truthPosX, double truthPosY, double truthPosZ,
       double smearPosX, double smearPosY, double smearPosZ, double dt,
       double driftSpeed, uint64_t evtNum, double dfield, S2CalculationMode mode,
-      bool outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp,
+      int outputTiming, vector<int64_t> &wf_time, vector<double> &wf_amp,
       const vector<double> &g2_params);
   // Exhaustive conversion of the intrinsic ionization electrons into the many
   // possible definitions of S2 pulse areas as observed in the photo-tubes
@@ -357,7 +357,7 @@ class NESTcalc {
   // electron mean free path or life time caused by electronegative impurities
   // (exponential)
 
-  std::vector<double> CalculateG2(bool verbosity = true);
+  std::vector<double> CalculateG2(int verbosity = 1);
   // Calculates "g2" by combining the single electron size with the extraction
   // efficiency. Called by GetS2 above. Includes helper variables like gas gap
   // and SE width.

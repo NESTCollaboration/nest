@@ -24,12 +24,10 @@
   6.0221409e+23       // good to keep in sync w/ NEST.hh, can't define twice
 #define ATOM_NUM 54.  // ibid.
 
-#define RHO_NAUGHT 0.3  // local DM halo density in [GeV/cm^3]
-#define V_SUN 233.
-// works out to mean V_EARTH of 245 for LUX Run03; Run04, 230 km/s
-// (arXiv:1705.03380)
-#define V_WIMP 220.
-#define V_ESCAPE 544.
+#define RHO_NAUGHT 0.3  // local DM halo density in [GeV/cm^3]. Lewin & Smith
+#define V_SUN 250.2  // +/- 1.4: arXiv:2105.00599, page 12 (V_EARTH 29.8km/s)
+#define V_WIMP 238.  // +/- 1.5: page 12 and Table 1
+#define V_ESCAPE 544.  // M.C. Smith et al. RAVE Survey
 
 #define NUMBINS_MAX 1000
 

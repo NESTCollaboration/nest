@@ -41,11 +41,21 @@ double RandomGen::rand_gauss(double mean, double sigma, bool zero_min) {
 }
 
 double RandomGen::rand_zero_trunc_gauss(double mean, double sigma) {
-  double r = rand_gauss(mean, sigma);
+  double r = rand_gauss(mean, sigma, false);
   while (r <= 0) {
-    r = rand_gauss(mean, sigma);
+    r = rand_gauss(mean, sigma, false);
   }
   return r;
+}
+
+double RandomGen::FindNewMean(double sigma) {
+  // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
+  double TruncGaussAlpha = -1. / sigma;
+  double LittlePhi_Alpha =
+    exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha) / gcem::sqrt(2. * M_PI);
+  double BigPhi_Alpha = 0.5 * (1. + erf(TruncGaussAlpha / sqrt2));
+  return
+    1. + (LittlePhi_Alpha / (1. - BigPhi_Alpha)) * sigma;
 }
 
 double RandomGen::rand_exponential(double half_life, double t_min, double t_max) {

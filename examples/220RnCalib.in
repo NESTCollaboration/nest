@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Be sure to turn off verbosity in analysis.hh for best results!
+# Be sure to set verbosity to -1 in analysis.hh for best results!
 # And add standard header to Pb212.dat before attempting to run rootNEST
 rm Pb212.dat &> /dev/null;
 EXECNEST=@CMAKE_CURRENT_BINARY_DIR@/execNEST

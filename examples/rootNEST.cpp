@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
   double NRbandX[numBins], NRbandY[numBins], numSigma[numBins],
       leakage[numBins], discrim[numBins], errorBars[numBins][2];
   int i = 0;
-  if (loopNEST) { verbosity = false; mode = 1; }
+  if (loopNEST) { verbosity = -1; mode = 1; }
 
   if (std::abs(NRbandCenter) != 1 && std::abs(NRbandCenter) != 2 &&
       std::abs(NRbandCenter) != 3)
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
 
   if (mode == 2) {
     if (argc < 3) {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << "Enter 0 for SI, 1 for SD-n, and 2 for SD-p" << endl;
       return 1;
     }
@@ -144,12 +144,12 @@ int main(int argc, char** argv) {
       input[7][i - SKIP] /= 1e2;
       if (input[7][i - SKIP] > 1.02)  // 2% margin of error is allowed
       {
-        if (verbosity) cerr << "eff should be frac not %" << endl;
+        if (verbosity > 0) cerr << "eff should be frac not %" << endl;
         return 1;
       }
       if (input[7][i - SKIP] < -.02)  // allowing for digitization err
       {
-        if (verbosity) cerr << "eff must not be negative" << endl;
+        if (verbosity > 0) cerr << "eff must not be negative" << endl;
         return 1;
       }
       if (input[7][i - SKIP] > 0.00 && !std::isnan(input[7][i - SKIP]))
@@ -204,14 +204,20 @@ int main(int argc, char** argv) {
       ff = fitf->GetParameter(5);
       ++jj;
       if (jj > 10) {
-        if (verbosity)
+        if (verbosity > 0)
           cerr << "ERR: The fit to the efficiency curve failed to converge to "
                   "a good Chi2."
                << endl;
-        return EXIT_FAILURE;
+	cerr << "Do you wish to continue with a bad chi^2 for the efficiency? ";
+	char response[5];
+	cin >> response;
+	if ( response[0] == 'n' || response[0] == 'N' )
+	  return EXIT_FAILURE;
+	else
+	  break;
       }
     }
-    if (fitf->GetChisquare() > 1.3 && verbosity)
+    if (fitf->GetChisquare() > 1.3 && verbosity > 0)
       cerr << "WARNING: The efficiency curve is poorly fit. chi^2 = "
            << fitf->GetChisquare() << endl;
     delete gr1;
@@ -240,7 +246,7 @@ int main(int argc, char** argv) {
     if (cin.fail() || fidMass <= 0. || time <= 0. || xEff <= 0. ||
         NRacc <= 0. || loE < 0. || hiE <= 0. || numBGeventsExp < 0. ||
         numBGeventsObs < 0.) {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << endl
              << "Input error. Make sure all inputs were numbers (most also "
                 "positive or at least 0)"
@@ -248,7 +254,7 @@ int main(int argc, char** argv) {
       return 1;
     }
     if (xEff > 1. || NRacc > 1.) {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << endl
              << "You entered an efficiency or acceptance for NR greater than "
                 "100%"
@@ -304,8 +310,9 @@ int main(int argc, char** argv) {
         xSect[masses];  // arrays for the fraction of WIMP
     // signal events above threshold
     // and for the cross-sections
-    cout << "\nWIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
-
+    if ( verbosity >= 2 ) cout << "Upper Limit" << "\t";
+    cout << "WIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
+    
     i = 0;
     while (mass[i] < massMax) {  // Iterate across each sample wimp Mass
       sigAboveThr[i] = 0.;
@@ -317,7 +324,7 @@ int main(int argc, char** argv) {
                      100.;
         // cerr << j << " " << eff << endl;
         if (eff > 1. || eff < 0.) {
-          if (verbosity)
+          if (verbosity > 0)
             cerr << "Eff cannot be greater than 100% or <0%" << endl;
           return 1;
         }
@@ -328,6 +335,8 @@ int main(int argc, char** argv) {
                              // mass-dependent differential rate with
                              // effxacc and step size
       }
+      // CUSTOMIZE: your upper limit here (to mimic a PLR for example)
+      if ( Ul < 0.5 ) Ul = 0.5;  // maintain what is physically possible, mathematically/statistically
       xSect[i] = 1e-36 * Ul /
                  (sigAboveThr[i] * fidMass *
                   time);  // derive the cross-section based upon the
@@ -347,10 +356,12 @@ int main(int argc, char** argv) {
       ++i;
       if (xSect[i - 1] < DBL_MAX && xSect[i - 1] > 0. &&
           !std::isnan(
-              xSect[i - 1]))  // Print the results, skipping any weirdness
+		      xSect[i - 1])) {  // Print the results, skipping any weirdness
         // (low WIMP masses prone)
+	if ( verbosity > 1 ) cout << Ul << "\t\t";
         cout << mass[i - 1] << "\t\t\t" << xSect[i - 1]
              << endl;  // final answer
+      }
     }
     int iMax = i;
 
@@ -367,7 +378,7 @@ int main(int argc, char** argv) {
 
   if (mode == 1) {
     if (argc < 3) {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << "ERROR: mode 1 requires *2* input files. 1 is not enough"
              << endl;
       return 1;
@@ -401,7 +412,7 @@ int main(int argc, char** argv) {
         double error, chi2[4] = {0., 0., 0., 0.};
         for (i = 0; i < numBins; ++i) {
           if (std::abs(band[i][0] - band2[i][0]) > 0.05) {
-            if (verbosity)
+            if (verbosity > 0)
               cerr << "Binning doesn't match for GoF calculation. Go to "
                       "analysis.hh and adjust minS1, maxS1, numBins"
                    << endl;
@@ -424,8 +435,8 @@ int main(int argc, char** argv) {
         if (loopNEST) {  // abbreviated #only version
           cout << chi2[0] << "\t" << chi2[1] << "\t"
                << 0.5 * (chi2[0] + chi2[1]) << "\t"
-               << pow(chi2[0] * chi2[1], 0.5) << "\t" << chi2[2] << "\t"
-               << chi2[3] << "\t" << band[0][2] << "\t" << band[0][3] << endl;
+               << pow(chi2[0] * chi2[1], 0.5) << "\t" << -chi2[2] << "\t"
+               << -chi2[3] << "\t" << band[0][2] << "\t" << band[0][3] << endl;
         } else {
           cout << "The reduced CHI^2 = " << chi2[0] << " for mean, and "
                << chi2[1] << " for width. ";
@@ -634,7 +645,7 @@ int main(int argc, char** argv) {
     double chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
     bool FailedFit = false;
     if (chi2 > 1.5 || chi2 <= 0. || std::isnan(chi2)) {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << "WARNING: Poor fit to NR Gaussian band centroids i.e. means of "
                 "log(S2) or log(S2/S1) histograms in S1 bins. Investigate "
                 "please!"
@@ -645,7 +656,7 @@ int main(int argc, char** argv) {
       gr1->Fit(fitf, "nrq", "", minS1, maxS1);
       chi2 = fitf->GetChisquare() / (double)fitf->GetNDF();
       if (chi2 > 2. || chi2 < 0. || std::isnan(chi2)) {
-        if (verbosity)
+        if (verbosity > 0)
           cerr << "ERROR: Even the backup plan to use sigmoid failed as well!"
                << endl;
         FailedFit = true;  // return 1;
@@ -731,7 +742,7 @@ void GetFile(char* fileName) {
       S1cor_phe, S2cor_phe, S1raw_phe, S1cor_phd, S1cor_spike, Ne_Extr,
       S2raw_phe, S2cor_phd;
 
-  if (verbosity) {
+  if (verbosity > 0) {
     while (EOF != (ch = getc(ifp))) {
       if ('\n' == ch && nLines)
         break;
@@ -791,7 +802,8 @@ void GetFile(char* fileName) {
       S2cor_phd.push_back(-999.);
     }
   }
-  fclose(ifp); if ( E_keV.size() < 100000 ) { skewness = 0; cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so doing Gaussian" << endl; }
+  fclose(ifp);
+  if ( E_keV.size() < 100000 && numBins > 1 ) { skewness = 0; cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so doing Gaussian" << endl; }
   
   if (numBins == 1) {
     TH1F* HistogramArray = new TH1F[3];
@@ -929,7 +941,7 @@ void GetFile(char* fileName) {
   }
 
   if (!loop) {
-    if (verbosity) {
+    if (verbosity > 0) {
       if (skewness == 2) {
         fprintf(stdout,
                 "Bin Center\tBand Xi\t\tXi Err\t\tBand Omega\tOmega Err\tBand "
@@ -1258,7 +1270,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
         xiEstimate = fit_xi;
         omegaEstimate = fit_omega;
         alphaEstimate = 0.0;
-        if (verbosity)
+        if (verbosity > 0)
           cerr << "Re-fitting... (stats, more? and/or logBins, fewer? might "
                   "help)\n";
         if (mode != 0) goto RETRY;

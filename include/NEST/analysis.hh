@@ -1,7 +1,7 @@
 #include "NEST.hh"
 
 // Verbosity flag (for limiting output to yields; no timing)
-bool verbosity = true;
+int verbosity = 1;  // use -1 for off, but 0 for efficiency
 // Loop for execNEST and rootNEST to find the best-fit model parameters
 unsigned loopNEST = 0;
 // 0 for no or off, 1 for ER, 2 for NR
@@ -33,7 +33,7 @@ int usePD = 2;
 // band style: log(S2) with 1, while 0 means log(S2/S1)
 int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
 
-double minS1 = 1.5;  // units are controlled by the usePE flag
+double minS1 = 1.5;  // units are controlled by the usePD flag
 // this is separate from S1 thresholds controlled by detector
 double maxS1 = 99.5;
 int numBins = 98;  // for LUXRun03 DD, change these to 1.7,110.6,99

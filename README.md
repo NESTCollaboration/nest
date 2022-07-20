@@ -240,7 +240,7 @@ The file "include/NEST/analysis.hh" is for specifying the output style and setti
 
 An explanation of the various parameters:
 
-* verbosity: if set to **false**, execNEST **only** outputs the columns of yield data
+* verbosity: if set to **-1**, execNEST **only** outputs the columns of yield data
 * MCtruthE: whether true energy or "reconstructed"/statistically measured energy is expressed
 * MCtruthPos: whether true position or "reconstructed"/statistically fluctuated positions are expressed
 * s1CalculationMode: set the S1 calculation mode options are: 
@@ -358,7 +358,7 @@ To simulate cosmic-ray muons or other similar particles with elongated track len
 ### Running with Pulse Timing
 
 In include/NEST/analysis.hh, the `s1CalculationMode` and `s2CalculationMode` flags allow users to get S1 and S2 photon arrival times for each simulated event.
-`s1CalculationMode=Full` and `s2CalculationMode=Full` (default) will not return timing info. If verbosity=true and `s1CalculationMode=Waveform`/`s2CalculationMode=Waveform`, running execNEST will create a file called 
+`s1CalculationMode=Full` and `s2CalculationMode=Full` (default) will not return timing info. If verbosity=1 and `s1CalculationMode=Waveform`/`s2CalculationMode=Waveform`, running execNEST will create a file called 
 "photon_times.txt" in the user's build directory with S1 and S2 top/bottom PMT arrival times for each event. If `s2CalculationMode=WaveformWithEtrain`, 
 approximated e-trains will be included for the output events.
 
@@ -404,7 +404,7 @@ rootNEST is an extremely diverse and powerful tool, but requires compilation aga
 
 
 * **mode = 0**: "default" mode. It executes Gaussian fits to a histogrammed band in log(S2/S1) or log(S2) for you vs. S1. 
-	- If you give it only one argument (being the file path to a execNEST output file) with **verbosity=true**, it will 
+	- If you give it only one argument (being the file path to a execNEST output file) with **verbosity=1**, it will 
 	        print out S1 vs. log(S2/S1) or S1 vs. log(S2) band information for the given S1,S2,log ranges in analysis.hh .
 	- If you give it 2 arguments it'll give you the leakage of ER events below a smooth fit to the Gaussian means 
 		of the NR band, so it shows your background discrimination for WIMPs. 
@@ -532,11 +532,12 @@ The executable will print S1 and S2 areas to screen in addition to the number of
 	```cpp
 	SetUserAction(new NESTStackingAction());
 	```
+	Put this line after all other lines in Build(), else you may only ever run precisely one event.
 
-5. In your physics list, you'll want code that looks like this:
+5. In your physics list, you'll want code that looks like this in your G4VPhysicsConstructer::ConstructProcess() method:
 
 	```cpp
-	NEST::NESTProc* theNEST2ScintillationProcess = new NEST::NESTProc("S1",fElectromagnetic,[your electric field]);
+	NEST::NESTProc* theNEST2ScintillationProcess = new NEST::NESTProc("S1",fElectromagnetic,[your VDetector]);
 	if (theNEST2ScintillationProcess->IsApplicable(*particle)) {
 	   pmanager->AddProcess(theScintillationProcess, ordDefault + 1, ordInActive, ordDefault + 1);
 	}

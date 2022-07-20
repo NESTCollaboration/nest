@@ -80,13 +80,13 @@ int main(int argc, char** argv) {
     if (eMin == 9.4 && eMax == 9.4) {
     } else if (eMin == 32.1 && eMax == 32.1) {
     } else {
-      if (verbosity)
+      if (verbosity > 0)
         cerr << "ERROR: For Kr83m, put both energies as 9.4 or both as 32.1 "
                 "keV please."
              << endl;
       return 1;
     }
-  } else if (type_num == gammaRay && verbosity) {
+  } else if (type_num == gammaRay && verbosity > 0) {
     if (eMin < 10. || eMax < 10.) {
       cerr << "WARNING: Typically beta model works better for ER BG at low "
               "energies as in a WS."
@@ -184,14 +184,14 @@ int main(int argc, char** argv) {
   yields = n.GetYields(type_num, keV, rho, field, double(massNum),
                        double(atomNum), NRYieldsParam);
   vector<double> NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}; 
-  quanta = n.GetQuanta(yields, rho, NRERWidthsParam);
+  quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, -999.);
 
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =
       g2 * quanta.electrons * exp(-driftTime / detector->get_eLife_us());
 
-  // Vectors for saving times and amplitudes of waveforms (with calculationMode
-  // and verbosity boolean flags both set to true in analysis.hh)
+  // Vectors for saving times and amplitudes of waveforms (with (S1/S2)CalculationMode
+  // set to "Waveform" and the verbosity >= 1 in analysis.hh)
   vector<double> wf_amp;
   vector<int64_t> wf_time;
 

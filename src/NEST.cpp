@@ -1507,7 +1507,7 @@ const vector<double> &NESTcalc::GetS1(
     }
   }
 
-  if (fdetector->get_noiseLinear()[0] >= 0.1)
+  if (fdetector->get_noiseLinear()[0] >= 1.0)
     cerr << " !!WARNING!! S1 linear noise term is greater than or equal to 10% "
             "(i.e. 0.1) Did you mistake fraction for percent??"
          << endl;
@@ -1889,7 +1889,7 @@ const vector<double> &NESTcalc::GetS2(
 					      Nphe/NewMean, fdetector->get_sPEres() * sqrt(Nphe/NewMean), true);
   }
 
-  if (fdetector->get_noiseLinear()[1] >= 0.1)
+  if (fdetector->get_noiseLinear()[1] >= 1.0)
     cerr << " !!WARNING!! S2 linear noise term is greater than or equal to 10% "
             "(i.e. 0.1) Did you mistake fraction for percent??"
          << endl;

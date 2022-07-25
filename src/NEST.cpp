@@ -2065,7 +2065,7 @@ vector<double> NESTcalc::CalculateG2(int verbosity) {
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r, x, y;
   int Nph, nHits;
-  if (verbosity > 0) {
+  if (verbosity > 0) { double muSE = 0.;
     for (int i = 0; i < 10000; ++i) {
       // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(
@@ -2106,7 +2106,9 @@ vector<double> NESTcalc::CalculateG2(int verbosity) {
       pulseAreaC = pulseArea / posDep;
       NphdC = pulseAreaC / (1. + fdetector->get_P_dphe());
       StdDev += (SE - NphdC) * (SE - NphdC);
+      muSE += NphdC;
     }
+    SE = muSE / 1e4;
     StdDev = sqrt(StdDev) / sqrt(9999.);  // N-1 from above (10,000)
 
     cout << endl

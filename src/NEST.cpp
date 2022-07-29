@@ -2064,9 +2064,9 @@ vector<double> NESTcalc::CalculateG2(int verbosity) {
     SE *= fdetector->FitTBA(0., 0., fdetector->get_TopDrift() / 2.)[1];
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r, x, y;
-  int Nph, nHits;
+  int Nph, nHits, numSE = 10000;
   if (verbosity > 0) { double muSE = 0.;
-    for (int i = 0; i < 10000; ++i) {
+    for (int i = 0; i < numSE; ++i) {
       // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(
                           elYield, sqrt(fdetector->get_s2Fano() * elYield), true) +
@@ -2108,8 +2108,8 @@ vector<double> NESTcalc::CalculateG2(int verbosity) {
       StdDev += (SE - NphdC) * (SE - NphdC);
       muSE += NphdC;
     }
-    SE = muSE / 1e4;
-    StdDev = sqrt(StdDev) / sqrt(9999.);  // N-1 from above (10,000)
+    SE = muSE / double(numSE);
+    StdDev = sqrt(StdDev) / sqrt(double(numSE)-1.);  // N-1 from above (10,000)
 
     cout << endl
          << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2

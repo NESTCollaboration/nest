@@ -9,8 +9,8 @@ do
     #echo $e
     /Users/szydagis/Desktop/buildNEST/execNEST 1e5 NR $e $e 192 -1 0 > /dev/null
     #Don't forget to change the above to your executable's absolute path, and change NR to beta for doing ER instead. Change 192 to your detector's drift E-field (in V/cm)
-    #1e5: note 1e6 is also a reasonable number of events
+    #1e5: note 1e6 is also a reasonable number of events. Make sure to use the "2>" operator to redirect the terminal screen output of this script to a text file to save it.
 
 done
 
-#make sure to use the "2>" operator to redirect the terminal screen output of this script to a text file to save it. Lastly, copy/paste results from Excel into txt in terminal.
+#Lastly, copy/paste results from Excel into txt in terminal, using nest/examples/LUXRun03_nrEff_Simulated.txt as example

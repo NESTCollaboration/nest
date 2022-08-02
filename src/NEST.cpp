@@ -2064,9 +2064,9 @@ vector<double> NESTcalc::CalculateG2(int verbosity) {
     SE *= fdetector->FitTBA(0., 0., fdetector->get_TopDrift() / 2.)[1];
   double g2 = ExtEff * SE;
   double StdDev = 0., Nphe, pulseArea, pulseAreaC, NphdC, phi, posDep, r, x, y;
-  int Nph, nHits;
-  if (verbosity > 0) {
-    for (int i = 0; i < 10000; ++i) {
+  int Nph, nHits, numSE = 10000;
+  if (verbosity > 0) { double muSE = 0.;
+    for (int i = 0; i < numSE; ++i) {
       // calculate properly the width (1-sigma std dev) in the SE size
       Nph = int(floor(RandomGen::rndm()->rand_gauss(
                           elYield, sqrt(fdetector->get_s2Fano() * elYield), true) +
@@ -2106,8 +2106,10 @@ vector<double> NESTcalc::CalculateG2(int verbosity) {
       pulseAreaC = pulseArea / posDep;
       NphdC = pulseAreaC / (1. + fdetector->get_P_dphe());
       StdDev += (SE - NphdC) * (SE - NphdC);
+      muSE += NphdC;
     }
-    StdDev = sqrt(StdDev) / sqrt(9999.);  // N-1 from above (10,000)
+    SE = muSE / double(numSE);
+    StdDev = sqrt(StdDev) / sqrt(double(numSE)-1.);  // N-1 from above (10,000)
 
     cout << endl
          << "g1 = " << fdetector->get_g1() << " phd per photon\tg2 = " << g2
@@ -2503,7 +2505,7 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
 
   if (sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
       std::abs(sigmaX) > 1e2 || std::abs(sigmaY) > 1e2) {
-    if (A_top > 40.) { // roughly two S2 electrons in most detectors (~1e- in LZ)
+    if (A_top > 40.) { // roughly three S2 e-'s in most detectors (or ~1.5 in LZ)
       cerr << "WARNING: your position resolution is worse than 10 cm. Is that "
               "correct?!"
            << endl;

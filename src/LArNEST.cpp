@@ -62,12 +62,13 @@ namespace NEST
     }
 
     LArYieldFluctuationResult LArNEST::GetYieldFluctuations(
-        const YieldResult &yields, double density
+        LArFluctuationModel model, const YieldResult &yields, 
+        double density
     ) 
     {
-        // TODO: Understand and break up this function.
-        LArYieldFluctuationResult result{};
-        return result;  // quanta returned with recomb fluctuations
+        if (model == LArFluctuationModel::Default) {
+            return GetDefaultFluctuations(yields, density);
+        }
     }
 
     LArNESTResult LArNEST::FullCalculation(
@@ -246,6 +247,46 @@ namespace NEST
             AlphaTotalYields, AlphaElectronYields, AlphaPhotonYields,
             energy, efield
         );
+    }
+    //-------------------------Fluctuation Yields-------------------------//
+    LArYieldFluctuationResult LArNEST::GetDefaultFluctuations(
+        const YieldResult &yields, double density
+    )
+    {
+        double MeanNq = legacy_scint_yield * energy;
+        double sigma = sqrt(legacy_resolution_scale * MeanNq); //Fano
+        double leftvar = RandomGen::rndm()->rand_gauss(yieldFactor, 0.25 * yieldFactor, true);
+        if (leftvar > 1.0) {
+            leftvar = 1.0;
+        }
+        int Nq = int(floor(RandomGen::rndm()->rand_gauss(MeanNq, sigma, true) + 0.5));
+        if (yieldFactor < 1) {
+            Nq = RandomGen::rndm()->binom_draw(Nq, leftvar);
+        }
+        // if Edep below work function, can't make any quanta, and if Nq
+        // less than zero because Gaussian fluctuated low, update to zero
+        if (energy < 1 / legacy_scint_yield || Nq < 0) { 
+            Nq = 0; 
+        }
+
+        // next section binomially assigns quanta to excitons and ions
+        double Nex = RandomGen::rndm()->binom_draw(
+            Nq, excitationRatio / (1 + excitationRatio)
+        );
+        double Nion = Nq - Nex;
+
+        //use binomial distribution to assign photons, electrons, where photons
+        //are excitons plus recombined ionization electrons, while final
+        //collected electrons are the "escape" (non-recombined) electrons
+        double Nph = Nex + RandomGen::rndm()->binom_draw(Nion, recombProb);
+        double Ne = Nq - Nph;
+
+        // create the quanta results
+        LArYieldResult result {
+            (Ne + Nph)/energy, Ne/energy, Nph/energy,
+            Nph, Ne, Nex, Nion, 0.0, efield
+        };
+        return result;
     }
 
     //-------------------------Photon Times-------------------------//

@@ -32,6 +32,11 @@ namespace NEST
         Alpha = 2,
     };
 
+    enum class LArFluctuationModel
+    {
+        Default = 0,
+    };
+
     struct LArNRYieldsParameters
     {
         double alpha =  {11.10};
@@ -275,7 +280,8 @@ namespace NEST
          * 
          */
         LArYieldFluctuationResult GetYieldFluctuations(
-            const YieldResult &yields, double density
+            LArFluctuationModel model, const YieldResult &yields, 
+            double density
         );
         /**
          * @brief 
@@ -443,7 +449,17 @@ namespace NEST
         LArYieldResult GetAlphaYields(
             double energy, double efield, double density
         );
-
+        //-------------------------Fluctuation Yields-------------------------//
+        /**
+         * @brief Get the Default Fluctuations object
+         * 
+         * @param yields 
+         * @param density 
+         * @return LArYieldFluctuationResult 
+         */
+        LArYieldFluctuationResult GetDefaultFluctuations(
+            const YieldResult &yields, double density
+        );
         //-------------------------Photon Times-------------------------//
         double GetPhotonTime(
             LArInteraction species, bool exciton,
@@ -526,5 +542,7 @@ namespace NEST
 
         ThomasImelParameters fThomasImelParameters;
         DriftParameters fDriftParameters;
+
+        enum LArFluctuationModel fLArFluctuationModel;
     };
 }

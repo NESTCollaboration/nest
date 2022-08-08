@@ -104,9 +104,9 @@ int main(int argc, char** argv) {
     numEvts = 10000;
     type = "MIP";
     dEOdxBasis = true;
-    eMin = -TestSpectra::CH3T_spectrum(0.,18.6);
+    eMin = -1.;  // this means do the default, which is CH3T
     s1CalculationMode = NEST::S1CalculationMode::Parametric;
-    eMax = -1.;
+    eMax = -1.;  // for monoE peak: just use eMin (keep neg)
     inField = 180.;
     position = "-1";
     posiMuon = "-1";
@@ -905,7 +905,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
 	NRYieldsParam[2] = pos_z;
 	NRYieldsParam[7] = vD_middle;
 	NRYieldsParam[8] = rho;
-	if ( loopNEST ) NRYieldsParam[4] = -TestSpectra::CH3T_spectrum(0.,18.6);
+	if ( loopNEST && eMin == -1. ) NRYieldsParam[4] = -TestSpectra::CH3T_spectrum(0.,18.6); //replace with different rad calib source continuous in energy, as desired
 	if ( j == 0 && !loopNEST ) {
 	  NRYieldsParam[3] = eMax;
 	  NRYieldsParam[4] = eMin;

@@ -478,7 +478,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &dEOdxParam,
 					  vector<double> vTable,
 					  const std::vector<double> &NRERWidthsParam) {
   Wvalue wvalue = WorkFunction(dEOdxParam[8], fdetector->get_molarMass(),
-                               fdetector->get_OldW13eV());
+                               1/NRERWidthsParam[0]);
   double Wq_eV = wvalue.Wq_eV; double rho = dEOdxParam[8];
   double xi = -999., yi = -999., zi = fdetector->get_TopDrift();
   double xf, yf, zf, pos_x, pos_y, pos_z, r, phi, field,

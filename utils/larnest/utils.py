@@ -26,8 +26,9 @@ def generate_plot_grid(
         axs.flat[-(ii+1)].set_visible(False)
     return fig, axs
 
-if __name__ == "__main__":
-
+def compile_lar_data(
+    data_dir:   str="data/",
+):
     nr_total = {
         "Dataset":  [],
         "energy":   [],
@@ -40,7 +41,7 @@ if __name__ == "__main__":
         "yield_sl": [],
         "yield_sh": []
     }
-    with open("data/nr_total_alt.csv","r") as file:
+    with open(f"{data_dir}nr_total_alt.csv","r") as file:
         reader = csv.reader(file, delimiter=",")
         next(reader)
         for row in reader:
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         "yield_sl": [],
         "yield_sh": []
     }
-    with open("data/nr_charge_alt.csv","r") as file:
+    with open(f"{data_dir}nr_charge_alt.csv","r") as file:
         reader = csv.reader(file, delimiter=",")
         next(reader)
         for row in reader:
@@ -94,7 +95,7 @@ if __name__ == "__main__":
         "yield_sl": [],
         "yield_sh": []
     }
-    with open("data/nr_light_alt.csv","r") as file:
+    with open(f"{data_dir}nr_light_alt.csv","r") as file:
         reader = csv.reader(file, delimiter=",")
         next(reader)
         for row in reader:
@@ -121,7 +122,7 @@ if __name__ == "__main__":
         "yield_sl": [],
         "yield_sh": []
     }
-    with open("data/er_charge.csv","r") as file:
+    with open(f"{data_dir}er_charge.csv","r") as file:
         reader = csv.reader(file, delimiter=",")
         next(reader)
         for row in reader:
@@ -148,7 +149,7 @@ if __name__ == "__main__":
         "yield_sl": [],
         "yield_sh": []
     }
-    with open("data/er_light.csv","r") as file:
+    with open(f"{data_dir}er_light.csv","r") as file:
         reader = csv.reader(file, delimiter=",")
         next(reader)
         for row in reader:
@@ -165,10 +166,14 @@ if __name__ == "__main__":
     er_light = {key: np.array(er_light[key]) for key in er_light}
     
     np.savez(
-        "data/lar_data.npz",
+        f"{data_dir}lar_data.npz",
         nr_total=nr_total,
         nr_charge=nr_charge,
         nr_light=nr_light,
         er_charge=er_charge,
         er_light=er_light,
     )
+
+if __name__ == "__main__":
+
+    compile_lar_data()

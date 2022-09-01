@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     // Construct NEST objects for storing calculation results
     NEST::LArYieldResult result;
     std::ofstream output_file;
-    output_file.open("legacy_larnest_benchmarks_" + std::to_string(pdgcode) + ".csv");
+    output_file.open("legacy_benchmarks_" + std::to_string(pdgcode) + ".csv");
     output_file << "energy,efield,TotalYield,QuantaYield,LightYield,Nph,Ne,Nex,Nion\n";
     // iterate over number of events
     for (size_t v = 0; v < electric_field.size(); v++)

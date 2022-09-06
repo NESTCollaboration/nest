@@ -57,8 +57,8 @@ public:
 
     // Thermodynamic Properties
     inGas = false;
-    T_Kelvin = 176.8;  // for liquid drift speed calculation				Use 1T's
-    p_bar = 1.890;       // gas pressure in units of bars, it controls S2 size		Use 1T's
+    T_Kelvin = 176.8;  // for liquid drift speed calculation				
+    p_bar = 1.890;       // gas pressure in units of bars, it controls S2 size		
     // if you are getting warnings about being in gas, lower T and/or raise p
 
     // Data Analysis Parameters and Geometry

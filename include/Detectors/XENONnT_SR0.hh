@@ -51,15 +51,12 @@ public:
     // Ionization and Secondary Scintillation (S2) parameters
     g1_gas = 0.1533;  // phd per S2 photon in gas, used to get SE size			Modified to have SE as 31.1518/1.21
     s2Fano = 1.0;     // Fano-like fudge factor for SE width				It will scale up s2 resolution. set as 1 for now.
-
     s2_thr = 100.;      // the S2 threshold in phe or PE, *not* phd. Affects NR most
-
     E_gas = 6.8903;    // field in kV/cm between liquid/gas border and anode		Extraction efficiency: 52.8%
     eLife_us = 15e3;   // the drift electron mean lifetime in micro-seconds		XENONnT Estimation
 
     // Thermodynamic Properties
     inGas = false;
-
     T_Kelvin = 176.8;    // for liquid drift speed calculation				
     p_bar = 1.890;       // gas pressure in units of bars, it controls S2 size		
 

@@ -10,9 +10,7 @@ using namespace std;
 
 
 class XENONnT: public VDetector {
-
 public:
-
   XENONnT() {
     cerr << "*** Detector definition message ***" << endl;
     cerr << "You are using the XENONnT detector file for SR0." << endl << endl;
@@ -89,25 +87,25 @@ public:
 
   // S1 PDE custom fit for function of z
   // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
-  virtual double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
+  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
     return 1.0; 
   }
 
   // Drift electric field as function of Z in mm
   // For example, use a high-order poly spline
   // We don't use this I don't think.
-  virtual double FitEF(double xPos_mm, double yPos_mm,
+  double FitEF(double xPos_mm, double yPos_mm,
                        double zPos_mm) override {  // in V/cm
     return 23.;
   }
 
   // S2 PDE custom fit for function of r
   // s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
-  virtual double FitS2(double xPos_mm, double yPos_mm, LCE map) override {
+  double FitS2(double xPos_mm, double yPos_mm, LCE map) override {
     return 1.; //no radial corrections for S2-bottom needed really
   }
 
-  virtual vector<double> FitTBA(double xPos_mm, double yPos_mm,
+  vector<double> FitTBA(double xPos_mm, double yPos_mm,
                                 double zPos_mm) override {
     vector<double> BotTotRat(2);
 
@@ -117,7 +115,7 @@ public:
     return BotTotRat;
   }
 
-  virtual double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
+  double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
     double phoTravT, approxCenter = (TopDrift + cathode) / 2.,
                      relativeZ = zPos_mm - approxCenter;
 
@@ -162,7 +160,7 @@ public:
                       // technically but tried to make general
   }
 
-  virtual vector<double> SinglePEWaveForm(double area, double t0) override {
+  vector<double> SinglePEWaveForm(double area, double t0) override {
     vector<double> PEperBin;
 
     double threshold = PULSEHEIGHT;  // photo-electrons
@@ -207,7 +205,6 @@ public:
 
     return PEperBin;
   }
-
 };
 
 #endif

@@ -546,7 +546,9 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
   // of g/mL
   if (!detector->get_OldW13eV())
     Wq_eV = 11.5;  // 11.5±0.5(syst.)±0.1(stat.) from EXO
-
+  if ( loopNEST && dEOdxBasis )
+    Wq_eV = -1000. / ERWeightParam[0];
+  
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
   g2 = std::abs(g2_params[3]);

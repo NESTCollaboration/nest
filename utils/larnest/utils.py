@@ -26,8 +26,8 @@ def generate_plot_grid(
         axs.flat[-(ii+1)].set_visible(False)
     return fig, axs
 
-def compile_lar_data(
-    data_dir:   str="data/",
+def compile_nr_total_data(
+    data_dir: str="data/",
 ):
     nr_total = {
         "Dataset":  [],
@@ -55,7 +55,11 @@ def compile_lar_data(
             nr_total["yield"].append(float(row[7]))
             nr_total["yield_sl"].append(float(row[8]))
             nr_total["yield_sh"].append(float(row[9]))
-    nr_total = {key: np.array(nr_total[key]) for key in nr_total}
+    return {key: np.array(nr_total[key]) for key in nr_total}
+
+def compile_nr_charge_data(
+    data_dir: str="data/",
+):
     nr_charge = {
         "Dataset":  [],
         "energy":   [],
@@ -82,7 +86,11 @@ def compile_lar_data(
             nr_charge["yield"].append(float(row[7]))
             nr_charge["yield_sl"].append(float(row[8]))
             nr_charge["yield_sh"].append(float(row[9]))
-    nr_charge = {key: np.array(nr_charge[key]) for key in nr_charge}
+    return {key: np.array(nr_charge[key]) for key in nr_charge}
+
+def compile_nr_light_data(
+    data_dir: str="data/",
+):
     nr_light = {
         "Dataset":  [],
         "energy":   [],
@@ -109,7 +117,11 @@ def compile_lar_data(
             nr_light["yield"].append(float(row[7]))
             nr_light["yield_sl"].append(float(row[8]))
             nr_light["yield_sh"].append(float(row[9]))
-    nr_light = {key: np.array(nr_light[key]) for key in nr_light}
+    return {key: np.array(nr_light[key]) for key in nr_light}
+
+def compile_er_charge_data(
+    data_dir: str="data/",
+):
     er_charge = {
         "Dataset":  [],
         "energy":   [],
@@ -136,7 +148,11 @@ def compile_lar_data(
             er_charge["yield"].append(float(row[7]))
             er_charge["yield_sl"].append(float(row[8]))
             er_charge["yield_sh"].append(float(row[9]))
-    er_charge = {key: np.array(er_charge[key]) for key in er_charge}
+    return {key: np.array(er_charge[key]) for key in er_charge}
+
+def compile_er_light_data(
+    data_dir: str="data/",
+):
     er_light = {
         "Dataset":  [],
         "energy":   [],
@@ -163,15 +179,18 @@ def compile_lar_data(
             er_light["yield"].append(float(row[7]))
             er_light["yield_sl"].append(float(row[8]))
             er_light["yield_sh"].append(float(row[9]))
-    er_light = {key: np.array(er_light[key]) for key in er_light}
+    return {key: np.array(er_light[key]) for key in er_light}
     
+def compile_lar_data(
+    data_dir: str="data/",
+):
     np.savez(
         f"{data_dir}lar_data.npz",
-        nr_total=nr_total,
-        nr_charge=nr_charge,
-        nr_light=nr_light,
-        er_charge=er_charge,
-        er_light=er_light,
+        nr_total=compile_nr_total_data(data_dir),
+        nr_charge=compile_nr_charge_data(data_dir),
+        nr_light=compile_nr_light_data(data_dir),
+        er_charge=compile_er_charge_data(data_dir),
+        er_light=compile_er_light_data(data_dir),
     )
 
 if __name__ == "__main__":

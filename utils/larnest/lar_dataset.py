@@ -15,10 +15,10 @@ class LArDataset:
     """
     """
     def __init__(self,
-        dataset_file:    str='data/lar_data.npz',
-        benchmarks_file: str='',
-        plot_config:     dict=default_plot_config,
-        fluctuations:    bool=False,
+        dataset_file:   str='data/lar_data.npz',
+        benchmarks_file:str='',
+        plot_config:    dict=default_plot_config,
+        fluctuations:   bool=False,
     ):
         self.dataset_file = dataset_file
         self.benchmarks_file = benchmarks_file

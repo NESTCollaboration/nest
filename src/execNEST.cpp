@@ -140,14 +140,14 @@ int main(int argc, char** argv) {
     ERWeightParam.push_back(atof(argv[10]));
     ERWeightParam.push_back(atof(argv[11]));
 
-    NRERWidthsParam.push_back(1.00);  // Leave fluctuations parameters
-    NRERWidthsParam.push_back(1.00);  // fixed for now
-    NRERWidthsParam.push_back(0.10);  
+    NRERWidthsParam.push_back(0.4);  // Leave fluctuations parameters
+    NRERWidthsParam.push_back(0.4);  // fixed for now
+    NRERWidthsParam.push_back(0.04);
     NRERWidthsParam.push_back(0.50);  
     NRERWidthsParam.push_back(0.19);  
     NRERWidthsParam.push_back(2.25);  
     NRERWidthsParam.push_back( 0.0015 ); 
-    NRERWidthsParam.push_back( 0.0553 ); 
+    NRERWidthsParam.push_back( 0.05 );
     NRERWidthsParam.push_back( 0.205 );
     NRERWidthsParam.push_back( 0.45 );
     NRERWidthsParam.push_back( -0.2 );
@@ -180,15 +180,15 @@ int main(int argc, char** argv) {
     NRERWidthsParam.clear();
     NRYieldsParam.clear();
     ERWeightParam.clear();
-    NRERWidthsParam.push_back(1.00);  // NR Fi (Fano factor for ionization)
-    NRERWidthsParam.push_back(1.00);  // NR Fex
+    NRERWidthsParam.push_back(0.4);  // NR Fi (Fano factor for ionization)
+    NRERWidthsParam.push_back(0.4);  // NR Fex
     NRERWidthsParam.push_back(
-        0.10);  // amplitude for non-binomial NR recombination fluctuations
+        0.04);  // amplitude for non-binomial NR recombination fluctuations
     NRERWidthsParam.push_back(0.50);  // center in e-Frac (NR)
     NRERWidthsParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
     NRERWidthsParam.push_back(2.25);  // raw skewness, for NR
     NRERWidthsParam.push_back( 0.0015 ); //ER Fano normalization for non-density dependence
-    NRERWidthsParam.push_back( 0.0553 ); //Minimum amplitude for ER non-binom recomb flucts
+    NRERWidthsParam.push_back( 0.05 ); //Minimum amplitude for ER non-binom recomb flucts
     NRERWidthsParam.push_back( 0.205 ); // center in e-frac (ER)
     NRERWidthsParam.push_back( 0.45 );  // width parameter
     NRERWidthsParam.push_back( -0.2 );  // ER non-binom skewness in e-frac
@@ -259,7 +259,7 @@ NESTObservableArray runNESTvec(
   double x, y, z, driftTime, vD;
   RandomGen::rndm()->SetSeed(seed);
   NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
-  NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2};
+  NRERWidthsParam = {0.4,0.4,0.04,0.5,0.19,2.25, 0.0015, 0.05, 0.205, 0.45, -0.2};
   vector<double> scint, scint2, wf_amp;
   vector<int64_t> wf_time;
   NESTObservableArray OutputResults;
@@ -546,7 +546,9 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
   // of g/mL
   if (!detector->get_OldW13eV())
     Wq_eV = 11.5;  // 11.5±0.5(syst.)±0.1(stat.) from EXO
-
+  if ( loopNEST && dEOdxBasis )
+    Wq_eV = -1000. / ERWeightParam[0];
+  
   // Calculate and print g1, g2 parameters (once per detector)
   vector<double> g2_params = n.CalculateG2(verbosity);
   g2 = std::abs(g2_params[3]);
@@ -955,7 +957,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             NRERWidthsParam = {
                 1.00, 1.00, 0.,
                 0.50, 0.19, 0.,
-                0.0015, 0.0553, 
+                0.0015, 0.05,
                 0.205, 0.45, -0.2};  // zero out non-binom recomb fluct & skew (NR)
           }
           if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, -999.);

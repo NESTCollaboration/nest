@@ -15,10 +15,10 @@ class LArDataset:
     """
     """
     def __init__(self,
-        dataset_file:   str='data/lar_data.npz',
-        benchmarks_file:str='',
-        plot_config:    dict=default_plot_config,
-        fluctuations:   bool=False,
+        dataset_file: str='data/lar_data.npz',
+        benchmarks_file: str='',
+        plot_config: dict=default_plot_config,
+        fluctuations: bool=False,
     ):
         self.dataset_file = dataset_file
         self.benchmarks_file = benchmarks_file
@@ -288,7 +288,7 @@ class LArDataset:
             self.plot_mean_yields(benchmark_type)
 
     def plot_fluctuations(self,
-        dataset_type:   str='nr_total'
+        dataset_type: str='nr_total'
     ):
         # plot the benchmark values for the given efield
         benchmark_mask = (self.benchmarks['type'] == self.benchmark_types[dataset_type][0])

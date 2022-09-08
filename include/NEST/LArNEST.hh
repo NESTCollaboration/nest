@@ -32,6 +32,11 @@ namespace NEST
         Alpha = 2,
     };
 
+    enum class LArFluctuationModel
+    {
+        Default = 0,
+    };
+
     struct LArNRYieldsParameters
     {
         double alpha =  {11.10};
@@ -175,9 +180,6 @@ namespace NEST
 
     struct LArYieldFluctuationResult
     {
-        double TotalYieldFluctuation;
-        double QuantaYieldFluctuation;
-        double LightYieldFluctuation;
         double NphFluctuation;
         double NeFluctuation;
         double NexFluctuation;
@@ -238,15 +240,15 @@ namespace NEST
         void setDriftParameters(DriftParameters driftParameters);
 
         /// get LAr parameters
-        double getDensity() const { return fDensity; }
-        double getRIdealGas() const { return fRIdealGas; }
-        double getRealGasA() const { return fRealGasA; }
-        double getRealGasB() const { return fRealGasB; }
-        double getWorkQuantaFunction() const { return fWorkQuantaFunction; }
-        double getWorkIonFunction() const { return fWorkIonFunction; }
-        double getWorkPhotonFunction() const { return fWorkPhotonFunction; }
-        double getFanoER() const { return fFanoER; }
-        double getNexOverNion() const { return fNexOverNion; }
+        double getDensity()             const { return fDensity; }
+        double getRIdealGas()           const { return fRIdealGas; }
+        double getRealGasA()            const { return fRealGasA; }
+        double getRealGasB()            const { return fRealGasB; }
+        double getWorkQuantaFunction()  const { return fWorkQuantaFunction; }
+        double getWorkIonFunction()     const { return fWorkIonFunction; }
+        double getWorkPhotonFunction()  const { return fWorkPhotonFunction; }
+        double getFanoER()              const { return fFanoER; }
+        double getNexOverNion()         const { return fNexOverNion; }
 
         LArNRYieldsParameters getNRYieldsParameters() { return fNR; }
         LArERYieldsParameters getERYieldsParameters() { return fER; }
@@ -275,7 +277,8 @@ namespace NEST
          * 
          */
         LArYieldFluctuationResult GetYieldFluctuations(
-            const YieldResult &yields, double density
+            const LArYieldResult &yields, 
+            double density
         );
         /**
          * @brief 
@@ -443,7 +446,17 @@ namespace NEST
         LArYieldResult GetAlphaYields(
             double energy, double efield, double density
         );
-
+        //-------------------------Fluctuation Yields-------------------------//
+        /**
+         * @brief Get the Default Fluctuations object
+         * 
+         * @param yields 
+         * @param density 
+         * @return LArYieldFluctuationResult 
+         */
+        LArYieldFluctuationResult GetDefaultFluctuations(
+            const LArYieldResult &yields, double density
+        );
         //-------------------------Photon Times-------------------------//
         double GetPhotonTime(
             LArInteraction species, bool exciton,
@@ -518,6 +531,7 @@ namespace NEST
         double fWorkPhotonFunction = {14.544};
 
         double fNexOverNion = {0.21};
+        double fALF = {1. / (1. + 0.21)};
         double fFanoER = {0.1115};
     
         LArNRYieldsParameters fNR;
@@ -526,5 +540,7 @@ namespace NEST
 
         ThomasImelParameters fThomasImelParameters;
         DriftParameters fDriftParameters;
+
+        enum LArFluctuationModel fLArFluctuationModel;
     };
 }

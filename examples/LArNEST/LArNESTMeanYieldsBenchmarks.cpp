@@ -58,8 +58,8 @@ int main(int argc, char* argv[])
     NEST::LArNESTResult result;
     std::ofstream output_file;
 
-    output_file.open("benchmarks.csv");
-    output_file << "type,energy,efield,TotalYield,QuantaYield,LightYield,Nph,Ne,Nex,Nion\n";
+    output_file.open("mean_yields_benchmarks.csv");
+    output_file << "type,energy,efield,TotalYield,QuantaYield,LightYield,Nph,Ne,Nex,Nion,TotalYield_std,QuantaYield_std,LightYield_std,Nph_std,Ne_std,Nex_std,Nion_std\n";
 
     // iterate over electric field values
     for (size_t k = 0; k < particle_types.size(); k++)
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
                 output_file << result.yields.Nph << ",";
                 output_file << result.yields.Ne << ",";
                 output_file << result.yields.Nex << ",";
-                output_file << result.yields.Nion << "\n";
+                output_file << result.yields.Nion << ",0,0,0,0,0,0,0\n";
             }
         }
     }

@@ -12,29 +12,40 @@ from lar_dataset import LArDataset
 if __name__ == "__main__":
 
     dataset_file = "data/lar_data.npz"
-    benchmarks_file = "data/benchmarks.csv"
-    
+    mean_yields_benchmarks_file = "data/mean_yields_benchmarks.csv"
+    fluctuations_benchmarks_file = "data/fluctuation_benchmarks.csv"
+    lar_datasets = []
+
     # create the dataset object
-    lar_dataset = LArDataset(
+    lar_datasets.append(LArDataset(
         dataset_file=dataset_file,
-        benchmarks_file=benchmarks_file,
+        benchmarks_file=mean_yields_benchmarks_file,
         plot_config=default_plot_config,
-    )
+        fluctuations=False,
+    ))
+    lar_datasets.append(LArDataset(
+        dataset_file=dataset_file,
+        benchmarks_file=fluctuations_benchmarks_file,
+        plot_config=default_plot_config,
+        fluctuations=True,
+    ))
 
     # make benchmark plots
-    lar_dataset.plot_all_yields()
+    lar_datasets[0].plot_all_yields()
+    lar_datasets[1].plot_all_fluctuations()
 
-    # plot with data
-    # nr yields
-    lar_dataset.plot_data('nr_total')
-    lar_dataset.plot_data_grid('nr_total')
-    lar_dataset.plot_data('nr_charge')
-    lar_dataset.plot_data_grid('nr_charge')
-    lar_dataset.plot_data('nr_light')
-    lar_dataset.plot_data_grid('nr_light')
+    for ii, lar_dataset in enumerate(lar_datasets):
+        # plot with data
+        # nr yields
+        lar_dataset.plot_data('nr_total')
+        lar_dataset.plot_data_grid('nr_total')
+        lar_dataset.plot_data('nr_charge')
+        lar_dataset.plot_data_grid('nr_charge')
+        lar_dataset.plot_data('nr_light')
+        lar_dataset.plot_data_grid('nr_light')
 
-    # er yields
-    lar_dataset.plot_data('er_charge')
-    lar_dataset.plot_data_grid('er_charge')
-    lar_dataset.plot_data('er_light')
-    lar_dataset.plot_data_grid('er_light')
+        # er yields
+        lar_dataset.plot_data('er_charge')
+        lar_dataset.plot_data_grid('er_charge')
+        lar_dataset.plot_data('er_light')
+        lar_dataset.plot_data_grid('er_light')

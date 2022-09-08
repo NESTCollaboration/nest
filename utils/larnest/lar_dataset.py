@@ -15,13 +15,15 @@ class LArDataset:
     """
     """
     def __init__(self,
-        dataset_file:    str='data/lar_data.npz',
+        dataset_file: str='data/lar_data.npz',
         benchmarks_file: str='',
-        plot_config:     dict=default_plot_config,
+        plot_config: dict=default_plot_config,
+        fluctuations: bool=False,
     ):
         self.dataset_file = dataset_file
         self.benchmarks_file = benchmarks_file
         self.plot_config = plot_config
+        self.fluctuations = fluctuations
         # set up datasets
         self.data = dict(np.load(self.dataset_file, allow_pickle=True))
         self.datasets = {key: self.data[key].item() for key in self.data}
@@ -31,7 +33,9 @@ class LArDataset:
             names=[
                 'type','energy', 'efield' , 
                 'TotalYields', 'QuantaYields', 'LightYields', 
-                'Nph' , 'Ne', 'Nex', 'Nion'
+                'Nph' , 'Ne', 'Nex', 'Nion',
+                'TotalYields_std', 'QuantaYields_std', 'LightYields_std',
+                'Nph_std', 'Ne_std', 'Nex_std', 'Nion_std',
             ],
             header=0,
             #dtype=float
@@ -107,11 +111,19 @@ class LArDataset:
             'alpha_nion':   ['Alpha','Nion'],
         }
 
+        self.fluctuation_types = [
+            'Nph', 'Ne', 'Nex', 'Nion'
+        ]
+
         # create plotting directory
         if not os.path.isdir("plots/mean_yields/"):
             os.makedirs("plots/mean_yields")
+        if not os.path.isdir("plots/fluctuations/"):
+            os.makedirs("plots/fluctuations")
         if not os.path.isdir("plots/data/"):
             os.makedirs("plots/data")
+        if not os.path.isdir("plots/data_fluctuations/"):
+            os.makedirs("plots/data_fluctuations")
 
     def plot_data_grid(self,
         dataset_type:   str='nr_total'
@@ -127,7 +139,14 @@ class LArDataset:
             benchmark_mask = (self.benchmarks['type'] == self.benchmark_types[dataset_type][0]) & (self.benchmarks['efield'] == efield)
             energy = self.benchmarks['energy'][benchmark_mask]
             yields = self.benchmarks[self.benchmark_types[dataset_type][1]][benchmark_mask]
+            yields[(yields<0)] = 0
             axs.flat[ii].plot(energy, yields, label=f"NEST - {efield} V/cm")
+            if self.fluctuations:
+                errors = self.benchmarks[self.benchmark_types[dataset_type][1]+"_std"][benchmark_mask]
+                low_errors = yields - errors
+                high_errors = yields + errors
+                low_errors[(low_errors)<0] = 0
+                axs.flat[ii].fill_between(energy, low_errors, high_errors)
             # plot the corresponding data points for this efield
             for jj, dataset in enumerate(self.plot_config[dataset_type][efield]):
                 if (len(self.plot_config[dataset_type][efield][dataset]) < 4):
@@ -169,7 +188,10 @@ class LArDataset:
         fig.supylabel(self.ylabels[dataset_type])
         plt.suptitle(self.titles[dataset_type])
         plt.tight_layout()
-        plt.savefig(f"plots/data/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_Data.png")
+        if self.fluctuations:
+            plt.savefig(f"plots/data_fluctuations/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_Data.png")
+        else:
+            plt.savefig(f"plots/data/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_Data.png")
         plt.close()
 
     def plot_data(self,
@@ -181,7 +203,14 @@ class LArDataset:
             benchmark_mask = (self.benchmarks['type'] == self.benchmark_types[dataset_type][0]) & (self.benchmarks['efield'] == efield)
             energy = self.benchmarks['energy'][benchmark_mask]
             yields = self.benchmarks[self.benchmark_types[dataset_type][1]][benchmark_mask]
+            yields[(yields<0)] = 0
             axs.plot(energy, yields, label=f"NEST - {efield} V/cm")
+            if self.fluctuations:
+                errors = self.benchmarks[self.benchmark_types[dataset_type][1]+"_std"][benchmark_mask]
+                low_errors = yields - errors
+                high_errors = yields + errors
+                low_errors[(low_errors)<0] = 0
+                axs.fill_between(energy, low_errors, high_errors)
             # plot the corresponding data points for this efield
             for jj, dataset in enumerate(self.plot_config[dataset_type][efield]):
                 if (len(self.plot_config[dataset_type][efield][dataset]) < 4):
@@ -223,10 +252,13 @@ class LArDataset:
             axs.set_ylabel(self.ylabels[dataset_type])
             plt.title(self.titles[dataset_type])
             plt.tight_layout()
-            plt.savefig(f"plots/data/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_{efield}_Data.png")
+            if self.fluctuations:
+                plt.savefig(f"plots/data_fluctuations/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_{efield}_Data.png")
+            else:
+                plt.savefig(f"plots/data/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_{efield}_Data.png")
             plt.close()
     
-    def plot_yields(self,
+    def plot_mean_yields(self,
         dataset_type:   str='nr_total'
     ):
         fig, axs = plt.subplots(figsize=(10,6))
@@ -237,6 +269,7 @@ class LArDataset:
             efield_mask = (self.benchmarks['efield'][benchmark_mask] == efield)
             energy = self.benchmarks['energy'][benchmark_mask][efield_mask]
             yields = self.benchmarks[self.benchmark_types[dataset_type][1]][benchmark_mask][efield_mask]
+            yields[(yields<0)] = 0
             axs.plot(energy, yields, label=f"NEST - {efield} V/cm")
         axs.set_xscale("log")
         if ("_n" in dataset_type):
@@ -252,4 +285,38 @@ class LArDataset:
     def plot_all_yields(self,
     ):
         for benchmark_type in self.benchmark_types:
-            self.plot_yields(benchmark_type)
+            self.plot_mean_yields(benchmark_type)
+
+    def plot_fluctuations(self,
+        dataset_type: str='nr_total'
+    ):
+        # plot the benchmark values for the given efield
+        benchmark_mask = (self.benchmarks['type'] == self.benchmark_types[dataset_type][0])
+        unique_efields = np.unique(self.benchmarks['efield'][benchmark_mask])
+        for efield in unique_efields:
+            fig, axs = plt.subplots(figsize=(10,6))
+            efield_mask = (self.benchmarks['efield'][benchmark_mask] == efield)
+            energy = self.benchmarks['energy'][benchmark_mask][efield_mask]
+            yields = self.benchmarks[self.benchmark_types[dataset_type][1]][benchmark_mask][efield_mask]
+            yields[(yields<0)] = 0
+            errors = self.benchmarks[self.benchmark_types[dataset_type][1]+"_std"][benchmark_mask][efield_mask]
+            low_errors = yields - errors
+            high_errors = yields + errors
+            low_errors[(low_errors)<0] = 0
+            axs.fill_between(energy, low_errors, high_errors, color='y', alpha=0.7)
+            axs.plot(energy, yields, label=f"NEST - {efield} V/cm", color='k', linestyle='-')
+            axs.set_xscale("log")
+            if ("_n" in dataset_type):
+                axs.set_yscale("log")
+            plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+            axs.set_xlabel("Energy [keV]")
+            axs.set_ylabel(self.ylabels[dataset_type])
+            plt.title(self.titles[dataset_type])
+            plt.tight_layout()
+            plt.savefig(f"plots/fluctuations/{self.benchmark_types[dataset_type][0]}_{self.benchmark_types[dataset_type][1]}_{efield}Vcm.png")
+            plt.close()
+    
+    def plot_all_fluctuations(self,
+    ):
+        for benchmark_type in self.benchmark_types:
+            self.plot_fluctuations(benchmark_type)

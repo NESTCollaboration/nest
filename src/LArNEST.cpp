@@ -27,14 +27,12 @@ namespace NEST
         double Nq = Ne + Nph;
 
         /// recombination
-        double ThomasImel = fThomasImelParameters.A * pow(efield, fThomasImelParameters.B);
-        double Nion = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
-        if (Nion < 0.0) {
-            Nion = 0.0;
-        }
-        if (Nion > Nq) {
-            Nion = Nq;
-        }
+        // Thomas-Imel is not used here, since alpha = Nex/Nion 
+        // is assumed to be a fixed quantity, and so the 
+        // recombination probability is constrained through
+        // the yields functions:
+        //      Nion = Nq/(1 + alpha) = (Ye + Yph)E/(1 + alpha)
+        double Nion = Nq / (1 + fNexOverNion);
         double Nex = Nq - Nion;
 
         double WQ_eV = fWorkQuantaFunction;
@@ -62,12 +60,16 @@ namespace NEST
     }
 
     LArYieldFluctuationResult LArNEST::GetYieldFluctuations(
-        const YieldResult &yields, double density
+        const LArYieldResult &yields, 
+        double density
     ) 
     {
-        // TODO: Understand and break up this function.
-        LArYieldFluctuationResult result{};
-        return result;  // quanta returned with recomb fluctuations
+        if (fLArFluctuationModel == LArFluctuationModel::Default) {
+            return GetDefaultFluctuations(yields, density);
+        }
+        else {
+            return GetDefaultFluctuations(yields, density);
+        }
     }
 
     LArNESTResult LArNEST::FullCalculation(
@@ -79,7 +81,7 @@ namespace NEST
         if (density < 1.) fdetector->set_inGas(true);
         LArNESTResult result;
         result.yields = GetYields(species, energy, efield, density);
-        // result.quanta = GetQuanta(result.yields, density);
+        result.fluctuations = GetYieldFluctuations(result.yields, density);
         // if (do_times)
         //     result.photon_times = GetPhotonTimes(
         //         species, result.quanta.photons, 
@@ -246,6 +248,69 @@ namespace NEST
             AlphaTotalYields, AlphaElectronYields, AlphaPhotonYields,
             energy, efield
         );
+    }
+    //-------------------------Fluctuation Yields-------------------------//
+    LArYieldFluctuationResult LArNEST::GetDefaultFluctuations(
+        const LArYieldResult &yields, double density
+    )
+    {
+        double Fano = 0.1115;
+        double NexOverNion = yields.Nex/yields.Nion;
+        double p_r = (yields.Nph - yields.Nex)/yields.Nion;
+        double alf = 1./(1. + NexOverNion);
+        double Nq = 0;
+        double Nex = 0;
+        double Nion = 0;
+        double Nq_mean = yields.Ne + yields.Nph;
+        if (yields.Lindhard == 1.)
+        {
+            Nq = floor(
+                RandomGen::rndm()->rand_gauss(
+                    Nq_mean, 
+                    sqrt(Fano * Nq_mean), 
+                    true
+                ) + 0.5
+            );
+            if (Nq < 0.) {
+                Nq = 0.;
+            }
+            Nion = double(RandomGen::rndm()->binom_draw(Nq, alf));
+            if (Nion > Nq) {
+                Nion = Nq;
+            }
+            Nex = Nq - Nion;
+        }
+        else
+        {
+            Nion = floor(
+                RandomGen::rndm()->rand_gauss(
+                    Nq_mean * alf, 
+                    sqrt(Fano * Nq_mean * alf), 
+                    true
+                ) + 0.5
+            );
+            Nex = floor(
+                RandomGen::rndm()->rand_gauss(
+                    Nq_mean * alf * NexOverNion, 
+                    sqrt(Fano * Nq_mean * alf * NexOverNion), 
+                    true
+                ) + 0.5
+            );
+            if (Nex < 0.) {
+                Nex = 0.;
+            }
+            if (Nion < 0.) {
+                Nion = 0.;
+            }
+            Nq = Nion + Nex;
+        }
+        LArYieldFluctuationResult result{
+            Nex + p_r*Nion, 
+            (1. - p_r)*Nion, 
+            Nex, 
+            Nion
+        };
+        return result;
     }
 
     //-------------------------Photon Times-------------------------//
@@ -471,6 +536,7 @@ namespace NEST
         if (yieldFactor < 1) {
             Nq = RandomGen::rndm()->binom_draw(Nq, leftvar);
         }
+
         // if Edep below work function, can't make any quanta, and if Nq
         // less than zero because Gaussian fluctuated low, update to zero
         if (energy < 1 / legacy_scint_yield || Nq < 0) { 
@@ -534,7 +600,7 @@ namespace NEST
     )
     {
         // this section calculates recombination following the modified 
-        // Birks'Law of Doke, deposition by deposition, may be overridden 
+        // Birks' Law of Doke, deposition by deposition, may be overridden 
         // later in code if a low enough energy necessitates switching to the
         // Thomas-Imel box model for recombination instead (determined by site)
         double dE = energy;

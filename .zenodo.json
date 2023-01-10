@@ -18,6 +18,14 @@
             "affiliation": "RPI",
             "name": "Brown, E."
         },
+	{
+            "affiliation": "University of California, Davis",
+            "name": "Carrara, N."
+        },
+	{
+            "affiliation": "University of California, Los Angeles",
+            "name": "Kamaha, A.C."
+        },
         {
             "affiliation": "NRNU MEPhI and ITEP", 
             "name": "Kozlova, E.S."
@@ -38,6 +46,10 @@
             "affiliation": "Colorado State University", 
             "name": "Mueller, J."
         }, 
+	{
+            "affiliation": "University of California, Davis",
+            "name": "Mulhearn, M."
+        },
         {
             "affiliation": "University of California, San Diego", 
             "name": "Ni, K."
@@ -54,7 +66,11 @@
         {
             "affiliation": "University of California, Berkeley", 
             "name": "Velan, V."
-        } 
+        }, 
+	{
+            "affiliation": "University of California, San Diego",
+            "name": "Zhong, M."
+        }
     ], 
     "access_right": "open", 
     "description": "<p>Fast C++ simulation of different particle types in liquid, gaseous, and solid xenon</p>\n\n<ul>\n\t<li>Mean scintillation light and ionization charge yields</li>\n\t<li>Variation in total quanta, and recombination fluctuations</li>\n\t<li>Dependencies on energy, electric field strength, and density</li>\n\t<li>Pulse shape models for both S1 and S2, including e-trains</li>\n\t<li>Additional tools, for calculating leakage and limits</li>\n</ul>\n\n<p>Not a complete list, please see the exhaustive README file included.</p>"

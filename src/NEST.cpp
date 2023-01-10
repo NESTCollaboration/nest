@@ -1065,7 +1065,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density,
 
 YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
-                         double m2) {
+                         const double m2) {
   bool oldModelER = false;
 
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),

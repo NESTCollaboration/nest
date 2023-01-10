@@ -296,7 +296,7 @@ class NESTcalc {
 
   virtual YieldResult GetYieldBetaGR(double energy, double density,
                                      double dfield,
-                                     const std::vector<double> &NRYieldsParam);
+                                     double lowEQy = 77.2931084);
   // Greg R. version: arXiv:1910.04211
 
   virtual YieldResult YieldResultValidity(YieldResult &res, const double energy,

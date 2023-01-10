@@ -448,7 +448,7 @@ YieldResult NESTcalc::GetYieldERWeighted(double energy, double density,
 
   const std::vector<double> EnergyParams = {0.23, 0.77, 2.95, -1.44};
   const std::vector<double> FieldParams = {421.15, 3.27};
-  YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, NRYieldsParam);
+  YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield);
   YieldResult yieldsG = GetYieldGamma(energy, density, dfield);
   double weightG =
       EnergyParams[0] +
@@ -566,9 +566,9 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(const std::vector<double> &dEOdxParam,
 	yields.ElectricField = field; yields.DeltaT_Scint = -999; result.yields = yields;
       }
       else
-	result.yields = GetYieldBetaGR(eStep, rho, field, default_NRYieldsParam);
+	result.yields = GetYieldBetaGR(eStep, rho, field);
     } else
-      result.yields = GetYieldBetaGR(refEnergy, rho, field, default_NRYieldsParam);
+      result.yields = GetYieldBetaGR(refEnergy, rho, field);
     if ( eMin < 0. && NRERWidthsParam[0] < 0. ) {
       QuantaResult quanta{};
       if ( Nq_mean < 1. ) Nq = 0;
@@ -1065,7 +1065,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density,
 
 YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
-                         const std::vector<double> &NRYieldsParam) {
+                         double m2) {
   bool oldModelER = false;
 
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
@@ -1075,7 +1075,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
 
   double Nq = energy * 1e3 / Wq_eV;
   double m1 = 30.66 + (6.1978 - 30.66) / pow(1. + pow(dfield / 73.855, 2.0318),
-                                             0.41883);  // NRYieldsParam[0];
+                                             0.41883);
   double m5 = Nq / energy / (1 + alpha * erf(0.05 * energy)) - m1;
   double m10 =
       (0.0508273937 + (0.1166087199 - 0.0508273937) /
@@ -1083,7 +1083,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
 
   double Qy =
       m1 +
-      (77.2931084 - m1) /
+      (m2 - m1) /
           pow((1. + pow(energy / (log10(dfield) * 0.13946236 + 0.52561312),
                         1.82217496 +
                             (2.82528809 - 1.82217496) /
@@ -1161,7 +1161,7 @@ YieldResult NESTcalc::GetYields(
       if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) || oldModelER || fdetector->get_inGas())
         return GetYieldBeta(energy, density, dfield);  // OLD
       else
-        return GetYieldBetaGR(energy, density, dfield, NRYieldsParam);  // NEW
+        return GetYieldBetaGR(energy, density, dfield);  // NEW
       break;
   }
 }

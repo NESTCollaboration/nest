@@ -66,8 +66,8 @@ Please contact Matthew Szydagis about becoming involved in development before me
 
 In order to compile and run NEST, the following are required:
 
-* CMake 3.8 (or higher: tested with 3.17.5 on Linux CentOS 7 and 3.21.3 on Mac OSX 10.14.6)
-* gcc (with C++17 support or at the very least C++11, with GCC 5 or higher; tested with 8.3.1-9.4.0 on Linux and Apple LLVM version 10.0.1, clang-1001.0.46.4)
+* CMake 3.11 (or higher: tested with 3.17.5 on Linux CentOS 7 and 3.21.3 on Mac OSX 10.14.6 and 3.25.1 on Linux Mint 19.3 Cinnamon)
+* gcc (with C++17 support, with GCC 8 or higher; tested with 8.3.1-9.4.0 on Linux and Apple LLVM version 10.0.1, clang-1001.0.46.4)
 
 The following are optional, depending on intended use of NEST:
 

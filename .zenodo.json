@@ -10,49 +10,26 @@
     ], 
     "creators": [
         {
-            "affiliation": "University at Albany", 
+	    "orcid": "0000-0002-9334-4659",
+            "affiliation": "University at Albany, SUNY", 
             "name": "Szydagis, M."
         }, 
         {
-            "affiliation": "University of California, Davis", 
-            "name": "Balajthy, J."
+            "affiliation": "RPI",
+            "name": "Brown, E."
         },
         {
-            "affiliation": "Rensselaer Polytechnic Institute",
-            "name": "Block, G.A."
-        }, 
-        {
-            "affiliation": "Lawrence Livermore National Laboratory", 
-            "name": "Brodsky, J."
-        }, 
-        {
-            "affiliation": "University of California, Davis", 
-            "name": "Cutter, J."
-        }, 
-        {
-            "affiliation": "Rice University", 
-            "name": "Farrell, S."
-        }, 
-        {
-            "affiliation": "University of California, Davis", 
-            "name": "Huang, J."
-        }, 
-        {
             "affiliation": "NRNU MEPhI and ITEP", 
-            "name": "Kozlova, E."
-        }, 
-        {
-            "affiliation": "Stanford University", 
-            "name": "Lenardo, B."
-        }, 
-        {
-            "affiliation": "University of California, Davis", 
-            "name": "Manalaysay, A."
+            "name": "Kozlova, E.S."
         }, 
         {
             "affiliation": "University of California, Berkeley", 
-            "name": "McKinsey, D."
+            "name": "McKinsey, D.N."
         }, 
+	{
+            "affiliation": "RPI",
+            "name": "McMichael, K."
+        },
         {
             "affiliation": "Colorado State University", 
             "name": "Mooney, M."
@@ -66,25 +43,17 @@
             "name": "Ni, K."
         }, 
         {
-            "affiliation": "University at Albany", 
-            "name": "Rischbieter, G."
-        }, 
-        {
-            "affiliation": "University of California, Davis", 
-            "name": "Tripathi, M."
+            "affiliation": "University of Michigan", 
+            "name": "Rischbieter, G.R.C."
         }, 
         {
             "orcid": "0000-0001-8158-7795", 
             "affiliation": "Rice University", 
-            "name": "Tunnell, C."
+            "name": "Tunnell, C.D."
         }, 
         {
             "affiliation": "University of California, Berkeley", 
             "name": "Velan, V."
-        }, 
-        {
-            "affiliation": "University of California, San Diego", 
-            "name": "Zhao, Z."
         } 
     ], 
     "access_right": "open", 

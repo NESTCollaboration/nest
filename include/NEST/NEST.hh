@@ -304,7 +304,7 @@ class NESTcalc {
   // Confirms and sometimes adjusts YieldResult to make physical sense
 
   virtual QuantaResult GetQuanta(const YieldResult &yields, double density,
-                                 const std::vector<double> &NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2},
+                                 const std::vector<double> &NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.0553, 0.205, 0.45, -0.2},
                                  bool oldModelER = false,
                                  double SkewnessER = -999.);
   // GetQuanta takes the yields from above and fluctuates them, both the total

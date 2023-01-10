@@ -21,7 +21,7 @@ bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 const std::vector<double> NESTcalc::default_NRYieldsParam = {
     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
 const std::vector<double> NESTcalc::default_NRERWidthsParam = {
-    0.4,0.4,0.04,0.5,0.19,2.25, 0.0015, 0.05, 0.205, 0.45, -0.2};
+    0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2};
              // Fano factor of ~3 at least for ionization when using
              // OldW13eV (look at first 2 values)
 
@@ -228,7 +228,7 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield,
           pow(density,
               3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
   if (!fdetector->get_inGas())
-    Fano += NRERWidthsParam[6] * sqrt(Nq_mean) * pow(efield, 0.5);
+    Fano = NRERWidthsParam[6];  //Fano += NRERWidthsParam[6] * sqrt(Nq_mean) * pow(efield, 0.5);
   return Fano;
 }
 

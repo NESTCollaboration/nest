@@ -227,8 +227,12 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield,
       0.0015957 *
           pow(density,
               3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
-  if (!fdetector->get_inGas())
-    Fano = NRERWidthsParam[6];  //Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
+  if (!fdetector->get_inGas()) {
+    if ( NRERWidthsParam[6] < 0. )
+      Fano += fabs(NRERWidthsParam[6]) * sqrt(Nq_mean) * pow(efield, 0.5);
+    else
+      Fano = NRERWidthsParam[6];
+  }
   return Fano;
 }
 

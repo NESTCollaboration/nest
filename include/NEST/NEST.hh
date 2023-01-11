@@ -208,7 +208,7 @@ class NESTcalc {
       default_NRYieldsParam; /* =
                             {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
   static const std::vector<double>
-      default_NRERWidthsParam; /* = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2} */
+      default_NRERWidthsParam; /* = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2} */
 
   NESTresult FullCalculation(
       INTERACTION_TYPE species, double energy, double density, double dfield,
@@ -217,7 +217,7 @@ class NESTcalc {
           default_NRYieldsParam, /* =
                                 {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
       const std::vector<double> &NRERWidthsParam =
-          default_NRERWidthsParam, /* = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2} */
+          default_NRERWidthsParam, /* = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2} */
       bool do_times =
           true);  // the so-called full NEST calculation puts together all the
                   // individual functions/calculations below
@@ -304,7 +304,7 @@ class NESTcalc {
   // Confirms and sometimes adjusts YieldResult to make physical sense
 
   virtual QuantaResult GetQuanta(const YieldResult &yields, double density,
-                                 const std::vector<double> &NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.0553, 0.205, 0.45, -0.2},
+                                 const std::vector<double> &NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2},
                                  bool oldModelER = false,
                                  double SkewnessER = -999.);
   // GetQuanta takes the yields from above and fluctuates them, both the total
@@ -314,7 +314,7 @@ class NESTcalc {
 
   virtual double RecombOmegaNR(
       double elecFrac,
-      const std::vector<double> &NRERWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/);
+      const std::vector<double> &NRERWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}*/);
   // Calculates the Omega parameter governing non-binomial recombination
   // fluctuations for nuclear recoils and ions (Lindhard<1)
 
@@ -325,7 +325,7 @@ class NESTcalc {
   // fluctuations for gammas and betas (Lindhard==1)
 
   virtual double FanoER(double density, double Nq_mean, double efield,
-      const std::vector<double> &NRERWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}*/);
+      const std::vector<double> &NRERWidthsParam /*={1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}*/);
   // Fano-factor (and Fano-like additional energy resolution model) for gammas
   // and betas (Lindhard==1)
 

@@ -23,14 +23,14 @@ const std::vector<double> NESTcalc::default_NRYieldsParam = {
 const std::vector<double> NESTcalc::default_NRERWidthsParam = {
     0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2};
              // Fano factor of ~3 at least for ionization when using
-             // OldW13eV (look at first 2 values)
+             // OldW13eV (look at first 2 values). Also, 0.05 used to be 0.0553
 
 NESTresult NESTcalc::FullCalculation(
     INTERACTION_TYPE species, double energy, double density, double dfield,
     double A, double Z,
     const std::vector<double>
         &NRYieldsParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 0.0015, 0.05, 0.205, 0.45, -0.2}*/,
+    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}*/,
     bool do_times /*=true*/) {
   if (density < 1.) fdetector->set_inGas(true);
   NESTresult result;
@@ -180,7 +180,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 
 double NESTcalc::RecombOmegaNR(
     double elecFrac,
-    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 0.0015, 0.05, 0.205, 0.45, -0.2}*/) {
+    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}*/) {
   double omega = NRERWidthsParam[2] * exp(-0.5 * pow(elecFrac - NRERWidthsParam[3], 2.) /
                                     (NRERWidthsParam[4] * NRERWidthsParam[4]));
   if (omega < 0.) omega = 0;
@@ -228,7 +228,7 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield,
           pow(density,
               3.);  // to get it to be ~0.03 for LXe (E Dahl Ph.D. thesis)
   if (!fdetector->get_inGas())
-    Fano = NRERWidthsParam[6];  //Fano += NRERWidthsParam[6] * sqrt(Nq_mean) * pow(efield, 0.5);
+    Fano = NRERWidthsParam[6];  //Fano += 0.0015 * sqrt(Nq_mean) * pow(efield, 0.5);
   return Fano;
 }
 

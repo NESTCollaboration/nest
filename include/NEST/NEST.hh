@@ -209,7 +209,9 @@ class NESTcalc {
                             {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
   static const std::vector<double>
       default_NRERWidthsParam; /* = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2} */
-
+  static const std::vector<double>
+      default_ERYieldsParam;
+  
   NESTresult FullCalculation(
       INTERACTION_TYPE species, double energy, double density, double dfield,
       double A, double Z,
@@ -218,6 +220,8 @@ class NESTcalc {
                                 {11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/
       const std::vector<double> &NRERWidthsParam =
           default_NRERWidthsParam, /* = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2} */
+      const std::vector<double> &ERYieldsParam =
+          default_ERYieldsParam,
       bool do_times =
           true);  // the so-called full NEST calculation puts together all the
                   // individual functions/calculations below
@@ -245,6 +249,7 @@ class NESTcalc {
       double A, double Z,
       const std::vector<double> &NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6,
                                               0.3, 2., 0.3, 2., 0.5, 1., 1.},
+      const std::vector<double> &ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.},
       bool oldModelER = false);
   // the innermost heart of NEST, this provides floating-point average values
   // for photons and electrons per keV. Nuis(ance)Param included for varying the
@@ -256,7 +261,7 @@ class NESTcalc {
 
   virtual YieldResult GetYieldERWeighted(double energy, double density,
                                          double dfield,
-                                         const std::vector<double> &NRYieldsParam);
+                                         const std::vector<double> &ERYieldsParam);
   // Weights beta/gamma models to account for ER sources with differing
   // recombination profiles (such as L-shell electron-capture interactions)
   
@@ -296,7 +301,7 @@ class NESTcalc {
 
   virtual YieldResult GetYieldBetaGR(double energy, double density,
                                      double dfield,
-                                     const double lowEQy = 77.2931084);
+				     const std::vector<double> &ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.});
   // Greg R. version: arXiv:1910.04211
 
   virtual YieldResult YieldResultValidity(YieldResult &res, const double energy,

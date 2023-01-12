@@ -27,7 +27,7 @@
 using namespace std;
 using namespace NEST;
 
-vector<double> NRERWidthsParam, NRYieldsParam, ERWeightParam;
+vector<double> NRERWidthsParam, NRYieldsParam, ERWeightParam, ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
 double band[NUMBINS_MAX][7], energies[3],
     AnnModERange[2] = {1.5, 6.5};  // keVee or nr (recon)
 bool BeenHere = false;
@@ -258,6 +258,7 @@ NESTObservableArray runNESTvec(
   QuantaResult quanta;
   double x, y, z, driftTime, vD;
   RandomGen::rndm()->SetSeed(seed);
+  ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
   NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
   NRERWidthsParam = {0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2};
   vector<double> scint, scint2, wf_amp;
@@ -280,7 +281,7 @@ NESTObservableArray runNESTvec(
                                      // function caused by smearing
     result = n.FullCalculation(particleType, eList[i], rho, useField,
                                detector->get_molarMass(), ATOM_NUM, NRYieldsParam,
-                               NRERWidthsParam, verbosity);
+                               NRERWidthsParam, ERYieldsParam, verbosity);
     quanta = result.quanta;
     vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, useField);
     scint = n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0],
@@ -564,11 +565,11 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
   if (type_num == WIMP) {
     yieldsMax =
         n.GetYields(NR, 25.0, rho, centralField, detector->get_molarMass(),
-                    double(atomNum), NRYieldsParam);
+                    double(atomNum), NRYieldsParam, ERYieldsParam);
   } else if (type_num == B8) {
     yieldsMax =
         n.GetYields(NR, 4.00, rho, centralField, detector->get_molarMass(),
-                    double(atomNum), NRYieldsParam);
+                    double(atomNum), NRYieldsParam, ERYieldsParam);
   } else {
     double energyMaximum;
     if (eMax < 0.)
@@ -578,10 +579,10 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     if ( !energyMaximum || std::isnan(energyMaximum) ) energyMaximum = 1.;
     if (type_num == Kr83m)
       yieldsMax =
-          n.GetYields(Kr83m, eMin, rho, centralField, 400., 100., NRYieldsParam);
+	n.GetYields(Kr83m, eMin, rho, centralField, 400., 100., NRYieldsParam, ERYieldsParam);
     else
       yieldsMax = n.GetYields(type_num, energyMaximum, rho, centralField,
-                              double(massNum), double(atomNum), NRYieldsParam);
+                              double(massNum), double(atomNum), NRYieldsParam, ERYieldsParam);
   }
   if ((g1 * yieldsMax.PhotonYield) > (2. * maxS1) && eMin != eMax &&
       type_num != Kr83m && verbosity > 0 && !dEOdxBasis)
@@ -943,13 +944,13 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                       "Xe-129/131m, at low field"
                    << endl;
             }
-            yields = n.GetYieldERWeighted(keV, rho, field, NRYieldsParam);
+            yields = n.GetYieldERWeighted(keV, rho, field, ERYieldsParam);
           } else {
             if (seed < 0 && seed != -1 && type_num <= 5)
               massNum = detector->get_molarMass();
             if (type_num == 11) atomNum = minTimeSeparation;  // Kr83m
             yields = n.GetYields(type_num, keV, rho, field, double(massNum),
-                                 double(atomNum), NRYieldsParam);
+                                 double(atomNum), NRYieldsParam, ERYieldsParam);
           }
           if (type_num == ion) {  // alphas +other nuclei, lighter/heavier than
                                   // medium's default nucleus

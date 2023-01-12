@@ -289,7 +289,7 @@ To use this model, see lines 674-675 of src/NEST.cpp:
 
 ```
    return GetYieldBeta(energy,density,dfield);
-   //return GetYieldBetaGR(energy,density,dfield);
+   //return GetYieldBetaGR(energy,density,dfield,ERYieldsParam);
 ```
 By commenting out the first of those lines, and un-commenting the second, you will have the LUX-specific yield model.
 

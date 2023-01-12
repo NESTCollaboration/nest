@@ -18,6 +18,8 @@ static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1
 
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 
+const std::vector<double> NESTcalc::default_ERYieldsParam = {
+    -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
 const std::vector<double> NESTcalc::default_NRYieldsParam = {
     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
 const std::vector<double> NESTcalc::default_NRERWidthsParam = {
@@ -31,10 +33,11 @@ NESTresult NESTcalc::FullCalculation(
     const std::vector<double>
         &NRYieldsParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
     const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}*/,
+    const std::vector<double> &ERYieldsParam,
     bool do_times /*=true*/) {
   if (density < 1.) fdetector->set_inGas(true);
   NESTresult result;
-  result.yields = GetYields(species, energy, density, dfield, A, Z, NRYieldsParam);
+  result.yields = GetYields(species, energy, density, dfield, A, Z, NRYieldsParam, ERYieldsParam);
   result.quanta =  GetQuanta(result.yields, density, NRERWidthsParam, false, -999.);
   if (do_times)
     result.photon_times = GetPhotonTimes(
@@ -445,14 +448,14 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density,
 
 YieldResult NESTcalc::GetYieldERWeighted(double energy, double density,
                                          double dfield,
-                                         const std::vector<double> &NRYieldsParam) {
+                                         const std::vector<double> &ERYieldsParam) {
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
 
   const std::vector<double> EnergyParams = {0.23, 0.77, 2.95, -1.44};
   const std::vector<double> FieldParams = {421.15, 3.27};
-  YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield);
+  YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
   YieldResult yieldsG = GetYieldGamma(energy, density, dfield);
   double weightG =
       EnergyParams[0] +
@@ -1069,56 +1072,44 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density,
 
 YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
-                         const double m2) {
+                         const std::vector<double> &ERYieldsParam) {
   bool oldModelER = false;
 
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
-
-  double Nq = energy * 1e3 / Wq_eV;
-  double m1 = 30.66 + (6.1978 - 30.66) / pow(1. + pow(dfield / 73.855, 2.0318),
-                                             0.41883);
-  double m5 = Nq / energy / (1 + alpha * erf(0.05 * energy)) - m1;
-  double m10 =
-      (0.0508273937 + (0.1166087199 - 0.0508273937) /
-                          (1 + pow(dfield / 1.39260460e+02, -0.65763592)));
-
-  double Qy =
-      m1 +
-      (m2 - m1) /
-          pow((1. + pow(energy / (log10(dfield) * 0.13946236 + 0.52561312),
-                        1.82217496 +
-                            (2.82528809 - 1.82217496) /
-                                (1 + pow(dfield / 144.65029656, -2.80532006)))),
-              0.3344049589) +
-      m5 +
-      (0. - m5) /
-          pow((1. +
-               pow(energy / (7.02921301 +
-                             (98.27936794 - 7.02921301) /
-                                 (1. + pow(dfield / 256.48156448, 1.29119251))),
-                   4.285781736)),
-              m10);
-
-  double coeff_TI = pow(1. / DENSITY, 0.3);
-  double coeff_Ni = pow(1. / DENSITY, 1.4);
-  double coeff_OL = pow(1. / DENSITY, -1.7) /
-                    log(1. + coeff_TI * coeff_Ni * pow(DENSITY, 1.7));
-  Qy *= coeff_OL * log(1. + coeff_TI * coeff_Ni * pow(density, 1.7)) *
-        pow(density, -1.7);
-  if (!fdetector->get_OldW13eV()) Qy *= ZurichEXOQ;
+  
+  double Nq = energy * 1e3 / Wq_eV, m01, m02, m03, m04, m05, m07, m08, m09, m10;
+  if ( ERYieldsParam[0] < 0. ) m01 = 30.66 + (6.1978 - 30.66) / pow(1. + pow(dfield / 73.855, 2.0318), 0.41883); else m01 = ERYieldsParam[0];
+  if ( ERYieldsParam[1] < 0. ) m02 = 77.2931084; else m02 = ERYieldsParam[1];
+  if ( ERYieldsParam[2] < 0. ) m03 = log10(dfield) * 0.13946236 + 0.52561312; else m03 = ERYieldsParam[2];
+  if ( ERYieldsParam[3] < 0. ) m04 = 1.82217496 + (2.82528809 - 1.82217496) / (1. + pow(dfield / 144.65029656, -2.80532006)); else m04 = ERYieldsParam[3];
+  if ( ERYieldsParam[4] < 0. ) m05 = Nq / energy / (1. + alpha * erf(0.05 * energy)) - m01; else m05 = ERYieldsParam[4];
+  if ( ERYieldsParam[6] < 0. ) m07 = 7.02921301 + (98.27936794 - 7.02921301) / (1. + pow(dfield / 256.48156448, 1.29119251)); else m07 = ERYieldsParam[6];
+  if ( ERYieldsParam[7] < 0. ) m08 = 4.285781736; else m08 = ERYieldsParam[7];
+  if ( ERYieldsParam[8] < 0. ) m09 = 0.3344049589; else m09 = ERYieldsParam[8];
+  if ( ERYieldsParam[9] < 0. ) m10 = (0.0508273937 + (0.1166087199 - 0.0508273937) / (1. + pow(dfield / 1.39260460e+02, -0.65763592))); else m10 = ERYieldsParam[9];
+  double Qy = m01 + ( m02 - m01 ) / pow ( ( 1. + pow ( energy / m03, m04 ) ), m09 )
+            + m05 + ( 0.0 - m05 ) / pow ( ( 1. + pow ( energy / m07, m08 ) ), m10 );
+  
+  if ( ERYieldsParam[5] < 0. ) { //toggle the density and W corrections, which could override you
+    double coeff_TI = pow(1. / DENSITY, 0.3);
+    double coeff_Ni = pow(1. / DENSITY, 1.4);
+    double coeff_OL = pow(1. / DENSITY, -1.7) / log(1. + coeff_TI * coeff_Ni * pow(DENSITY, 1.7));
+    Qy *= coeff_OL * log(1. + coeff_TI * coeff_Ni * pow(density, 1.7)) * pow(density, -1.7);
+    if (!fdetector->get_OldW13eV()) Qy *= ZurichEXOQ;
+  }
   double Ly = Nq / energy - Qy;
   double Ne = Qy * energy;
   double Nph = Ly * energy;
   double lux_NexONi = alpha * erf(0.05 * energy);
-
+  
   YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   result.ExcitonRatio = lux_NexONi;
-  result.Lindhard = 1;
+  result.Lindhard = 1.;
   result.ElectricField = dfield;
   result.DeltaT_Scint = -999;
   return YieldResultValidity(
@@ -1130,6 +1121,7 @@ YieldResult NESTcalc::GetYields(
     double massNum, double atomNum,
     const std::vector<double> &NRYieldsParam
     /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+    const std::vector<double> &ERYieldsParam,
     bool oldModelER) {
   switch (species) {
     case NR:
@@ -1165,7 +1157,7 @@ YieldResult NESTcalc::GetYields(
       if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) || oldModelER || fdetector->get_inGas())
         return GetYieldBeta(energy, density, dfield);  // OLD
       else
-        return GetYieldBetaGR(energy, density, dfield);  // NEW
+        return GetYieldBetaGR(energy, density, dfield, ERYieldsParam);  // NEW
       break;
   }
 }

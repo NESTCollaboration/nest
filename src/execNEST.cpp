@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(0.19);  
     NRERWidthsParam.push_back(2.25);  
     NRERWidthsParam.push_back( 1. ); 
-    NRERWidthsParam.push_back( 0.05 );
+    NRERWidthsParam.push_back( 0.046452 );
     NRERWidthsParam.push_back( 0.205 );
     NRERWidthsParam.push_back( 0.45 );
     NRERWidthsParam.push_back( -0.2 );
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
     NRERWidthsParam.push_back(2.25);  // raw skewness, for NR
     NRERWidthsParam.push_back( 1. ); //ER Fano normalization for non-density dependence
-    NRERWidthsParam.push_back( 0.05 ); //Minimum amplitude for ER non-binom recomb flucts
+    NRERWidthsParam.push_back( 0.046452 ); //Minimum amplitude for ER non-binom recomb flucts
     NRERWidthsParam.push_back( 0.205 ); // center in e-frac (ER)
     NRERWidthsParam.push_back( 0.45 );  // width parameter
     NRERWidthsParam.push_back( -0.2 );  // ER non-binom skewness in e-frac
@@ -260,7 +260,7 @@ NESTObservableArray runNESTvec(
   RandomGen::rndm()->SetSeed(seed);
   ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
   NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
-  NRERWidthsParam = {0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2};
+  NRERWidthsParam = {0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2};
   vector<double> scint, scint2, wf_amp;
   vector<int64_t> wf_time;
   NESTObservableArray OutputResults;
@@ -958,7 +958,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             NRERWidthsParam = {
                 1.00, 1.00, 0.,
                 0.50, 0.19, 0.,
-                1., 0.05,
+                1., 0.046452,
                 0.205, 0.45, -0.2};  // zero out non-binom recomb fluct & skew (NR)
           }
           if (!dEOdxBasis) quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, -999.);

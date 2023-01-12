@@ -23,7 +23,7 @@ const std::vector<double> NESTcalc::default_ERYieldsParam = {
 const std::vector<double> NESTcalc::default_NRYieldsParam = {
     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
 const std::vector<double> NESTcalc::default_NRERWidthsParam = {
-    0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2};
+    0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2};
              // Fano factor of ~3 at least for ionization when using
              // OldW13eV (look at first 2 values). Also, 0.05 used to be 0.0553
 
@@ -32,7 +32,7 @@ NESTresult NESTcalc::FullCalculation(
     double A, double Z,
     const std::vector<double>
         &NRYieldsParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}*/,
+    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2}*/,
     const std::vector<double> &ERYieldsParam,
     bool do_times /*=true*/) {
   if (density < 1.) fdetector->set_inGas(true);
@@ -183,7 +183,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 
 double NESTcalc::RecombOmegaNR(
     double elecFrac,
-    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}*/) {
+    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2}*/) {
   double omega = NRERWidthsParam[2] * exp(-0.5 * pow(elecFrac - NRERWidthsParam[3], 2.) /
                                     (NRERWidthsParam[4] * NRERWidthsParam[4]));
   if (omega < 0.) omega = 0;
@@ -1074,7 +1074,11 @@ YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
                          const std::vector<double> &ERYieldsParam) {
   bool oldModelER = false;
-
+  
+  if ( ERYieldsParam.size() < 10 ) {
+    throw std::runtime_error("ERROR: You need a minimum of 10 nuisance parameters for the mean yields.");
+  }
+  
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
@@ -1089,7 +1093,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
   if ( ERYieldsParam[6] < 0. ) m07 = 7.02921301 + (98.27936794 - 7.02921301) / (1. + pow(dfield / 256.48156448, 1.29119251)); else m07 = ERYieldsParam[6];
   if ( ERYieldsParam[7] < 0. ) m08 = 4.285781736; else m08 = ERYieldsParam[7];
   if ( ERYieldsParam[8] < 0. ) m09 = 0.3344049589; else m09 = ERYieldsParam[8];
-  if ( ERYieldsParam[9] < 0. ) m10 = (0.0508273937 + (0.1166087199 - 0.0508273937) / (1. + pow(dfield / 1.39260460e+02, -0.65763592))); else m10 = ERYieldsParam[9];
+  if ( ERYieldsParam[9] < 0. ) m10 = 0.0508273937 + (0.1166087199 - 0.0508273937) / (1. + pow(dfield / 1.39260460e+02, -0.65763592)); else m10 = ERYieldsParam[9];
   double Qy = m01 + ( m02 - m01 ) / pow ( ( 1. + pow ( energy / m03, m04 ) ), m09 )
             + m05 + ( 0.0 - m05 ) / pow ( ( 1. + pow ( energy / m07, m08 ) ), m10 );
   

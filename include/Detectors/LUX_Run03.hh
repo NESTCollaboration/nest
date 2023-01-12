@@ -47,7 +47,7 @@ class DetectorExample_LUX_RUN03 : public VDetector {
                       // Baudis / EXO's
     noiseLinear[0] = 0.0e-2;  // 1910.04211 p.12, to match 1610.02076 Fig. 8.
                               // UNITS: fraction NOT %!
-    noiseLinear[1] = 8.0e-2;  // 1910.04211 p.12, to match 1610.02076 Fig. 8.
+    noiseLinear[1] = 9.0e-2;  // 1910.04211 p.12, to match 1610.02076 Fig. 8.
                               // UNITS: fraction NOT %!
 
     // Ionization and Secondary Scintillation (S2) parameters

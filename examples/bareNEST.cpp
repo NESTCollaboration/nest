@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
   // Get yields from NEST calculator, along with number of quanta
   yields = n.GetYields(type_num, keV, rho, field, double(massNum),
                        double(atomNum), NRYieldsParam, ERYieldsParam);
-  vector<double> NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.05, 0.205, 0.45, -0.2}; 
+  vector<double> NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2}; 
   quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, -999.);
 
   // Calculate S2 photons using electron lifetime correction

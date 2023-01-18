@@ -18,21 +18,12 @@ static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1
 
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 
-const std::vector<double> NESTcalc::default_ERYieldsParam = {
-    -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
-const std::vector<double> NESTcalc::default_NRYieldsParam = {
-    11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
-const std::vector<double> NESTcalc::default_NRERWidthsParam = {
-    0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2};
-             // Fano factor of ~3 at least for ionization when using
-             // OldW13eV (look at first 2 values). Also, 0.05 used to be 0.0553
-
 NESTresult NESTcalc::FullCalculation(
     INTERACTION_TYPE species, double energy, double density, double dfield,
     double A, double Z,
     const std::vector<double>
-        &NRYieldsParam /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
-    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2}*/,
+        &NRYieldsParam,
+    const std::vector<double> &NRERWidthsParam,
     const std::vector<double> &ERYieldsParam,
     bool do_times /*=true*/) {
   if (density < 1.) fdetector->set_inGas(true);
@@ -183,7 +174,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
 
 double NESTcalc::RecombOmegaNR(
     double elecFrac,
-    const std::vector<double> &NRERWidthsParam /*={0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2}*/) {
+    const std::vector<double> &NRERWidthsParam) {
   double omega = NRERWidthsParam[2] * exp(-0.5 * pow(elecFrac - NRERWidthsParam[3], 2.) /
                                     (NRERWidthsParam[4] * NRERWidthsParam[4]));
   if (omega < 0.) omega = 0;
@@ -726,8 +717,7 @@ YieldResult NESTcalc::GetYieldNROld(
 
 YieldResult NESTcalc::GetYieldNR(
     double energy, double density, double dfield, double massNum,
-    const std::vector<double>
-        &NRYieldsParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {
+    const std::vector<double> &NRYieldsParam) {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     massNum = fdetector->get_molarMass();
 
@@ -809,7 +799,7 @@ YieldResult NESTcalc::GetYieldIon(
     double energy, double density, double dfield, double massNum,
     double atomNum,
     const std::vector<double> &
-        NRYieldsParam /*{11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/) {  // simply uses the original Lindhard model, but as cited by Hitachi in:
+        NRYieldsParam) {  // simply uses the original Lindhard model, but as cited by Hitachi in:
   // https://indico.cern.ch/event/573069/sessions/230063/attachments/1439101/2214448/Hitachi_XeSAT2017_DM.pdf
 
   double A1 = massNum, A2 = RandomGen::rndm()->SelectRanXeAtom();
@@ -1123,8 +1113,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
 YieldResult NESTcalc::GetYields(
     INTERACTION_TYPE species, double energy, double density, double dfield,
     double massNum, double atomNum,
-    const std::vector<double> &NRYieldsParam
-    /*={11.,1.1,0.0480,-0.0533,12.6,0.3,2.,0.3,2.,0.5,1.,1.}*/,
+    const std::vector<double> &NRYieldsParam,
     const std::vector<double> &ERYieldsParam,
     bool oldModelER) {
   switch (species) {

@@ -27,7 +27,7 @@
 using namespace std;
 using namespace NEST;
 
-vector<double> NRERWidthsParam, NRYieldsParam, ERWeightParam, ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
+vector<double> NRERWidthsParam, NRYieldsParam, ERWeightParam, ERYieldsParam = default_ERYieldsParam;
 double band[NUMBINS_MAX][7], energies[3],
     AnnModERange[2] = {1.5, 6.5};  // keVee or nr (recon)
 bool BeenHere = false;
@@ -258,9 +258,9 @@ NESTObservableArray runNESTvec(
   QuantaResult quanta;
   double x, y, z, driftTime, vD;
   RandomGen::rndm()->SetSeed(seed);
-  ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
-  NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
-  NRERWidthsParam = {0.4,0.4,0.04,0.5,0.19,2.25, 1., 0.046452, 0.205, 0.45, -0.2};
+  ERYieldsParam = default_ERYieldsParam;
+  NRYieldsParam = default_NRYieldsParam;
+  NRERWidthsParam = default_NRERWidthsParam;
   vector<double> scint, scint2, wf_amp;
   vector<int64_t> wf_time;
   NESTObservableArray OutputResults;

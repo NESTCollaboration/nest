@@ -133,8 +133,8 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
           fDetector->FitEF(maxHit_xyz.x(), maxHit_xyz.y(), maxHit_xyz.z());
       lineage.result = fNESTcalc->FullCalculation(
           lineage.type, etot, lineage.density, efield_here, lineage.A,
-          lineage.Z, NESTcalc::default_NRYieldsParam, NESTcalc::default_NRERWidthsParam,
-          NESTcalc::default_ERYieldsParam, detailed_secondaries);
+          lineage.Z, default_NRYieldsParam, default_NRERWidthsParam,
+          default_ERYieldsParam, detailed_secondaries);
       lineage.result_calculated = true;
       if (lineage.result.quanta.photons) {
         auto photontimes = lineage.result.photon_times.begin();

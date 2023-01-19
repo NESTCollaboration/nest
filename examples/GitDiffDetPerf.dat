@@ -1,0 +1,173 @@
+diff --git a/include/Detectors/LUX_Run03.hh b/include/Detectors/LUX_Run03.hh
+index a3968f6..caccb9b 100644
+--- a/include/Detectors/LUX_Run03.hh
++++ b/include/Detectors/LUX_Run03.hh
+@@ -26,7 +26,7 @@ class DetectorExample_LUX_RUN03 : public VDetector {
+   // function of time
+   void Initialization() override {
+     // Primary Scintillation (S1) parameters
+-    g1 = 0.1170;  // 0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005
++    g1 = 0.09;  // 0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005
+                   // CH3T,0.119+/-0.001 LUXSim. UNITS: phd per photon (NOT
+                   // photoelectrons!!)
+     sPEres = 0.37;  // arXiv:1910.04211. UNITS: phe a.k.a. PE or photoelectrons
+@@ -45,19 +45,19 @@ class DetectorExample_LUX_RUN03 : public VDetector {
+ 
+     OldW13eV = true;  // default true, which means use "classic" W instead of
+                       // Baudis / EXO's
+-    noiseLinear[0] = 0.0e-2;  // 1910.04211 p.12, to match 1610.02076 Fig. 8.
++    noiseLinear[0] = 10.e-2;  // 1910.04211 p.12, to match 1610.02076 Fig. 8.
+                               // UNITS: fraction NOT %!
+-    noiseLinear[1] = 9.0e-2;  // 1910.04211 p.12, to match 1610.02076 Fig. 8.
++    noiseLinear[1] = 5.0e-2;  // 1910.04211 p.12, to match 1610.02076 Fig. 8.
+                               // UNITS: fraction NOT %!
+ 
+     // Ionization and Secondary Scintillation (S2) parameters
+     g1_gas = 0.1;  // 0.1 in 1910.04211. UNITS: phd per e-
+     s2Fano = 3.6;  // 3.7 in 1910.04211; this matches 1608.05381 better.
+                    // Dimensionless
+-    s2_thr = (150. * 1.173) / 0.915;  // 65-194 pe in 1608.05381. UNITS: phe
+-    E_gas = 6.25;                     // 6.55 in 1910.04211. UNITS: kV/cm
++    s2_thr = 200.;  // 65-194 pe in 1608.05381. UNITS: phe
++    E_gas = 8.269;                     // 6.55 in 1910.04211. UNITS: kV/cm
+     eLife_us =
+-        800.;  // p.44 of James Verbus PhD thesis Brown. UNIT: microseconds (us)
++        1e3;  // p.44 of James Verbus PhD thesis Brown. UNIT: microseconds (us)
+ 
+     // Thermodynamic Properties
+     // inGas = false; //duh
+@@ -66,9 +66,9 @@ class DetectorExample_LUX_RUN03 : public VDetector {
+ 
+     // Data Analysis Parameters and Geometry
+     dtCntr =
+-        160.;  // p.61 Dobi thesis UMD, 159 in 1708.02566. UNITS: microseconds
+-    dt_min = 38.;   // 1608.05381. UNITS: microseconds
+-    dt_max = 305.;  // 1608.05381. UNITS: microseconds
++        150.;  // p.61 Dobi thesis UMD, 159 in 1708.02566. UNITS: microseconds
++    dt_min = 0.00;   // 1608.05381. UNITS: microseconds
++    dt_max = 300.;  // 1608.05381. UNITS: microseconds
+ 
+     radius = 200.;  // 1512.03506. UNITS: mm
+     radmax = 235.;  // 1910.04211. UNITS: mm
+@@ -76,7 +76,7 @@ class DetectorExample_LUX_RUN03 : public VDetector {
+     TopDrift = 544.95;  // 544.95 in 1910.04211. UNITS: mm
+     anode = 549.2;      // 1910.04211 and 549 in 1708.02566. UNITS: mm
+     gate = 539.2;       // 1910.04211 and 539 in 1708.02566. UNITS: mm
+-    cathode = 55.90;    // 55.9-56 in 1910.04211,1708.02566. UNITS: mm
++    cathode = 0.;//55.90;    // 55.9-56 in 1910.04211,1708.02566. UNITS: mm
+ 
+     // 2-D (X & Y) Position Reconstruction
+     PosResExp = 0.015;     // arXiv:1710.02752 indirectly. UNITS: mm^-1
+@@ -94,12 +94,12 @@ class DetectorExample_LUX_RUN03 : public VDetector {
+     finalCorr /= 307.9;
+     if ((finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr)) &&
+         radius < radmax) {
+-      cerr << "ERR: S1 corrections exceed a 50% difference. Are you sure you "
+-              "didn't forget to change LUX numbers for your own detector??"
+-           << endl;
++      //cerr << "ERR: S1 corrections exceed a 50% difference. Are you sure you "
++      //      "didn't forget to change LUX numbers for your own detector??"
++      //   << endl;
+       return 1.;
+     } else
+-      return finalCorr;
++      return 1.;//finalCorr;
+   }
+ 
+   // Drift electric field as function of Z in mm
+@@ -135,12 +135,12 @@ class DetectorExample_LUX_RUN03 : public VDetector {
+     finalCorr /= 9156.3;
+     if ((finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr)) &&
+         radius < radmax) {
+-      cerr << "ERR: S2 corrections exceed a 50% difference. Are you sure you "
+-              "didn't forget to change LUX numbers for your own detector??"
+-           << endl;
++      //cerr << "ERR: S2 corrections exceed a 50% difference. Are you sure you "
++      //      "didn't forget to change LUX numbers for your own detector??"
++      //   << endl;
+       return 1.;
+     } else
+-      return finalCorr;
++      return 1.;//finalCorr;
+   }
+ 
+   vector<double> FitTBA(double xPos_mm, double yPos_mm,
+diff --git a/include/NEST/analysis.hh b/include/NEST/analysis.hh
+index 6cee251..e4908d5 100644
+--- a/include/NEST/analysis.hh
++++ b/include/NEST/analysis.hh
+@@ -14,7 +14,7 @@ bool MCtruthE = false;    // false means reconstructed energy
+ bool MCtruthPos = false;  // false means reconstructed position
+ 
+ // Setting the S1 and S2 calculation modes
+-NEST::S1CalculationMode s1CalculationMode = NEST::S1CalculationMode::Hybrid;
++NEST::S1CalculationMode s1CalculationMode = NEST::S1CalculationMode::Full;
+ // S1 calculation mode options are:
+ // Full [Default]: calculating the pulse area by looping over all the pmt hits
+ // Parametric: calculating the pulse area by using a parametric equation
+@@ -29,32 +29,32 @@ NEST::S2CalculationMode s2CalculationMode = NEST::S2CalculationMode::Full;
+ // WaveformWithEtrain: calculate the pulse area and the waveform with etrain
+ 
+ // 0 means PE, 1 means phd (PE/~1.2), 2 means spike count
+-int usePD = 2;
++int usePD = 1;
+ // band style: log(S2) with 1, while 0 means log(S2/S1)
+ int useS2 = 0;  // xtra feature: 2 means S2 x-axis energy scale
+ 
+ double minS1 = 1.5;  // units are controlled by the usePD flag
+ // this is separate from S1 thresholds controlled by detector
+-double maxS1 = 99.5;
+-int numBins = 98;  // for LUXRun03 DD, change these to 1.7,110.6,99
++double maxS1 = 80.5;
++int numBins = 79;  // for LUXRun03 DD, change these to 1.7,110.6,99
+ 
+ // for efficiency calculation
+ // minS2 need not match S2 threshold in detector.hh
+ // you can treat as trigger vs. analysis thresholds
+-double minS2 = 42.;
+-double maxS2 = 1e4;  // 5e3 for DD. At least 2e5 for post-Run04 14C
++double minS2 = 0.0;
++double maxS2 = 1e9;  // 5e3 for DD. At least 2e5 for post-Run04 14C
+ 
+ // log(S2/S1) or log(S2) admitted into analysis incl. limit
+-double logMax = 3.6;  // when skewness=1 or 2 ROOT ignores these and does raw
++double logMax = 13.6;  // when skewness=1 or 2 ROOT ignores these and does raw
+                       // mean +/- 3-sigma
+-double logMin = 0.6;
+-int logBins = 30;  //#bins in between logMin & logMax for fits
++double logMin = -0.6;
++int logBins = 50;  //#bins in between logMin & logMax for fits
+ 
+ // some numbers for fine-tuning the speed vs. the accuracy
+ double z_step =
+     0.1;  // mm, for integrating non-uni EF. Larger detectors require larger
+           // z_step ~0.5-1mm for tonne-scale TPCs like LZ and XENONnT
+-double E_step = 5.0;  // keV, for integrating WIMP spectrum. NEST will warn you
++double E_step = 2.5;  // keV, for integrating WIMP spectrum. NEST will warn you
+                       // if choice poor
+ // Rec >~20GeV 6keV, <~5GeV 0.5keV
+ 
+@@ -62,7 +62,7 @@ double E_step = 5.0;  // keV, for integrating WIMP spectrum. NEST will warn you
+ int freeParam =
+     2;  // #free param for calculating DoF in X^2; 2 for Ly and Qy, or g1 and g2
+ int skewness =
+-    1;  // 1 means skew-Gaussian fits (2 more rigorous fit, more detail output)
++    0;  // 1 means skew-Gaussian fits (2 more rigorous fit, more detail output)
+ int mode = 0;
+ // 0 default is to provide 1 band (no data comp) or if 2 args ER BG discrim &
+ // leakage frac 1 outputs GoF for sim band 1st cf. data band 2nd (Gauss centroids
+diff --git a/src/NEST.cpp b/src/NEST.cpp
+index 36198e3..b525ab9 100644
+--- a/src/NEST.cpp
++++ b/src/NEST.cpp
+@@ -336,8 +336,8 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density, cons
+   // if ( !fdetector->get_OldW13eV() ) Variance /= sqrt ( ZurichEXOQ );
+ 
+   double skewness;
+-  if ((yields.PhotonYield + yields.ElectronYield) > 1e4 ||
+-      yields.ElectricField > 4e3 || yields.ElectricField < 50.) {
++  if ((yields.PhotonYield + yields.ElectronYield) > 1e10 ||
++      yields.ElectricField > 9e3 || yields.ElectricField < 0.) {
+     skewness = 0.00;  // make it a constant 0 when outside the range of Vetri
+                       // Velan's Run04 models.
+   } else {

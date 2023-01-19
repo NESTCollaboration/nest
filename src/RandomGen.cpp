@@ -52,23 +52,23 @@ double RandomGen::FindNewMean(double sigma) {
   // Follow https://en.wikipedia.org/wiki/Truncated_normal_distribution
   double TruncGaussAlpha = -1. / sigma;
   double LittlePhi_Alpha =
-    exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha) / gcem::sqrt(2. * M_PI);
+      exp(-0.5 * TruncGaussAlpha * TruncGaussAlpha) / gcem::sqrt(2. * M_PI);
   double BigPhi_Alpha = 0.5 * (1. + erf(TruncGaussAlpha / sqrt2));
-  return
-    1. + (LittlePhi_Alpha / (1. - BigPhi_Alpha)) * sigma;
+  return 1. + (LittlePhi_Alpha / (1. - BigPhi_Alpha)) * sigma;
 }
 
-double RandomGen::rand_exponential(double half_life, double t_min, double t_max) {
+double RandomGen::rand_exponential(double half_life, double t_min,
+                                   double t_max) {
   double r = rand_uniform();
   double r_min = 0;
   double r_max = 1;
-  if (t_min >= 0){
-    r_min = 1 - exp(-t_min*log2/half_life);
+  if (t_min >= 0) {
+    r_min = 1 - exp(-t_min * log2 / half_life);
   }
-  if (t_max >= 0){
-    r_max = 1 - exp(-t_max*log2/half_life);
+  if (t_max >= 0) {
+    r_max = 1 - exp(-t_max * log2 / half_life);
   }
-  r = (r_max-r_min)*r + r_min;
+  r = (r_max - r_min) * r + r_min;
   return -log(1 - r) * half_life / log2;
 }
 

@@ -57,16 +57,15 @@ int main(int argc, char **argv) {
   if (nScatters < 2) {
     randomScatters = true;
   }
-  //define parameters for random exponential draw of nScatters
-  // if using nScatters = -1. 
+  // define parameters for random exponential draw of nScatters
+  // if using nScatters = -1.
   // These are just 0th order fill-ins to produce a spread of values.
-  double halfLife = 1.; 
-  double minScatters = 1.5; //int-rounding will make the true minimum = 2
+  double halfLife = 1.;
+  double minScatters = 1.5;  // int-rounding will make the true minimum = 2
   double maxScatters = 50.;
   // Check if using corrected or uncorrected output pulse areas
   bool corrected = true;
-  if (atoi(argv[3]) == 0)
-    corrected = false;
+  if (atoi(argv[3]) == 0) corrected = false;
   if (verbosity > 0) {
     if (corrected)
       cout << "S1c [phd]\tS2c [phd]\tnScatters" << endl;
@@ -90,8 +89,7 @@ int main(int argc, char **argv) {
         break;
       else
         nLines = 0;
-      if (']' == ch && nLines == 0)
-        ++nLines;
+      if (']' == ch && nLines == 0) ++nLines;
     }
   }
   while (1) {
@@ -99,8 +97,7 @@ int main(int argc, char **argv) {
         file1,
         "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
         &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n);
-    if (feof(file1))
-      break;
+    if (feof(file1)) break;
     // fprintf(stderr,"%.6f\t%.6f\t%.6f\t%.6f,%.6f,%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n",a,b,c,d,e,f,g,h,i,j,k,l,m,n);
     if ((fabs(n) > 1.) && (fabs(m) > 1.)) {
       S1a.push_back(fabs(j));
@@ -108,12 +105,12 @@ int main(int argc, char **argv) {
       S1a_corFactor.push_back(fabs(k / j));
       S2a_corFactor.push_back(fabs(n / m));
     }
-  } // Done with the first file....
+  }  // Done with the first file....
   fclose(file1);
   if (!sameFile) {
     cerr << "Using two files to generate scatters..." << endl;
-    // Load the 2nd file if provided, and stitch the two together to make multiple scatter events
-    // scatters
+    // Load the 2nd file if provided, and stitch the two together to make
+    // multiple scatter events scatters
     FILE *file2 = fopen(argv[5], "r");
     nLines = 0;
     double a2, b2, c2, d2, e2, f2, g2, h2, i2, j2, k2, l2, m2, n2;
@@ -125,8 +122,7 @@ int main(int argc, char **argv) {
           break;
         else
           nLines = 0;
-        if (']' == ch && nLines == 0)
-          ++nLines;
+        if (']' == ch && nLines == 0) ++nLines;
       }
     }
 
@@ -135,17 +131,16 @@ int main(int argc, char **argv) {
           file2,
           "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
           &a2, &b2, &c2, &d2, &e2, &f2, &g2, &h2, &i2, &j2, &k2, &l2, &m2, &n2);
-      if (feof(file2))
-        break;
+      if (feof(file2)) break;
       // fprintf(stderr,"%.6f\t%.6f\t%.6f\t%.6f,%.6f,%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n",a,b,c,d,e,f,g,h,i,j,k,l,m,n);
       if ((fabs(n2) > 1.) &&
-          (fabs(m2) > 1.)) {     // prevent loading events where S2 ~ PHE_MIN
-        S1b.push_back(fabs(j2)); // was causing memory leaks
+          (fabs(m2) > 1.)) {      // prevent loading events where S2 ~ PHE_MIN
+        S1b.push_back(fabs(j2));  // was causing memory leaks
         S2b.push_back(fabs(m2));
         S1b_corFactor.push_back(fabs(k2 / j2));
         S2b_corFactor.push_back(fabs(n2 / m2));
       }
-    } // Done with the second file
+    }  // Done with the second file
     fclose(file2);
 
     auto size1 = S1a.size();
@@ -156,8 +151,11 @@ int main(int argc, char **argv) {
         thisS2b_corFactor;
     for (int ii = 0; ii < nEvents; ii++) {
       while (nScatters < 2) {
-        nScatters =  //0th order attempt at reproducing multiple scatter behavior
-            (int)(RandomGen::rndm()->rand_exponential(halfLife, minScatters, maxScatters) + 0.5);
+        nScatters =  // 0th order attempt at reproducing multiple scatter
+                     // behavior
+            (int)(RandomGen::rndm()->rand_exponential(halfLife, minScatters,
+                                                      maxScatters) +
+                  0.5);
       }
       totalS1 = 0.;
       totalCorFactor = 0.;
@@ -179,7 +177,7 @@ int main(int argc, char **argv) {
           totalS1 += thisS1a;
           totalS2 += thisS2a;
         }
-      } // now on to the last scatter from the 2nd file
+      }  // now on to the last scatter from the 2nd file
       int index2 = RandomGen::rndm()->integer_range(0, (int)size2 - 1);
       thisS1b = S1b[index2];
       thisS2b = S2b[index2];
@@ -197,10 +195,9 @@ int main(int argc, char **argv) {
         totalS2 += thisS2b;
       }
       cout << totalS1 << "\t" << totalS2 << "\t" << nScatters
-           << endl; //"\t" << thisS1a << "  " << thisS1b << " " << thisS2a << "
-                    //" << thisS2b << endl;
-      if (randomScatters)
-        nScatters = -1;
+           << endl;  //"\t" << thisS1a << "  " << thisS1b << " " << thisS2a << "
+                     //" << thisS2b << endl;
+      if (randomScatters) nScatters = -1;
     }
     return 0;
   } else {
@@ -216,8 +213,11 @@ int main(int argc, char **argv) {
 
     while (nGenerated < nEvents) {
       while (nScatters < 2) {
-        nScatters = //0th order attempt at reproducing multiple scatter behavior
-            (int)(RandomGen::rndm()->rand_exponential(halfLife, minScatters, maxScatters) + 0.5);
+        nScatters =  // 0th order attempt at reproducing multiple scatter
+                     // behavior
+            (int)(RandomGen::rndm()->rand_exponential(halfLife, minScatters,
+                                                      maxScatters) +
+                  0.5);
       }
       totalS1 = 0.;
       totalCorFactor = 0.;
@@ -241,15 +241,14 @@ int main(int argc, char **argv) {
         }
       }
       if (corrected)
-        totalS1 *= totalCorFactor / totalS2; // S2c-weighted average corrected
-                                             // S1
+        totalS1 *= totalCorFactor / totalS2;  // S2c-weighted average corrected
+                                              // S1
 
       cout << totalS1 << "\t" << totalS2 << "\t" << nScatters
-           << endl; //"\t" << thisS1a << "  " << thisS1b << " " << thisS2a << "
-                    //" << thisS2b << endl;
+           << endl;  //"\t" << thisS1a << "  " << thisS1b << " " << thisS2a << "
+                     //" << thisS2b << endl;
       nGenerated++;
-      if (randomScatters)
-        nScatters = -1;
+      if (randomScatters) nScatters = -1;
     }
     return 0;
   }

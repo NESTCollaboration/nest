@@ -93,9 +93,10 @@ G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t,
   // Determine polarization of new photon
 
   double efield_here = fDetector->FitEF(xyz.x(), xyz.y(), xyz.z());
-  std::vector<double> efield_vec = fDetector->FitDirEF(xyz.x(), xyz.y(), xyz.z());
+  std::vector<double> efield_vec =
+      fDetector->FitDirEF(xyz.x(), xyz.y(), xyz.z());
   G4ThreeVector efield_dir_here =
-    G4ThreeVector(efield_vec[0], efield_vec[1], efield_vec[2]);
+      G4ThreeVector(efield_vec[0], efield_vec[1], efield_vec[2]);
 
   if (efield_here > 0) {
     G4ParticleMomentum electronMomentum = efield_dir_here.unit();
@@ -170,10 +171,10 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
 
         // Change units from NEST (mm/us) to G4 intrinsic units (mm/ns)
         electron_speed = electron_speed * mm / us;
-        G4double v     = electron_speed / CLHEP::c_light;
-        G4double gamma = 1/std::sqrt(1-std::pow(v, 2));
+        G4double v = electron_speed / CLHEP::c_light;
+        G4double gamma = 1 / std::sqrt(1 - std::pow(v, 2));
         double electron_kin_E =
-          NESTThermalElectron::ThermalElectron()->GetPDGMass() * (gamma - 1);
+            NESTThermalElectron::ThermalElectron()->GetPDGMass() * (gamma - 1);
 
         for (auto& hit : lineage.hits) {
           hit.result.electrons =

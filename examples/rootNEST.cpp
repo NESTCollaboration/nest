@@ -89,7 +89,10 @@ int main(int argc, char** argv) {
   double NRbandX[numBins], NRbandY[numBins], numSigma[numBins],
       leakage[numBins], discrim[numBins], errorBars[numBins][2];
   int i = 0;
-  if (loopNEST) { verbosity = -1; mode = 1; }
+  if (loopNEST) {
+    verbosity = -1;
+    mode = 1;
+  }
 
   if (std::abs(NRbandCenter) != 1 && std::abs(NRbandCenter) != 2 &&
       std::abs(NRbandCenter) != 3)
@@ -208,13 +211,13 @@ int main(int argc, char** argv) {
           cerr << "ERR: The fit to the efficiency curve failed to converge to "
                   "a good Chi2."
                << endl;
-	cerr << "Do you wish to continue with a bad chi^2 for the efficiency? ";
-	char response[5];
-	cin >> response;
-	if ( response[0] == 'n' || response[0] == 'N' )
-	  return EXIT_FAILURE;
-	else
-	  break;
+        cerr << "Do you wish to continue with a bad chi^2 for the efficiency? ";
+        char response[5];
+        cin >> response;
+        if (response[0] == 'n' || response[0] == 'N')
+          return EXIT_FAILURE;
+        else
+          break;
       }
     }
     if (fitf->GetChisquare() > 1.3 && verbosity > 0)
@@ -310,9 +313,11 @@ int main(int argc, char** argv) {
         xSect[masses];  // arrays for the fraction of WIMP
     // signal events above threshold
     // and for the cross-sections
-    if ( verbosity >= 2 ) cout << "Upper Limit" << "\t";
+    if (verbosity >= 2)
+      cout << "Upper Limit"
+           << "\t";
     cout << "WIMP Mass [GeV/c^2]\tCross Section [cm^2]" << endl;
-    
+
     i = 0;
     while (mass[i] < massMax) {  // Iterate across each sample wimp Mass
       sigAboveThr[i] = 0.;
@@ -336,7 +341,9 @@ int main(int argc, char** argv) {
                              // effxacc and step size
       }
       // CUSTOMIZE: your upper limit here (to mimic a PLR for example)
-      if ( Ul < 0.5 ) Ul = 0.5;  // maintain what is physically possible, mathematically/statistically
+      if (Ul < 0.5)
+        Ul = 0.5;  // maintain what is physically possible,
+                   // mathematically/statistically
       xSect[i] = 1e-36 * Ul /
                  (sigAboveThr[i] * fidMass *
                   time);  // derive the cross-section based upon the
@@ -356,9 +363,9 @@ int main(int argc, char** argv) {
       ++i;
       if (xSect[i - 1] < DBL_MAX && xSect[i - 1] > 0. &&
           !std::isnan(
-		      xSect[i - 1])) {  // Print the results, skipping any weirdness
-        // (low WIMP masses prone)
-	if ( verbosity > 1 ) cout << Ul << "\t\t";
+              xSect[i - 1])) {  // Print the results, skipping any weirdness
+                                // (low WIMP masses prone)
+        if (verbosity > 1) cout << Ul << "\t\t";
         cout << mass[i - 1] << "\t\t\t" << xSect[i - 1]
              << endl;  // final answer
       }
@@ -803,8 +810,13 @@ void GetFile(char* fileName) {
     }
   }
   fclose(ifp);
-  if ( E_keV.size() < 100000 && numBins > 1 ) { skewness = 0; cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so doing Gaussian" << endl; }
-  
+  if (E_keV.size() < 100000 && numBins > 1) {
+    skewness = 0;
+    cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so "
+            "doing Gaussian"
+         << endl;
+  }
+
   if (numBins == 1) {
     TH1F* HistogramArray = new TH1F[3];
     double minimum, maximum, average;

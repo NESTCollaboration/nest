@@ -905,7 +905,7 @@ YieldResult NESTcalc::GetYieldIon(
                       (1. - (0.02852 * log(1. + (64478398.7663 / 1.21) *
                                                     ((0.01 / factorE) / 3.))) /
                                 ((64478398.7663 / 1.21) * (0.01 / factorE)))));
-    double qu = 1. / (1.5 * pow(dfield, -0.012));
+    double qu = 1. / (1.16 * pow(dfield, -0.012));
     factorE = pow(4.98483 + pow(dfield / 10.0822, 1.2076), 0.97977);
     double Ly =
         qu * (1. / 6500.) *

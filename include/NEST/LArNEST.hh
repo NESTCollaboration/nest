@@ -104,7 +104,7 @@ struct LArAlphaElectronYieldsParameters {
 };
 
 struct LArAlphaPhotonYieldsParameters {
-  double A = {1.5};
+  double A = {1.16};
   double B = {-0.012};
   double C = {1.0 / 6500.0};
   double D = {278037.250283};

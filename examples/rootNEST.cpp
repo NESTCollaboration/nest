@@ -810,7 +810,7 @@ void GetFile(char* fileName) {
     }
   }
   fclose(ifp);
-  if (E_keV.size() < 100000 && numBins > 1) {
+  if (E_keV.size() < 100000 && numBins > 1 && skewness != 0) {
     skewness = 0;
     cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so "
             "doing Gaussian"

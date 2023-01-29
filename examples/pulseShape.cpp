@@ -139,8 +139,9 @@ int main(int argc,
       }
     } else {
       double offset0 =
-          0.0 + distribution(generator);  // consider unique offset for each
-                                          // range[]. In original try makes bumps
+          0.0 +
+          distribution(generator);  // consider unique offset for each
+                                    // range[]. In original try makes bumps
       // double offset1 = 10.+distribution(generator);
       // double offset2 = 10.+distribution(generator);
       // double offset3 = 10.+distribution(generator);

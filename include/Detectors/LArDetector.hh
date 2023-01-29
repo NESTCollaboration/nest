@@ -2,8 +2,8 @@
  * @file LArDetector.hh
  * @author NEST Collaboration
  * @author Nicholas Carrara [nmcarrara@ucdavis.edu]
- * @brief 
- * @version 
+ * @brief
+ * @version
  * @date 2022-04-14
  */
 #pragma once
@@ -12,13 +12,13 @@
 
 /**
  * @brief An example LAr TPC detector.
- * 
+ *
  */
-class LArDetector : public VDetector
-{
-public:
-    LArDetector();
-    ~LArDetector() override = default;
-    void Initialization() override; 
-private:
+class LArDetector : public VDetector {
+ public:
+  LArDetector();
+  ~LArDetector() override = default;
+  void Initialization() override;
+
+ private:
 };

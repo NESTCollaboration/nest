@@ -65,8 +65,8 @@ int skewness =
     1;  // 1 means skew-Gaussian fits (2 more rigorous fit, more detail output)
 int mode = 0;
 // 0 default is to provide 1 band (no data comp) or if 2 args ER BG discrim &
-// leakage frac 1 outputs GoF for sim band 1st cf. data band 2nd (Gauss centroids
-// of hist in S1 slices) 2 outputs wimp masses and cross-sections for given
-// efficiency
+// leakage frac 1 outputs GoF for sim band 1st cf. data band 2nd (Gauss
+// centroids of hist in S1 slices) 2 outputs wimp masses and cross-sections for
+// given efficiency
 int NRbandCenter =
     3;  // 1 is Gauss mean, 3 is fit to means, 2 is compromise. Neg->medians

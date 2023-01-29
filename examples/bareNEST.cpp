@@ -47,8 +47,7 @@ int main(int argc, char** argv) {
   NEST::QuantaResult quanta;
 
   // Declare needed temporary variables
-  vector<double> vTable, NRYieldsParam = {11., 1.1, 0.0480, -0.0533, 12.6, 0.3,
-                                      2.,  0.3, 2.,     0.5,     1.,   1.};
+  vector<double> vTable;
   int index;  // index for Z step (for getting pre-calculated drift field)
   double g2, pos_x, pos_y, pos_z, r, phi, driftTime, field, vD, vD_middle;
   // Energy min and max for source spectrum
@@ -121,7 +120,7 @@ int main(int argc, char** argv) {
         keV = spec.Cf_spectrum(eMin, eMax);
         break;
       case DD:
-	keV = spec.DD_spectrum(eMin, eMax, 10., 0.1, 60., 25.);
+        keV = spec.DD_spectrum(eMin, eMax, 10., 0.1, 60., 25.);
         break;
       case WIMP:
         spec.wimp_spectrum_prep =
@@ -181,17 +180,18 @@ int main(int argc, char** argv) {
   }
 
   // Get yields from NEST calculator, along with number of quanta
-  yields = n.GetYields(type_num, keV, rho, field, double(massNum),
-                       double(atomNum), NRYieldsParam);
-  vector<double> NRERWidthsParam = {1.,1.,0.1,0.5,0.19,2.25, 0.0015, 0.0553, 0.205, 0.45, -0.2}; 
-  quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, -999.);
+  yields =
+      n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum),
+                  default_NRYieldsParam, default_ERYieldsParam);
+  quanta = n.GetQuanta(yields, rho, default_NRERWidthsParam, false, -999.);
 
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =
       g2 * quanta.electrons * exp(-driftTime / detector->get_eLife_us());
 
-  // Vectors for saving times and amplitudes of waveforms (with (S1/S2)CalculationMode
-  // set to "Waveform" and the verbosity >= 1 in analysis.hh)
+  // Vectors for saving times and amplitudes of waveforms (with
+  // (S1/S2)CalculationMode set to "Waveform" and the verbosity >= 1 in
+  // analysis.hh)
   vector<double> wf_amp;
   vector<int64_t> wf_time;
 

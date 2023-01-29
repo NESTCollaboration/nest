@@ -26,10 +26,10 @@
 // is something that is necessary for Garfield++, which internally scales by the
 // pressure given to it in the Garfield executable. Since we're dealing with
 // liquid, a "pressure" has less meaning than it does with the typical gas
-// environments handled by Garfield. As a result, the important thing to remember
-// here is that this correction factor needs to be the SAME as the one that is
-// passed to Garfield as the pressure of the medium.
-// THIS VALUE SHOULD NOT EVER BE CHANGED.
+// environments handled by Garfield. As a result, the important thing to
+// remember here is that this correction factor needs to be the SAME as the one
+// that is passed to Garfield as the pressure of the medium. THIS VALUE SHOULD
+// NOT EVER BE CHANGED.
 const double reducedFieldCorrectionFactor = 1350;  // torr.
 
 //--------------------------------------------------------------------------------------------------------//
@@ -77,9 +77,10 @@ std::tuple<std::string, int, double, double, bool, double> ParseInput(
 //--------------------------------------------------------------------------------------------------------//
 // Take the inputs, and generate a list of electric fields at which to pull the
 // diffusion constants, drift velocity, etc. Right now, we're not doing magnetic
-// fields, because LZ has no use for them. However, a similar function (returning
-// some more complicated object of E fields and strengths/relative orientations
-// of B-fields) would do the trick if B-fields are required by a later user.
+// fields, because LZ has no use for them. However, a similar function
+// (returning some more complicated object of E fields and strengths/relative
+// orientations of B-fields) would do the trick if B-fields are required by a
+// later user.
 std::vector<double> GenerateFieldListFromInputs(
     std::tuple<std::string, int, double, double, bool, double> inputArgs) {
   // Output
@@ -167,9 +168,9 @@ int PassConstantBody(std::ofstream& outFile, std::string element) {
   outFile << " Mixture:" << std::endl;
 
   // This is a dumb, hack-y way to do things, but for now, when we are only
-  // looking at pure Xe or Ar, it's simpler than trying to use Garfield's mixture
-  // codes. But since this code is somewhat modular, one can easily come back and
-  // improve this later if it is so desired.
+  // looking at pure Xe or Ar, it's simpler than trying to use Garfield's
+  // mixture codes. But since this code is somewhat modular, one can easily come
+  // back and improve this later if it is so desired.
   if (element == "Xe") {
     outFile << " 0.00000000E+00 0.00000000E+00 0.00000000E+00 0.00000000E+00 "
                "0.00000000E+00"
@@ -241,7 +242,8 @@ double GetLongDiffusionConstant(double field_V_cm) {
 
 //--------------------------------------------------------------------------------------------------------//
 // This does the bulk of the work in setting up the transport parameters in the
-// gas table. It draws from NEST's models as a function of field and temperature.
+// gas table. It draws from NEST's models as a function of field and
+// temperature.
 void PassTransportInfo(std::ofstream& outFile,
                        std::vector<double> fieldList_V_cm,
                        double temperature_K) {

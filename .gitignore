@@ -3,6 +3,5 @@ nbproject/*
 **/.DS_Store
 build/
 *.png
-utils/larnest/data/
 *.pyc
 *__pycache__/

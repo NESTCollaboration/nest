@@ -35,6 +35,7 @@
 #define CL 0.90     // confidence level
 #define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
 #define SKIP 0  // number of lines of energy to skip in efficiency file (lim)
+#define NUMSIGABV 0  // # of std dev to offset NR band central line, up or dn
 
 using namespace std;
 double dayNumber = 0.;
@@ -503,6 +504,7 @@ int main(int argc, char** argv) {
               (band2[i][2] + band2[i][5] - band[i][2] + band[i][5]) /
               (band2[i][3] - band2[i][6]);  // lower (less leakage)
           NRbandX[i] = band[i][0];
+	  band[i][2] += NUMSIGABV * band[i][3];
           NRbandY[i] = band[i][2];
           leakage[i] =
               0.5 +
@@ -518,6 +520,7 @@ int main(int argc, char** argv) {
               (band[i][2] + band[i][5] - band2[i][2] + band2[i][5]) /
               (band[i][3] - band[i][6]);  // lower (less leakage)
           NRbandX[i] = band2[i][0];
+	  band2[i][2] += NUMSIGABV * band2[i][3];
           NRbandY[i] = band2[i][2];
           leakage[i] =
               0.5 +
@@ -569,6 +572,7 @@ int main(int argc, char** argv) {
         if (ERis2nd) {
           numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
           NRbandX[i] = band[i][0];
+	  band[i][2] += NUMSIGABV * band[i][3];
           NRbandY[i] = band[i][2];
           leakage[i] =
               0.5 +
@@ -603,6 +607,7 @@ int main(int argc, char** argv) {
         } else {
           numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
           NRbandX[i] = band2[i][0];
+	  band2[i][2] += NUMSIGABV * band2[i][3];
           NRbandY[i] = band2[i][2];
           leakage[i] =
               0.5 +

@@ -2330,15 +2330,15 @@ double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField,
   if (inGas)
     return GetDriftVelocity_MagBoltz(Density, eField);
   else {
-    return GetDriftVelocity_Liquid(Kelvin, eField, Density);
+    return GetDriftVelocity_Liquid(Kelvin, eField);
   }
 }
 
 double NESTcalc::GetDriftVelocity_Liquid(
-    double Kelvin, double eField,
-    double Density) {  // for liquid and solid only. Density dependence to be
-                       // added in the future.
-
+  double Kelvin, double eField, short int StdDev) {
+  // for liquid and solid only. Density and purity dependencies to be
+  // added in the future.
+  
   double speed =
       0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
   int i, j;
@@ -2392,7 +2392,10 @@ double NESTcalc::GetDriftVelocity_Liquid(
     if (speed < 0.) speed = 0.;
     return speed;
   }
-
+  
+  if ( StdDev >= 1 ) return 1.83-1.83/(1.+pow(eField/30.,1.3));//eF<260V/cm
+  if ( StdDev >= 0 ) return 1.7681-1.7681/(1.+pow(eField/31.683,1.3237));
+  
   double polyExp[11][7] = {
       {-3.1046, 27.037, -2.1668, 193.27, -4.8024, 646.04, 9.2471},  // 100K
       {-2.7394, 22.760, -1.7775, 222.72, -5.0836, 724.98, 8.7189},  // 120
@@ -2774,15 +2777,19 @@ double NESTcalc::GetDiffLong_Liquid(
     output = GetDiffTran_Liquid(dfield, false, Kelvin, 18);
     return 0.15 * output;  // lacking data, just assume that D_L = 0.15 * D_T
   }
-
-  // Use the standard NEST parametrization
-  if (!highFieldModel) {
+  
+  // Use the standard NEST parameterization DiffLong=m1*f^(-m2)+m3*exp(-f/m4)
+  if (!highFieldModel) {  // agrees with arXiv:2303.13963 (Yanina Biondi)
     output =
         57.381 * pow(dfield, -0.22221) +
         127.27 *
             exp(-dfield /
                 32.821);  // fit to Aprile & Doke rev & arXiv:1102.2865 (Peter:
                           // XENON10/100); plus, LUX Run03 (181V/cm) & 1911.11580
+    // high D_L model (Njoya 2020) 60+/-49, -0.16558+/-0.13347,
+    // 462+/-126, 23.922+/-4.8931 (touches the -1-sigma errors)
+    // low D_L model (LZ 2023, Dan Hunt) 66.35+/-6.29, -0.24855+/-0.016508,
+    // 36.85+/-2.37, 35.661+/-2.2038 (low drift fields, double digits)
   }
   // Use the Boyle model, which is drastically different at high (>5kV/cm)
   // fields. Note here that the Boyle model is only at one temperature. First

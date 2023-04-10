@@ -210,6 +210,7 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
 
 G4VParticleChange* NESTProc::AtRestDoIt(const G4Track& aTrack,
                                         const G4Step& aStep) {
+  PostStepDoIt(aTrack, aStep);
   pParticleChange->Initialize(aTrack);
   return G4VRestDiscreteProcess::AtRestDoIt(aTrack, aStep);
 }

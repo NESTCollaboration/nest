@@ -36,6 +36,7 @@
 #define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
 #define SKIP 0  // number of lines of energy to skip in efficiency file (lim)
 #define NUMSIGABV 0  // # of std dev to offset NR band central line, up or dn
+#define UL_MIN 0.5  // minimum upper limit on # WIMP events for limit setting
 
 using namespace std;
 double dayNumber = 0.;
@@ -242,7 +243,7 @@ int main(int argc, char** argv) {
     cin >> NRacc;  // unitless fraction of one
     cout << "Number of BG events observed: ";
     cin >> numBGeventsObs;
-    if (numBGeventsObs > 0.) {
+    if (numBGeventsObs >= 0.) {  // used to be > 0 but then never asks #expected
       cout << "Number of BG events expected: ";
       cin >> numBGeventsExp;  // for FC stats
     }
@@ -289,7 +290,7 @@ int main(int argc, char** argv) {
         Ul = expectedUlFc(numBGeventsExp, fc);
       double powCon =
           fc.CalculateUpperLimit(0., 0.);  // can't do better than 2.44 ever!
-      if (Ul < powCon) Ul = powCon;
+      if (Ul < powCon && UL_MIN == -1.) Ul = powCon;
     }
 
     const int masses = NUMBINS_MAX;
@@ -325,9 +326,7 @@ int main(int argc, char** argv) {
       for (double j = VSTEP; j < hiE;
            j +=
            VSTEP) {  // Iterate across energies within each sample wimp mass
-        double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) -
-                                  dd * exp(-ee * pow(j, ff))) /
-                     100.;
+        double eff = pow(10., 2. - aa * exp(-bb * pow(j, cc)) - dd * exp(-ee * pow(j, ff))) / 100.;
         // cerr << j << " " << eff << endl;
         if (eff > 1. || eff < 0.) {
           if (verbosity > 0)
@@ -342,8 +341,8 @@ int main(int argc, char** argv) {
                              // effxacc and step size
       }
       // CUSTOMIZE: your upper limit here (to mimic a PLR for example)
-      if (Ul < 0.5)
-        Ul = 0.5;  // maintain what is physically possible,
+      if (Ul < UL_MIN)
+        Ul = UL_MIN;  // maintain what is physically possible,
                    // mathematically/statistically
       xSect[i] = 1e-36 * Ul /
                  (sigAboveThr[i] * fidMass *
@@ -496,6 +495,7 @@ int main(int argc, char** argv) {
     for (i = 0; i < numBins; ++i) {
       if (skewness <= 1) {
         if (ERis2nd) {
+	  band[i][2] += NUMSIGABV * band[i][3];
           numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
           errorBars[i][0] =
               (band2[i][2] - band2[i][5] - band[i][2] - band[i][5]) /
@@ -504,7 +504,6 @@ int main(int argc, char** argv) {
               (band2[i][2] + band2[i][5] - band[i][2] + band[i][5]) /
               (band2[i][3] - band2[i][6]);  // lower (less leakage)
           NRbandX[i] = band[i][0];
-	  band[i][2] += NUMSIGABV * band[i][3];
           NRbandY[i] = band[i][2];
           leakage[i] =
               0.5 +
@@ -512,6 +511,7 @@ int main(int argc, char** argv) {
               2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11],
                            band2[i][4]);
         } else {
+	  band2[i][2] += NUMSIGABV * band2[i][3];
           numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
           errorBars[i][0] =
               (band[i][2] - band[i][5] - band2[i][2] - band2[i][5]) /
@@ -520,7 +520,6 @@ int main(int argc, char** argv) {
               (band[i][2] + band[i][5] - band2[i][2] + band2[i][5]) /
               (band[i][3] - band[i][6]);  // lower (less leakage)
           NRbandX[i] = band2[i][0];
-	  band2[i][2] += NUMSIGABV * band2[i][3];
           NRbandY[i] = band2[i][2];
           leakage[i] =
               0.5 +

@@ -35,7 +35,7 @@
 #define CL 0.90     // confidence level
 #define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
 #define SKIP 0  // number of lines of energy to skip in efficiency file (lim)
-#define NUMSIGABV 0  // # of std dev to offset NR band central line, up or dn
+#define NUMSIGABV -0.  // # of std dev to offset NR band central line, up\dn
 #define UL_MIN 0.5  // minimum upper limit on # WIMP events for limit setting
 
 using namespace std;
@@ -43,7 +43,7 @@ double dayNumber = 0.;
 
 vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals);
 vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
-                                bool resol);
+				bool resol);
 TRandom3 r;  // r.SetSeed(10);
 
 double band[NUMBINS_MAX][17], band2[NUMBINS_MAX][17], medians[NUMBINS_MAX];
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
 
     double Ul,
         v;  // Start of code block to evaluate upper limit on # of events to use
-    if (numBGeventsExp == 0.) {
+    if (numBGeventsExp == 0. && numBGeventsObs == 0.) {
       for (v = 0.; v < 1e3; v += VSTEP) {
         double sum = 0.0;
         for (i = 0; i < (numBGeventsObs + 1.); ++i)
@@ -284,10 +284,12 @@ int main(int argc, char** argv) {
     } else {
       TFeldmanCousins fc(CL);
       if (numBGeventsExp != numBGeventsObs ||
-          numBGeventsObs == int(numBGeventsObs))
-        Ul = fc.CalculateUpperLimit(numBGeventsObs, numBGeventsExp);
-      else
-        Ul = expectedUlFc(numBGeventsExp, fc);
+	  numBGeventsObs == int(numBGeventsObs))
+	Ul = fc.CalculateUpperLimit(numBGeventsObs, numBGeventsExp);
+      else {
+	Ul = fc.CalculateUpperLimit(numBGeventsObs, numBGeventsExp);
+        //Ul = expectedUlFc(numBGeventsExp,fc);  // if you want MEAN not median
+      }
       double powCon =
           fc.CalculateUpperLimit(0., 0.);  // can't do better than 2.44 ever!
       if (Ul < powCon && UL_MIN == -1.) Ul = powCon;
@@ -333,12 +335,13 @@ int main(int argc, char** argv) {
             cerr << "Eff cannot be greater than 100% or <0%" << endl;
           return 1;
         }
-        if (j > loE)
+        if (j > loE) {
           sigAboveThr[i] +=
               VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNumber) * eff *
               xEff * NRacc;  // integrating (Riemann, left sum)
                              // mass-dependent differential rate with
                              // effxacc and step size
+	}
       }
       // CUSTOMIZE: your upper limit here (to mimic a PLR for example)
       if (Ul < UL_MIN)
@@ -643,8 +646,10 @@ int main(int argc, char** argv) {
       finalSums[2] += leakage[i];
       discrim[i] = 1. - leakage[i];
     }
-    if (NRbandCenter < 0) {
-      for (int nb; nb < numBins; ++nb) NRbandY[nb] = medians[nb];
+    if (NRbandCenter < 0 && !ERis2nd) {
+      for (int nb; nb < numBins; ++nb) {
+	NRbandY[nb] = medians[nb] + NUMSIGABV * band2[nb][3];
+      }
     }
     TGraph* gr1 = new TGraph(numBins, NRbandX, NRbandY);
     TF1* fitf =
@@ -714,7 +719,7 @@ int main(int argc, char** argv) {
       finalSums[1] += (double)outputs[i].size();
     }
     fprintf(stderr,
-            "\nOVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
+            "\nOVERALL DISCRIMINATION (ER) or NON-ACCEPTANCE (NR) between min and maxS1 = "
             "%.12f%%, total: Gaussian & non-Gaussian (tot=counting) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[0] / finalSums[1]) * 100.,
@@ -733,7 +738,7 @@ int main(int argc, char** argv) {
             "with corresponding leakage of %.12e\n",
             (1. - LowValue) * 100., LowValue);
     fprintf(stderr,
-            "OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
+            "OVERALL DISCRIMINATION                             between min and maxS1 = "
             "%.12f%%, Gauss, or skew-normal fits (whatever you ran) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[2] / numBins) * 100., finalSums[2] / numBins);
@@ -814,7 +819,7 @@ void GetFile(char* fileName) {
     }
   }
   fclose(ifp);
-  if (E_keV.size() < 100000 && numBins > 1 && skewness != 0) {
+  if (E_keV.size() < 20000 && numBins > 1 && skewness != 0) { //used to be 1e5
     skewness = 0;
     cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so "
             "doing Gaussian"
@@ -1070,6 +1075,7 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
     if (NRbandCenter < 0 && !save && medians[j] == 0.) {
       std::sort(signals[j].begin(), signals[j].end());
       medians[j] = signals[j][int(floor(double(numPts) / 2. + 0.5))];
+      //medians[j] += NUMSIGABV * band[j][3];
       // band[j][2] = medians[j];
     }
     for (i = 0; i < (int)numPts; ++i) {

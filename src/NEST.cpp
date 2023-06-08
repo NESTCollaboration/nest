@@ -1550,8 +1550,8 @@ const vector<double> &NESTcalc::GetS1(
         } else {
           subtract[1] = 0.0;
         }
-        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", evtNum,
-                wf_time.back() + (int64_t)tRandOffset,
+        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", (long long unsigned int)evtNum,
+                (long long int)wf_time.back() + (long long int)tRandOffset,
                 AreaTable[0][ii] - subtract[0], AreaTable[1][ii] - subtract[1]);
         pulseFile << line << flush;
       }
@@ -1937,7 +1937,7 @@ const vector<double> &NESTcalc::GetS2(
         else {
           subtract[1] = 0.0;
         }
-        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", evtNum, wf_time.back(),
+        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", (long long unsigned int)evtNum, (long long int)wf_time.back(),
                 AreaTableBot[1][k] - subtract[0],
                 AreaTableTop[1][k] - subtract[1]);
         pulseFile << line << endl;

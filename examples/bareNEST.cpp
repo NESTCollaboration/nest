@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
   // If energy > 1 MeV, switch output notation
   if (keV > 1000. || scint[5] > maxS1 || scint2[7] > maxS2) {
     printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
-    printf("%lli\t%e\t%e\n", (int64_t)scint2[0], scint2[4], scint2[7]);
+    printf("%lli\t%e\t%e\n", (long long int)scint2[0], scint2[4], scint2[7]);
   } else {
     printf("%.6f\t%.6f\t%.6f\t", scint[2], scint[5],
            scint[7]);  // see GetS1 inside of NEST.cpp for full explanation of

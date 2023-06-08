@@ -699,7 +699,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
               // eMin will be used in place of eMax as the maximum
               // energy in exponential scenario
               keV =
-                  RandomGen::rndm()->rand_exponential(eMax * log(2.), 0., eMin);
+                  RandomGen::rndm()->rand_exponential(-eMax * log(2.), 0., eMin);
             }
             break;
         }
@@ -1282,7 +1282,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             // energy is too high (>1 MeV)
             (dEOdxBasis && eMin > 0.)) {
           printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
-          printf("%lli\t%e\t%e\n", (int64_t)scint2[0], scint2[4], scint2[7]);
+          printf("%lli\t%e\t%e\n", (long long int)scint2[0], scint2[4], scint2[7]);
         } else {
           printf(
               "%.6f\t%.6f\t%.6f\t", scint[2], scint[5],

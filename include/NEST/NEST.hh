@@ -107,7 +107,7 @@
 #define PULSEHEIGHT \
   0.005                  // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
-#define PHE_MAX 180      // saturation threshold, in PE per bin i.e. sample
+#define PHE_MAX 140      // saturation threshold, in PE/sample (LZ). LUX val 180
 
 static constexpr int XYcorr =
     3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both

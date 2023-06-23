@@ -947,6 +947,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   constexpr double deltaT_ns_halflife = 154.4;
+  YieldResult result{};
   double deltaT_ns = -999.;
   if (ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
     deltaT_ns = maxTimeSeparation;
@@ -961,55 +962,54 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
             "result, but individually will be nonsensical."
          << endl;
   }
+  
+  if (!ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
+    deltaT_ns = RandomGen::rndm()->rand_exponential(
+  deltaT_ns_halflife, minTimeSeparation, maxTimeSeparation);
+  double Nq_9 = 9.4e3 / Wq_eV; // 9.4 keV model
+  double a1 = -19.575; //-11.839 + 78.063 / deltaT_ns;
+  if ( a1 > 0. ) a1 = 0.;
+  double a2 = 5.823e-4; //(0.0015796*deltaT_ns)/(11.55+deltaT_ns);
+  double a3 = 69.986 + 3e5/pow(deltaT_ns,2.); //2.7745e5 and 2
+  if ( a3 > 87. ) a3 = 87.;
+  double Nph_9 = 9.4 * (a1*a2*dfield*log(1.+1./(a2*dfield))+a3);
+  double Ne_9 = Nq_9 - Nph_9;
+  if ( Ne_9 < 0. ) Ne_9 = 0.; // can't have negative charge, from either decay
+  result = GetYieldGamma(2.,density,dfield);
+  double Nph_2 = result.PhotonYield;
+  double Ne_2 = result.ElectronYield;
+  result = GetYieldGamma(10.,density,dfield);
+  double Nph_10 = result.PhotonYield;
+  double Ne_10 = result.ElectronYield;
+  result = GetYieldGamma(12.,density,dfield);
+  double Nph_12 = result.PhotonYield;
+  double Ne_12 = result.ElectronYield;
+  result = GetYieldGamma(18.,density,dfield);
+  double Nph_18 = result.PhotonYield;
+  double Ne_18 = result.ElectronYield;
+  result = GetYieldGamma(30.,density,dfield);
+  double Nph_30 = result.PhotonYield;
+  double Ne_30 = result.ElectronYield;
+  double Nph_76 = Nph_30 + Nph_2;
+  double Nph_09 = Nph_18 + Nph_10 + Nph_2 + Nph_2;
+  double Nph_15 = Nph_18 + Nph_12 + Nph_2;
+  // now, add up the 32.1 keV yields
+  double Nph_32 = 0.76*Nph_76 + 0.15*Nph_15 + 0.09*Nph_09;
+  double Ne_32 = 32e3 / Wq_eV - Nph_32;
   if (energy > 9.35 && energy < 9.45) {
-    if (!ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
-      deltaT_ns = RandomGen::rndm()->rand_exponential(
-          deltaT_ns_halflife, minTimeSeparation, maxTimeSeparation);
-    Nq = energy * 1e3 / Wq_eV;
-    double medTlevel =
-        57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-    double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
-    double lowTpeak =
-        6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
-    Nph = energy * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-          (1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
-    Ne = Nq - Nph;
-    if (Ne < 0) Ne = 0.;
     alpha = 0.;
-  } else {
-    if (energy >= 32.0 && energy < 32.2) {
-      Nq = energy * 1e3 / Wq_eV;
-      Nph = energy * (6. + (66.742 - 6.) /
-                               pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
-      Ne = Nq - Nph;
-      if (Ne < 0.) Ne = 0.;
-    } else {  // merged 41.5 keV decay
-      if (!ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
-        deltaT_ns = RandomGen::rndm()->rand_exponential(
-            deltaT_ns_halflife, minTimeSeparation, maxTimeSeparation);
-      double medTlevel =
-          57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-      double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
-      double lowTpeak =
-          6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
-      // 9.4 keV model
-      Nph = 9.4 * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-            (1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
-      Ne = (9.4 * 1e3 / Wq_eV) - Nph;
-      if (Ne < 0.) Ne = 0.;  // can't have negative charge from either decay
-      // Add in 32.1 keV yields
-
-      double Nph_32 =
-          32.1 * (6. + (66.742 - 6.) /
-                           pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
-      double Ne_32 = (32.1 * 1e3 / Wq_eV) - Nph_32;
-      Nph += Nph_32;
-      Ne += Ne_32;
-      if (Ne < 0.) Ne = 0.;
-    }
+    Nph = Nph_9;
+    Ne = Ne_9;
   }
-
-  YieldResult result{};
+  else if (energy >= 32.0 && energy < 32.2) {
+    Nph = Nph_32;
+    Ne = Ne_32;
+  }
+  else {  // merged 41.5 keV decay
+    Ne = Ne_9 + Ne_32;
+    Nph = Nph_9 + Nph_32;
+  }
+  
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   if (!fdetector->get_OldW13eV()) {

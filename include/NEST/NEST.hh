@@ -284,8 +284,8 @@ class NESTcalc {
 
   virtual YieldResult GetYieldKr83m(double energy, double density,
                                     double dfield,
-                                    double maxTimeSeparation = 2e3,
-                                    double minTimeSeparation = 0.0);
+                                    double maxTimeSeparation = 1000.,
+                                    double minTimeSeparation = 300.);
   // Called by GetYields in the Kr83m case
 
   virtual YieldResult GetYieldBeta(double energy, double density,

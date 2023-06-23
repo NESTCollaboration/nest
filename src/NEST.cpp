@@ -951,7 +951,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
   double deltaT_ns = -999.;
   if (ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
     deltaT_ns = maxTimeSeparation;
-  if (minTimeSeparation < 100. && energy < 32. &&
+  /*if (minTimeSeparation < 100. && energy < 32. &&
       kr83m_reported_low_deltaT == false) {
     kr83m_reported_low_deltaT = true;
     cerr << "\tWARNING! Outside of Kr83m model fit validity region. Details:"
@@ -961,7 +961,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
          << " 9.4 & 32.1 keV yields are still summed to physically accurate "
             "result, but individually will be nonsensical."
          << endl;
-  }
+  }*/
   
   if (!ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
     deltaT_ns = RandomGen::rndm()->rand_exponential(

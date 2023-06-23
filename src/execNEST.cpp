@@ -17,7 +17,7 @@
 #include "analysis.hh"
 #include "execNEST.hh"
 
-#include "LUX_Run03.hh"
+#include "LZ_SR1.hh"
 
 #define tZero 0.00  // day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03
@@ -34,15 +34,15 @@ double band[NUMBINS_MAX][7], energies[3],
 bool BeenHere = false;
 uint SaveTheDates[tMax] = {0};
 bool dEOdxBasis = false;
-double minTimeSeparation = 1E2;  // ns (Kr83m)
+double minTimeSeparation = 0.;  // ns (Kr83m)
 
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  auto* detector = new DetectorExample_LUX_RUN03();
+  auto* detector = new LZ_Detector();
   if (verbosity > 0) cerr << "*** Detector definition message ***" << endl;
   if (verbosity > 0)
-    cerr << "You are currently using the LUX Run03 template detector." << endl
+    cerr << "You are currently using the LZ SR1 detector." << endl
          << endl;
   // Custom parameter modification functions
   // detector->ExampleFunction();
@@ -973,8 +973,8 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                 1.,   0.046452, 0.205, 0.45, -0.2};  // zero out non-binom
                                                      // recomb fluct & skew (NR)
           }
-          if (!dEOdxBasis)
-            quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, -999.);
+          if (!dEOdxBasis)  // last argument -999 for default VV skew mod
+            quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, 0.);
         } else {
           yields.PhotonYield = 0.;
           yields.ElectronYield = 0.;

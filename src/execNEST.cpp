@@ -923,7 +923,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
           NRYieldsParam[5] =
               z_step;  // 5mm for fast, 6um for accurate; .01mm LUXRun3 WS
           NRYieldsParam[6] = inField;
-          NRYieldsParam[9] = 1e3;  // MeV
+          NRYieldsParam[9] = 1e3;  // 1MeV
           NRYieldsParam[10] =
               0.;  //+/-1=true, means use continuous slowing-down approx
           NRYieldsParam[11] =
@@ -1160,7 +1160,9 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         signalE.push_back(0.);
       else
         signalE.push_back(keV);
-
+      
+      if ( type == "MIP" && eMin >= 1. && eMin <= 2. && MCtruthE ) { keV = -1.; }
+      
       if ((ValidityTests::nearlyEqual(Ne + Nph, 0.00) || std::isnan(keVee)) &&
           eMin == eMax && eMin > hiEregime &&
           !BeenHere) {  // efficiency is zero?

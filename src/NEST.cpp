@@ -584,8 +584,9 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
         result.yields = yields;
       } else
         result.yields = GetYieldBetaGR(eStep, rho, field);
-    } else
+    } else {
       result.yields = GetYieldBetaGR(refEnergy, rho, field);
+    }
     if (eMin < 0. && NRERWidthsParam[0] < 0.) {
       QuantaResult quanta{};
       if (Nq_mean < 1.)
@@ -1483,10 +1484,10 @@ const vector<double> &NESTcalc::GetS1(
     photonstream photon_times = AddPhotonTransportTime(
         photon_emission_times, truthPosX, truthPosY, truthPosZ);
 
-    if (outputTiming > 0 && !pulseFile.is_open()) {
+    if (outputTiming >= 0 && !pulseFile.is_open()) {
       pulseFile.open("photon_times.txt");
-      // pulseFile << "Event#\tt [ns]\tA [PE]" << endl;
-      pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
+      if ( outputTiming > 0 )
+	pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
     }
 
     int ii, index;
@@ -1538,7 +1539,7 @@ const vector<double> &NESTcalc::GetS1(
       wf_time.emplace_back((ii - numPts / 2) * SAMPLE_SIZE);
       wf_amp.emplace_back(AreaTable[0][ii] + AreaTable[1][ii]);
 
-      if (outputTiming > 0) {
+      if (outputTiming >= 0) {
         char line[80];
         if (AreaTable[0][ii] > PHE_MAX) {
           subtract[0] = AreaTable[0][ii] - PHE_MAX;
@@ -1925,7 +1926,7 @@ const vector<double> &NESTcalc::GetS2(
       wf_time.emplace_back(k * SAMPLE_SIZE + int64_t(min + SAMPLE_SIZE / 2.));
       wf_amp.emplace_back(AreaTableBot[1][k] + AreaTableTop[1][k]);
 
-      if (outputTiming > 0) {
+      if (outputTiming >= 0) {
         char line[80];
         if (AreaTableBot[1][k] > PHE_MAX)
           subtract[0] = AreaTableBot[1][k] - PHE_MAX;

@@ -1268,8 +1268,8 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
               yields.PhotonYield = -quanta.photons / NRYieldsParam[4];
               yields.ElectronYield = -quanta.electrons / NRYieldsParam[4];
             } else {
-              yields.PhotonYield /= NRYieldsParam[10];
-              yields.ElectronYield /= NRYieldsParam[10];
+              yields.PhotonYield /= NRYieldsParam[9];
+              yields.ElectronYield /= NRYieldsParam[9];
             }
           }
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t", keV, field,

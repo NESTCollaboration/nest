@@ -30,7 +30,7 @@ do
 done
 
 #current zMax above [mm] works for the LZ (or nT) detector
-#replace first -1 in execNEST above with (uniform) field
+#replace 1st -1 in execNEST above with (uniform) field (or make z_step bigger)
 
 #this bash loop should be the equivalent (with saturation) of
 #./execNEST nMax MIP 1.122 0,0,1460 -1 0,0,0 0 2> /dev/null

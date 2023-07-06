@@ -428,12 +428,17 @@ int main(int argc, char** argv) {
                    << endl;
             return 1;
           }
-          error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
-          chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
-          error = sqrt(pow(band[i][6], 2.) + pow(band2[i][6], 2.));
-          chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
-          chi2[2] += 100. * (band2[i][2] - band[i][2]) / band2[i][2];
-          chi2[3] += 100. * (band2[i][3] - band[i][3]) / band2[i][3];
+		  if ((useS2 == 0 && std::abs(band[i][2]) < 5.) || useS2 != 0)  {
+			  error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
+			  chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
+			  error = sqrt(pow(band[i][6], 2.) + pow(band2[i][6], 2.));
+			  chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
+			  chi2[2] += 100. * (band2[i][2] - band[i][2]) / band2[i][2];
+			  chi2[3] += 100. * (band2[i][3] - band[i][3]) / band2[i][3];
+		  }
+		  else if (verbosity > 0) 
+				  cerr << "Ignoring outliers for chi^2 calculation"
+					   << endl;
         }
         chi2[0] /= double(DoF - 1);
         chi2[2] /= numBins;

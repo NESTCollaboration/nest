@@ -544,9 +544,10 @@ The executable will print S1 and S2 areas to screen in addition to the number of
 	```
 
 6. In your physics list's ConstructParticle() method, you must call: 
-        ```cpp
-        NEST::NESTThermalElectron::Definition();
-        ```
+
+    ```cpp
+    NEST::NESTThermalElectron::Definition();
+    ```
 
 
 <a name="params"></a>

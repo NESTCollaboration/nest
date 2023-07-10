@@ -68,12 +68,10 @@ set(NEST_CORE_HEADERS
 )
 
 add_library(NESTCore ${NEST_CORE_SOURCES} ${NEST_CORE_HEADERS})
-add_library(NEST::Core ALIAS NESTCore)
 
 target_link_libraries(NESTCore PUBLIC gcem)
 
 list(APPEND NEST_TARGETS "NESTCore")
-list(APPEND NEST_LIBRARY_TARGETS "NEST::Core")
 
 target_include_directories(
   NESTCore PUBLIC
@@ -91,7 +89,7 @@ add_executable(execNEST
   ${CMAKE_CURRENT_SOURCE_DIR}/src/execNEST.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/NEST/execNEST.hh
 )
-target_link_libraries(execNEST PUBLIC NEST::Core)
+target_link_libraries(execNEST PUBLIC NESTCore)
 list(APPEND NEST_TARGETS "execNEST")
 
 ## scripts
@@ -111,11 +109,9 @@ endif()
 if(G4)
     add_subdirectory(G4integration)
     list(APPEND NEST_TARGETS "NESTG4")
-    set(NEST_LIBRARY_TARGETS "${NEST_LIBRARY_TARGETS} NEST::NESTG4")
 endif()
 
 # installation, Targets.cmake and Config.cmake
-message(STATUS "NEST_LIBRARY_TARGETS: ${NEST_LIBRARY_TARGETS}")
 set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/NEST)
 
 write_basic_package_version_file(

@@ -151,13 +151,13 @@ find_package(NEST REQUIRED)
 include_directories(${NEST_INCLUDE_DIRS})
 
 add_executable(MyApp MyApp.cc)
-target_link_libraries(MyApp NEST)
+target_link_libraries(MyApp NEST::NESTCore)
 ```
 
 Then, include the following flag when running CMake on your project:
 
 ```
--DNEST_DIR=[path to NEST install directory]
+-DCMAKE_PREFIX_PATH=[path to NEST install directory]
 ```
 
 
@@ -504,13 +504,15 @@ The executable will print S1 and S2 areas to screen in addition to the number of
 	```
 	find_package(NEST REQUIRED)
 	include_directories(${NEST_INCLUDE_DIRS})
+    ...
+    target_link_libraries(... NEST::NESTCore NEST::NESTG4)
 	```
 
 3. In your simulation's build directory, use whatever cmake command you usually do to build the simulation, but 
 	include an additional flag:
 
 	```
-	-DNEST_DIR=[path to NEST install directory]
+	-DCMAKE_PREFIX_PATH=[path to NEST install directory]
 	```
 
 4. You must set NESTStackingAction to be your simulation's Stacking Action. 
@@ -544,9 +546,10 @@ The executable will print S1 and S2 areas to screen in addition to the number of
 	```
 
 6. In your physics list's ConstructParticle() method, you must call: 
-        ```cpp
-        NEST::NESTThermalElectron::Definition();
-        ```
+
+    ```cpp
+    NEST::NESTThermalElectron::Definition();
+    ```
 
 
 <a name="params"></a>

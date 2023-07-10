@@ -15,9 +15,7 @@ add_library(
     ${NEST_G4_SOURCES}
     ${NEST_G4_HEADERS}
 )
-add_library(NEST::NESTG4 ALIAS NESTG4)
-
-target_link_libraries(NESTG4 PUBLIC NEST::Core ${Geant4_LIBRARIES})
+target_link_libraries(NESTG4 PUBLIC NESTCore ${Geant4_LIBRARIES})
 # Geant4 does not seem to have targets yet (last version checked: 1)
 target_include_directories(
     NESTG4 PUBLIC

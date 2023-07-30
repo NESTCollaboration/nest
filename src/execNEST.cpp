@@ -957,7 +957,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                       "Xe-129/131m, at low field"
                    << endl;
             }
-            yields = n.GetYieldERWeighted(keV, rho, field, ERYieldsParam);
+            yields = n.GetYieldERWeighted(keV, rho, field, ERYieldsParam, default_EnergyParams, default_FieldParams);
           } else {
             if (seed < 0 && seed != -1 && type_num <= 5)
               massNum = detector->get_molarMass();

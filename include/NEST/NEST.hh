@@ -125,6 +125,8 @@ const std::vector<double> default_ERYieldsParam = {-1., -1., -1., -1., -1.,
                                                    -1., -1., -1., -1., -1.};
 // Fano factor of ~3 at least for ionization in NRERWidthsParam if using
 // OldW13eV (look at first 2 values). Also, 0.046452 used to be 0.05(53).
+const std::vector<double> default_EnergyParams = {0.23, 0.77, 2.95, -1.44};
+const std::vector<double> default_FieldParams = {421.15, 3.27};
 
 namespace NEST {
 
@@ -257,7 +259,9 @@ class NESTcalc {
 
   virtual YieldResult GetYieldERWeighted(
       double energy, double density, double dfield,
-      const std::vector<double> &ERYieldsParam = default_ERYieldsParam);
+      const std::vector<double> &ERYieldsParam = default_ERYieldsParam,
+      const std::vector<double> &EnergyParams = default_EnergyParams,
+      const std::vector<double> &FieldParams = default_FieldParams);
   // Weights beta/gamma models to account for ER sources with differing
   // recombination profiles (such as L-shell electron-capture interactions)
 

@@ -446,13 +446,12 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density,
 
 YieldResult NESTcalc::GetYieldERWeighted(
     double energy, double density, double dfield,
-    const std::vector<double> &ERYieldsParam) {
+    const std::vector<double> &ERYieldsParam,
+    const std::vector<double> &EnergyParams, const std::vector<double> &FieldParams) {
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
-
-  const std::vector<double> EnergyParams = {0.23, 0.77, 2.95, -1.44};
-  const std::vector<double> FieldParams = {421.15, 3.27};
+  
   YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
   YieldResult yieldsG = GetYieldGamma(energy, density, dfield);
   double weightG =

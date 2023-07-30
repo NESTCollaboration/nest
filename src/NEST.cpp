@@ -1550,7 +1550,7 @@ const vector<double> &NESTcalc::GetS1(
         } else {
           subtract[1] = 0.0;
         }
-        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", (long long unsigned int)evtNum,
+        snprintf(line, 80, "%llu\t%lld\t%.3f\t%.3f", (long long unsigned int)evtNum,
                 (long long int)wf_time.back() + (long long int)tRandOffset,
                 AreaTable[0][ii] - subtract[0], AreaTable[1][ii] - subtract[1]);
         pulseFile << line << flush;
@@ -1814,8 +1814,6 @@ const vector<double> &NESTcalc::GetS2(
         elecTravT -= tauTrap * log(RandomGen::rndm()->rand_uniform());
       }
       electronstream[i] += elecTravT;
-      // char line[80]; sprintf ( line, "%lu\t%.0f\t%.3f\t%.3f", evtNum,
-      // electronstream[i]*1e+3, newX, newY ); pulseFile << line << endl;
       SE = floor(RandomGen::rndm()->rand_gauss(
                      elYield, sqrt(fdetector->get_s2Fano() * elYield), true) +
                  0.5);
@@ -1885,8 +1883,6 @@ const vector<double> &NESTcalc::GetS2(
           AreaTableTop[0].emplace_back(phe);
         }
         TimeTable.emplace_back(offset);
-        // char line[80]; sprintf ( line, "%lu\t%.0f\t%.2f\t%i", evtNum, offset,
-        // phe, (int)(i<Nee) ); pulseFile << line << endl;
       }
     }
     int numPts = Nphe * 1000;
@@ -1937,7 +1933,7 @@ const vector<double> &NESTcalc::GetS2(
         else {
           subtract[1] = 0.0;
         }
-        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", (long long unsigned int)evtNum, (long long int)wf_time.back(),
+        snprintf(line, 80, "%llu\t%lld\t%.3f\t%.3f", (long long unsigned int)evtNum, (long long int)wf_time.back(),
                 AreaTableBot[1][k] - subtract[0],
                 AreaTableTop[1][k] - subtract[1]);
         pulseFile << line << endl;

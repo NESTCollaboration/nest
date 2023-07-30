@@ -127,7 +127,7 @@ void PassHeaderInformation(std::ofstream& outFile, std::string element,
          "-7----.----8----.----9----.---10----.---11----.---12----.---13--"
       << std::endl;
   char tempString[200];  // Hopefully not initializing this is okay...
-  sprintf(tempString,
+  snprintf(tempString, 200,
           "%% Created 07/01/20 at 09.04.28 < none > GAS      \"none            "
           "             \"");
   outFile << tempString << std::endl;
@@ -136,7 +136,7 @@ void PassHeaderInformation(std::ofstream& outFile, std::string element,
   outFile << " Identifier: " << element << " 100%, T=293.15 K, p=1.77 atm"
           << std::endl;
   outFile << " Clusters  :" << std::endl;
-  sprintf(tempString,
+  snprintf(tempString, 200,
           " Dimension : F        %d         1         1        0        0",
           nFields);
   outFile << tempString << std::endl;
@@ -356,7 +356,7 @@ int main(int argc, char** argv) {
   // Define a file to which we print the "gas" table.
   std::ofstream outFile;
   char oFileName[100];
-  sprintf(oFileName, "GasTable_%s_%dK.gas", std::get<0>(inputArgs).c_str(),
+  snprintf(oFileName, 100, "GasTable_%s_%dK.gas", std::get<0>(inputArgs).c_str(),
           (int)std::get<5>(inputArgs));
   outFile.open(oFileName);
 

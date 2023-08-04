@@ -143,4 +143,4 @@ struct DriftParameters {
   std::vector<double> TempLow = {84., 86., 88., 92., 96., 110., 125.};
   std::vector<double> TempHigh = {86., 88., 92., 96., 110., 125., 140.};
 };
-}
+}  // namespace NEST

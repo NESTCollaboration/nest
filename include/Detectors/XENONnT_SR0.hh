@@ -56,8 +56,8 @@ class XENONnT : public VDetector {
     // Ionization and Secondary Scintillation (S2) parameters
     g1_gas = 0.1533;  // phd per S2 photon in gas, used to get SE size
                       // Modified to have SE as 31.1518/1.21
-    s2Fano = 1.0;     // Fano-like fudge factor for SE width				It will scale
-                      // up s2 resolution. set as 1 for now.
+    s2Fano = 1.0;     // Fano-like fudge factor for SE width				It
+                   // will scale up s2 resolution. set as 1 for now.
     s2_thr = 100.;  // the S2 threshold in phe or PE, *not* phd. Affects NR most
     E_gas = 6.8903;   // field in kV/cm between liquid/gas border and anode
                       // Extraction efficiency: 52.8%
@@ -82,8 +82,8 @@ class XENONnT : public VDetector {
 
     radius = 607.3;  // millimeters (fiducial rad)
                      // SR0 fiducial volume cut
-    radmax = 664.;   // actual physical geo. limit					TPC
-                     // radius
+    radmax = 664.;   // actual physical geo. limit
+                     // TPC radius
 
     // Electrodes positions in mm above 0 at bottom, + above
     // a z-axis value of 0 means the bottom of the detector (cathode OR bottom
@@ -91,10 +91,10 @@ class XENONnT : public VDetector {
     // https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:analysis:coordinate_system
     TopDrift = 1550.8;  // mm not cm or us (but, this *is* where dt=0)
                         // 5.0 mm liquid level
-    anode = 1553.8;  // the level of the anode grid-wire plane in mm 3.0 mm
-                     // above the interface
-    gate = 1545.8;   // mm. This is where the E-field changes (higher)
-    cathode = 60.2;  // mm. Defines point below which events are gamma-X
+    anode = 1553.8;     // the level of the anode grid-wire plane in mm 3.0 mm
+                        // above the interface
+    gate = 1545.8;      // mm. This is where the E-field changes (higher)
+    cathode = 60.2;     // mm. Defines point below which events are gamma-X
 
     // 2-D (X & Y) Position Reconstruction
     // Set these to zero to implement "perfect" position corrections

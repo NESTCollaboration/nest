@@ -42,8 +42,7 @@ int main(int argc, char** argv) {
   auto* detector = new LZ_Detector();
   if (verbosity > 0) cerr << "*** Detector definition message ***" << endl;
   if (verbosity > 0)
-    cerr << "You are currently using the LZ SR1 detector." << endl
-         << endl;
+    cerr << "You are currently using the LZ SR1 detector." << endl << endl;
   // Custom parameter modification functions
   // detector->ExampleFunction();
 
@@ -698,8 +697,8 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
               if (ValidityTests::nearlyEqual(eMin, 0.)) return 1;
               // eMin will be used in place of eMax as the maximum
               // energy in exponential scenario
-              keV =
-                  RandomGen::rndm()->rand_exponential(-eMax * log(2.), 0., eMin);
+              keV = RandomGen::rndm()->rand_exponential(-eMax * log(2.), 0.,
+                                                        eMin);
             }
             break;
         }
@@ -957,7 +956,9 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
                       "Xe-129/131m, at low field"
                    << endl;
             }
-            yields = n.GetYieldERWeighted(keV, rho, field, ERYieldsParam, default_EnergyParams, default_FieldParams);
+            yields =
+                n.GetYieldERWeighted(keV, rho, field, ERYieldsParam,
+                                     default_EnergyParams, default_FieldParams);
           } else {
             if (seed < 0 && seed != -1 && type_num <= 5)
               massNum = detector->get_molarMass();
@@ -1160,9 +1161,11 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         signalE.push_back(0.);
       else
         signalE.push_back(keV);
-      
-      if ( type == "MIP" && eMin >= 1. && eMin <= 2. && MCtruthE ) { keV = -1.; }
-      
+
+      if (type == "MIP" && eMin >= 1. && eMin <= 2. && MCtruthE) {
+        keV = -1.;
+      }
+
       if ((ValidityTests::nearlyEqual(Ne + Nph, 0.00) || std::isnan(keVee)) &&
           eMin == eMax && eMin > hiEregime &&
           !BeenHere) {  // efficiency is zero?
@@ -1284,7 +1287,8 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             // energy is too high (>1 MeV)
             (dEOdxBasis && eMin > 0.)) {
           printf("%e\t%e\t%e\t", scint[2], scint[5], scint[7]);
-          printf("%lli\t%e\t%e\n", (long long int)scint2[0], scint2[4], scint2[7]);
+          printf("%lli\t%e\t%e\n", (long long int)scint2[0], scint2[4],
+                 scint2[7]);
         } else {
           printf(
               "%.6f\t%.6f\t%.6f\t", scint[2], scint[5],

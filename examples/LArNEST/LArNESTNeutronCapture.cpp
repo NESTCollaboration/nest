@@ -51,8 +51,8 @@ int main(int argc, char* argv[]) {
   for (size_t v = 0; v < electric_field.size(); v++) {
     // iterate over energy values
     for (size_t i = 0; i < energy_vals.size(); i++) {
-      result = larnest.FullCalculation(NEST::LArInteraction::ER, energy_vals[i], 0,
-                                       electric_field[v], density, false);
+      result = larnest.FullCalculation(NEST::LArInteraction::ER, energy_vals[i],
+                                       0, electric_field[v], density, false);
       output_file << "ER,";
       output_file << energy_vals[i] << ",";
       output_file << electric_field[v] << ",";

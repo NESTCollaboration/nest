@@ -51,8 +51,7 @@ LArYieldResult LArNEST::GetYields(LArInteraction species, double energy,
 //-------------------------Yields Fluctuations-------------------------//
 LArYieldFluctuationResult LArNEST::GetYieldFluctuations(
     LArInteraction species, const LArYieldResult &yields, double density) {
-  if (species == LArInteraction::NR ||
-      species == LArInteraction::ER ||
+  if (species == LArInteraction::NR || species == LArInteraction::ER ||
       species == LArInteraction::Alpha) {
     return GetDefaultFluctuations(yields, density);
   } else {
@@ -212,8 +211,8 @@ LArYieldResult LArNEST::GetAlphaYields(double energy, double efield,
                                 AlphaPhotonYields, energy, efield);
 }
 //---------------------------Lepton LET Yields--------------------------//
-LArYieldResult LArNEST::GetLeptonLETYields(double energy, double dx, double efield,
-                                      double density) {
+LArYieldResult LArNEST::GetLeptonLETYields(double energy, double dx,
+                                           double efield, double density) {
   LArYieldResult result;
   double ionization_yields = GetCanonicalIonizationYields(energy);
   if (ionization_yields < 0.0) {
@@ -222,7 +221,7 @@ LArYieldResult LArNEST::GetLeptonLETYields(double energy, double dx, double efie
   double exciton_yields = fNexOverNion * ionization_yields;
   double LET = 0.0;
   if (dx) {
-    LET = (energy / dx) * (1 / density); //lin. energy xfer (prop. to dE/dx)
+    LET = (energy / dx) * (1 / density);  // lin. energy xfer (prop. to dE/dx)
   }
   if (LET > 0 && energy > 0 && dx > 0) {
     double ratio = GetLinearEnergyTransfer(energy * 1e3) / LET;
@@ -231,12 +230,12 @@ LArYieldResult LArNEST::GetLeptonLETYields(double energy, double dx, double efie
       LET *= ratio;
     }
   }
-  return GetLETRecombinationYields(ionization_yields, exciton_yields,
-                                    energy, LET, efield);
+  return GetLETRecombinationYields(ionization_yields, exciton_yields, energy,
+                                   LET, efield);
 }
 //------------------------------LET Yields-----------------------------//
 LArYieldResult LArNEST::GetLETYields(double energy, double dx, double efield,
-                                      double density) {
+                                     double density) {
   LArYieldResult result;
   double ionization_yields = GetCanonicalIonizationYields(energy);
   if (ionization_yields < 0.0) {
@@ -246,15 +245,13 @@ LArYieldResult LArNEST::GetLETYields(double energy, double dx, double efield,
   double LET = GetLinearEnergyTransfer(1000 * energy);
 
   if (LET) {
-    dx = energy / (density * LET); //find the range based on the LET
+    dx = energy / (density * LET);  // find the range based on the LET
   }
-  return GetLETRecombinationYields(ionization_yields, exciton_yields,
-                                    energy, LET, efield);
+  return GetLETRecombinationYields(ionization_yields, exciton_yields, energy,
+                                   LET, efield);
 }
-double LArNEST::GetLETRecombinationProbability(double LET, double efield)
-{
-  if(fUseDokeBirks)
-  {
+double LArNEST::GetLETRecombinationProbability(double LET, double efield) {
+  if (fUseDokeBirks) {
     // set up DokeBirks coefficients
     double DokeBirksA = 0.07 * pow((efield / 1.0e3), -0.85);
     double DokeBirksC = 0.00;
@@ -264,7 +261,8 @@ double LArNEST::GetLETRecombinationProbability(double LET, double efield)
     }
     // B=A/(1-C) (see paper)
     double DokeBirksB = DokeBirksA / (1 - DokeBirksC);
-    double recombProb = (DokeBirksA * LET) / (1 + DokeBirksB * LET) + DokeBirksC;
+    double recombProb =
+        (DokeBirksA * LET) / (1 + DokeBirksB * LET) + DokeBirksC;
 
     // check against unphysicality resulting from rounding errors
     if (recombProb < 0.0) {
@@ -274,17 +272,17 @@ double LArNEST::GetLETRecombinationProbability(double LET, double efield)
       recombProb = 1.0;
     }
     return recombProb;
-  }
-  else
-  {
+  } else {
     return 0;
   }
 }
-LArYieldResult LArNEST::GetLETRecombinationYields(double ionization_yields, double exciton_yields,
-                                                  double energy, double LET, double efield)
-{
+LArYieldResult LArNEST::GetLETRecombinationYields(double ionization_yields,
+                                                  double exciton_yields,
+                                                  double energy, double LET,
+                                                  double efield) {
   LArYieldResult result;
-  double recombination_probability = GetLETRecombinationProbability(LET, efield);
+  double recombination_probability =
+      GetLETRecombinationProbability(LET, efield);
   result.TotalYield = (ionization_yields + exciton_yields) / energy;
   result.Nex = exciton_yields;
   result.Nion = ionization_yields;
@@ -294,23 +292,23 @@ LArYieldResult LArNEST::GetLETRecombinationYields(double ionization_yields, doub
   return result;
 }
 //-----------------------------dEdx Yields-----------------------------//
-double LArNEST::GetCanonicalTotalYields(double energy)
-{
+double LArNEST::GetCanonicalTotalYields(double energy) {
   double mean_quanta = energy / (fWorkQuantaFunction * 1e-6);
   double Fano = sqrt(fFanoER * mean_quanta);
   return RandomGen::rndm()->rand_gauss(mean_quanta, Fano, true);
 }
-double LArNEST::GetCanonicalIonizationYields(double energy)
-{
+double LArNEST::GetCanonicalIonizationYields(double energy) {
   double mean_quanta = energy / (GetEffectiveWorkIonFunction() * 1e-6);
   double Fano = sqrt(fFanoER * mean_quanta);
   return RandomGen::rndm()->rand_gauss(mean_quanta, Fano, true);
 }
-LArYieldResult LArNEST::GetdEdxRecombinationYields(double ionization_yields, double exciton_yields,
-                                                   double energy, double dx, double efield)
-{
+LArYieldResult LArNEST::GetdEdxRecombinationYields(double ionization_yields,
+                                                   double exciton_yields,
+                                                   double energy, double dx,
+                                                   double efield) {
   LArYieldResult result;
-  double recombination_probability = GetdEdxRecombinationProbability(energy / dx, efield);
+  double recombination_probability =
+      GetdEdxRecombinationProbability(energy / dx, efield);
   result.TotalYield = (ionization_yields + exciton_yields) / energy;
   result.Nex = exciton_yields;
   result.Nion = ionization_yields;
@@ -319,10 +317,8 @@ LArYieldResult LArNEST::GetdEdxRecombinationYields(double ionization_yields, dou
   result.ElectricField = efield;
   return result;
 }
-double LArNEST::GetdEdxRecombinationProbability(double dEdx, double efield)
-{
-  if(fUseDokeBirks)
-  {
+double LArNEST::GetdEdxRecombinationProbability(double dEdx, double efield) {
+  if (fUseDokeBirks) {
     // set up DokeBirks coefficients
     double DokeBirksA = 0.07 * pow((efield / 1.0e3), -0.85);
     double DokeBirksC = 0.00;
@@ -332,7 +328,8 @@ double LArNEST::GetdEdxRecombinationProbability(double dEdx, double efield)
     }
     // B=A/(1-C) (see paper)
     double DokeBirksB = DokeBirksA / (1 - DokeBirksC);
-    double recombProb = (DokeBirksA * dEdx) / (1 + DokeBirksB * dEdx) + DokeBirksC;
+    double recombProb =
+        (DokeBirksA * dEdx) / (1 + DokeBirksB * dEdx) + DokeBirksC;
 
     // check against unphysicality resulting from rounding errors
     if (recombProb < 0.0) {
@@ -342,9 +339,7 @@ double LArNEST::GetdEdxRecombinationProbability(double dEdx, double efield)
       recombProb = 1.0;
     }
     return recombProb;
-  }
-  else
-  {
+  } else {
     return 0;
   }
 }
@@ -356,8 +351,8 @@ LArYieldResult LArNEST::GetdEdxYields(double energy, double dx, double efield,
     ionization_yields = 0.0;
   }
   double exciton_yields = fNexOverNion * ionization_yields;
-  return GetdEdxRecombinationYields(ionization_yields, exciton_yields, 
-                                    energy, dx, efield);
+  return GetdEdxRecombinationYields(ionization_yields, exciton_yields, energy,
+                                    dx, efield);
 }
 //-------------------------Fluctuation Yields-------------------------//
 LArYieldFluctuationResult LArNEST::GetDataDrivenFluctuations(
@@ -388,7 +383,7 @@ LArYieldFluctuationResult LArNEST::GetDefaultFluctuations(
       Nion = Nq;
     }
     Nex = Nq - Nion;
-  // otherwise
+    // otherwise
   } else {
     Nion = floor(RandomGen::rndm()->rand_gauss(
                      Nq_mean * alf, sqrt(Fano * Nq_mean * alf), true) +
@@ -562,7 +557,7 @@ std::vector<double> LArNEST::CalculateG2(int verbosity) {
   return std::vector<double>();
 }
 //------------------------------------Legacy
-//LArNEST------------------------------------//
+// LArNEST------------------------------------//
 LArYieldResult LArNEST::LegacyGetYields(double energy, double efield,
                                         double yieldFactor,
                                         double excitationRatio, double epsilon,

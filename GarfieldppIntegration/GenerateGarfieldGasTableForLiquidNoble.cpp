@@ -127,9 +127,10 @@ void PassHeaderInformation(std::ofstream& outFile, std::string element,
          "-7----.----8----.----9----.---10----.---11----.---12----.---13--"
       << std::endl;
   char tempString[200];  // Hopefully not initializing this is okay...
-  snprintf(tempString, 200,
-          "%% Created 07/01/20 at 09.04.28 < none > GAS      \"none            "
-          "             \"");
+  snprintf(
+      tempString, 200,
+      "%% Created 07/01/20 at 09.04.28 < none > GAS      \"none            "
+      "             \"");
   outFile << tempString << std::endl;
   outFile << " Version   : 12" << std::endl;
   outFile << " GASOK bits: TFTFFFFTFFFFFFFFFFFF" << std::endl;
@@ -137,8 +138,8 @@ void PassHeaderInformation(std::ofstream& outFile, std::string element,
           << std::endl;
   outFile << " Clusters  :" << std::endl;
   snprintf(tempString, 200,
-          " Dimension : F        %d         1         1        0        0",
-          nFields);
+           " Dimension : F        %d         1         1        0        0",
+           nFields);
   outFile << tempString << std::endl;
   outFile << " E fields   " << std::endl;
   outFile << " ";
@@ -356,8 +357,8 @@ int main(int argc, char** argv) {
   // Define a file to which we print the "gas" table.
   std::ofstream outFile;
   char oFileName[100];
-  snprintf(oFileName, 100, "GasTable_%s_%dK.gas", std::get<0>(inputArgs).c_str(),
-          (int)std::get<5>(inputArgs));
+  snprintf(oFileName, 100, "GasTable_%s_%dK.gas",
+           std::get<0>(inputArgs).c_str(), (int)std::get<5>(inputArgs));
   outFile.open(oFileName);
 
   // Pass the header information into the file

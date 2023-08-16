@@ -28,7 +28,7 @@
 #include <string.h>
 #include <vector>
 
-#include "analysis.hh"
+#include "analysis_G2.hh"
 #include "TestSpectra.hh"  // contains the WIMP, earth, and escape velocities
 
 // non-input parameters hardcoded in

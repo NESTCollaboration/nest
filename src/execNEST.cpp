@@ -14,7 +14,7 @@
 #include <iterator>
 #include "NEST.hh"
 #include "TestSpectra.hh"
-#include "analysis.hh"
+#include "analysis_G2.hh"
 #include "execNEST.hh"
 
 #include "LZ_SR1.hh"

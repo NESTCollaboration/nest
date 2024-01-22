@@ -103,7 +103,7 @@
         // M. LAr 1.5
 
 #define SAMPLE_SIZE 10  // nano-seconds, 5 for LAr
-#define PULSE_WIDTH 10  // nano-seconds, 5 forLAr
+#define PULSE_WIDTH 10  // nano-seconds, 5 for LAr
 #define PULSEHEIGHT \
   0.005                  // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)

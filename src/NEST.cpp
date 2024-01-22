@@ -2771,7 +2771,7 @@ double NESTcalc::GetDiffLong_Liquid(
 
   if (Z == 18) {
     output = 0.63*(-0.0014*dfield+6.98);
-    return output;  // lacking data, just assume that D_L = 0.15 * D_T
+    return output;  
   }
 
   // Use the standard NEST parameterization DiffLong=m1*f^(-m2)+m3*exp(-f/m4)

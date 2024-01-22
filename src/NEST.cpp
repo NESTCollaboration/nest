@@ -148,7 +148,7 @@ photonstream NESTcalc::AddPhotonTransportTime(const photonstream &emitted_times,
                                               double x, double y, double z) {
   photonstream return_photons;
   for (auto t : emitted_times) {
-    double newtime = t/* + fdetector->OptTrans(x, y, z);*/;
+    double newtime = t + fdetector->OptTrans(x, y, z);
     return_photons.emplace_back(newtime);
   }
   return return_photons;
@@ -2374,7 +2374,7 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
     else if (Kelvin >= Temperature[3] && Kelvin < Temperature[4])
       speed = exp(0.6911897 - 0.092997 / (eField / 1000) +
                   0.3295202 * log(eField / 1000));
-    if (Kelvin >= Temperature[4] && Kelvin < Temperature[5])
+    else if (Kelvin >= Temperature[4] && Kelvin < Temperature[5])
       speed = exp(0.76551511 - 0.0731659 / (eField / 1000) +
                   0.317972 * log(eField / 1000));
     else if (Kelvin >= Temperature[5] && Kelvin < Temperature[6])
@@ -2770,8 +2770,8 @@ double NESTcalc::GetDiffLong_Liquid(
   double output;
 
   if (Z == 18) {
-    output = GetDiffTran_Liquid(dfield, false, Kelvin, 18);
-    return 0.63*(-0.0014*dfield+6.98);  // lacking data, just assume that D_L = 0.15 * D_T
+    output = 0.63*(-0.0014*dfield+6.98);
+    return output;  // lacking data, just assume that D_L = 0.15 * D_T
   }
 
   // Use the standard NEST parameterization DiffLong=m1*f^(-m2)+m3*exp(-f/m4)

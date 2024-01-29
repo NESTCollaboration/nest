@@ -1,5 +1,6 @@
 
 #include "RandomGen.hh"
+#include <stdexcept>
 
 using namespace std;
 
@@ -20,8 +21,19 @@ std::uint64_t splitmix64(std::uint64_t z) {
 }
 
 void RandomGen::SetSeed(uint64_t s) {
+  if (rng_flag) {
+    throw std::runtime_error("You can not change the seed because it is locked.");
+  }
   uint64_t s1 = splitmix64(s);
   rng = xoroshiro128plus64(s1, splitmix64(s1));
+}
+
+void RandomGen::LockSeed() {
+  rng_flag = 1;
+}
+
+void RandomGen::UnlockSeed() {
+  rng_flag = 0;
 }
 
 double RandomGen::rand_uniform() {

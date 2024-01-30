@@ -18,6 +18,8 @@ class RandomGen {
  public:
   static RandomGen* rndm();
   void SetSeed(uint64_t s);
+  void LockSeed();
+  void UnlockSeed();
   double rand_uniform();
   double rand_gauss(double mean, double sigma, bool zero_min = false);
   double rand_zero_trunc_gauss(double mean, double sigma);
@@ -37,6 +39,7 @@ class RandomGen {
   // Random number generator object for this class only
   //  std::ranlux24 rng;
   xoroshiro128plus64 rng;
+  bool rng_locked = false;
 
   static constexpr double xoroshiro128plus64_min =
       static_cast<double>(xoroshiro128plus64::min());

@@ -39,7 +39,7 @@ class RandomGen {
   // Random number generator object for this class only
   //  std::ranlux24 rng;
   xoroshiro128plus64 rng;
-  int rng_flag = 0;
+  bool rng_locked = false;
 
   static constexpr double xoroshiro128plus64_min =
       static_cast<double>(xoroshiro128plus64::min());

@@ -13,134 +13,9 @@
 
 #include "NEST.hh"
 #include "RandomGen.hh"
+#include "LArParameters.hh"
 
 namespace NEST {
-static constexpr double LAr_Z{18};
-static constexpr double legacy_density_LAr{1.393};
-static constexpr double legacy_scint_yield{1.0 / (19.5 * 1.e-6)};
-static constexpr double legacy_resolution_scale{0.107};  // Doke 1976
-static constexpr double two_PI = 2. * M_PI;
-static constexpr double sqrt2 = gcem::sqrt(2.);
-static constexpr double sqrt2_PI = gcem::sqrt(2. * M_PI);
-static constexpr double inv_sqrt2_PI = 1. / gcem::sqrt(2. * M_PI);
-
-enum class LArInteraction {
-  NR = 0,
-  ER = 1,
-  Alpha = 2,
-};
-
-enum class LArFluctuationModel {
-  Default = 0,
-};
-
-struct LArNRYieldsParameters {
-  double alpha = {11.10};
-  double beta = {0.087};
-  double gamma = {0.1};
-  double delta = {-0.0932};
-  double epsilon = {2.998};
-  double zeta = {0.3};
-  double eta = {2.94};
-};
-struct LArERElectronYieldsAlphaParameters {
-  double A = {32.988};
-  double B = {-552.988};
-  double C = {17.2346};
-  double D = {-4.7};
-  double E = {0.025115};
-  double F = {0.265360653};
-  double G = {0.242671};
-};
-struct LArERElectronYieldsBetaParameters {
-  double A = {0.778482};
-  double B = {25.9};
-  double C = {1.105};
-  double D = {0.4};
-  double E = {4.55};
-  double F = {-7.502};
-};
-struct LArERElectronYieldsGammaParameters {
-  double A = {0.659509};
-  double B = {1000};
-  double C = {6.5};
-  double D = {5.0};
-  double E = {-0.5};
-  double F = {1047.408};
-  double G = {0.01851};
-};
-struct LArERElectronYieldsDokeBirksParameters {
-  double A = {1052.264};
-  double B = {14159350000 - 1652.264};
-  double C = {-5.0};
-  double D = {0.157933};
-  double E = {1.83894};
-};
-struct LArERYieldsParameters {
-  LArERElectronYieldsAlphaParameters alpha;
-  LArERElectronYieldsBetaParameters beta;
-  LArERElectronYieldsGammaParameters gamma;
-  LArERElectronYieldsDokeBirksParameters doke_birks;
-  double p1 = {1.0};
-  double p2 = {10.304};
-  double p3 = {13.0654};
-  double p4 = {0.10535};
-  double p5 = {0.7};
-  double delta = {15.7489};
-  double let = {-2.07763};
-};
-
-struct LArAlphaElectronYieldsParameters {
-  double A = {1.0 / 6200.0};
-  double B = {64478398.7663};
-  double C = {0.173553719};
-  double D = {1.21};
-  double E = {0.02852};
-  double F = {0.01};
-  double G = {4.71598};
-  double H = {7.72848};
-  double I = {-0.109802};
-  double J = {3.0};
-};
-
-struct LArAlphaPhotonYieldsParameters {
-  double A = {1.16};
-  double B = {-0.012};
-  double C = {1.0 / 6500.0};
-  double D = {278037.250283};
-  double E = {0.173553719};
-  double F = {1.21};
-  double G = {2};
-  double H = {0.653503};
-  double I = {4.98483};
-  double J = {10.0822};
-  double K = {1.2076};
-  double L = {-0.97977};
-  double M = {3.0};
-};
-
-struct LArAlphaYieldsParameters {
-  LArAlphaElectronYieldsParameters Ye;
-  LArAlphaPhotonYieldsParameters Yph;
-};
-
-struct ThomasImelParameters {
-  double A = {0.1};
-  double B = {-0.0932};
-};
-
-struct DriftParameters {
-  std::vector<double> A = {0.937729,   0.80302379,  0.7795972, 0.6911897,
-                           0.76551511, 0.502022794, 0.24207633};
-  std::vector<double> B = {-0.0734108, -0.06694564, -0.0990952, -0.092997,
-                           -0.0731659, -0.06644517, -0.03558428};
-  std::vector<double> C = {0.315338, 0.331798,  0.320876,  0.3295202,
-                           0.317972, 0.3290246, 0.33645519};
-
-  std::vector<double> TempLow = {84., 86., 88., 92., 96., 110., 125.};
-  std::vector<double> TempHigh = {86., 88., 92., 96., 110., 125., 140.};
-};
-
 struct LArYieldResult {
   double TotalYield;
   double QuantaYield;
@@ -167,101 +42,145 @@ struct LArNESTResult {
 };
 
 /**
- * @brief
+ * @brief LArNEST class for simulating recombination physics
+ * in LAr.  There are two modes of operation, (a) data-driven and (b)
+ * first-principles driven.  The data-driven method takes in an
+ * energy deposition and computes
+ *    <Nq>, <Ne> and <Ngamma> + fluctuations,
+ * whereas the first-principles method computes
+ *    <Nq>, <Nion> and <Nex> + recombination.
  *
+ * Currently the data-driven method computes according to
+ * NR, ER or Alpha types, but not yet configured to work with dE/dx.
+ *
+ * The first-principles method is only invoked for dE/dx and
+ * LET models.  It uses either Doke-Birks or Thomas-Imel to
+ * compute recombination.
  */
 class LArNEST : public NESTcalc {
  public:
   explicit LArNEST(VDetector *detector);
 
   //-------------------------Parameters-------------------------//
-  /// set LAr parameters
-  void setDensity(double density) { fDensity = density; }
-  void setRIdealGas(double RIdealGas) { fRIdealGas = RIdealGas; }
-  void setRealGasA(double RealGasA) { fRealGasA = RealGasA; }
-  void setRealGasB(double RealGasB) { fRealGasB = RealGasB; }
-  void setWorkQuantaFunction(double workQuantaFunction) {
+  /// Set LAr parameters
+  void SetDensity(double density) { fDensity = density; }
+  void SetRIdealGas(double RIdealGas) { fRIdealGas = RIdealGas; }
+  void SetRealGasA(double RealGasA) { fRealGasA = RealGasA; }
+  void SetRealGasB(double RealGasB) { fRealGasB = RealGasB; }
+  void SetWorkQuantaFunction(double workQuantaFunction) {
     fWorkQuantaFunction = workQuantaFunction;
   }
-  void setWorkIonFunction(double workIonFunction) {
+  void SetWorkIonFunction(double workIonFunction) {
     fWorkIonFunction = workIonFunction;
   }
-  void setWorkPhotonFunction(double workPhotonFunction) {
+  void SetWorkPhotonFunction(double workPhotonFunction) {
     fWorkPhotonFunction = workPhotonFunction;
   }
-  void setFanoER(double FanoER) { fFanoER = FanoER; }
-  void setNexOverNion(double NexOverNion) { fNexOverNion = NexOverNion; }
+  void SetFanoER(double FanoER) { fFanoER = FanoER; }
+  void SetNexOverNion(double NexOverNion) { fNexOverNion = NexOverNion; }
+  void SetTemperature(double temperature) { fTemperature = temperature; }
 
-  // TODO: do we need nuisance parameters?
-  void setNuisanceParameters(std::vector<double> nuisanceParameters);
-  void setTemperature(std::vector<double> temperature);
-
-  /// setters for various parameters
-  void setNRYieldsParameters(LArNRYieldsParameters NRYieldsParameters);
-  void setERYieldsParameters(LArERYieldsParameters ERYieldsParameters);
-  void setERElectronYieldsAlphaParameters(
-      LArERElectronYieldsAlphaParameters ERElectronYieldsAlphaParameters);
-  void setERElectronYieldsBetaParameters(
-      LArERElectronYieldsBetaParameters ERElectronYieldsBetaParameters);
-  void setERElectronYieldsGammaParameters(
-      LArERElectronYieldsGammaParameters ERElectronYieldsGammaParameters);
-  void setERElectronYieldsDokeBirksParameters(
+  /// Setters for various parameters
+  void SetNRYieldsParameters(LArNRYieldsParameters NRYieldsParameters) {
+    fNR = NRYieldsParameters;
+  }
+  void SetERYieldsParameters(LArERYieldsParameters ERYieldsParameters) {
+    fER = ERYieldsParameters;
+  }
+  void SetERElectronYieldsAlphaParameters(
+      LArERElectronYieldsAlphaParameters ERElectronYieldsAlphaParameters) {
+    fER.alpha = ERElectronYieldsAlphaParameters;
+  }
+  void SetERElectronYieldsBetaParameters(
+      LArERElectronYieldsBetaParameters ERElectronYieldsBetaParameters) {
+    fER.beta = ERElectronYieldsBetaParameters;
+  }
+  void SetERElectronYieldsGammaParameters(
+      LArERElectronYieldsGammaParameters ERElectronYieldsGammaParameters) {
+    fER.gamma = ERElectronYieldsGammaParameters;
+  }
+  void SetERElectronYieldsDokeBirksParameters(
       LArERElectronYieldsDokeBirksParameters
-          ERElectronYieldsDokeBirksParameters);
-  void setThomasImelParameters(ThomasImelParameters thomasImelParameters);
-  void setDriftParameters(DriftParameters driftParameters);
+          ERElectronYieldsDokeBirksParameters) {
+    fER.doke_birks = ERElectronYieldsDokeBirksParameters;
+  }
+  void SetThomasImelParameters(ThomasImelParameters thomasImelParameters) {
+    fThomasImelParameters = thomasImelParameters;
+  }
+  void SetDriftParameters(DriftParameters driftParameters) {
+    fDriftParameters = driftParameters;
+  }
 
-  /// get LAr parameters
-  double getDensity() const { return fDensity; }
-  double getRIdealGas() const { return fRIdealGas; }
-  double getRealGasA() const { return fRealGasA; }
-  double getRealGasB() const { return fRealGasB; }
-  double getWorkQuantaFunction() const { return fWorkQuantaFunction; }
-  double getWorkIonFunction() const { return fWorkIonFunction; }
-  double getWorkPhotonFunction() const { return fWorkPhotonFunction; }
-  double getFanoER() const { return fFanoER; }
-  double getNexOverNion() const { return fNexOverNion; }
+  /// Get LAr parameters
+  double GetDensity() const { return fDensity; }
+  double GetRIdealGas() const { return fRIdealGas; }
+  double GetRealGasA() const { return fRealGasA; }
+  double GetRealGasB() const { return fRealGasB; }
+  double GetWorkQuantaFunction() const { return fWorkQuantaFunction; }
+  double GetWorkIonFunction() const { return fWorkIonFunction; }
+  double GetWorkPhotonFunction() const { return fWorkPhotonFunction; }
+  double GetEffectiveWorkIonFunction() const {
+    return fWorkIonFunction + fNexOverNion * fWorkPhotonFunction;
+  }
+  double GetFanoER() const { return fFanoER; }
+  double GetNexOverNion() const { return fNexOverNion; }
 
-  LArNRYieldsParameters getNRYieldsParameters() { return fNR; }
-  LArERYieldsParameters getERYieldsParameters() { return fER; }
-  LArERElectronYieldsAlphaParameters getERElectronYieldsAlphaParameters() {
+  LArNRYieldsParameters GetNRYieldsParameters() { return fNR; }
+  LArERYieldsParameters GetERYieldsParameters() { return fER; }
+  LArERElectronYieldsAlphaParameters GetERElectronYieldsAlphaParameters() {
     return fER.alpha;
   }
-  LArERElectronYieldsBetaParameters getERElectronYieldsBetaParameters() {
+  LArERElectronYieldsBetaParameters GetERElectronYieldsBetaParameters() {
     return fER.beta;
   }
-  LArERElectronYieldsGammaParameters getERElectronYieldsGammaParameters() {
+  LArERElectronYieldsGammaParameters GetERElectronYieldsGammaParameters() {
     return fER.gamma;
   }
   LArERElectronYieldsDokeBirksParameters
-  getERElectronYieldsDokeBirksParameters() {
+  GetERElectronYieldsDokeBirksParameters() {
     return fER.doke_birks;
   }
-  ThomasImelParameters getThomasImelParameters() {
+  ThomasImelParameters GetThomasImelParameters() {
     return fThomasImelParameters;
   }
-  DriftParameters getDriftParameters() { return fDriftParameters; }
+  DriftParameters GetDriftParameters() { return fDriftParameters; }
 
   //-------------------------All Yields-------------------------//
   LArYieldResult GetRecombinationYields(double TotalYields,
                                         double ElectronYields,
                                         double PhotonYields, double energy,
                                         double efield);
-  LArYieldResult GetYields(LArInteraction species, double energy, double efield,
-                           double density);
+  /**
+   * @brief GetYields computes the quanta N_ex, N_ion, N_gamma,
+   * and N_e- using one of two methods, either the first principles
+   * approach (which calculates N_ex and N_ion first) or the
+   * data-driven approach (which gives N_gamma and N_e- directly).
+   *
+   * @param species
+   * @param energy
+   * @param dx
+   * @param efield
+   * @param density
+   * @return LArYieldResult
+   */
+  LArYieldResult GetYields(LArInteraction species, double energy, double dx,
+                           double efield, double density);
   /**
    * @brief Calculate fluctions on the mean yields
    *
    */
-  LArYieldFluctuationResult GetYieldFluctuations(const LArYieldResult &yields,
+  LArYieldFluctuationResult GetYieldFluctuations(LArInteraction species,
+                                                 const LArYieldResult &yields,
                                                  double density);
   /**
    * @brief
    *
    */
   LArNESTResult FullCalculation(LArInteraction species, double energy,
-                                double efield, double density, bool do_times);
+                                double dx, double efield, double density,
+                                bool do_times);
 
+  //---------------------Data-driven methods--------------------//
   //-------------------------NR Yields-------------------------//
   /**
    * @brief NR Total Yields function:
@@ -412,7 +331,39 @@ class LArNEST : public NESTcalc {
    * @return LArYieldResult
    */
   LArYieldResult GetAlphaYields(double energy, double efield, double density);
+
+  //---------------------First-principles methods--------------------//
+  double GetCanonicalTotalYields(double energy);
+  double GetCanonicalIonizationYields(double energy);
+
+  //-----------------------------LET Yields-----------------------------//
+  LArYieldResult GetLeptonLETYields(double energy, double dx, double efield,
+                                    double density);
+  LArYieldResult GetLETYields(double energy, double dx, double efield,
+                              double density);
+  double GetLETRecombinationProbability(double LET, double efield);
+  LArYieldResult GetLETRecombinationYields(double ionization_yields,
+                                           double exciton_yields, double energy,
+                                           double LET, double efield);
+
+  //----------------------------dE/dx Yields----------------------------//
+  LArYieldResult GetdEdxRecombinationYields(double total_yields,
+                                            double ionization_yields,
+                                            double energy, double dx,
+                                            double efield);
+  double GetdEdxRecombinationProbability(double dEdx, double efield);
+  /**
+   * @brief Calculate yields based on the Thomas-Imel model using dE/dx.
+   * This should only be used for particles which have a dE/dx, other
+   * particle types should use the point-like models NR/ER/Alpha.
+   *
+   * @return LArYieldResult
+   */
+  LArYieldResult GetdEdxYields(double energy, double dx, double efield,
+                               double density);
   //-------------------------Fluctuation Yields-------------------------//
+  LArYieldFluctuationResult GetDataDrivenFluctuations(
+      const LArYieldResult &yields, double density);
   /**
    * @brief Get the Default Fluctuations object
    *
@@ -470,10 +421,13 @@ class LArNEST : public NESTcalc {
   double LegacyGetLinearEnergyTransfer(double E);
 
  private:
+  bool fUseDokeBirks = {false};
+
   double fDensity = {1.393};
   double fRIdealGas = {8.31446261815324};
   double fRealGasA = {0.1355};    // m^6*Pa/mol^2 or m^4*N/mol^2.
   double fRealGasB = {3.201e-5};  // m^3/mol.
+  double fTemperature = {85.0};   // K
 
   double fWorkQuantaFunction = {19.5};
   double fWorkIonFunction = {23.6};

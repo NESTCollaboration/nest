@@ -107,7 +107,7 @@
 #define PULSEHEIGHT \
   0.005                  // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
-#define PHE_MAX 180      // saturation threshold, in PE per bin i.e. sample
+#define PHE_MAX 140      // saturation threshold, in PE/sample (LZ). LUX val 180
 
 static constexpr int XYcorr =
     3;  // 0 means no corrections, 1 is for S1, 2 for S2, 3 for both
@@ -125,6 +125,8 @@ const std::vector<double> default_ERYieldsParam = {-1., -1., -1., -1., -1.,
                                                    -1., -1., -1., -1., -1.};
 // Fano factor of ~3 at least for ionization in NRERWidthsParam if using
 // OldW13eV (look at first 2 values). Also, 0.046452 used to be 0.05(53).
+const std::vector<double> default_EnergyParams = {0.23, 0.77, 2.95, -1.44};
+const std::vector<double> default_FieldParams = {421.15, 3.27};
 
 namespace NEST {
 
@@ -257,7 +259,9 @@ class NESTcalc {
 
   virtual YieldResult GetYieldERWeighted(
       double energy, double density, double dfield,
-      const std::vector<double> &ERYieldsParam = default_ERYieldsParam);
+      const std::vector<double> &ERYieldsParam = default_ERYieldsParam,
+      const std::vector<double> &EnergyParams = default_EnergyParams,
+      const std::vector<double> &FieldParams = default_FieldParams);
   // Weights beta/gamma models to account for ER sources with differing
   // recombination profiles (such as L-shell electron-capture interactions)
 
@@ -284,8 +288,8 @@ class NESTcalc {
 
   virtual YieldResult GetYieldKr83m(double energy, double density,
                                     double dfield,
-                                    double maxTimeSeparation = 2e3,
-                                    double minTimeSeparation = 0.0);
+                                    double maxTimeSeparation = 1000.,
+                                    double minTimeSeparation = 300.);
   // Called by GetYields in the Kr83m case
 
   virtual YieldResult GetYieldBeta(double energy, double density,
@@ -372,7 +376,7 @@ class NESTcalc {
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below
 
-  static double GetDriftVelocity_Liquid(double T, double F, double D = 2.9);
+  static double GetDriftVelocity_Liquid(double T, double F, short SD = -1);
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below. NOTE: Density default implies liquid

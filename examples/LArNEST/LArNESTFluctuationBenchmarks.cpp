@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         std::vector<double> Nion(num_events);
         // collect statistics for each event
         for (size_t j = 0; j < num_events; j++) {
-          result = larnest.FullCalculation(particle_types[k], energy_vals[i],
+          result = larnest.FullCalculation(particle_types[k], energy_vals[i], 0,
                                            electric_field[v], density, false);
           Nph[j] = double(result.fluctuations.NphFluctuation);
           Ne[j] = double(result.fluctuations.NeFluctuation);

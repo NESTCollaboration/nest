@@ -249,7 +249,8 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
                 cos((dayNum * 2. * M_PI / 365.24) - (0.415 * 2. * M_PI)))) *
       cmPerkm;  // the Earth's velocity
   // used Eq. 18 for SHM w/ June 1 as reference date (MAX!) from arXiv 0607121
-  // [Savage, Freese, Gondolo 2006] - Juergen Reichenbacher 09/17/2020
+  // [Savage, Freese, Gondolo 2006] - Jack Genovesi and Juergen Reichenbacher
+  // 09/17/2020
 
   // Define the detector Z and A and the mass of the target nucleus
   double Z = ATOM_NUM;

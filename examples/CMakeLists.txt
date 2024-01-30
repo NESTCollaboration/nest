@@ -5,7 +5,7 @@ set(MIN_ROOT_VERSION 6.16)
 # bareNEST
 
 add_executable(bareNEST bareNEST.cpp)
-target_link_libraries(bareNEST PUBLIC NEST::Core)
+target_link_libraries(bareNEST PUBLIC NESTCore)
 
 set(EXAMPLES bareNEST)
 
@@ -24,18 +24,18 @@ add_executable(rootNEST ${PROJECT_SOURCE_DIR}/examples/rootNEST.cpp)
 
 include("${ROOT_USE_FILE}")
 separate_arguments(ROOT_EXE_LINKER_FLAGS)
-target_link_libraries(rootNEST PUBLIC NEST::Core ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS})
+target_link_libraries(rootNEST PUBLIC NESTCore ${ROOT_LIBRARIES} ${ROOT_EXE_LINKER_FLAGS})
 
 
 list(APPEND EXAMPLES rootNEST)
 endif()
 
 add_executable(pulseShape pulseShape.cpp)
-target_link_libraries(pulseShape PUBLIC NEST::Core)
+target_link_libraries(pulseShape PUBLIC NESTCore)
 list(APPEND EXAMPLES pulseShape)
 
 add_executable(multipleScatter multipleScatter.cpp)
-target_link_libraries(multipleScatter PUBLIC NEST::Core)
+target_link_libraries(multipleScatter PUBLIC NESTCore)
 list(APPEND EXAMPLES multipleScatter)
 
 install(

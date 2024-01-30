@@ -28,13 +28,15 @@
 #include <string.h>
 #include <vector>
 
-#include "analysis.hh"
+#include "analysis_G2.hh"
 #include "TestSpectra.hh"  // contains the WIMP, earth, and escape velocities
 
 // non-input parameters hardcoded in
 #define CL 0.90     // confidence level
 #define VSTEP 1e-3  // step size in keV for convolving WIMP recoil E with eff
 #define SKIP 0  // number of lines of energy to skip in efficiency file (lim)
+#define NUMSIGABV -0.  // # of std dev to offset NR band central line, up\dn
+#define UL_MIN 0.5     // minimum upper limit on # WIMP events for limit setting
 
 using namespace std;
 double dayNumber = 0.;
@@ -241,7 +243,7 @@ int main(int argc, char** argv) {
     cin >> NRacc;  // unitless fraction of one
     cout << "Number of BG events observed: ";
     cin >> numBGeventsObs;
-    if (numBGeventsObs > 0.) {
+    if (numBGeventsObs >= 0.) {  // used to be > 0 but then never asks #expected
       cout << "Number of BG events expected: ";
       cin >> numBGeventsExp;  // for FC stats
     }
@@ -267,7 +269,7 @@ int main(int argc, char** argv) {
 
     double Ul,
         v;  // Start of code block to evaluate upper limit on # of events to use
-    if (numBGeventsExp == 0.) {
+    if (numBGeventsExp == 0. && numBGeventsObs == 0.) {
       for (v = 0.; v < 1e3; v += VSTEP) {
         double sum = 0.0;
         for (i = 0; i < (numBGeventsObs + 1.); ++i)
@@ -284,11 +286,13 @@ int main(int argc, char** argv) {
       if (numBGeventsExp != numBGeventsObs ||
           numBGeventsObs == int(numBGeventsObs))
         Ul = fc.CalculateUpperLimit(numBGeventsObs, numBGeventsExp);
-      else
-        Ul = expectedUlFc(numBGeventsExp, fc);
+      else {
+        Ul = fc.CalculateUpperLimit(numBGeventsObs, numBGeventsExp);
+        // Ul = expectedUlFc(numBGeventsExp,fc);  // if you want MEAN not median
+      }
       double powCon =
           fc.CalculateUpperLimit(0., 0.);  // can't do better than 2.44 ever!
-      if (Ul < powCon) Ul = powCon;
+      if (Ul < powCon && UL_MIN == -1.) Ul = powCon;
     }
 
     const int masses = NUMBINS_MAX;
@@ -333,17 +337,18 @@ int main(int argc, char** argv) {
             cerr << "Eff cannot be greater than 100% or <0%" << endl;
           return 1;
         }
-        if (j > loE)
+        if (j > loE) {
           sigAboveThr[i] +=
               VSTEP * myTestSpectra.WIMP_dRate(j, mass[i], dayNumber) * eff *
               xEff * NRacc;  // integrating (Riemann, left sum)
                              // mass-dependent differential rate with
                              // effxacc and step size
+        }
       }
       // CUSTOMIZE: your upper limit here (to mimic a PLR for example)
-      if (Ul < 0.5)
-        Ul = 0.5;  // maintain what is physically possible,
-                   // mathematically/statistically
+      if (Ul < UL_MIN)
+        Ul = UL_MIN;  // maintain what is physically possible,
+                      // mathematically/statistically
       xSect[i] = 1e-36 * Ul /
                  (sigAboveThr[i] * fidMass *
                   time);  // derive the cross-section based upon the
@@ -362,9 +367,8 @@ int main(int argc, char** argv) {
       }  // end spin-dep. code block
       ++i;
       if (xSect[i - 1] < DBL_MAX && xSect[i - 1] > 0. &&
-          !std::isnan(
-              xSect[i - 1])) {  // Print the results, skipping any weirdness
-                                // (low WIMP masses prone)
+          !std::isnan(xSect[i - 1])) {  // Print the results, skipping any
+                                        // weirdness (low WIMP masses prone)
         if (verbosity > 1) cout << Ul << "\t\t";
         cout << mass[i - 1] << "\t\t\t" << xSect[i - 1]
              << endl;  // final answer
@@ -425,12 +429,15 @@ int main(int argc, char** argv) {
                    << endl;
             return 1;
           }
-          error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
-          chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
-          error = sqrt(pow(band[i][6], 2.) + pow(band2[i][6], 2.));
-          chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
-          chi2[2] += 100. * (band2[i][2] - band[i][2]) / band2[i][2];
-          chi2[3] += 100. * (band2[i][3] - band[i][3]) / band2[i][3];
+          if ((useS2 == 0 && std::abs(band[i][2]) < 5.) || useS2 != 0) {
+            error = sqrt(pow(band[i][5], 2.) + pow(band2[i][5], 2.));
+            chi2[0] += pow((band2[i][2] - band[i][2]) / error, 2.);
+            error = sqrt(pow(band[i][6], 2.) + pow(band2[i][6], 2.));
+            chi2[1] += pow((band2[i][3] - band[i][3]) / error, 2.);
+            chi2[2] += 100. * (band2[i][2] - band[i][2]) / band2[i][2];
+            chi2[3] += 100. * (band2[i][3] - band[i][3]) / band2[i][3];
+          } else if (verbosity > 0)
+            cerr << "Ignoring outliers for chi^2 calculation" << endl;
         }
         chi2[0] /= double(DoF - 1);
         chi2[2] /= numBins;
@@ -495,6 +502,7 @@ int main(int argc, char** argv) {
     for (i = 0; i < numBins; ++i) {
       if (skewness <= 1) {
         if (ERis2nd) {
+          band[i][2] += NUMSIGABV * band[i][3];
           numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
           errorBars[i][0] =
               (band2[i][2] - band2[i][5] - band[i][2] - band[i][5]) /
@@ -510,6 +518,7 @@ int main(int argc, char** argv) {
               2. * owens_t((band[i][2] - band2[i][9]) / band2[i][11],
                            band2[i][4]);
         } else {
+          band2[i][2] += NUMSIGABV * band2[i][3];
           numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
           errorBars[i][0] =
               (band[i][2] - band[i][5] - band2[i][2] - band2[i][5]) /
@@ -569,6 +578,7 @@ int main(int argc, char** argv) {
         if (ERis2nd) {
           numSigma[i] = (band2[i][2] - band[i][2]) / band2[i][3];
           NRbandX[i] = band[i][0];
+          band[i][2] += NUMSIGABV * band[i][3];
           NRbandY[i] = band[i][2];
           leakage[i] =
               0.5 +
@@ -603,6 +613,7 @@ int main(int argc, char** argv) {
         } else {
           numSigma[i] = (band[i][2] - band2[i][2]) / band[i][3];
           NRbandX[i] = band2[i][0];
+          band2[i][2] += NUMSIGABV * band2[i][3];
           NRbandY[i] = band2[i][2];
           leakage[i] =
               0.5 +
@@ -639,8 +650,10 @@ int main(int argc, char** argv) {
       finalSums[2] += leakage[i];
       discrim[i] = 1. - leakage[i];
     }
-    if (NRbandCenter < 0) {
-      for (int nb; nb < numBins; ++nb) NRbandY[nb] = medians[nb];
+    if (NRbandCenter < 0 && !ERis2nd) {
+      for (int nb; nb < numBins; ++nb) {
+        NRbandY[nb] = medians[nb] + NUMSIGABV * band2[nb][3];
+      }
     }
     TGraph* gr1 = new TGraph(numBins, NRbandX, NRbandY);
     TF1* fitf =
@@ -710,7 +723,8 @@ int main(int argc, char** argv) {
       finalSums[1] += (double)outputs[i].size();
     }
     fprintf(stderr,
-            "\nOVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
+            "\nOVERALL DISCRIMINATION (ER) or NON-ACCEPTANCE (NR) between min "
+            "and maxS1 = "
             "%.12f%%, total: Gaussian & non-Gaussian (tot=counting) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[0] / finalSums[1]) * 100.,
@@ -729,7 +743,8 @@ int main(int argc, char** argv) {
             "with corresponding leakage of %.12e\n",
             (1. - LowValue) * 100., LowValue);
     fprintf(stderr,
-            "OVERALL DISCRIMINATION or ACCEPTANCE between min and maxS1 = "
+            "OVERALL DISCRIMINATION                             between min "
+            "and maxS1 = "
             "%.12f%%, Gauss, or skew-normal fits (whatever you ran) Leakage "
             "Fraction = %.12e\n",
             (1. - finalSums[2] / numBins) * 100., finalSums[2] / numBins);
@@ -810,7 +825,7 @@ void GetFile(char* fileName) {
     }
   }
   fclose(ifp);
-  if (E_keV.size() < 100000 && numBins > 1 && skewness != 0) {
+  if (E_keV.size() < 20000 && numBins > 1 && skewness != 0) {  // used to be 1e5
     skewness = 0;
     cerr << "WARNING: Not enough stats (at least 10^5 events) for skew fits so "
             "doing Gaussian"
@@ -1066,6 +1081,7 @@ vector<vector<double> > GetBand(vector<double> S1s, vector<double> S2s,
     if (NRbandCenter < 0 && !save && medians[j] == 0.) {
       std::sort(signals[j].begin(), signals[j].end());
       medians[j] = signals[j][int(floor(double(numPts) / 2. + 0.5))];
+      // medians[j] += NUMSIGABV * band[j][3];
       // band[j][2] = medians[j];
     }
     for (i = 0; i < (int)numPts; ++i) {

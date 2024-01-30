@@ -446,13 +446,13 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density,
 
 YieldResult NESTcalc::GetYieldERWeighted(
     double energy, double density, double dfield,
-    const std::vector<double> &ERYieldsParam) {
+    const std::vector<double> &ERYieldsParam,
+    const std::vector<double> &EnergyParams,
+    const std::vector<double> &FieldParams) {
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
 
-  const std::vector<double> EnergyParams = {0.23, 0.77, 2.95, -1.44};
-  const std::vector<double> FieldParams = {421.15, 3.27};
   YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
   YieldResult yieldsG = GetYieldGamma(energy, density, dfield);
   double weightG =
@@ -584,8 +584,9 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
         result.yields = yields;
       } else
         result.yields = GetYieldBetaGR(eStep, rho, field);
-    } else
+    } else {
       result.yields = GetYieldBetaGR(refEnergy, rho, field);
+    }
     if (eMin < 0. && NRERWidthsParam[0] < 0.) {
       QuantaResult quanta{};
       if (Nq_mean < 1.)
@@ -947,10 +948,11 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
   double Wq_eV = wvalue.Wq_eV;
   double alpha = wvalue.alpha;
   constexpr double deltaT_ns_halflife = 154.4;
+  YieldResult result{};
   double deltaT_ns = -999.;
   if (ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
     deltaT_ns = maxTimeSeparation;
-  if (minTimeSeparation < 100. && energy < 32. &&
+  /*if (minTimeSeparation < 100. && energy < 32. &&
       kr83m_reported_low_deltaT == false) {
     kr83m_reported_low_deltaT = true;
     cerr << "\tWARNING! Outside of Kr83m model fit validity region. Details:"
@@ -960,56 +962,53 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
          << " 9.4 & 32.1 keV yields are still summed to physically accurate "
             "result, but individually will be nonsensical."
          << endl;
-  }
+  }*/
+
+  if (!ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
+    deltaT_ns = RandomGen::rndm()->rand_exponential(
+        deltaT_ns_halflife, minTimeSeparation, maxTimeSeparation);
+  double Nq_9 = 9.4e3 / Wq_eV;  // 9.4 keV model
+  double a1 = -19.575;          //-11.839 + 78.063 / deltaT_ns;
+  if (a1 > 0.) a1 = 0.;
+  double a2 = 5.823e-4;  //(0.0015796*deltaT_ns)/(11.55+deltaT_ns);
+  double a3 = 69.986 + 3e5 / pow(deltaT_ns, 2.);  // 2.7745e5 and 2
+  if (a3 > 87.) a3 = 87.;
+  double Nph_9 = 9.4 * (a1 * a2 * dfield * log(1. + 1. / (a2 * dfield)) + a3);
+  double Ne_9 = Nq_9 - Nph_9;
+  if (Ne_9 < 0.) Ne_9 = 0.;  // can't have negative charge, from either decay
+  result = GetYieldGamma(2., density, dfield);
+  double Nph_2 = result.PhotonYield;
+  double Ne_2 = result.ElectronYield;
+  result = GetYieldGamma(10., density, dfield);
+  double Nph_10 = result.PhotonYield;
+  double Ne_10 = result.ElectronYield;
+  result = GetYieldGamma(12., density, dfield);
+  double Nph_12 = result.PhotonYield;
+  double Ne_12 = result.ElectronYield;
+  result = GetYieldGamma(18., density, dfield);
+  double Nph_18 = result.PhotonYield;
+  double Ne_18 = result.ElectronYield;
+  result = GetYieldGamma(30., density, dfield);
+  double Nph_30 = result.PhotonYield;
+  double Ne_30 = result.ElectronYield;
+  double Nph_76 = Nph_30 + Nph_2;
+  double Nph_09 = Nph_18 + Nph_10 + Nph_2 + Nph_2;
+  double Nph_15 = Nph_18 + Nph_12 + Nph_2;
+  // now, add up the 32.1 keV yields
+  double Nph_32 = 0.76 * Nph_76 + 0.15 * Nph_15 + 0.09 * Nph_09;
+  double Ne_32 = 32e3 / Wq_eV - Nph_32;
   if (energy > 9.35 && energy < 9.45) {
-    if (!ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
-      deltaT_ns = RandomGen::rndm()->rand_exponential(
-          deltaT_ns_halflife, minTimeSeparation, maxTimeSeparation);
-    Nq = energy * 1e3 / Wq_eV;
-    double medTlevel =
-        57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-    double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
-    double lowTpeak =
-        6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
-    Nph = energy * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-          (1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
-    Ne = Nq - Nph;
-    if (Ne < 0) Ne = 0.;
     alpha = 0.;
-  } else {
-    if (energy >= 32.0 && energy < 32.2) {
-      Nq = energy * 1e3 / Wq_eV;
-      Nph = energy * (6. + (66.742 - 6.) /
-                               pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
-      Ne = Nq - Nph;
-      if (Ne < 0.) Ne = 0.;
-    } else {  // merged 41.5 keV decay
-      if (!ValidityTests::nearlyEqual(minTimeSeparation, maxTimeSeparation))
-        deltaT_ns = RandomGen::rndm()->rand_exponential(
-            deltaT_ns_halflife, minTimeSeparation, maxTimeSeparation);
-      double medTlevel =
-          57.462 + (69.201 - 57.462) / pow(1. + pow(dfield / 250.13, 0.9), 1.);
-      double lowTdrop = 35. + (75. - 35.) / pow(1. + pow(dfield / 60, 1), 1);
-      double lowTpeak =
-          6.2831e4 - (6.2831e4 - 5.949e4) / pow(1. + pow(dfield / 60, 1.), 1);
-      // 9.4 keV model
-      Nph = 9.4 * (lowTpeak * pow(2. * deltaT_ns + 10., -1.5) + medTlevel) /
-            (1. + pow(deltaT_ns / lowTdrop, -1. * lowTdrop / 5.));
-      Ne = (9.4 * 1e3 / Wq_eV) - Nph;
-      if (Ne < 0.) Ne = 0.;  // can't have negative charge from either decay
-      // Add in 32.1 keV yields
-
-      double Nph_32 =
-          32.1 * (6. + (66.742 - 6.) /
-                           pow(1. + pow(dfield / 115.037, 0.6409), 0.3215));
-      double Ne_32 = (32.1 * 1e3 / Wq_eV) - Nph_32;
-      Nph += Nph_32;
-      Ne += Ne_32;
-      if (Ne < 0.) Ne = 0.;
-    }
+    Nph = Nph_9;
+    Ne = Ne_9;
+  } else if (energy >= 32.0 && energy < 32.2) {
+    Nph = Nph_32;
+    Ne = Ne_32;
+  } else {  // merged 41.5 keV decay
+    Ne = Ne_9 + Ne_32;
+    Nph = Nph_9 + Nph_32;
   }
 
-  YieldResult result{};
   result.PhotonYield = Nph;
   result.ElectronYield = Ne;
   if (!fdetector->get_OldW13eV()) {
@@ -1483,10 +1482,10 @@ const vector<double> &NESTcalc::GetS1(
     photonstream photon_times = AddPhotonTransportTime(
         photon_emission_times, truthPosX, truthPosY, truthPosZ);
 
-    if (outputTiming > 0 && !pulseFile.is_open()) {
+    if (outputTiming >= 0 && !pulseFile.is_open()) {
       pulseFile.open("photon_times.txt");
-      // pulseFile << "Event#\tt [ns]\tA [PE]" << endl;
-      pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
+      if (outputTiming > 0)
+        pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
     }
 
     int ii, index;
@@ -1538,7 +1537,7 @@ const vector<double> &NESTcalc::GetS1(
       wf_time.emplace_back((ii - numPts / 2) * SAMPLE_SIZE);
       wf_amp.emplace_back(AreaTable[0][ii] + AreaTable[1][ii]);
 
-      if (outputTiming > 0) {
+      if (outputTiming >= 0) {
         char line[80];
         if (AreaTable[0][ii] > PHE_MAX) {
           subtract[0] = AreaTable[0][ii] - PHE_MAX;
@@ -1550,9 +1549,10 @@ const vector<double> &NESTcalc::GetS1(
         } else {
           subtract[1] = 0.0;
         }
-        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", evtNum,
-                wf_time.back() + (int64_t)tRandOffset,
-                AreaTable[0][ii] - subtract[0], AreaTable[1][ii] - subtract[1]);
+        snprintf(
+            line, 80, "%llu\t%lld\t%.3f\t%.3f", (long long unsigned int)evtNum,
+            (long long int)wf_time.back() + (long long int)tRandOffset,
+            AreaTable[0][ii] - subtract[0], AreaTable[1][ii] - subtract[1]);
         pulseFile << line << flush;
       }
 
@@ -1814,8 +1814,6 @@ const vector<double> &NESTcalc::GetS2(
         elecTravT -= tauTrap * log(RandomGen::rndm()->rand_uniform());
       }
       electronstream[i] += elecTravT;
-      // char line[80]; sprintf ( line, "%lu\t%.0f\t%.3f\t%.3f", evtNum,
-      // electronstream[i]*1e+3, newX, newY ); pulseFile << line << endl;
       SE = floor(RandomGen::rndm()->rand_gauss(
                      elYield, sqrt(fdetector->get_s2Fano() * elYield), true) +
                  0.5);
@@ -1885,8 +1883,6 @@ const vector<double> &NESTcalc::GetS2(
           AreaTableTop[0].emplace_back(phe);
         }
         TimeTable.emplace_back(offset);
-        // char line[80]; sprintf ( line, "%lu\t%.0f\t%.2f\t%i", evtNum, offset,
-        // phe, (int)(i<Nee) ); pulseFile << line << endl;
       }
     }
     int numPts = Nphe * 1000;
@@ -1925,7 +1921,7 @@ const vector<double> &NESTcalc::GetS2(
       wf_time.emplace_back(k * SAMPLE_SIZE + int64_t(min + SAMPLE_SIZE / 2.));
       wf_amp.emplace_back(AreaTableBot[1][k] + AreaTableTop[1][k]);
 
-      if (outputTiming > 0) {
+      if (outputTiming >= 0) {
         char line[80];
         if (AreaTableBot[1][k] > PHE_MAX)
           subtract[0] = AreaTableBot[1][k] - PHE_MAX;
@@ -1937,9 +1933,10 @@ const vector<double> &NESTcalc::GetS2(
         else {
           subtract[1] = 0.0;
         }
-        sprintf(line, "%llu\t%lld\t%.3f\t%.3f", evtNum, wf_time.back(),
-                AreaTableBot[1][k] - subtract[0],
-                AreaTableTop[1][k] - subtract[1]);
+        snprintf(line, 80, "%llu\t%lld\t%.3f\t%.3f",
+                 (long long unsigned int)evtNum, (long long int)wf_time.back(),
+                 AreaTableBot[1][k] - subtract[0],
+                 AreaTableTop[1][k] - subtract[1]);
         pulseFile << line << endl;
       }
     }
@@ -2330,14 +2327,14 @@ double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField,
   if (inGas)
     return GetDriftVelocity_MagBoltz(Density, eField);
   else {
-    return GetDriftVelocity_Liquid(Kelvin, eField, Density);
+    return GetDriftVelocity_Liquid(Kelvin, eField);
   }
 }
 
-double NESTcalc::GetDriftVelocity_Liquid(
-    double Kelvin, double eField,
-    double Density) {  // for liquid and solid only. Density dependence to be
-                       // added in the future.
+double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
+                                         short int StdDev) {
+  // for liquid and solid only. Density and purity dependencies to be
+  // added in the future.
 
   double speed =
       0.0;  // returns drift speed in mm/usec. based on Fig. 14 arXiv:1712.08607
@@ -2392,6 +2389,10 @@ double NESTcalc::GetDriftVelocity_Liquid(
     if (speed < 0.) speed = 0.;
     return speed;
   }
+
+  if (StdDev >= 1)
+    return 1.83 - 1.83 / (1. + pow(eField / 30., 1.3));  // eF<260V/cm
+  if (StdDev >= 0) return 1.7681 - 1.7681 / (1. + pow(eField / 31.683, 1.3237));
 
   double polyExp[11][7] = {
       {-3.1046, 27.037, -2.1668, 193.27, -4.8024, 646.04, 9.2471},  // 100K
@@ -2775,14 +2776,17 @@ double NESTcalc::GetDiffLong_Liquid(
     return 0.15 * output;  // lacking data, just assume that D_L = 0.15 * D_T
   }
 
-  // Use the standard NEST parametrization
-  if (!highFieldModel) {
-    output =
-        57.381 * pow(dfield, -0.22221) +
-        127.27 *
-            exp(-dfield /
-                32.821);  // fit to Aprile & Doke rev & arXiv:1102.2865 (Peter:
-                          // XENON10/100); plus, LUX Run03 (181V/cm) & 1911.11580
+  // Use the standard NEST parameterization DiffLong=m1*f^(-m2)+m3*exp(-f/m4)
+  if (!highFieldModel) {  // agrees with arXiv:2303.13963 (Yanina Biondi)
+    output = 57.381 * pow(dfield, -0.22221) +
+             127.27 * exp(-dfield /
+                          32.821);  // fit to Aprile & Doke rev &
+                                    // arXiv:1102.2865 (Peter: XENON10/100);
+                                    // plus, LUX Run03 (181V/cm) & 1911.11580
+    // high D_L model (Njoya 2020) 60+/-49, -0.16558+/-0.13347,
+    // 462+/-126, 23.922+/-4.8931 (touches the -1-sigma errors)
+    // low D_L model (LZ 2023, Dan Hunt) 66.35+/-6.29, -0.24855+/-0.016508,
+    // 36.85+/-2.37, 35.661+/-2.2038 (low drift fields, double digits)
   }
   // Use the Boyle model, which is drastically different at high (>5kV/cm)
   // fields. Note here that the Boyle model is only at one temperature. First

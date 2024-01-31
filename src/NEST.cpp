@@ -14,7 +14,7 @@
 using namespace std;
 using namespace NEST;
 
-static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1
+static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1 in LXe, 5000 - roughly 6-11us for LAr
 
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 
@@ -59,23 +59,21 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   double LET = CalcElectronLET(energy, ATOM_NUM);
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     // copied from 2013 NEST version for LAr on LBNE
-    tau1 = RandomGen::rndm()->rand_gauss(6.5, 0.8,
+    tau1 = RandomGen::rndm()->rand_gauss(6, 0.8,
                                          true);  // error from weighted average
-    tau3 = RandomGen::rndm()->rand_gauss(1300, 50, true);  // ibid.
-    tauR = RandomGen::rndm()->rand_gauss(0.8, 0.2, true);  // Kubota 1979
-    if (species <= Cf)
-      SingTripRatio = 0.22218 * pow(energy, 0.48211);
+    tau3 = RandomGen::rndm()->rand_gauss(1500, 50, true);  // ibid.
+    tauR = 0;
+    if (species <= Cf) {
+      SingTripRatio =(2.585833+(0.9909913-2.585833)/(1+pow(energy/41.78474, 1.954878)));
+      tauR = RandomGen::rndm()->rand_gauss(57.6539*exp(-0.0066332*dfield), 0.2, true);
+      }
     else if (species == ion) {  // really only alphas here
       SingTripRatio = (-0.065492 + 1.9996 * exp(-energy / 1e3)) /
                           (1. + 0.082154 / pow(energy / 1e3, 2.)) +
                       2.1811;  // uses energy in MeV not keV
     } else {
-      SingTripRatio = 0.2701 + 0.003379 * LET - 4.7338e-5 * pow(LET, 2.) +
-                      8.1449e-6 * pow(LET, 3.);
-      if (LET < 3. && !exciton)
-        SingTripRatio = RandomGen::rndm()->rand_gauss(0.5, 0.2, true);
-      if (LET < 3. && exciton)
-        SingTripRatio = RandomGen::rndm()->rand_gauss(0.36, 0.06, true);
+      SingTripRatio = 0.3039284 + (0.9857846 - 0.3039284)/(1 + pow((energy/5.021868),1.426286)); 
+      tauR = RandomGen::rndm()->rand_gauss(314.014*exp(-0.0066332*dfield), 0.2, true);
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf)  // NR
@@ -134,7 +132,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
 
   // the recombination time is non-exponential, but approximates
   // to exp at long timescales (see Kubota '79)
-  time_ns += tauR * (1.0 / RandomGen::rndm()->rand_uniform() - 1.);
+   time_ns += tauR * (1.0 / RandomGen::rndm()->rand_uniform() - 1.);
 
   if (RandomGen::rndm()->rand_uniform() < SingTripRatio / (1. + SingTripRatio))
     time_ns -= tau1 * log(RandomGen::rndm()->rand_uniform());
@@ -778,7 +776,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
   ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double)massNumber);
   ScaleFactor[1] = ScaleFactor[0];
   double Nq = NRYieldsParam[0] * pow(energy, NRYieldsParam[1]);
-  if (!fdetector->get_OldW13eV()) Nq *= ZurichEXOW;
+  if (!fdetector->get_OldW13eV() && ValidityTests::nearlyEqual(ATOM_NUM, 54.)) Nq *= ZurichEXOW;
   double ThomasImel = NRYieldsParam[2] * pow(dfield, NRYieldsParam[3]) *
                       pow(density / DENSITY, 0.3);
   double Qy =
@@ -2356,15 +2354,15 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
     Solid:
     y_nest_80 = 7.063288*(0.929753**(1/x_nest))*x_nest**0.314640
     y_nest_82 = 5.093097*(0.920459**(1/x_nest))*x_nest**0.458724*/
-    double Temperature[8] = {84., 86., 88., 92., 96., 110., 125., 140.};
+    double Temperature[8] = {85., 86., 88., 92., 96., 110., 125., 140.};
 
     if (Kelvin < 84. || Kelvin > 140.) {
       cerr << "\nWARNING: TEMPERATURE OUT OF RANGE (84-140 K) for vD\n";
       cerr << "Using value at closest temp for a drift speed estimate\n";
       Kelvin = (double)NESTcalc::clamp(int(Kelvin), 84, 140);
     }
-
-    if (Kelvin >= Temperature[0] && Kelvin < Temperature[1])
+	//if (Kelvin==89) speed =  2.201489*pow(0.931080,1/(eField/1000))*pow((eField/1000), 0.320762);
+   if (Kelvin >= Temperature[0] && Kelvin < Temperature[1])
       speed = exp(0.937729 - 0.0734108 / (eField / 1000) +
                   0.315338 * log(eField / 1000));
     else if (Kelvin >= Temperature[1] && Kelvin < Temperature[2])
@@ -2738,7 +2736,7 @@ double NESTcalc::GetDiffTran_Liquid(
   if (Z == 18) {
     // G4S2Light.cc from LUXSim
     double nDensity = NEST_AVO * DENSITY / 40.;  // 1 over cm^3
-    return 93.342 * pow(dfield / nDensity, 0.041322);
+    return  93.342 * pow(dfield / nDensity, 0.041322);
   }
 
   // Use the standard NEST parametrization
@@ -2772,8 +2770,8 @@ double NESTcalc::GetDiffLong_Liquid(
   double output;
 
   if (Z == 18) {
-    output = GetDiffTran_Liquid(dfield, false, Kelvin, 18);
-    return 0.15 * output;  // lacking data, just assume that D_L = 0.15 * D_T
+    output = 0.63*(-0.0014*dfield+6.98);
+    return output;  
   }
 
   // Use the standard NEST parameterization DiffLong=m1*f^(-m2)+m3*exp(-f/m4)

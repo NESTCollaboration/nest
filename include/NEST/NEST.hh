@@ -100,10 +100,10 @@
 // for GAr it is 1.000574 at least at room T (doi.org/10.1103/PhysRev.34.615)
 #define EPS_LIQ \
   1.85  // LXe dielectric constant explicitly NOT 1.96 (old). Update thx to Dan
-        // M. LAr 1.325
+        // M. LAr 1.5
 
-#define SAMPLE_SIZE 10  // nano-seconds
-#define PULSE_WIDTH 10  // nano-seconds
+#define SAMPLE_SIZE 10  // nano-seconds, 5 for LAr
+#define PULSE_WIDTH 10  // nano-seconds, 5 for LAr
 #define PULSEHEIGHT \
   0.005                  // threshold height, in PE, for writing to photon_times
 #define SPIKES_MAXM 120  // above this switch to pulse area (70 phd in 1 array)
@@ -118,7 +118,7 @@ static constexpr double RealGasA =
 static constexpr double RealGasB = 5.105e-5;  // m^3/mol. For Ar: 3.201e-5
 
 const std::vector<double> default_NRYieldsParam = {
-    11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};
+    11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};//{11.1, 1.087, 0.1, -0.0932, 2.998, 0.3, 2.94, 0.3, 2., 0.5, 1., 1.}; for LAr
 const std::vector<double> default_NRERWidthsParam = {
     0.4, 0.4, 0.04, 0.5, 0.19, 2.25, 1., 0.046452, 0.205, 0.45, -0.2};
 const std::vector<double> default_ERYieldsParam = {-1., -1., -1., -1., -1.,

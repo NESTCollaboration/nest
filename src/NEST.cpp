@@ -14,7 +14,7 @@
 using namespace std;
 using namespace NEST;
 
-static constexpr int podLength = 5000; //1100;  // roughly 100-1,000 ns for S1
+static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1 in LXe, 5000 - roughly 6-11us for LAr
 
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 

@@ -42,7 +42,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
 
 double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
                             double dfield, double energy) {
-  double time_ns = 0., SingTripRatio, tauR = 0., tau3 = 23.97,
+  double time_ns = 0., SingTripRatio = 0., tauR = 0., tau3 = 23.97,
          tau1 =
              3.27;  // arXiv:1802.06162. NR may need tauR ~0.5-1ns instead of 0
   if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) {
@@ -76,11 +76,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
       tauR = RandomGen::rndm()->rand_gauss(314.014*exp(-0.0066332*dfield), 0.2, true);
     }  // lastly is ER for LAr
   } else {
-    if (species <= Cf)  // NR
-      SingTripRatio =
-          (0.21 - 0.0001 * dfield) *
-          pow(energy,
-              0.21 - 0.0001 * dfield);  // arXiv:1803.07935. LUX:0.15*E^0.15
+    if (species <= Cf) {  // NR
+      SingTripRatio = 0.269;
+    }
     else if (species == ion) {
       // e.g., alphas
       SingTripRatio =
@@ -88,7 +86,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
           pow(energy,
               0.416);  // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
     } else {
-      // ER
+      tau3 = 25.89;  // ER
       if (!exciton) {
         if (energy > 1e3)
           energy = 1e3;  // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
@@ -98,20 +96,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
           tauR = 3.5;  // used to be for gammas only but helpful for matching
                        // beta data better
         if (dfield > 8e2) dfield = 8e2;  // to match Kubota's 4,000 V/cm
-        SingTripRatio =
-            1.00 *
-            pow(energy,
-                -0.45 +
-                    0.0005 *
-                        dfield);  // see comment below; also, dfield may need to
-                                  // be fixed at ~100-200 V/cm (for NR too)
+        SingTripRatio = 0.042;
       } else {
-        SingTripRatio =
-            0.20 *
-            pow(energy,
-                -0.45 +
-                    0.0005 *
-                        dfield);  // mixing arXiv:1807.07121 with Kubota 1979
+        SingTripRatio = 0.042;
       }
     }
   }

@@ -1,4 +1,7 @@
+
 #include "NEST.hh"
+
+//NOTE - ASK YOURSELF IF YOU SHOULD BE WORKING ON ANALYSIS_G2 INSTEAD!
 
 // Verbosity flag (for limiting output to yields; no timing)
 int verbosity = 1;  // use -1 for off, but 0 for efficiency

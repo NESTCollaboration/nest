@@ -18,7 +18,7 @@
 #include "analysis.hh"
 
 // Include user-specific detector header, located in Detectors/
-#include "DetectorExample_XENON10.hh"
+#include "LUX_Run03.hh"
 
 using namespace std;
 using namespace NEST;
@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  DetectorExample_XENON10* detector = new DetectorExample_XENON10();
+  DetectorExample_LUX_RUN03* detector = new DetectorExample_LUX_RUN03();
 
   // Construct NEST class using detector object
   NEST::NESTcalc n(detector);

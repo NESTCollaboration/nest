@@ -77,7 +77,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf) {  // NR
-      SingTripRatio = 0.269;
+      SingTripRatio = 0.269; if (exciton) tauR = 0.;
     }
     else if (species == ion) {
       // e.g., alphas
@@ -92,13 +92,11 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
           energy = 1e3;  // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
         tauR = exp(-0.00900 * dfield) *
                (7.3138 + 3.8431 * log10(energy));  // arXiv:1310.1117
-        if (tauR < 3.5)
-          tauR = 3.5;  // used to be for gammas only but helpful for matching
-                       // beta data better
+        //if (tauR < 3.5) tauR = 3.5;  // gammas?
         if (dfield > 8e2) dfield = 8e2;  // to match Kubota's 4,000 V/cm
         SingTripRatio = 0.042;
       } else {
-        SingTripRatio = 0.042;
+        SingTripRatio = 0.042; tauR = 0.;
       }
     }
   }

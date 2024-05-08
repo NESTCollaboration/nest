@@ -15,7 +15,7 @@ using namespace std;
 using namespace NEST;
 
 static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1 in LXe, 5000 - roughly 6-11us for LAr
-
+static constexpr double McMConst = 0.0; //Total Quanta power law constant 
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
@@ -739,7 +739,7 @@ YieldResult NESTcalc::GetYieldNROld(
 
 YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
                                  double massNum,
-                                 const std::vector<double> &NRYieldsParam, double powlawConst = 0.0) {
+                                 const std::vector<double> &NRYieldsParam) {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     massNum = fdetector->get_molarMass();
 
@@ -760,7 +760,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
   }
   ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double)massNumber);
   ScaleFactor[1] = ScaleFactor[0];
-  double Nq = NRYieldsParam[0] * pow(energy, NRYieldsParam[1]) + powlawConst;
+  double Nq = NRYieldsParam[0] * pow(energy, NRYieldsParam[1]) + McMConst;
   if (!fdetector->get_OldW13eV() && ValidityTests::nearlyEqual(ATOM_NUM, 54.)) Nq *= ZurichEXOW;
   double ThomasImel = NRYieldsParam[2] * pow(dfield, NRYieldsParam[3]) *
                       pow(density / DENSITY, 0.3);
@@ -1185,7 +1185,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       // statement. Same intrinsic yields, but different energy spectra
       // (TestSpectra)
 
-      return GetYieldNR(energy, density, dfield, massNum, NRYieldsParam, powlawConst);
+      return GetYieldNR(energy, density, dfield, massNum, NRYieldsParam);
 
       // return GetYieldNROld ( energy, 1 );
       break;

@@ -273,7 +273,7 @@ class NESTcalc {
 
   virtual YieldResult GetYieldNR(
       double energy, double density, double dfield, double massNum,
-      const std::vector<double> &NRYieldsParam = default_NRYieldsParam);
+      const std::vector<double> &NRYieldsParam = default_NRYieldsParam, double powlawConst = 0.0);
   // Called by GetYields in the NR (and related) cases
 
   virtual YieldResult GetYieldNROld(double energy, int alt);

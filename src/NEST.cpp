@@ -739,7 +739,7 @@ YieldResult NESTcalc::GetYieldNROld(
 
 YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
                                  double massNum,
-                                 const std::vector<double> &NRYieldsParam) {
+                                 const std::vector<double> &NRYieldsParam, double powlawConst = 0.0) {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     massNum = fdetector->get_molarMass();
 
@@ -760,7 +760,7 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
   }
   ScaleFactor[0] = sqrt(fdetector->get_molarMass() / (double)massNumber);
   ScaleFactor[1] = ScaleFactor[0];
-  double Nq = NRYieldsParam[0] * pow(energy, NRYieldsParam[1]);
+  double Nq = NRYieldsParam[0] * pow(energy, NRYieldsParam[1]) + powlawConst;
   if (!fdetector->get_OldW13eV() && ValidityTests::nearlyEqual(ATOM_NUM, 54.)) Nq *= ZurichEXOW;
   double ThomasImel = NRYieldsParam[2] * pow(dfield, NRYieldsParam[3]) *
                       pow(density / DENSITY, 0.3);
@@ -1185,7 +1185,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       // statement. Same intrinsic yields, but different energy spectra
       // (TestSpectra)
 
-      return GetYieldNR(energy, density, dfield, massNum, NRYieldsParam);
+      return GetYieldNR(energy, density, dfield, massNum, NRYieldsParam, powlawConst);
 
       // return GetYieldNROld ( energy, 1 );
       break;

@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
         keV = spec.Cf_spectrum(eMin, eMax);
         break;
       case DD:
-        keV = spec.DD_spectrum(eMin, eMax, 10., 0.1, 60., 25.);
+        keV = spec.DD_spectrum(eMin, eMax, 10., 0.1, 60., 25., 0.);
         break;
       case WIMP:
         spec.wimp_spectrum_prep =

@@ -623,7 +623,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
             keV = TestSpectra::Cf_spectrum(eMin, eMax);
             break;
           case DD:
-            keV = TestSpectra::DD_spectrum(eMin, eMax, 10., 0.1, 60., 25.);
+            keV = TestSpectra::DD_spectrum(eMin, eMax, 10., 0.1, 60., 25., 0.);
             break;
           case WIMP:
             keV = TestSpectra::WIMP_spectrum(spec.wimp_spectrum_prep, eMin,

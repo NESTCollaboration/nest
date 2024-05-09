@@ -775,10 +775,8 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
   double Ne = Qy * energy * ScaleFactor[1];
   double Nph =
       Ly * energy * ScaleFactor[0];
-  if (McMConst !=0) {
-  	double Nph =
-	  Ly * energy * ScaleFactor[0] *
-      	  (1. - 1. / pow(1. + pow((energy / NRYieldsParam[7]), NRYieldsParam[8]),
+  if (McMConst ==0) {
+  	Nph *= (1. - 1. / pow(1. + pow((energy / NRYieldsParam[7]), NRYieldsParam[8]),
                 	 NRYieldsParam[11]));
   }
   Nq = Nph + Ne;

@@ -774,9 +774,9 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
   if (Ly < 0.0) Ly = 0.0;
   double Ne = Qy * energy * ScaleFactor[1];
   double Nph =
-      Ly * energy * ScaleFactor[0] *
-      (1. - 1. / pow(1. + pow((energy / NRYieldsParam[7]), NRYieldsParam[8]),
-                     NRYieldsParam[11]));
+      Ly * energy * ScaleFactor[0];// *
+      //(1. - 1. / pow(1. + pow((energy / NRYieldsParam[7]), NRYieldsParam[8]),
+                    // NRYieldsParam[11]));
   Nq = Nph + Ne;
   double Ni = (4. / ThomasImel) * (exp(Ne * ThomasImel / 4.) - 1.);
   double Nex = (-1. / ThomasImel) *

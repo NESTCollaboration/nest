@@ -144,7 +144,11 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
                                       double dfield, double energy) {
   photonstream return_photons;
   int total, excit;
-
+	
+  if (excitons > total_photons) {
+    throw std::runtime_error("You specified more excitons than total photon numbers?! This is physically wrong and please check your inputs.");
+  }
+	
   for (int ip = 0; ip < total_photons; ++ip) {
     bool isExciton = false;
     if (ip < excitons) isExciton = true;

@@ -268,7 +268,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
   // Type of this step.
   INTERACTION_TYPE step_type = NoneType;
 
-  uint sec_mylinid = 0;
+  unsigned int sec_mylinid = 0;
 
   const vector<const G4Track*> secondaries = *aStep.GetSecondaryInCurrentStep();
 

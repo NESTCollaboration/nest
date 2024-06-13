@@ -32,7 +32,7 @@ vector<double> NRERWidthsParam, NRYieldsParam, ERWeightParam,
 double band[NUMBINS_MAX][7], energies[3],
     AnnModERange[2] = {1.5, 6.5};  // keVee or nr (recon)
 bool BeenHere = false;
-uint SaveTheDates[tMax] = {0};
+unsigned int SaveTheDates[tMax] = {0};
 bool dEOdxBasis = false;
 double minTimeSeparation = 0.;  // ns (Kr83m)
 
@@ -1311,7 +1311,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
   }  // end of the gigantic primary event number loop
 
   if (timeStamp > tZero) {
-    for (uint j = 0; j < tMax; ++j) {
+    for (unsigned int j = 0; j < tMax; ++j) {
       cerr << j << "\t" << SaveTheDates[j] << endl;
     }
   }

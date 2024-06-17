@@ -1562,8 +1562,8 @@ const vector<double> &NESTcalc::GetS1(
   }
 
   if (fdetector->get_noiseLinear()[0] >= 1.0)
-    cerr << " !!WARNING!! S1 linear noise term is greater than or equal to 10% "
-            "(i.e. 0.1) Did you mistake fraction for percent??"
+    cerr << " !!WARNING!! S1 linear noise term is greater than or equal to 100% "
+            "(i.e. 1.0) Did you mistake fraction for percent??"
          << endl;
 
   if (fdetector->get_noiseQuadratic()[0] != 0) {
@@ -1944,8 +1944,8 @@ const vector<double> &NESTcalc::GetS2(
   }
 
   if (fdetector->get_noiseLinear()[1] >= 1.0)
-    cerr << " !!WARNING!! S2 linear noise term is greater than or equal to 10% "
-            "(i.e. 0.1) Did you mistake fraction for percent??"
+    cerr << " !!WARNING!! S2 linear noise term is greater than or equal to 100% "
+            "(i.e. 1.0) Did you mistake fraction for percent??"
          << endl;
   if (fdetector->get_noiseQuadratic()[1] != 0) {
     pulseArea = RandomGen::rndm()->rand_gauss(

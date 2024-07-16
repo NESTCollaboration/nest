@@ -2754,8 +2754,8 @@ double NESTcalc::GetDiffTran_Liquid(
 // modified to accommodate higher field values (from Boyle et al., 2016,
 // arXiv:1603.04157v1)
 double NESTcalc::GetDiffLong_Liquid(
-    double dfield, bool highFieldModel, double Kelvin,
-    int Z)  // for gas: look for Diff_Long_Gas above
+    double dfield, bool highFieldModel, double Kelvin, int Z,
+    short int StdDev)  // for gas: look@ Diff_Long_Gas above
 {
   double output;
 
@@ -2765,16 +2765,16 @@ double NESTcalc::GetDiffLong_Liquid(
   }
 
   // Use the standard NEST parameterization DiffLong=m1*f^(-m2)+m3*exp(-f/m4)
-  if (!highFieldModel) {  // agrees with arXiv:2303.13963 (Yanina Biondi)
-    output = 57.381 * pow(dfield, -0.22221) +
-             127.27 * exp(-dfield /
-                          32.821);  // fit to Aprile & Doke rev &
-                                    // arXiv:1102.2865 (Peter: XENON10/100);
-                                    // plus, LUX Run03 (181V/cm) & 1911.11580
-    // high D_L model (Njoya 2020) 60+/-49, -0.16558+/-0.13347,
-    // 462+/-126, 23.922+/-4.8931 (touches the -1-sigma errors)
-    // low D_L model (LZ 2023, Dan Hunt) 66.35+/-6.29, -0.24855+/-0.016508,
-    // 36.85+/-2.37, 35.661+/-2.2038 (low drift fields, double digits)
+  if (!highFieldModel) {  // temperature dependence possible: D_L up as T down?
+    if (StdDev >= 1)
+      output = 60. * pow(dfield, -0.16558) + 462. * exp(-dfield / 23.922);
+    // high D_L model (Njoya 2020) 60+/-49, -0.16558+/-0.13347, 462+/-126, 23.922+/-4.8931 (touches the -1-sigma errors)
+    else if (StdDev >= 0 && StdDev < 1)
+      output = 57.381 * pow(dfield, -0.22221) + 127.27 * exp(-dfield / 32.821);
+    // fit to Aprile & Doke rev & arXiv:1102.2865 (Peter: XENON10/100); plus, LUX Run03 (181V/cm) & 1911.11580. Agrees with arXiv:2303.13963 (Yanina Biondi)
+    else
+      output = 66.35 * pow(dfield, -0.24855) + 36.85 * exp(-dfield / 35.661);
+    // low D_L model (LZ 2023, Dan Hunt) 66.35+/-6.29, -0.24855+/-0.016508, 36.85+/-2.37, 35.661+/-2.2038 (low drift fields, double digits)
   }
   // Use the Boyle model, which is drastically different at high (>5kV/cm)
   // fields. Note here that the Boyle model is only at one temperature. First

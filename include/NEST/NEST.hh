@@ -440,7 +440,7 @@ class NESTcalc {
 
   // Access the diffusion coefficient for longitudinal diffusion in liquid
   static double GetDiffLong_Liquid(double dfield, bool highFieldModel = false,
-                                   double T = 175., int Z = 54);
+                                   double T = 175., int Z = 54, short SD = -1);
 
   // Function helpful for interpolation of the new diffusion coefficient model
   // (Boyle)

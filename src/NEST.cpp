@@ -1750,9 +1750,9 @@ const vector<double> &NESTcalc::GetS2(
     electronstream.resize(stopPoint, dt);
     double elecTravT = 0., DL, DL_time, DT, phi, sigX, sigY, newX, newY;
     double Diff_Tran =
-        GetDiffTran_Liquid(dfield, false, fdetector->get_T_Kelvin(), ATOM_NUM);
+      GetDiffTran_Liquid(dfield, false, fdetector->get_T_Kelvin(), fdetector->get_p_bar(), DENSITY, ATOM_NUM);
     double Diff_Long =
-        GetDiffLong_Liquid(dfield, false, fdetector->get_T_Kelvin(), ATOM_NUM);
+      GetDiffLong_Liquid(dfield, false, fdetector->get_T_Kelvin(), fdetector->get_p_bar(), DENSITY, ATOM_NUM);
 
     // a good rule of thumb but only for liquids, as gas kind of opposite:
     // Diff_Long ~ 0.15 * Diff_Tran, as it is in LAr, at least as field goes to
@@ -1775,12 +1775,12 @@ const vector<double> &NESTcalc::GetS2(
     double rho = GetDensity(fdetector->get_T_Kelvin(), fdetector->get_p_bar(),
                             YesGas, 1, fdetector->get_molarMass());
     double driftVelocity_gas =
-        GetDriftVelocity_MagBoltz(rho, fdetector->get_E_gas() * 1000.);
+      GetDriftVelocity_MagBoltz(fdetector->get_T_Kelvin(), rho, fdetector->get_E_gas() * 1000., fdetector->get_p_bar(), fdetector->get_molarMass());
     double dt_gas = gasGap / driftVelocity_gas;
     double sigmaDLg = 10. * sqrt(2. * Diff_Long_Gas * dt_gas * 1e-6);
     double sigmaDTg = 10. * sqrt(2. * Diff_Tran_Gas * dt_gas * 1e-6);
-    double tauTrap = 0.185;  // microseconds from arXiv:1310.1117, modified to
-    // better fit XENON10 and LUX data at same time
+    double tauTrap = 0.28326 + 5303/(dfield*dfield);  // microseconds, to match
+    // LZ SR3, LUX Run03, Xe100/10. Should be 0.185 (fixed?) based on 1310.1117
     double min = 1e100;
     for (i = 0; i < stopPoint; ++i) {
       elecTravT = 0.;  // resetting for the current electron
@@ -2306,21 +2306,21 @@ double NESTcalc::GetDensity(double Kelvin, double bara, bool &inGas,
 }
 
 double NESTcalc::SetDriftVelocity(double Kelvin, double Density,
-                                  double eField) {
-  return GetDriftVelocity(Kelvin, Density, eField, fdetector->get_inGas());
+                                  double eField, double Bar) {
+  return GetDriftVelocity(Kelvin, Density, eField, fdetector->get_inGas(), Bar);
 }
 
 double NESTcalc::GetDriftVelocity(double Kelvin, double Density, double eField,
-                                  bool inGas) {
+                                  bool inGas, double Bar) {
   if (inGas)
-    return GetDriftVelocity_MagBoltz(Density, eField);
+    return GetDriftVelocity_MagBoltz(Kelvin, Density, eField, Bar);
   else {
-    return GetDriftVelocity_Liquid(Kelvin, eField);
+    return GetDriftVelocity_Liquid(Kelvin, eField, Density, Bar);
   }
 }
 
-double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
-                                         short int StdDev) {
+double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField, double Density,
+                                         double Bar, short int StdDev) {
   // for liquid and solid only. Density and purity dependencies to be
   // added in the future.
 
@@ -2476,8 +2476,8 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField,
   return speed;  // mm per microsecond
 }
 
-double NESTcalc::GetDriftVelocity_MagBoltz(
-    double density, double efieldinput,
+double NESTcalc::GetDriftVelocity_MagBoltz(double temperature,
+					   double density, double efieldinput, double pressure,
     double molarMass)  // Nichole Barry UCD 2011
 {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
@@ -2516,7 +2516,7 @@ double NESTcalc::GetDriftVelocity_MagBoltz(
   return std::abs(edrift) * 1e-5;  // from cm/s into mm per microsecond
 }
 
-vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
+vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep, double kel, double bar,
                                                      double dx, double dy) {
   vector<double> speedTable;
   double driftTime, zz;
@@ -2527,21 +2527,21 @@ vector<double> NESTcalc::SetDriftVelocity_NonUniform(double rho, double zStep,
       if (pos_z > fdetector->get_gate()) {
         if (!fdetector->get_inGas())
           driftTime +=
-              zStep / SetDriftVelocity(fdetector->get_T_Kelvin(), rho,
+              zStep / SetDriftVelocity(kel, rho,
                                        fdetector->get_E_gas() /
-                                           (EPS_LIQ / std::abs(EPS_GAS)) * 1e3);
+				       (EPS_LIQ / std::abs(EPS_GAS)) * 1e3, bar);
         else {
           // if gate == TopDrift properly set, shouldn't happen
-          driftTime += zStep / GetDriftVelocity_MagBoltz(
-                                   rho, fdetector->get_E_gas() * 1e3);
+          driftTime += zStep / GetDriftVelocity_MagBoltz(kel,
+					   rho, fdetector->get_E_gas() * 1e3, bar);
         }
       } else {
         driftTime +=
             zStep /
             SetDriftVelocity(
-                fdetector->get_T_Kelvin(), rho,
+                kel, rho,
                 fdetector->FitEF(dx, dy,
-                                 zz));  // update x and y if you want 3-D fields
+                                 zz), bar);  // update x and y if you want 3-D fields
       }
     }
 
@@ -2718,7 +2718,7 @@ double NESTcalc::NexONi(double energy, double density) {
 // modified to accommodate higher field values (from Boyle et al., 2016,
 // arXiv:1603.04157v1)
 double NESTcalc::GetDiffTran_Liquid(
-    double dfield, bool highFieldModel, double Kelvin,
+    double dfield, bool highFieldModel, double Kelvin, double Bar, double Density,
     int Z)  // for gas: look for Diff_Tran_Gas above
 {
   double output;
@@ -2754,7 +2754,7 @@ double NESTcalc::GetDiffTran_Liquid(
 // modified to accommodate higher field values (from Boyle et al., 2016,
 // arXiv:1603.04157v1)
 double NESTcalc::GetDiffLong_Liquid(
-    double dfield, bool highFieldModel, double Kelvin, int Z,
+    double dfield, bool highFieldModel, double Kelvin, double Bar, double Density, int Z,
     short int StdDev)  // for gas: look@ Diff_Long_Gas above
 {
   double output;

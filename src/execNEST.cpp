@@ -282,7 +282,7 @@ NESTObservableArray runNESTvec(
         particleType, eList[i], rho, useField, detector->get_molarMass(),
         ATOM_NUM, NRYieldsParam, NRERWidthsParam, ERYieldsParam, verbosity);
     quanta = result.quanta;
-    vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, useField);
+    vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, useField, detector->get_p_bar());
     scint = n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0],
                     smearPos[1], smearPos[2], vD, vD, particleType, i, useField,
                     eList[i], NEST::S1CalculationMode::Full, verbosity, wf_time,
@@ -800,14 +800,14 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
         if (ValidityTests::nearlyEqual(inField, -1.)) {
           // build a vD table for non-uniform field, but if field varies in XY
           // not just Z you need to do more coding
-          vTable = n.SetDriftVelocity_NonUniform(rho, z_step, pos_x, pos_y);
+          vTable = n.SetDriftVelocity_NonUniform(rho, z_step, detector->get_T_Kelvin(), detector->get_p_bar(), pos_x, pos_y);
           vD_middle = vTable[int(floor(centralZ / z_step + 0.5))];
           // for ( int jj = 0; jj < vTable.size(); ++jj ) //DEBUG
           // cerr << double(jj)*z_step << "\t" << vTable[jj] << endl;
         } else {
           vD_middle =
-              n.SetDriftVelocity(detector->get_T_Kelvin(), rho, inField);
-          vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, field);
+	    n.SetDriftVelocity(detector->get_T_Kelvin(), rho, inField, detector->get_p_bar());
+          vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, field, detector->get_p_bar());
         }
         if (verbosity > 0) {
           cout << "Density = " << rho << " g/mL"

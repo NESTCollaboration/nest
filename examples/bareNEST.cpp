@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
   // Calculate a drift velocity table for non-uniform fields,
   // and calculate the drift velocity at detector center for normalization
   // purposes
-  vTable = n.SetDriftVelocity_NonUniform(rho, z_step, pos_x, pos_y);
+  vTable = n.SetDriftVelocity_NonUniform(rho, z_step, detector->get_T_Kelvin(), detector->get_p_bar(), pos_x, pos_y);
   vD_middle = vTable[int(
       floor(.5 * (detector->get_gate() - 100. + detector->get_cathode() + 1.5) /
                 z_step +

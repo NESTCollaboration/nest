@@ -20,7 +20,7 @@
 
 // NEST includes
 #include "NEST.hh"
-#include "DetectorExample_XENON10.hh"
+#include "LZ_SR1.hh"
 
 // Here we choose a correction factor to turn field into "reduced field." This
 // is something that is necessary for Garfield++, which internally scales by the
@@ -249,7 +249,7 @@ void PassTransportInfo(std::ofstream& outFile,
                        std::vector<double> fieldList_V_cm,
                        double temperature_K) {
   // Create a NEST detector and construct the NEST class using this object
-  DetectorExample_XENON10* detector = new DetectorExample_XENON10();
+  auto* detector = new LZ_Detector();
   NEST::NESTcalc n(detector);
 
   for (int iF = 0; iF < fieldList_V_cm.size(); ++iF) {

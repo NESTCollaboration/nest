@@ -366,28 +366,28 @@ class NESTcalc {
   // efficiency. Called by GetS2 above. Includes helper variables like gas gap
   // and SE width.
 
-  double SetDriftVelocity(double T, double D, double F);
+  double SetDriftVelocity(double T, double D, double F, double P);
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below
 
-  static double GetDriftVelocity(double T, double D, double F, bool inGas);
+  static double GetDriftVelocity(double T, double D, double F, bool inGas, double P);
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below
 
-  static double GetDriftVelocity_Liquid(double T, double F, short SD = -1);
+  static double GetDriftVelocity_Liquid(double T, double F, double D, double P = 1.5, short SD = -1);
   // Gives one the drift velocity as a function of temperature and electric
   // field in liquid or solid. If density implies gas, kicks calculation down to
   // the next function below. NOTE: Density default implies liquid
 
-  static double GetDriftVelocity_MagBoltz(double D, double F,
+  static double GetDriftVelocity_MagBoltz(double T, double D, double F, double P,
                                           double molarMass = 131.293);
   // Gas electron drift speed for S2 gas gap in 2-phase TPCs or the whole
   // detector for all gas. Based on simple fits to complicated MagBoltz software
   // output.
 
-  std::vector<double> SetDriftVelocity_NonUniform(double rho, double zStep,
+  std::vector<double> SetDriftVelocity_NonUniform(double rho, double zStep, double T, double P,
                                                   double dx, double dy);
   // Special handling for the case of non-uniform electric fields in a detector,
   // this integrates over position to find the correct total drift time from any
@@ -436,11 +436,11 @@ class NESTcalc {
 
   // Access the diffusion coefficient for transverse diffusion in liquid
   static double GetDiffTran_Liquid(double dfield, bool highFieldModel = false,
-                                   double T = 175., int Z = 54);
+                                   double T = 175., double P = 2., double rho = DENSITY, int Z = 54);
 
   // Access the diffusion coefficient for longitudinal diffusion in liquid
   static double GetDiffLong_Liquid(double dfield, bool highFieldModel = false,
-                                   double T = 175., int Z = 54, short SD = -1);
+                                   double T = 175., double P = 2., double rho = DENSITY, int Z = 54, short SD = -1);
 
   // Function helpful for interpolation of the new diffusion coefficient model
   // (Boyle)

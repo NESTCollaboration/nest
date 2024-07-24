@@ -176,7 +176,7 @@ double TestSpectra::DD_spectrum(double xMin, double xMax, double expFall,
   if (xMax > 80.) xMax = 80.;
   if (xMin < 0.000) xMin = 0.000;
   double yMin = 0.0;
-  double yMax = 1. + peakFrac;
+  double yMax = 1.; if ( peakMu < xMax ) yMax += peakFrac;
   vector<double> xyTry = {
       xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
       yMin + (yMax - yMin) * RandomGen::rndm()->rand_uniform(), 1.};

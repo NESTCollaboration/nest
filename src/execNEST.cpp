@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  uint64_t numEvts;
+  double numEvts;
   string type, position, posiMuon;
   double eMin, eMax, inField, fPos;
   int seed;
@@ -152,10 +152,10 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(-0.2);
 
   } else {
-    numEvts = (uint64_t)atof(argv[1]);
-    if (numEvts <= 0) {
+    numEvts = (double)atof(argv[1]);
+    if (numEvts <= 0.) {
       if (verbosity > 0)
-        cerr << "ERROR, you must simulate at least 1 event, or 1 kg*day"
+        cerr << "ERROR, you must simulate at least one event, or non-zero kg*days"
              << endl;
       return 1;
     }
@@ -339,7 +339,7 @@ NESTObservableArray runNESTvec(
   return OutputResults;
 }
 
-int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
+int execNEST(VDetector* detector, double numEvts, const string& type,
              double eMin, double eMax, double inField, string position,
              const string& posiMuon, double fPos, int seed, bool no_seed,
              double dayNumber) {
@@ -404,13 +404,13 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     type_num = WIMP;
     spec.wimp_spectrum_prep =
         TestSpectra::WIMP_prep_spectrum(eMin, E_step, dayNumber);
-    numEvts = RandomGen::rndm()->poisson_draw(
+    numEvts = (double)RandomGen::rndm()->poisson_draw(
         spec.wimp_spectrum_prep.integral *  // here eMax is cross-section
-        1.0 * double(numEvts) * eMax / 1e-36);
+        1.0 * numEvts * eMax / 1e-36);
   } else if (type == "B8" || type == "Boron8" || type == "8Boron" ||
              type == "8B" || type == "Boron-8") {
     type_num = B8;
-    numEvts = RandomGen::rndm()->poisson_draw(0.0026 * double(numEvts));
+    numEvts = (double)RandomGen::rndm()->poisson_draw(0.0026 * numEvts);
   } else if (type == "DD" || type == "D-D")
     type_num = DD;
   else if (type == "AmBe")
@@ -452,15 +452,13 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
              type == "pp_Solar" || type == "pp_solar" || type == "pp-Solar" ||
              type == "pp-solar") {
     type_num = ppSolar;
-    numEvts = RandomGen::rndm()->poisson_draw(
-        0.0011794 *
-        double(
-            numEvts));  // normalization: counts per kg-day from 0-250 keV(ee)
+    numEvts = (double)RandomGen::rndm()->poisson_draw(
+        0.0011794 * numEvts);  // normalization: counts per kg-day from 0-250 keV(ee)
   } else if (type == "atmNu" || type == "AtmNu" || type == "atm_Nu" ||
              type == "Atm_Nu" || type == "atm-Nu" || type == "Atm-Nu" ||
              type == "atm_nu" || type == "atm-nu") {
     type_num = atmNu;
-    numEvts = RandomGen::rndm()->poisson_draw(1.5764e-7 * double(numEvts));
+    numEvts = (double)RandomGen::rndm()->poisson_draw(1.5764e-7 * numEvts);
   } else if (type == "fullGamma") {
     type_num = fullGamma;
     if (verbosity > 0)
@@ -501,7 +499,12 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
     }
     return 1;
   }
-
+  
+  if (numEvts < 1. && type_num != WIMP && type_num != B8 && type_num != ppSolar && type_num != atmNu) {
+    if (verbosity > 0) cerr << "ERROR, you must simulate at least one event, or non-zero kg*days" << endl;
+    return 1;
+  }
+  
   double maxTimeSep = DBL_MAX;
   if (type_num == Kr83m) {
     if (((eMin > 9.35 && eMin < 9.45) || (eMin >= 32. && eMin < 32.2) ||
@@ -595,7 +598,7 @@ int execNEST(VDetector* detector, uint64_t numEvts, const string& type,
   double keV = -999.;
   double timeStamp = dayNumber;
   vector<double> keV_vec;
-  for (uint64_t j = 0; j < numEvts; ++j) {
+  for (uint64_t j = 0; j < (uint64_t)numEvts; ++j) {
     // timeStamp = tMax * RandomGen::rndm()->rand_uniform(); /*OR: += tStep*/
     // detector->set_eLife_us(5e1+1e3*(timeStamp/3e2)); for E-recon when you've
     // changed g1,g2-related stuff, redo g1 and g2 calculations in line 477+

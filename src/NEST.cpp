@@ -1780,7 +1780,7 @@ const vector<double> &NESTcalc::GetS2(
     double sigmaDLg = 10. * sqrt(2. * Diff_Long_Gas * dt_gas * 1e-6);
     double sigmaDTg = 10. * sqrt(2. * Diff_Tran_Gas * dt_gas * 1e-6);
     double tauTrap = 0.28326 + 5303/(dfield*dfield);  // microseconds, to match
-    // LZ SR3, LUX Run03, Xe100/10. Should be 0.185 (fixed?) based on 1310.1117
+    // LZ SR3, LUX Run03, Xe100/10. 0.185 (fixed) based on 1310.1117 (Gaussian)
     double min = 1e100;
     for (i = 0; i < stopPoint; ++i) {
       elecTravT = 0.;  // resetting for the current electron

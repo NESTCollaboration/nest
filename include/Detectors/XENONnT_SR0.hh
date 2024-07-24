@@ -6,13 +6,15 @@
 #define XENONnT_hh 1
 
 #include "VDetector.hh"
+
 using namespace std;
+string DetName = "XENONnT SR0";
 
 class XENONnT : public VDetector {
  public:
   XENONnT() {
-    cerr << "*** Detector definition message ***" << endl;
-    cerr << "You are using the XENONnT detector file for SR0." << endl << endl;
+    //cerr << "*** Detector definition message ***" << endl;
+    //cerr << "You are using the XENONnT detector file for SR0." << endl << endl;
 
     // Call the initialization of all the parameters
     Initialization();

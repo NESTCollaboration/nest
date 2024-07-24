@@ -43,6 +43,7 @@
 #include "VDetector.hh"
 
 using namespace std;
+string DetName = "LZ SR1";
 
 class LZ_Detector : public VDetector {
  public:

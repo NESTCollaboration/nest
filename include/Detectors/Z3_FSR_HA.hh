@@ -5,13 +5,14 @@
 #include "VDetector.hh"
 
 using namespace std;
+string DetName = "ZEPLIN-III First Science Run";
 
 class DetectorExample_ZEPLIN : public VDetector {
  public:
   DetectorExample_ZEPLIN() {
-    cerr << "*** Detector definition message ***" << endl;
-    cerr << "You are currently using ZEPLIN-III First Science Run." << endl
-         << endl;
+    //cerr << "*** Detector definition message ***" << endl;
+    //cerr << "You are currently using ZEPLIN-III First Science Run." << endl
+    //     << endl;
 
     // Call the initialisation of all the parameters
     Initialization();

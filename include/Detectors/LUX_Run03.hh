@@ -3,7 +3,9 @@
 #define DetectorExample_LUX_RUN03_hh 1
 
 #include "VDetector.hh"
+
 using namespace std;
+string DetName = "LUX Run03";
 
 // NOTES: best g1 for DD 0.115, but for tritium 0.119; g1_gas = 0.1 for both,
 // s2Fano & s2_thr equal E_gas 6.17, 6.35; e- lifet 650, 750 us; fid vol 80-130,

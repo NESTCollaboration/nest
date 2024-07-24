@@ -6,6 +6,7 @@
 #include <random>
 
 using namespace std;
+string DetName = "Xed";
 
 class DetectorExample_XED : public VDetector {
  public:

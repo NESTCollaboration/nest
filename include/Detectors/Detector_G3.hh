@@ -15,12 +15,13 @@
 #include "VDetector.hh"
 
 using namespace std;
+string DetName = "projected G3";
 
 class Detector_G3 : public VDetector {
  public:
   Detector_G3() {
-    cerr << "You are currently using the projected G3 detector." << endl
-         << endl;
+    //cerr << "You are currently using the projected G3 detector." << endl
+    //     << endl;
 
     // Call the initialisation of all the parameters
     Initialization();

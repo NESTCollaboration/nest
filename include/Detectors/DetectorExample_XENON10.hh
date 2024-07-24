@@ -16,14 +16,15 @@
 #include "VDetector.hh"
 
 using namespace std;
+string DetName = "XENON10";
 
 class DetectorExample_XENON10 : public VDetector {
  public:
   DetectorExample_XENON10() {
-    cerr << "*** Detector definition message ***" << endl;
-    cerr << "You are currently using the default XENON10 template detector."
-         << endl
-         << endl;
+    //cerr << "*** Detector definition message ***" << endl;
+    //cerr << "You are currently using the default XENON10 template detector."
+    //     << endl
+    //     << endl;
 
     // Call the initialisation of all the parameters
     Initialization();

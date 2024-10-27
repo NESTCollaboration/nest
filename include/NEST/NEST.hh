@@ -121,6 +121,7 @@ const std::vector<double> default_NRYieldsParam = {
     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};//{11.1, 1.087, 0.1, -0.0932, 2.998, 0.3, 2.94, 0.3, 2., 0.5, 1., 1.}; for LAr
 const std::vector<double> default_NRERWidthsParam = {
     0.4, 0.4, 0.04, 0.5, 0.19, 2.25, 1., 0.046452, 0.205, 0.45, -0.2};
+// 1 => -0.0015 for old-style ER Fq function instead of a constant value
 const std::vector<double> default_ERYieldsParam = {-1., -1., -1., -1., -1.,
                                                    -1., -1., -1., -1., -1.};
 // Fano factor of ~3 at least for ionization in NRERWidthsParam if using

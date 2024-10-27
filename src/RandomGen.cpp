@@ -125,8 +125,8 @@ double RandomGen::rand_skewGauss(double xi, double omega, double alpha) {
   return testX;
 }
 
-int RandomGen::poisson_draw(double mean) {
-  return std::poisson_distribution<int>(mean)(rng);
+uint64_t RandomGen::poisson_draw(double mean) {
+  return std::poisson_distribution<uint64_t>(mean)(rng);
 }
 
 int64_t RandomGen::binom_draw(int64_t N0, double prob) {

@@ -1301,7 +1301,7 @@ vector<vector<double> > GetBand_Gaussian(vector<vector<double> > signals) {
         if (verbosity > 0)
           cerr << "Re-fitting... (stats, more? and/or logBins, fewer? might "
                   "help)\n";
-        if (mode != 0) goto RETRY;
+        if (mode != 0 && !loopNEST) goto RETRY;
       }
 
       delete f;

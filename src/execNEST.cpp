@@ -100,11 +100,11 @@ int main(int argc, char** argv) {
   bool no_seed = false;
 
   if (loopNEST) {
-    numEvts = 10000;
+    numEvts = 200000; //10000 for speed
     type = "MIP";
     dEOdxBasis = true;
     eMin = -1.;  // this means do the default, which is CH3T
-    s1CalculationMode = NEST::S1CalculationMode::Parametric;
+    s1CalculationMode = NEST::S1CalculationMode::Hybrid;  // Param for speed!
     eMax = -1.;  // for monoE peak: just use eMin (keep neg)
     inField = 180.;
     position = "-1";
@@ -128,17 +128,20 @@ int main(int argc, char** argv) {
     NRYieldsParam.push_back(2.888);
     NRYieldsParam.push_back(1e3);
     NRYieldsParam.push_back(atof(argv[2]));
-    NRYieldsParam.push_back(atof(argv[3]));
-    NRYieldsParam.push_back(atof(argv[4]));
-
+    NRYieldsParam.push_back(-0.5);
+    NRYieldsParam.push_back(0);
+    detector->set_g1(atof(argv[3]));
+    detector->set_noiseLinear(atof(argv[4]),atof(argv[11]));
+    
     ERWeightParam.push_back(-atof(argv[5]));
     ERWeightParam.push_back(atof(argv[6]));
     ERWeightParam.push_back(atof(argv[7]));
     ERWeightParam.push_back(atof(argv[8]));
-    ERWeightParam.push_back(atof(argv[9]));
+    ERWeightParam.push_back(0.5);
+    detector->set_E_gas(atof(argv[9]));
     ERWeightParam.push_back(atof(argv[10]));
-    ERWeightParam.push_back(atof(argv[11]));
-
+    ERWeightParam.push_back(1e3);
+    
     NRERWidthsParam.push_back(0.4);  // Leave fluctuations parameters
     NRERWidthsParam.push_back(0.4);  // fixed for now
     NRERWidthsParam.push_back(0.04);

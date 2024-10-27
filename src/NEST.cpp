@@ -515,11 +515,10 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
     if (dEOdxParam[10] > 0. && dEOdxParam[11] != 0.) {
       dEOdx = dEOdxParam[10] * pow(-eMin, dEOdxParam[11]);
       if (dEOdxParam[12] > 0.)
-        dEOdx =
-            RandomGen::rndm()->rand_gauss(dEOdx, dEOdxParam[12] * dEOdx, true);
+	; //do nothing yet. Old attempts: Gaussian, Expo, Poisson
     } else
       dEOdx = CalcElectronLET(-eMin, ATOM_NUM, dEOdxParam[10]);
-    eStep = dEOdx * rho * z_step * 1e2;
+    eStep = rho * z_step * 1e2 * RandomGen::rndm()->rand_zero_trunc_gauss(dEOdx,dEOdx);
   } else {
     refEnergy = dEOdxParam[9];
     eStep = eMin * rho * z_step * 1e2;
@@ -578,18 +577,13 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
       QuantaResult quanta{};
       if (Nq_mean < 1.)
         Nq = 0;
-      else
-        Nq = int(ceil(RandomGen::rndm()->rand_gauss(
-                          Nq_mean, sqrt(NRERWidthsParam[5] * Nq_mean), true) -
-                      0.5));
+      else //int(ceil(RandomGen::rndm()->rand_gauss(Nq_mean,sqrt(NRERWidthsParam[5]*Nq_mean),true)-0.5))
+        Nq = RandomGen::rndm()->binom_draw(NRERWidthsParam[5]*eStep,Nq_mean/(NRERWidthsParam[5]*eStep));
+      quanta.recombProb = 1. - log(NRERWidthsParam[2] + xi_tib) / xi_tib;
       if (result.yields.PhotonYield < 1. || Nq <= 0)
         quanta.photons = 0;
-      else
-        quanta.photons = int(ceil(
-            RandomGen::rndm()->rand_gauss(
-                result.yields.PhotonYield,
-                sqrt(NRERWidthsParam[6] * result.yields.PhotonYield), true) -
-            0.5));
+      else //int(ceil(RandomGen::rndm()->rand_gauss(result.yields.PhotonYield,sqrt(NRERWidthsParam[6]*result.yields.PhotonYield),true)-0.5))
+        quanta.photons = RandomGen::rndm()->binom_draw(Nq,result.yields.PhotonYield/double(Nq));
       quanta.electrons = Nq - quanta.photons;
       quanta.ions = int(ceil(double(Nq) / (1. + NRERWidthsParam[1]) - 0.5));
       quanta.excitons = Nq - quanta.ions;

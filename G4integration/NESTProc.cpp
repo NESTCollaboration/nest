@@ -164,7 +164,8 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
         double ecum = 0;
         double el_cum = 0;
         double electron_speed = fNESTcalc->SetDriftVelocity(
-            fDetector->get_T_Kelvin(), lineage.density, efield_here);
+	  fDetector->get_T_Kelvin(), lineage.density, efield_here,
+	  fDetector->get_p_bar());
         // double electron_kin_E =
         //     NESTThermalElectron::ThermalElectron()->GetPDGMass() *
         //     std::pow(electron_speed * mm / us, 2);

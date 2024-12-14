@@ -846,7 +846,8 @@ YieldResult NESTcalc::GetYieldIon(
       0.02966094 * exp(0.17687876 * (massNum / 4. - 1.)) + 1. - 0.02966094;
   double fieldDep = 0.095*pow(dfield,0.515)-0.025; if ( fieldDep < 0. ) fieldDep = 0.;
   if (fdetector->get_inGas()) fieldDep = sqrt(dfield);
-  double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep;
+  double eneDep = 0.13 - 0.0013 * energy; if ( eneDep < 0. ) eneDep = 0.;
+  double ThomasImel = 0.00625 * massDep / (1. + densDep) / fieldDep + eneDep;
   double alpha = 0.64 / pow(1. + pow(density / 10., 2.), 449.61);
   double NexONi = alpha + 0.00178 * pow(atomNum, 1.587);
   if (ValidityTests::nearlyEqual(A1, 206.) &&

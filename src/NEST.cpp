@@ -398,7 +398,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
 }
 
 YieldResult NESTcalc::GetYieldGamma(double energy, double density,
-                                    double dfield) {
+                                    double dfield, double multFact) {
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
@@ -419,6 +419,7 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density,
   double Qy = m1 + (m2 - m1) / (1. + pow(energy / m3, m4)) + m5 +
               (m6 - m5) / (1. + pow(energy / m7, m8));
   if (!fdetector->get_OldW13eV()) Qy *= ZurichEXOQ;
+  Qy *= multFact;
   double Ly = Nq / energy - Qy;
 
   YieldResult result{};
@@ -1084,7 +1085,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density,
 
 YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
-                         const std::vector<double> &ERYieldsParam) {
+                         const std::vector<double> &ERYieldsParam, double multFact) {
   bool oldModelER = false;
 
   if (ERYieldsParam.size() < 10) {
@@ -1152,6 +1153,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
           pow(density, -1.7);
     if (!fdetector->get_OldW13eV()) Qy *= ZurichEXOQ;
   }
+  Qy *= multFact;
   double Ly = Nq / energy - Qy;
   double Ne = Qy * energy;
   double Nph = Ly * energy;
@@ -1593,7 +1595,7 @@ const vector<double> &NESTcalc::GetS1(
   scintillation[5] = NphdC;   // same as Nphd, but XYZ-corrected
   scintillation[6] = spike;   // floating real# spike count, NO XYZ correction
   scintillation[7] = spikeC;  // floating real# spike count, WITH XYZ correction
-  scintillation[8] = spike;
+  scintillation[8] = spike;   // USE FOR EXTERNAL LZLAMA COINCIDENCE CALCULATION
 
   if (spike < fdetector->get_coinLevel())  // no chance of meeting coincidence
     // requirement. Here, spike is still

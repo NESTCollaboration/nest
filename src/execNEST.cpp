@@ -34,6 +34,7 @@ double band[NUMBINS_MAX][7], energies[3],
 bool BeenHere = false;
 unsigned int SaveTheDates[tMax] = {0};
 bool dEOdxBasis = false;
+double multFact = 1.;
 double minTimeSeparation = 0.;  // ns (Kr83m)
 
 int main(int argc, char** argv) {
@@ -172,12 +173,13 @@ int main(int argc, char** argv) {
 
     seed = 0;  // if not given make 0
     if (argc == 8) {
+      multFact = atof(argv[7]);
       seed = atoi(argv[7]);
     } else {
       RandomGen::rndm()->SetSeed(0);
       no_seed = true;
     }
-
+    
     NRERWidthsParam.clear();
     NRYieldsParam.clear();
     ERWeightParam.clear();
@@ -951,21 +953,16 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
           if (type == "ER") {
             if (verbosity > 0 && j == 0) {
               cerr << "CAUTION: Are you sure you don't want beta model instead "
-                      "of ER? This is a weighted average of the beta and gamma "
-                      "models"
-                   << endl;
-              cerr << "with weight values of " << ERWeightParam[0] << " "
-                   << ERWeightParam[1] << " " << ERWeightParam[2] << " "
-                   << ERWeightParam[3] << " " << ERWeightParam[4] << " "
-                   << ERWeightParam[5] << " " << ERWeightParam[6] << " "
-                   << ERWeightParam[7]
-                   << " for Xe-127 L-/M-shell captures at 1.1,5.2keV or "
-                      "Xe-129/131m, at low field"
+                      "of ER? This is a recomb-enhanced (Qy-reduced) version of"
+                      " it for non-betas e.g. EC, DEC. Seed is now Q reduction."
+		   << endl <<
+		      ">1 means increase, and negative number means gamma model"
                    << endl;
             }
-            yields =
-                n.GetYieldERWeighted(keV, rho, field, ERYieldsParam,
-                                     default_EnergyParams, default_FieldParams);
+	    if ( multFact > 0. )
+	      yields = n.GetYieldBetaGR(keV, rho, field, ERYieldsParam, multFact);
+	    else
+	      yields = n.GetYieldGamma(keV, rho, field, -multFact);
           } else {
             if (seed < 0 && seed != -1 && type_num <= 5)
               massNum = detector->get_molarMass();
@@ -1213,8 +1210,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
       // for 2-PE effect (LUX phd units) scint[5] = NphdC; // same as Nphd, but
       // XYZ-corrected scint[6] = spike; // floating real# spike count, NO XYZ
       // correction scint[7] = spikeC; // floating real# spike count, WITH XYZ
-      // correction scint[8] = nHits post coincidence window and N-fold
-      // coincidence cuts
+      // correction scint[8] = nHits post coincidence window and single PE eff!
 
       // Possible outputs from "scint2" vector
       // scint2[0] = Nee; // integer number of electrons unabsorbed in liquid

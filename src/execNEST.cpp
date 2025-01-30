@@ -171,12 +171,12 @@ int main(int argc, char** argv) {
     posiMuon = argv[4];
     fPos = atof(argv[6]);
 
-    seed = 0;  // if not given make 0
+    seed = 1;  // if not given make 1
     if (argc == 8) {
       multFact = atof(argv[7]);
       seed = atoi(argv[7]);
     } else {
-      RandomGen::rndm()->SetSeed(0);
+      RandomGen::rndm()->SetSeed(1);
       no_seed = true;
     }
     
@@ -957,12 +957,16 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
                       " it for non-betas e.g. EC, DEC. Seed is now Q reduction."
 		   << endl <<
 		      ">1 means increase, and negative number means gamma model"
+		      "; use 0 for a weighted average of the gamma, beta models"
                    << endl;
             }
 	    if ( multFact > 0. )
 	      yields = n.GetYieldBetaGR(keV, rho, field, ERYieldsParam, multFact);
-	    else
+	    else if ( multFact < 0. )
 	      yields = n.GetYieldGamma(keV, rho, field, -multFact);
+	    else
+	      yields = n.GetYieldERWeighted(keV, rho, field, ERYieldsParam,
+			        default_EnergyParams, default_FieldParams);
           } else {
             if (seed < 0 && seed != -1 && type_num <= 5)
               massNum = detector->get_molarMass();

@@ -15,7 +15,7 @@ using namespace std;
 using namespace NEST;
 
 static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1 in LXe, 5000 - roughly 6-11us for LAr
-static constexpr double McMConst = 0.0; //Total Quanta power law constant 
+static constexpr double McMConst = 0.0; //NR Nq pow law +const
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 
 NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
@@ -1469,9 +1469,21 @@ const vector<double> &NESTcalc::GetS1(
 
     if (outputTiming >= 0 && !pulseFile.is_open()) {
       pulseFile.open("photon_times.txt");
-      if (outputTiming > 0)
-        pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
+      if ( outputTiming == 1 )
+	pulseFile << "Event#\tt [ns]\tPEb/bin\tPEt/bin\tin win" << endl;
+      else
+	pulseFile << "Event#\tt [ns]" << endl;
     }
+    
+    if ( outputTiming == 2 ) {
+      for ( int ii = 0; ii < (int)std::abs(spike); ++ii ) {
+	char line[80];
+	snprintf(
+		 line, 80, "%llu\t%.3f", (long long unsigned int)evtNum,
+		photon_times[ii]);
+	pulseFile << line << endl;
+      }
+    } else {
 
     int ii, index;
     double min = 1e100, pTime;
@@ -1556,8 +1568,9 @@ const vector<double> &NESTcalc::GetS1(
         --spike;
       }
     }
+    }
   }
-
+  
   if (fdetector->get_noiseLinear()[0] >= 1.0)
     cerr << " !!WARNING!! S1 linear noise term is greater than or equal to 100% "
             "(i.e. 1.0) Did you mistake fraction for percent??"

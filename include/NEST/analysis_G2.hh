@@ -1,7 +1,7 @@
 #include "NEST.hh"
 
 // Verbosity flag (for limiting output to yields; no timing)
-int verbosity = 1;  // use -1 for off, but 0 for efficiency
+int verbosity = 1;  // use -1 for off, 0 for eff, and 2 for N-pho model
 // Loop for execNEST and rootNEST to find the best-fit model parameters
 unsigned loopNEST = 0;
 // 0 for no or off, 1 for ER, 2 for NR

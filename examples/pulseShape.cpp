@@ -4,8 +4,9 @@
 #include <iostream>
 #include <random>
 #include <vector>
+#include "analysis_G2.hh"
 
-unsigned int NUMEVT;  // first global var: #lines from file
+unsigned long int NUMEVT;  // first global var: #lines from file
 #define S2BORD 1000   // ns
 #define RISEDEF \
   0.05  // 5% rise time used as the t0 point. 10% for seminal Kwong paper
@@ -54,18 +55,53 @@ int main(int argc,
       break;
     } else
       ;
-    sscanf(line, "%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &d, &e);
+    if ( verbosity < 2 )
+      sscanf(line, "%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &d, &e);
+    else
+      sscanf(line, "%lf\t%lf", &a, &b);
     if (feof(ifp)) break;
     num.push_back(uint64_t(a));
     tns.push_back(b);
-    if (b > S2BORD) e = 0;
-    bot.push_back(c);
-    top.push_back(d);
-    win.push_back(uint64_t(e));
+    if ( verbosity < 2 ) {
+      if (b > S2BORD) e = 0;
+      bot.push_back(c);
+      top.push_back(d);
+      win.push_back(uint64_t(e));
+    }
     // cerr << a << " " << b << " " << c << " " << d << " " << e << endl;
   }
   fclose(ifp);
-
+  
+  if ( verbosity >= 2 ) {
+    double range[4] = {-200., 200., -69.7, 196.2};
+    vector<double> means(NUMEVT, 0.);
+    vector<double> count(NUMEVT, 0.);
+    vector<double> S1total(NUMEVT, 0.);
+    vector<double> S1inner(NUMEVT, 0.);
+    for ( i = 0; i < num.size(); ++i ) {
+      if ( tns[i] < 1e4 ) {
+	++count[num[i]];
+	means[num[i]] += tns[i];
+      }
+    }
+    for ( i = 0; i < NUMEVT; ++i ) means[i] /= count[i];
+    for ( i = 0; i < num.size(); ++i ) {
+      tns[i] -= means[num[i]];
+      if ( tns[i] >= range[0] && tns[i] <= range[1] )
+	++S1total[num[i]];
+      if ( tns[i] >= range[2] && tns[i] <= range[3] )
+	++S1inner[num[i]];
+    }
+    cout << "evt#\tpromptFrac" << endl;
+    for ( i = 0; i < NUMEVT; ++i ) {
+      double promptFrac = 0.0;
+      if ( S1total[i] > 0. )
+	promptFrac = S1inner[i] / S1total[i];
+      cout << i << "\t" << promptFrac << endl;
+    }
+    return EXIT_SUCCESS;
+  }
+  
   vector<double> S1tot(NUMEVT, 0.);
   vector<double> S2tot(NUMEVT, 0.);
   vector<double> S2max(NUMEVT, 0.);

@@ -360,7 +360,12 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
                             // LZ)
     return 1;
   }
-
+  
+  if ( !PrintSubThr &&
+       ( s1CalculationMode == NEST::S1CalculationMode::Waveform ||
+	 s2CalculationMode == NEST::S2CalculationMode::Waveform ) )
+    PrintSubThr = true;  // to ensure proper event alignment for PSD work
+  
   vector<double> signal1, signal2, signalE, vTable;
   string delimiter, token;
   size_t loc;
@@ -632,7 +637,8 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
             keV = TestSpectra::Cf_spectrum(eMin, eMax);
             break;
           case DD:
-            keV = TestSpectra::DD_spectrum(eMin, eMax, 10., 0.1, 60., 25., 0.);
+            //keV = TestSpectra::DD_spectrum(eMin, eMax, 10., 0.1, 60., 25., 0.); //LUX Run03
+            keV = TestSpectra::DD_spectrum(eMin, eMax, 13., 0.12, 71.2, 20., -20.5); //LZ SR1 Ryan McM
             break;
           case WIMP:
             keV = TestSpectra::WIMP_spectrum(spec.wimp_spectrum_prep, eMin,
@@ -846,25 +852,34 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
               fprintf(stdout, "E_recon [keV]");
           }
           if (seed == -2) {
-            if (dEOdxBasis)
+            if (dEOdxBasis) {
               printf(
                   "\tfield [V/cm]\ttDrift [us]\tX,Y,Z "
                   "[mm]\tNph/keV\t\tNe-/keV\t\tS1 [PE "
                   "or phe]\tS1_3Dcor "
                   "[phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea "
                   "[PE]\tS2_3Dcorr [phd]\n");
-            else
+	    }
+            else {
               printf(
                   "\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\t\tNe-\t\tS1 "
                   "[PE "
                   "or phe]\tS1_3Dcor "
                   "[phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea "
                   "[PE]\tS2_3Dcorr [phd]\n");
-          } else
-            printf(
-                "\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or "
-                "phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea "
-                "[PE]\tS2_3Dcorr [phd]\n");
+	    }
+          } else {
+	    if ( verbosity >= 2 )
+	      printf(
+		       "\tfield [V/cm]\ttDrift [us]\tZ [mm]\tNph\tNe-\tS1 [PE or "
+		     "phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea "
+		     "[PE]\tS2_3Dcorr [phd]\n");
+	    else
+	      printf(
+		   "\tfield [V/cm]\ttDrift [us]\tX,Y,Z [mm]\tNph\tNe-\tS1 [PE or "
+		     "phe]\tS1_3Dcor [phd]\tspikeC(NON-INT)\tNe-Extr\tS2_rawArea "
+		     "[PE]\tS2_3Dcorr [phd]\n");
+	  }
         }
       }
       if (ValidityTests::nearlyEqual(inField, -1.)) {
@@ -1285,10 +1300,16 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
           printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%lf\t%lf\t", keV, field,
                  driftTime, smearPos[0], smearPos[1], smearPos[2],
                  yields.PhotonYield, yields.ElectronYield);
-        } else
-          printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field,
-                 driftTime, smearPos[0], smearPos[1], smearPos[2],
-                 quanta.photons, quanta.electrons);
+        } else {
+	  if ( verbosity >= 2 )
+	    printf("%.6f\t%.6f\t%.6f\t%.0f\t%d\t%d\t", keV, field,
+		   driftTime, smearPos[2],
+		   quanta.photons, quanta.electrons);
+	  else
+	    printf("%.6f\t%.6f\t%.6f\t%.0f, %.0f, %.0f\t%d\t%d\t", keV, field,
+		             driftTime, smearPos[0], smearPos[1], smearPos[2],
+		   quanta.photons, quanta.electrons);
+	}
         if (keV > 10. * hiEregime || scint[5] > maxS1 || scint2[7] > maxS2 ||
             // switch to engineering notation to make output more readable, if
             // energy is too high (>1 MeV)

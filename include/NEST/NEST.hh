@@ -248,8 +248,7 @@ class NESTcalc {
       INTERACTION_TYPE species, double energy, double density, double dfield,
       double A, double Z,
       const std::vector<double> &NRYieldsParam = default_NRYieldsParam,
-      const std::vector<double> &ERYieldsParam = default_ERYieldsParam,
-      bool oldModelER = false);
+      const std::vector<double> &ERYieldsParam = default_ERYieldsParam);
   // the innermost heart of NEST, this provides floating-point average values
   // for photons and electrons per keV. Nuis(ance)Param included for varying the
   // NR Ly & Qy up and down
@@ -310,7 +309,7 @@ class NESTcalc {
   virtual QuantaResult GetQuanta(
       const YieldResult &yields, double density,
       const std::vector<double> &NRERWidthsParam = default_NRERWidthsParam,
-      bool oldModelER = false, double SkewnessER = -999.);
+      double SkewnessER = -999.);
   // GetQuanta takes the yields from above and fluctuates them, both the total
   // quanta (photons+electrons) with a Fano-like factor, and the "slosh" between
   // photons and electrons
@@ -324,8 +323,7 @@ class NESTcalc {
 
   virtual double RecombOmegaER(
       double efield, double elecFrac,
-      const std::vector<double> &NRERWidthsParam = default_NRERWidthsParam,
-      bool oldModel = false);
+      const std::vector<double> &NRERWidthsParam = default_NRERWidthsParam);
   // Calculates the Omega parameter governing non-binomial recombination
   // fluctuations for gammas and betas (Lindhard==1)
 

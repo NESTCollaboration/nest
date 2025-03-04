@@ -30,7 +30,7 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
   result.yields = GetYields(species, energy, density, dfield, A, Z,
                             NRYieldsParam, ERYieldsParam);
   result.quanta =
-      GetQuanta(result.yields, density, NRERWidthsParam, false, -999.);
+      GetQuanta(result.yields, density, NRERWidthsParam, -999.);
   if (do_times)
     result.photon_times = GetPhotonTimes(
         species, result.quanta.photons, result.quanta.excitons, dfield, energy);
@@ -170,23 +170,17 @@ double NESTcalc::RecombOmegaNR(double elecFrac,
 }
 
 double NESTcalc::RecombOmegaER(double efield, double elecFrac,
-                               const std::vector<double> &NRERWidthsParam,
-                               bool oldModel) {
+                               const std::vector<double> &NRERWidthsParam) {
   double ampl;
-  if (!oldModel)
-    ampl = 0.086036 + (NRERWidthsParam[7] - 0.086036) /
-                          pow(1. + pow(efield / 295.2, 251.6),
-                              0.0069114);  // NEW(GregR)
+  ampl = 0.086036 + (NRERWidthsParam[7] - 0.086036) /
+    pow(1. + pow(efield / 295.2, 251.6), 0.0069114);  // NEW(GregR)
   // NRERWidthsParam[7] sets the lower-asymptote of field-dependence of ampl
-  else
-    ampl = 0.14 + (0.043 - 0.14) / (1. + pow(efield / 1210., 1.25));  // OLD
   if (ampl < 0.) ampl = 0.;
   double wide = NRERWidthsParam[8];  // Width of omega vs. electron-fraction
                                      // (i.e. recomb. prob.)
   double cntr =
       NRERWidthsParam[9];  // NEW(GregR) Center of omega vs. elec-frac (OLD
                            // value of 0.50 for OLD ampl above 0.14...)
-  if (oldModel) cntr = 0.50;
   double skew =
       NRERWidthsParam[10];  // Skewness of omega vs. elec-frac distribution
   double mode = cntr + 2. * inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
@@ -224,7 +218,7 @@ double NESTcalc::FanoER(double density, double Nq_mean, double efield,
 
 QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
                                  const std::vector<double> &NRERWidthsParam,
-                                 bool oldModelER, double SkewnessER) {
+                                 double SkewnessER) {
   QuantaResult result{};
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
@@ -315,7 +309,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
   double omega = yields.Lindhard < 1
                      ? RecombOmegaNR(elecFrac, NRERWidthsParam)
                      : RecombOmegaER(yields.ElectricField, elecFrac,
-                                     NRERWidthsParam, oldModelER);
+                                     NRERWidthsParam);
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     omega = 0.0;  // Ar has no non-binom sauce
   double Variance =
@@ -594,7 +588,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
       Ne += result.quanta.electrons;
     } else
       result.quanta =
-          GetQuanta(result.yields, rho, default_NRERWidthsParam, false, -999.);
+          GetQuanta(result.yields, rho, default_NRERWidthsParam, -999.);
     if (eMin > 0.)
       Nph += result.quanta.photons * (eStep / refEnergy);
     else {
@@ -1086,8 +1080,7 @@ YieldResult NESTcalc::GetYieldBeta(double energy, double density,
 YieldResult  // NEW
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
                          const std::vector<double> &ERYieldsParam, double multFact) {
-  bool oldModelER = false;
-
+  
   if (ERYieldsParam.size() < 10) {
     throw std::runtime_error(
         "ERROR: You need a minimum of 10 nuisance parameters for the mean "
@@ -1174,8 +1167,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
                                 double density, double dfield, double massNum,
                                 double atomNum,
                                 const std::vector<double> &NRYieldsParam,
-                                const std::vector<double> &ERYieldsParam,
-                                bool oldModelER) {
+                                const std::vector<double> &ERYieldsParam) {
   switch (species) {
     case NR:
     case WIMP:
@@ -1208,7 +1200,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       break;
     default:  // beta, CH3T, 14C, the pp solar neutrino background, and
               // Compton/PP spectra of fullGamma
-      if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) || oldModelER ||
+      if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) ||
           fdetector->get_inGas())
         return GetYieldBeta(energy, density, dfield);  // OLD
       else

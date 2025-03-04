@@ -999,7 +999,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
                                                      // recomb fluct & skew (NR)
           }
           if (!dEOdxBasis)  // last argument -999 for default VV skew mod
-            quanta = n.GetQuanta(yields, rho, NRERWidthsParam, false, 0.);
+            quanta = n.GetQuanta(yields, rho, NRERWidthsParam, 0.);
         } else {
           yields.PhotonYield = 0.;
           yields.ElectronYield = 0.;

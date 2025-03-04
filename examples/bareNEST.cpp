@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
   yields =
       n.GetYields(type_num, keV, rho, field, double(massNum), double(atomNum),
                   default_NRYieldsParam, default_ERYieldsParam);
-  quanta = n.GetQuanta(yields, rho, default_NRERWidthsParam, false, -999.);
+  quanta = n.GetQuanta(yields, rho, default_NRERWidthsParam, -999.);
 
   // Calculate S2 photons using electron lifetime correction
   double Nphd_S2 =

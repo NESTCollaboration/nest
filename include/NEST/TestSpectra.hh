@@ -51,6 +51,7 @@ class TestSpectra {
   static double C14_spectrum(double emin, double emax);
   static double B8_spectrum(double emin, double emax);
   static double AmBe_spectrum(double emin, double emax);
+  static double PowLawFit_spectrum(double emin, double emax, double exp);
   static double Cf_spectrum(double emin, double emax);
   static double DD_spectrum(double xMin, double xMax, double expFall,
                             double peakFrac, double peakMu, double peakSig, double peakSkew);

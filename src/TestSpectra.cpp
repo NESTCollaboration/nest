@@ -145,6 +145,24 @@ double TestSpectra::AmBe_spectrum(double xMin, double xMax) {
   return xyTry[0];
 }
 
+double TestSpectra::PowLawFit_spectrum( //OK for LZ AmBe (Yongheng)
+		    double xMin, double xMax, double expo) {
+  double yMax, yMin; ++expo;
+  if ( expo < 0. ) {
+    if ( xMin <= 0. ) xMin = 0.1; //100 eV
+    yMax = pow(xMin,expo);
+    yMin = pow(xMax,expo);
+  }
+  else {
+    yMax = pow(xMax,expo);
+    yMin = pow(xMin,expo);
+  }
+  double xTry = pow(yMin+(yMax-yMin)*RandomGen::rndm()->rand_uniform(),1./expo);
+  if ( xTry < xMin ) xTry = xMin;
+  if ( xTry > xMax ) xTry = xMax; //these can create pileup
+  return xTry;
+}
+
 double TestSpectra::Cf_spectrum(double xMin, double xMax) {
   if (xMax > 200.) xMax = 200.;
   if (xMin < DBL_MIN) xMin = DBL_MIN;

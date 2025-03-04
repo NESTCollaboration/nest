@@ -630,8 +630,9 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
             // 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
             keV = TestSpectra::B8_spectrum(eMin, eMax);
             break;
-          case AmBe:  // for ZEPLIN-III FSR from HA (Pal '98)
-            keV = TestSpectra::AmBe_spectrum(eMin, eMax);
+          case AmBe:
+            //keV = TestSpectra::AmBe_spectrum(eMin, eMax); //for ZEPLIN-III FSR from HA (Pal '98)
+	    keV = TestSpectra::PowLawFit_spectrum(eMin, eMax, -0.95351); //0.5,300 recommended Es
             break;
           case Cf:
             keV = TestSpectra::Cf_spectrum(eMin, eMax);

@@ -77,7 +77,7 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf) {  // NR
-      SingTripRatio = 0.269; if (exciton) tauR = 0.;
+      SingTripRatio = 0.269; if (exciton) tauR = 0.5;
     }
     else if (species == ion) {
       // e.g., alphas

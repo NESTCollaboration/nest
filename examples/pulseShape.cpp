@@ -18,19 +18,23 @@ unsigned long int NUMEVT;  // first global var: #lines from file
 
 using namespace std;
 
-int main(int argc,
-         char** argv) {  // compile with g++ -Ofast pulseShape.cpp -o pulseShape
-
-  if (argc < 3) {
-    cerr << "2 args needed: S1 (non-c) in phe (NOT phd). 1st value is min, 2nd "
-            "max."
-         << endl;
-    return EXIT_FAILURE;
+int main ( int argc, char** argv ) {
+  
+  double S1LimPE[2] = { minS1, maxS1 };
+  
+  if ( verbosity < 2 ) {
+    if ( argc < 3 ) {
+      cerr << "2 args needed: S1 (non-c) in phe (NOT phd). 1st value is min, 2nd "
+	      "max."
+	   << endl;
+      return EXIT_FAILURE;
+    }
+    else {
+      S1LimPE[0] = atof(argv[1]); S1LimPE[1] = atof(argv[2]);  // avoid Seg Fault!
+    }
   }
-
-  double MaxPossibleTime = DBL_MAX,
-         S1LimPE[2] = {atof(argv[1]), atof(argv[2])};  // avoid Seg Fault!
-  default_random_engine generator;
+  
+  double MaxPossibleTime = DBL_MAX; default_random_engine generator;
   uniform_real_distribution<double> distribution(
       0., 20.);  // ns for ran offset. 2 bin default. For Case: -7,0
   // for LUX Run03: better results with -4 to 16. Still 2 samples-wide, but
@@ -52,9 +56,10 @@ int main(int argc,
     }
     if (fgets(line, 40, ifp) == NULL) {
       NUMEVT = unsigned(a) + 1;
+      if ( NUMEVT % 10 )
+        cerr << "Warning! Check to see if last event(s) missing b/c S1=0.\n";
       break;
-    } else
-      ;
+    } else ;
     if ( verbosity < 2 )
       sscanf(line, "%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &d, &e);
     else
@@ -232,6 +237,7 @@ int main(int argc,
   cerr << median << "\t" << sigma << "\t" << skew
        << endl;  // can switch to "mean," as desired, but change the header name
                  // too :)
-
+  
   return EXIT_SUCCESS;
+  
 }

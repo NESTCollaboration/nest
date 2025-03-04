@@ -773,21 +773,23 @@ void GetFile(char* fileName) {
       if (']' == ch && nLines == 0) ++nLines;
     }
   }
-
-  while (1) {
-    int scan3 = fscanf(
-        ifp,
-        "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf",
-        &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n);
+  
+  while ( 1 ) {
+    int scan3;
+    if ( verbosity < 2 ) //this is for PSD using the N-photon timing model and has nothing to do with printing out upper limits on numbers of WIMP events
+      scan3 = fscanf ( ifp, "%lf\t%lf\t%lf\t%lf,%lf,%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &d, &e, &f, &g, &h, &i, &j, &k, &l, &m, &n );
+    else
+      scan3 = fscanf ( ifp, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &f, &g, &h, &i, &j, &k, &l, &m, &n );
     if (feof(ifp)) break;
-    // fprintf(stderr,"%.6f\t%.6f\t%.6f\t%.6f,%.6f,%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n",a,b,c,d,e,f,g,h,i,j,k,l,m,n);
     E_keV.push_back(a);
     if (a < eMin) eMin = a;
     if (a > eMax) eMax = a;
     electricField.push_back(b);
     tDrift_us.push_back(c);
-    X_mm.push_back(d);
-    Y_mm.push_back(e);
+    if ( verbosity <= 1 ) {
+      X_mm.push_back(d);
+      Y_mm.push_back(e);
+    } //When in S1 PSD verbosity mode, only Z is printed not also X+Y separated by commas (above) so it's easier to implement Yufan's Z corr to PF
     Z_mm.push_back(f);
     Nph.push_back(g);
     Ne.push_back(h);

@@ -173,16 +173,15 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac,
                                const std::vector<double> &NRERWidthsParam) {
   double ampl;
   ampl = 0.086036 + (NRERWidthsParam[7] - 0.086036) /
-    pow(1. + pow(efield / 295.2, 251.6), 0.0069114);  // NEW(GregR)
+    pow(1. + pow(efield / 295.2, 251.6), 0.0069114);
   // NRERWidthsParam[7] sets the lower-asymptote of field-dependence of ampl
   if (ampl < 0.) ampl = 0.;
   double wide = NRERWidthsParam[8];  // Width of omega vs. electron-fraction
                                      // (i.e. recomb. prob.)
   double cntr =
-      NRERWidthsParam[9];  // NEW(GregR) Center of omega vs. elec-frac (OLD
-                           // value of 0.50 for OLD ampl above 0.14...)
+      NRERWidthsParam[9];  // Center of omega vs. elec-frac
   double skew =
-      NRERWidthsParam[10];  // Skewness of omega vs. elec-frac distribution
+      NRERWidthsParam[10]; // Skewness of omega vs. elec-frac distribution
   double mode = cntr + 2. * inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
   double norm =
       1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
@@ -1003,81 +1002,17 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
       result, energy, Wq_eV);  // everything needed to calculate fluctuations
 }
 
-YieldResult NESTcalc::GetYieldBeta(double energy, double density,
-                                   double dfield) {  // OLD
-  Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
-                               fdetector->get_OldW13eV());
-  double Qy, Nq;
-  double Wq_eV = wvalue.Wq_eV;
-  // double alpha = wvalue.alpha; // duplicate definition below. We don't even
-  // need this here (it is Nex/Ni)
-
-  if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
-    // Liquid Argon
-    double alpha =
-        32.988 -
-        552.988 / (17.2346 +
-                   pow(dfield / (-4.7 + 0.025115 * exp(1.3954 / 0.265360653)),
-                       0.242671));
-    double beta = 0.778482 + 25.9 / pow(1.105 + pow(dfield / 0.4, 4.55), 7.502);
-    double gamma =
-        0.659509 *
-        (1000 / 19.5 + 6.5 * (5 - 0.5 / pow(dfield / 1047.408, 0.01851)));
-    double delta = 15.7489;
-    double DB = 1052.264 + (14159350000 - 1652.264) /
-                               (-5 + pow(dfield / 0.157933, 1.83894));
-    double p1 = 1;
-    double p2 = 10.304;
-    double p3 = 13.0654;
-    double p4 = 0.10535;
-    double p5 = 0.7;
-    double LET = -2.07763;
-    Nq = energy * 1e3 / Wq_eV;
-    Qy = alpha * beta +
-         (gamma - alpha * beta) / pow(p1 + p2 * pow(energy + 0.5, p3), p4) +
-         delta / (p5 + DB * pow(energy, LET));
-  } else {
-    double QyLvllowE =
-        1e3 / Wq_eV + 6.5 * (1. - 1. / (1. + pow(dfield / 47.408, 1.9851)));
-    double HiFieldQy =
-        1. + 0.4607 / pow(1. + pow(dfield / 621.74, -2.2717), 53.502);
-    double QyLvlmedE =
-        32.988 -
-        32.988 /
-            (1. + pow(dfield / (0.026715 * exp(density / 0.33926)), 0.6705));
-    QyLvlmedE *= HiFieldQy;
-    double DokeBirks = 1652.264 + (1.415935e10 - 1652.264) /
-                                      (1. + pow(dfield / 0.02673144, 1.564691));
-    Nq = energy * 1e3 /
-         Wq_eV;  //( Wq_eV+(12.578-Wq_eV)/(1.+pow(energy/1.6,3.5)) );
-    double LET_power = -2.;
-    if (fdetector->get_inGas()) LET_power = 2.;
-    double QyLvlhighE = 28.;
-    if (density > 3.100) QyLvlhighE = 49.;  // SXe effect from Yoo.
-    Qy = QyLvlmedE +
-         (QyLvllowE - QyLvlmedE) /
-             pow(1. + 1.304 * pow(energy, 2.1393), 0.35535) +
-         QyLvlhighE / (1. + DokeBirks * pow(energy, LET_power));
-    if (Qy > QyLvllowE && energy > 1. && dfield > 1e4) Qy = QyLvllowE;
-  }
-
-  if (!fdetector->get_OldW13eV()) Qy *= ZurichEXOQ;
-  double Ly = Nq / energy - Qy;
-  double Ne = Qy * energy;
-  double Nph = Ly * energy;
-
-  YieldResult result{};
-  result.PhotonYield = Nph;
-  result.ElectronYield = Ne;
-  result.ExcitonRatio = NexONi(energy, density);
-  result.Lindhard = 1;
-  result.ElectricField = dfield;
-  result.DeltaT_Scint = -999;
-  return YieldResultValidity(
-      result, energy, Wq_eV);  // everything needed to calculate fluctuations;
+NESTresult NESTcalc::GetYieldsAndQuanta ( double keV, double rho, double def,
+					 INTERACTION_TYPE scatter ) {  // TIB
+  
+  NESTresult result{};
+  YieldResult yields{}; result.yields = yields; QuantaResult quanta{}; result.quanta = quanta;
+  
+  return result;
+  
 }
 
-YieldResult  // NEW
+YieldResult
 NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
                          const std::vector<double> &ERYieldsParam, double multFact) {
   
@@ -1200,11 +1135,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       break;
     default:  // beta, CH3T, 14C, the pp solar neutrino background, and
               // Compton/PP spectra of fullGamma
-      if (ValidityTests::nearlyEqual(ATOM_NUM, 18.) ||
-          fdetector->get_inGas())
-        return GetYieldBeta(energy, density, dfield);  // OLD
-      else
-        return GetYieldBetaGR(energy, density, dfield, ERYieldsParam);  // NEW
+      return GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
       break;
   }
 }

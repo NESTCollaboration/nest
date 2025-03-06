@@ -291,16 +291,14 @@ class NESTcalc {
                                     double maxTimeSeparation = 1000.,
                                     double minTimeSeparation = 300.);
   // Called by GetYields in the Kr83m case
-
-  virtual YieldResult GetYieldBeta(double energy, double density,
-                                   double dfield);
-  // Called by GetYields in the Beta/Compton/etc.(IC,Auger,EC) Case
-
+  
+  virtual NESTresult GetYieldsAndQuanta ( double energy, double density, double dfield, INTERACTION_TYPE species );
+  
   virtual YieldResult GetYieldBetaGR(
       double energy, double density, double dfield,
       const std::vector<double> &ERYieldsParam = default_ERYieldsParam,
 				     double multFact = 1.);
-  // Greg R. version: arXiv:1910.04211
+  // Called by GetYields in the Beta/Compton/etc.(IC,Auger,EC) Case
 
   virtual YieldResult YieldResultValidity(YieldResult &res, const double energy,
                                           const double Wq_eV);

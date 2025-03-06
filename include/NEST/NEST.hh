@@ -292,7 +292,8 @@ class NESTcalc {
                                     double minTimeSeparation = 300.);
   // Called by GetYields in the Kr83m case
   
-  virtual NESTresult GetYieldsAndQuanta ( double energy, double density, double dfield, INTERACTION_TYPE species );
+  virtual NESTresult GetYieldsAndQuanta ( double energy, double density, double dfield,
+  INTERACTION_TYPE species, vector<double> &betaMeansPara, vector<double> &nuclMeansPara );
   
   virtual YieldResult GetYieldBetaGR(
       double energy, double density, double dfield,

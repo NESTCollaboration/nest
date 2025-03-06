@@ -1003,7 +1003,7 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
 }
 
 NESTresult NESTcalc::GetYieldsAndQuanta ( double keV, double rho, double def,
-					 INTERACTION_TYPE scatter ) {  // TIB
+INTERACTION_TYPE scatter, vector<double> &betaMeansPara, vector<double> &nuclMeansPara ) {//TI
   
   NESTresult result{};
   YieldResult yields{}; result.yields = yields; QuantaResult quanta{}; result.quanta = quanta;

@@ -7,7 +7,7 @@
 #include "analysis_G2.hh"
 
 unsigned long int NUMEVT;  // first global var: #lines from file
-#define S2BORD 1000   // ns
+#define S2BORD 1000   // ns - border for S1/S2 discrimination
 #define RISEDEF \
   0.05  // 5% rise time used as the t0 point. 10% for seminal Kwong paper
 #define UNC 0.35  // uncertainty in definition of rise time
@@ -77,7 +77,7 @@ int main ( int argc, char** argv ) {
   }
   fclose(ifp);
   
-  if ( verbosity >= 2 ) {
+  if ( verbosity >= 2 ) { //for pseudo-S1-only spike mode
     double range[4] = {-200., 200., -69.7, 196.2};
     vector<double> means(NUMEVT, 0.);
     vector<double> count(NUMEVT, 0.);
@@ -91,7 +91,7 @@ int main ( int argc, char** argv ) {
     }
     for ( i = 0; i < NUMEVT; ++i ) means[i] /= count[i];
     for ( i = 0; i < num.size(); ++i ) {
-      tns[i] -= means[num[i]];
+      tns[i] -= means[num[i]]; //correction on means
       if ( tns[i] >= range[0] && tns[i] <= range[1] )
 	++S1total[num[i]];
       if ( tns[i] >= range[2] && tns[i] <= range[3] )
@@ -142,7 +142,7 @@ int main ( int argc, char** argv ) {
         CI_left[num[i]] = tns[i];
       if (soFar > 0.500000 * S2tot[num[i]] && CI_right[num[i]] == 0. &&
           CI_left[num[i]] != 0.)
-        CI_right[num[i]] = tns[i];  // left half only
+        CI_right[num[i]] = tns[i];  // left half only because of asymmetry
       if (CI_left[num[i]] != 0. && CI_right[num[i]] != 0.) {
         S2width[num[i]] = (CI_right[num[i]] - CI_left[num[i]]) / 2.;
         soFar = 0.0;
@@ -159,7 +159,7 @@ int main ( int argc, char** argv ) {
       if (fraction < 0.) fraction = 0.;
       if (soFar > (fraction * S1tot[num[i]]) &&
           T0X[num[i]] >= MaxPossibleTime) {
-        T0X[num[i]] = tns[i];
+        T0X[num[i]] = tns[i]; //time of "actual" S1 peak start
         soFar = 0.0;
         continue;
       }
@@ -186,6 +186,7 @@ int main ( int argc, char** argv ) {
       // double offset1 = 10.+distribution(generator);
       // double offset2 = 10.+distribution(generator);
       // double offset3 = 10.+distribution(generator);
+      // randomized offset was to create extra smearing to better match real data with unknowns in the DAQ
       rRange[0] = range[0] + offset0;
       rRange[1] = range[1] + offset0;
       rRange[2] = range[2] + offset0;

@@ -1002,13 +1002,44 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
       result, energy, Wq_eV);  // everything needed to calculate fluctuations
 }
 
-NESTresult NESTcalc::GetYieldsAndQuanta ( double keV, double rho, double def,
-INTERACTION_TYPE scatter, vector<double> &betaMeansPara, vector<double> &nuclMeansPara ) {//TI
+YieldResult NESTcalc::GetYieldsAndQuanta ( double keV, double rho, double def,
+INTERACTION_TYPE scatter, const vector<double> &betaMeansPara, const vector<double> &nuclMeansPara ) {//TI
   
-  NESTresult result{};
-  YieldResult yields{}; result.yields = yields; QuantaResult quanta{}; result.quanta = quanta;
+  NESTresult results{};
+  YieldResult yields{}; results.yields = yields; QuantaResult quanta{}; results.quanta = quanta;
   
-  return result;
+  double Wq = 20.7 - 3.2 * rho;
+  double aX = 0.07 + .09 * rho;
+  if ( fdetector->get_OldW13eV() && !fdetector->get_inGas() ) Wq *= ZurichEXOW;
+  double Nq = ( 1000. * keV ) / Wq - 1.10;
+  double keVEff = keV + ( 0. - keV ) / ( 1. + pow ( 35. / keV, 1.8 ) );
+  
+  double xiBase = 1.44, xiExpo = .5, xiOff = 0.840;
+  double xiTIB = xiBase * pow ( keVEff + xiOff, xiExpo );
+  double escape = log ( 3.95 + xiTIB ) / xiTIB;
+  yields.ExcitonRatio = ( aX - 0.00 ) * erf ( keVEff / 3.13 ) + 0.00;
+  if ( escape > 1. ) {
+    Nq *= escape; escape = 1.;
+  }
+  quanta.recombProb = 1. - escape;
+  double alpha1 = 1. / ( 1. + yields.ExcitonRatio );
+  double Ni = Nq * alpha1;
+  yields.ElectronYield = escape * Ni;
+  yields.PhotonYield = Nq - yields.ElectronYield;
+  
+  yields.DeltaT_Scint = -999.;
+  yields.Lindhard = 1.;
+  yields.ElectricField = def;
+  
+  Nq = RandomGen::rndm()->binom_draw(int(floor(keV/7e-3+0.5)),Nq/(keV/7e-3));
+  double y = escape * alpha1;
+  quanta.Variance = ( 1. - y ) * y * Nq;
+  quanta.electrons = RandomGen::rndm()->binom_draw(Nq,y);
+  quanta.photons = Nq - quanta.electrons;
+  quanta.ions = quanta.electrons / escape;
+  quanta.excitons = Nq - quanta.ions;
+  
+  return yields; //in the future, change this to returning the quanta instead, or results
   
 }
 

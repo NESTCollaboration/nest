@@ -1011,7 +1011,7 @@ INTERACTION_TYPE scatter, const vector<double> &betaMeansPara, const vector<doub
   double Wq = 20.7 - 3.2 * rho;
   double aX = 0.07 + .09 * rho;
   if ( fdetector->get_OldW13eV() && !fdetector->get_inGas() ) Wq *= ZurichEXOW;
-  double Nq = ( 1000. * keV ) / Wq - 1.10;
+  double Nq = ( 1000. * keV ) / Wq - 1.10; if ( Nq < 0. ) Nq = 0.;
   double keVEff = keV + ( 0. - keV ) / ( 1. + pow ( 35. / keV, 1.8 ) );
   
   double xiBase = 1.44, xiExpo = .5, xiOff = 0.840;
@@ -1056,7 +1056,6 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
-  double alpha = wvalue.alpha;
   
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     // Liquid Argon
@@ -1095,6 +1094,7 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
     return YieldResultValidity(result, energy, Wq_eV);
   }
   
+  double alpha = wvalue.alpha;
   double Nq = energy * 1e3 / Wq_eV, m01, m02, m03, m04, m05, m07, m08, m09, m10;
   if (ERYieldsParam[0] < 0.)
     m01 = 30.66 +

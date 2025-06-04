@@ -251,95 +251,90 @@ int main(int argc, char** argv) {
   return exec;
 }
 
+// Method to store the results from simulating an S1 and an S2
+void NESTObservableArray::store_signals(std::vector<double> s1, std::vector<double> s2){
+  s1_nhits.push_back(std::abs(int(s1[0])));
+  s1_nhits_thr.push_back(std::abs(int(s1[8])));
+  s1_nhits_dpe.push_back(std::abs(int(s1[1])));
+  s1r_phe.push_back(std::abs(s1[2]));
+  s1c_phe.push_back(std::abs(s1[3]));
+  s1r_phd.push_back(std::abs(s1[4]));
+  s1c_phd.push_back(std::abs(s1[5]));
+  s1r_spike.push_back(std::abs(s1[6]));
+  s1c_spike.push_back(std::abs(
+      s1[7]));  // default is S1c in units of spikes, 3-D XYZ corr
+
+  Nee.push_back(std::abs(int(s2[0])));
+  Nph.push_back(std::abs(int(s2[1])));
+  s2_nhits.push_back(std::abs(int(s2[2])));
+  s2_nhits_dpe.push_back(std::abs(int(s2[3])));
+  s2r_phe.push_back(std::abs(s2[4]));
+  s2c_phe.push_back(std::abs(s2[5]));
+  s2r_phd.push_back(std::abs(s2[6]));
+  s2c_phd.push_back(std::abs(
+      s2[7]));  // default is S2c in terms of phd, not phe a.k.a. PE
+}
+
+// func suggested by Xin Xiang, PD Brown U. for RG, LZ
 NESTObservableArray runNESTvec(
     VDetector* detector,
-    INTERACTION_TYPE
-        particleType,  // func suggested by Xin Xiang, PD Brown U. for RG, LZ
-    vector<double> eList, vector<vector<double>> pos3dxyz, double inField,
-    int seed) {
+    INTERACTION_TYPE particleType, 
+    std::vector<double> eList,
+    std::vector<vector<double>> pos3dxyz,
+    double inField,
+    int seed,
+    std::vector<double> ERYieldsParam,
+    std::vector<double> NRYieldsParam,
+    std::vector<double> NRERWidthsParam,
+    S1CalculationMode s1mode,
+    S2CalculationMode s2mode
+  ) {
+
   verbosity = -1;
-  NESTcalc n(detector);
-  NESTresult result;
-  QuantaResult quanta;
-  double x, y, z, driftTime, vD;
+  NESTcalc calc(detector);
+
   RandomGen::rndm()->SetSeed(seed);
-  ERYieldsParam = default_ERYieldsParam;
-  NRYieldsParam = default_NRYieldsParam;
-  NRERWidthsParam = default_NRERWidthsParam;
-  vector<double> scint, scint2, wf_amp;
-  vector<int64_t> wf_time;
-  NESTObservableArray OutputResults;
-  double useField;
-  vector<double> g2_params = n.CalculateG2(verbosity);
-  double rho = n.SetDensity(detector->get_T_Kelvin(), detector->get_p_bar());
+
+  std::vector<double> wf_amp;
+  std::vector<int64_t> wf_time;
+  
+  std::vector<double> g2_params = calc.CalculateG2(verbosity);
+  double rho = calc.SetDensity(detector->get_T_Kelvin(), detector->get_p_bar());
+
+  auto OutputResults = NESTObservableArray();
 
   for (uint64_t i = 0; i < eList.size(); ++i) {
-    x = pos3dxyz[i][0];
-    y = pos3dxyz[i][1];
-    z = pos3dxyz[i][2];
-    if (inField <= 0.)
-      useField = detector->FitEF(x, y, z);
-    else
-      useField = inField;
-    double truthPos[3] = {x, y, z};
-    double smearPos[3] = {x, y, z};  // ignoring the difference in this quick
-                                     // function caused by smearing
-    result = n.FullCalculation(
+
+    std::vector<double> truthPos = pos3dxyz[i];
+    // ignoring position smearing in this quick function
+    std::vector<double> smearPos = truthPos;
+
+    // Check if the user has requested a given E-field
+    double useField = inField < 0.0 ? detector->FitEF(truthPos[0], truthPos[1], truthPos[2]) : inField;
+
+    // This is effectivly the yield code where we use NEST to predicate the number of 
+    // photons and electrons realeased for a given interaction
+    NESTresult result = calc.FullCalculation(
         particleType, eList[i], rho, useField, detector->get_molarMass(),
         ATOM_NUM, NRYieldsParam, NRERWidthsParam, ERYieldsParam, verbosity);
-    quanta = result.quanta;
-    vD = n.SetDriftVelocity(detector->get_T_Kelvin(), rho, useField, detector->get_p_bar());
-    scint = n.GetS1(quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0],
+    double vD = calc.SetDriftVelocity(detector->get_T_Kelvin(), rho, useField, detector->get_p_bar());
+
+    // Here we simulate the detector response to estimate the detected S1
+    std::vector<double> s1 = calc.GetS1(result.quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0],
                     smearPos[1], smearPos[2], vD, vD, particleType, i, useField,
-                    eList[i], NEST::S1CalculationMode::Full, verbosity, wf_time,
+                    eList[i], s1mode, verbosity, wf_time,
                     wf_amp);
-    driftTime = (detector->get_TopDrift() - z) /
-                vD;  // vD,vDmiddle assumed same (uniform field)
-    scint2 = n.GetS2(quanta.electrons, truthPos[0], truthPos[1], truthPos[2],
+
+    // vD,vDmiddle assumed same (uniform field)
+    double driftTime = (detector->get_TopDrift() - truthPos[2]) / vD;  
+
+    // Here we simulate the detector response to estimate the detected S2
+    std::vector<double> s2 = calc.GetS2(result.quanta.electrons, truthPos[0], truthPos[1], truthPos[2],
                      smearPos[0], smearPos[1], smearPos[2], driftTime, vD, i,
-                     useField, S2CalculationMode::Full, verbosity, wf_time,
+                     useField, s2mode, verbosity, wf_time,
                      wf_amp, g2_params);
-    if (scint[7] > PHE_MIN &&
-        scint2[7] > PHE_MIN) {  // unlike usual, kill (don't skip, just -> 0)
-                                // sub-thr evts
-      OutputResults.s1_nhits.push_back(std::abs(int(scint[0])));
-      OutputResults.s1_nhits_thr.push_back(std::abs(int(scint[8])));
-      OutputResults.s1_nhits_dpe.push_back(std::abs(int(scint[1])));
-      OutputResults.s1r_phe.push_back(std::abs(scint[2]));
-      OutputResults.s1c_phe.push_back(std::abs(scint[3]));
-      OutputResults.s1r_phd.push_back(std::abs(scint[4]));
-      OutputResults.s1c_phd.push_back(std::abs(scint[5]));
-      OutputResults.s1r_spike.push_back(std::abs(scint[6]));
-      OutputResults.s1c_spike.push_back(std::abs(
-          scint[7]));  // default is S1c in units of spikes, 3-D XYZ corr
-      OutputResults.Nee.push_back(std::abs(int(scint2[0])));
-      OutputResults.Nph.push_back(std::abs(int(scint2[1])));
-      OutputResults.s2_nhits.push_back(std::abs(int(scint2[2])));
-      OutputResults.s2_nhits_dpe.push_back(std::abs(int(scint2[3])));
-      OutputResults.s2r_phe.push_back(std::abs(scint2[4]));
-      OutputResults.s2c_phe.push_back(std::abs(scint2[5]));
-      OutputResults.s2r_phd.push_back(std::abs(scint2[6]));
-      OutputResults.s2c_phd.push_back(std::abs(
-          scint2[7]));  // default is S2c in terms of phd, not phe a.k.a. PE
-    } else {
-      OutputResults.s1_nhits.push_back(0);
-      OutputResults.s1_nhits_thr.push_back(0);
-      OutputResults.s1_nhits_dpe.push_back(0);
-      OutputResults.s1r_phe.push_back(0.0);
-      OutputResults.s1c_phe.push_back(0.0);
-      OutputResults.s1r_phd.push_back(0.0);
-      OutputResults.s1c_phd.push_back(0.0);
-      OutputResults.s1r_spike.push_back(0.0);
-      OutputResults.s1c_spike.push_back(0.0);
-      OutputResults.Nee.push_back(0);
-      OutputResults.Nph.push_back(0);
-      OutputResults.s2_nhits.push_back(0);
-      OutputResults.s2_nhits_dpe.push_back(0);
-      OutputResults.s2r_phe.push_back(0.);
-      OutputResults.s2c_phe.push_back(0.);
-      OutputResults.s2r_phd.push_back(0.);
-      OutputResults.s2c_phd.push_back(0.);
-    }
+
+    OutputResults.store_signals(s1, s2);
   }
 
   return OutputResults;

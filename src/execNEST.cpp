@@ -289,7 +289,6 @@ NESTObservableArray runNESTvec(
     S1CalculationMode s1mode,
     S2CalculationMode s2mode
   ) {
-
   verbosity = -1;
   NESTcalc calc(detector);
 
@@ -304,7 +303,6 @@ NESTObservableArray runNESTvec(
   auto OutputResults = NESTObservableArray();
 
   for (uint64_t i = 0; i < eList.size(); ++i) {
-
     std::vector<double> truthPos = pos3dxyz[i];
     // ignoring position smearing in this quick function
     std::vector<double> smearPos = truthPos;

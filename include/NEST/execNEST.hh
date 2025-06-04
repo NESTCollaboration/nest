@@ -31,7 +31,6 @@ class NESTObservableArray {
     std::vector<double> s2c_phe;
     std::vector<double> s2r_phd;
     std::vector<double> s2c_phd;
-
 };
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,

@@ -6,7 +6,6 @@
 #include <random>
 
 using namespace std;
-string DetName = "Xed";
 
 class DetectorExample_XED : public VDetector {
  public:
@@ -19,6 +18,7 @@ class DetectorExample_XED : public VDetector {
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   virtual void Initialization() override {
+    name = "Xed";
     // Primary Scintillation (S1) parameters
     g1 = 0.05;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     // 0.025 for Xed phase-I (Nishat Parveen, LZ, UAlbany: for Pb-206 work)

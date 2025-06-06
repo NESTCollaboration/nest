@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
   auto* detector = new LZ_Detector();
   if (verbosity > 0) cerr << "*** Detector definition message ***" << endl;
   if (verbosity > 0)
-    cerr << "You are currently using the " << DetName << " detector." << endl << endl;
+    cerr << "You are currently using the " << det->getName() << " detector." << endl << endl;
   // Custom parameter modification functions
   // detector->ExampleFunction();
 

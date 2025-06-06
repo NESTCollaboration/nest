@@ -73,6 +73,7 @@ class LZ_2024 : public VDetector {
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   virtual void Initialization() override {
+    name = "LZ 2024"
     // Primary Scintillation (S1) parameters
     g1 = 0.1122;// +/- 0.002  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     sPEres = 0.338;   // single phe resolution (Gaussian assumed)

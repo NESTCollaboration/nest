@@ -8,7 +8,6 @@
 #include "VDetector.hh"
 
 using namespace std;
-string DetName = "XENONnT SR0";
 
 class XENONnT : public VDetector {
  public:
@@ -25,6 +24,7 @@ class XENONnT : public VDetector {
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   void Initialization() override {
+    name = "XENONnT SR0";
     // From projected WIMP sensitivity paper: 2007.08796
     // Primary Scintillation (S1) parameters
     g1 = 0.12520;  // XENONnT SR0: g1 = 0.15149 PE/photon (0.12520 phd/photon)

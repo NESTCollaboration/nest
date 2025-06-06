@@ -43,7 +43,6 @@
 #include "VDetector.hh"
 
 using namespace std;
-string DetName = "LZ SR1";
 
 class LZ_Detector : public VDetector {
  public:
@@ -56,6 +55,7 @@ class LZ_Detector : public VDetector {
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   void Initialization() override {
+    name = "LZ SR1";
     // Primary Scintillation (S1) parameters
     g1 = 0.113569;  // 0.114 +/- 0.002  // phd per S1 phot at dtCntr (not phe).
                     // Divide out 2-PE effect

@@ -311,8 +311,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
                                      NRERWidthsParam);
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     omega = 0.0;  // Ar has no non-binom sauce
+  double lambda_Chen = NRERWidthsParam[11];
   double Variance =
-      recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
+      lambda_Chen * recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   // if ( !fdetector->get_OldW13eV() ) Variance /= sqrt ( ZurichEXOQ );
 
   double skewness;

@@ -154,6 +154,7 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(0.205);
     NRERWidthsParam.push_back(0.45);
     NRERWidthsParam.push_back(-0.2);
+    NRERWidthsParam.push_back(1.0);   // Binomial recombination suppressant -- from Chen Ding's Migdal work
 
   } else {
     numEvts = (double)atof(argv[1]);
@@ -198,6 +199,7 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(0.205);  // center in e-frac (ER)
     NRERWidthsParam.push_back(0.45);   // width parameter
     NRERWidthsParam.push_back(-0.2);   // ER non-binom skewness in e-frac
+    NRERWidthsParam.push_back(1.0);   // Binomial recombination suppressant -- from Chen Ding's Migdal work
 
     // if (type == "ER") {  // Based on XELDA L-shell 5.2 keV yields
     // https://arxiv.org/abs/2109.11487
@@ -995,7 +997,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
             NRERWidthsParam.clear();
             NRERWidthsParam = {
                 1.00, 1.00,     0.,    0.50, 0.19, 0.,
-                1.,   0.046452, 0.205, 0.45, -0.2};  // zero out non-binom
+                1.,   0.046452, 0.205, 0.45, -0.2, 1.0};  // zero out non-binom
                                                      // recomb fluct & skew (NR)
           }
           if (!dEOdxBasis)  // last argument -999 for default VV skew mod

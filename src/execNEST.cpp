@@ -251,8 +251,30 @@ int main(int argc, char** argv) {
   return exec;
 }
 
+
 // Method to store the results from simulating an S1 and an S2
-void NESTObservableArray::store_signals(std::vector<double> s1, std::vector<double> s2){
+void NESTObservableArray::store_signals(
+  double energy,
+  std::vector<double> pos,
+  std::vector<double> s1,
+  std::vector<double> s2,
+  std::vector<int64_t> s1_wf_time,
+  std::vector<double> s1_wf_amp,
+  std::vector<int64_t> s2_wf_time,
+  std::vector<double> s2_wf_amp
+){
+
+  // Handle truth
+  energy_kev.push_back(energy);
+  x_mm.push_back(pos[0]);
+  y_mm.push_back(pos[1]);
+  z_mm.push_back(pos[2]);
+
+  // Handle quanta
+  Nee.push_back(std::abs(int(s2[0])));
+  Nph.push_back(std::abs(int(s2[1])));
+
+  // Handle S1
   s1_nhits.push_back(std::abs(int(s1[0])));
   s1_nhits_thr.push_back(std::abs(int(s1[8])));
   s1_nhits_dpe.push_back(std::abs(int(s1[1])));
@@ -264,8 +286,7 @@ void NESTObservableArray::store_signals(std::vector<double> s1, std::vector<doub
   s1c_spike.push_back(std::abs(
       s1[7]));  // default is S1c in units of spikes, 3-D XYZ corr
 
-  Nee.push_back(std::abs(int(s2[0])));
-  Nph.push_back(std::abs(int(s2[1])));
+  // Handle S2
   s2_nhits.push_back(std::abs(int(s2[2])));
   s2_nhits_dpe.push_back(std::abs(int(s2[3])));
   s2r_phe.push_back(std::abs(s2[4]));
@@ -273,6 +294,13 @@ void NESTObservableArray::store_signals(std::vector<double> s1, std::vector<doub
   s2r_phd.push_back(std::abs(s2[6]));
   s2c_phd.push_back(std::abs(
       s2[7]));  // default is S2c in terms of phd, not phe a.k.a. PE
+
+  // Handle waveforms
+  s1_waveform_time.push_back(s1_wf_time);
+  s1_waveform_amp.push_back(s1_wf_amp);
+  s2_waveform_time.push_back(s2_wf_time);
+  s2_waveform_amp.push_back(s2_wf_amp);
+    
 }
 
 // func suggested by Xin Xiang, PD Brown U. for RG, LZ
@@ -294,15 +322,23 @@ NESTObservableArray runNESTvec(
 
   RandomGen::rndm()->SetSeed(seed);
 
-  std::vector<double> wf_amp;
-  std::vector<int64_t> wf_time;
-  
+  std::vector<double> s1_wf_amp;
+  std::vector<double> s2_wf_amp;
+  std::vector<int64_t> s1_wf_time;
+  std::vector<int64_t> s2_wf_time;
+
   std::vector<double> g2_params = calc.CalculateG2(verbosity);
   double rho = calc.SetDensity(detector->get_T_Kelvin(), detector->get_p_bar());
 
   auto OutputResults = NESTObservableArray();
 
   for (uint64_t i = 0; i < eList.size(); ++i) {
+
+    s1_wf_amp.clear();
+    s2_wf_amp.clear();
+    s1_wf_time.clear();
+    s2_wf_time.clear();
+
     std::vector<double> truthPos = pos3dxyz[i];
     // ignoring position smearing in this quick function
     std::vector<double> smearPos = truthPos;
@@ -317,26 +353,27 @@ NESTObservableArray runNESTvec(
         ATOM_NUM, NRYieldsParam, NRERWidthsParam, ERYieldsParam, verbosity);
     double vD = calc.SetDriftVelocity(detector->get_T_Kelvin(), rho, useField, detector->get_p_bar());
 
+    // vD,vDmiddle assumed same (uniform field)
+    double driftTime = (detector->get_TopDrift() - truthPos[2]) / vD;
+
     // Here we simulate the detector response to estimate the detected S1
     std::vector<double> s1 = calc.GetS1(result.quanta, truthPos[0], truthPos[1], truthPos[2], smearPos[0],
                     smearPos[1], smearPos[2], vD, vD, particleType, i, useField,
-                    eList[i], s1mode, verbosity, wf_time,
-                    wf_amp);
-
-    // vD,vDmiddle assumed same (uniform field)
-    double driftTime = (detector->get_TopDrift() - truthPos[2]) / vD;  
+                    eList[i], s1mode, verbosity, s1_wf_time,
+                    s1_wf_amp);
 
     // Here we simulate the detector response to estimate the detected S2
     std::vector<double> s2 = calc.GetS2(result.quanta.electrons, truthPos[0], truthPos[1], truthPos[2],
                      smearPos[0], smearPos[1], smearPos[2], driftTime, vD, i,
-                     useField, s2mode, verbosity, wf_time,
-                     wf_amp, g2_params);
+                     useField, s2mode, verbosity, s2_wf_time,
+                     s2_wf_amp, g2_params);
 
-    OutputResults.store_signals(s1, s2);
+    OutputResults.store_signals(eList[i], truthPos, s1, s2, s1_wf_time, s1_wf_amp, s2_wf_time, s2_wf_amp);
   }
 
   return OutputResults;
 }
+
 
 int execNEST(VDetector* detector, double numEvts, const string& type,
              double eMin, double eMax, double inField, string position,

@@ -12,7 +12,24 @@ class NESTObservableArray {
     NESTObservableArray(){};
     ~NESTObservableArray() = default;
 
-    void store_signals(std::vector<double> s1, std::vector<double> s2);
+    void store_signals(
+      double energy,
+      std::vector<double> pos,
+      std::vector<double> s1,
+      std::vector<double> s2,
+      std::vector<int64_t> s1_wf_time,
+      std::vector<double> s1_wf_amp,
+      std::vector<int64_t> s2_wf_time,
+      std::vector<double> s2_wf_amp
+    );
+
+    std::vector<double> energy_kev;
+    std::vector<double> x_mm;
+    std::vector<double> y_mm;
+    std::vector<double> z_mm;
+
+    std::vector<int> Nee;
+    std::vector<int> Nph;
 
     std::vector<int> s1_nhits;
     std::vector<int> s1_nhits_thr;
@@ -23,14 +40,18 @@ class NESTObservableArray {
     std::vector<double> s1c_phd;
     std::vector<double> s1r_spike;
     std::vector<double> s1c_spike;
-    std::vector<int> Nee;
-    std::vector<int> Nph;
+
     std::vector<int> s2_nhits;
     std::vector<int> s2_nhits_dpe;
     std::vector<double> s2r_phe;
     std::vector<double> s2c_phe;
     std::vector<double> s2r_phd;
     std::vector<double> s2c_phd;
+
+    std::vector<std::vector<int64_t>> s1_waveform_time;
+    std::vector<std::vector<double>> s1_waveform_amp;
+    std::vector<std::vector<int64_t>> s2_waveform_time;
+    std::vector<std::vector<double>> s2_waveform_amp;
 };
 
 vector<vector<double>> GetBand(vector<double> S1s, vector<double> S2s,

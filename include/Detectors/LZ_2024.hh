@@ -64,7 +64,6 @@ using namespace std;
 class LZ_2024 : public VDetector {
  public:
   LZ_2024() {
-
     // Call the initialisation of all the parameters
     Initialization();
   };
@@ -72,8 +71,8 @@ class LZ_2024 : public VDetector {
 
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
-  virtual void Initialization() override {
-    name = "LZ 2024"
+  void Initialization() override {
+    name = "LZ 2024";
     // Primary Scintillation (S1) parameters
     g1 = 0.1122;// +/- 0.002  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     sPEres = 0.338;   // single phe resolution (Gaussian assumed)
@@ -136,21 +135,21 @@ class LZ_2024 : public VDetector {
     PosResBase = 0.0; // baseline unc in mm, see NEST.cpp for usage
   }
   
-  virtual double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
+  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
   		return 1.0;
   }
 
   // Drift electric field as function of Z in mm
-  virtual double FitEF(double xPos_mm, double yPos_mm,
+  double FitEF(double xPos_mm, double yPos_mm,
                        double zPos_mm) override {  // in V/cm
 		return 96.5; // V/cm
   }
 
-  virtual double FitS2(double xPos_mm, double yPos_mm, LCE map) override {
+  double FitS2(double xPos_mm, double yPos_mm, LCE map) override {
   		return 1.0;
   }
 
-  virtual vector<double> FitTBA(double xPos_mm, double yPos_mm,
+  vector<double> FitTBA(double xPos_mm, double yPos_mm,
                                 double zPos_mm) override {
     vector<double> BotTotRat(2);
 
@@ -163,7 +162,7 @@ class LZ_2024 : public VDetector {
 
   //The following functions were not used in LZ's Result2024, and are copied from the public NEST
   // file for LUX, just so NEST has them available to prevent errors. 
-  virtual double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
+  double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
     double phoTravT, approxCenter = (TopDrift + cathode) / 2.,
                      relativeZ = zPos_mm - approxCenter;
 
@@ -208,7 +207,7 @@ class LZ_2024 : public VDetector {
                       // technically but tried to make general
   }
 
-  virtual vector<double> SinglePEWaveForm(double area, double t0) override {
+  vector<double> SinglePEWaveForm(double area, double t0) override {
     vector<double> PEperBin;
 
     double threshold = PULSEHEIGHT;  // photo-electrons

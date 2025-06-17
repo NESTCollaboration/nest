@@ -263,7 +263,6 @@ void NESTObservableArray::store_signals(
   std::vector<int64_t> s2_wf_time,
   std::vector<double> s2_wf_amp
 ){
-
   // Handle truth
   energy_kev.push_back(energy);
   x_mm.push_back(pos[0]);
@@ -300,7 +299,6 @@ void NESTObservableArray::store_signals(
   s1_waveform_amp.push_back(s1_wf_amp);
   s2_waveform_time.push_back(s2_wf_time);
   s2_waveform_amp.push_back(s2_wf_amp);
-    
 }
 
 // func suggested by Xin Xiang, PD Brown U. for RG, LZ
@@ -333,7 +331,6 @@ NESTObservableArray runNESTvec(
   auto OutputResults = NESTObservableArray();
 
   for (uint64_t i = 0; i < eList.size(); ++i) {
-
     s1_wf_amp.clear();
     s2_wf_amp.clear();
     s1_wf_time.clear();

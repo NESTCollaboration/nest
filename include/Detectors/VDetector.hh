@@ -9,6 +9,7 @@
 // the LUX Run03 detector header file: they each explain the units too).
 // *********************************************************************
 
+#include <string>
 #ifndef VDetector_hh
 #define VDetector_hh 1
 
@@ -21,6 +22,7 @@ class VDetector {
   virtual void Initialization();
 
   // "Get Functions"
+  std::string getName() const {return name;}
   // Primary Scintillation (S1) parameters
   double get_g1() const { return g1; }
   double get_sPEres() const { return sPEres; }
@@ -152,6 +154,7 @@ class VDetector {
   }
 
  protected:
+  std::string name = "VDetector";
   // Primary Scintillation (S1) parameters
   double g1 =
       0.0760;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect

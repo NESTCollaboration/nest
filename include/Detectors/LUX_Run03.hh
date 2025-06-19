@@ -5,7 +5,6 @@
 #include "VDetector.hh"
 
 using namespace std;
-string DetName = "LUX Run03";
 
 // NOTES: best g1 for DD 0.115, but for tritium 0.119; g1_gas = 0.1 for both,
 // s2Fano & s2_thr equal E_gas 6.17, 6.35; e- lifet 650, 750 us; fid vol 80-130,
@@ -27,6 +26,7 @@ class DetectorExample_LUX_RUN03 : public VDetector {
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   void Initialization() override {
+    name = "LUX Run03";
     // Primary Scintillation (S1) parameters
     g1 = 0.1170;    // 0.117+/-0.003 WS,0.115+/-0.005 D-D,0.115+/-0.005
                     // CH3T,0.119+/-0.001 LUXSim. UNITS: phd per photon (NOT

@@ -15,7 +15,6 @@
 #include "VDetector.hh"
 
 using namespace std;
-string DetName = "projected G3";
 
 class Detector_G3 : public VDetector {
  public:
@@ -30,6 +29,7 @@ class Detector_G3 : public VDetector {
   ~Detector_G3() override = default;
 
   void Initialization() override {
+    name = "projected G3";
     // Primary Scintillation (S1) parameters
     g1 = 0.118735;   // phd per S1 phot at dtCntr (not phe). Divide out 2-PE
                      // effect

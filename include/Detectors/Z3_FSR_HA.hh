@@ -5,7 +5,6 @@
 #include "VDetector.hh"
 
 using namespace std;
-string DetName = "ZEPLIN-III First Science Run";
 
 class DetectorExample_ZEPLIN : public VDetector {
  public:
@@ -22,6 +21,7 @@ class DetectorExample_ZEPLIN : public VDetector {
   // Do here the initialisation of all the parameters that are not varying as a
   // function of time
   virtual void Initialization() override {
+    name = "ZEPLIN-III First Science Run";
     // Primary Scintillation (S1) parameters
     g1 = 0.0714;    // phd per S1 phot at dtCntr (not phe). Error bar +/- 0.0050
     sPEres = 0.4;   // single phe resolution (Gaussian assumed)

@@ -16,7 +16,6 @@
 #include "VDetector.hh"
 
 using namespace std;
-string DetName = "XENON10";
 
 class DetectorExample_XENON10 : public VDetector {
  public:
@@ -34,6 +33,7 @@ class DetectorExample_XENON10 : public VDetector {
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   void Initialization() override {
+    name = "XENON10";
     // Primary Scintillation (S1) parameters
     g1 = 0.073;  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     sPEres = 0.58;  // single phe resolution (Gaussian assumed)

@@ -300,7 +300,9 @@ double TestSpectra::WIMP_dRate(double ER, double mWimp, double dayNum) {
   if (ER != 0.) {
     v_min = c * (((M_T * ER) / mu_TD) + delta) / (root2 * sqrt(M_T * ER));
   }
-  double bet = 1.;
+  double bet = 0.; //this controls whether the velocity distribution is
+  // a trunctated maxwell-boltzmann distribution or a shifted
+  // maxwell-boltzmann distribution. 0 for truncated, 1 for shifted.
 
   // Start calculating the differential rate for this energy bin, starting
   // with the velocity integral:

@@ -276,25 +276,44 @@ void NESTObservableArray::store_signals(
   s1_photon_times.push_back(result.photon_times);
 
   // Handle S1
-  s1_nhits.push_back(std::abs(int(s1[0]))); // MC-true integer hits in same OR different PMTs, NO double phe effect
-  s1_nhits_dpe.push_back(std::abs(int(s1[1]))); // MC-true integer hits WITH double phe effect (Nphe > nHits)
-  s1r_phe.push_back(std::abs(s1[2])); // raw smeared DAQ pulse areas in phe
-  s1c_phe.push_back(std::abs(s1[3])); // XYZ corrected smeared DAQ pulse areas in phe
-  s1r_phd.push_back(std::abs(s1[4])); // same as raw pulse area, adjusted/corrected downward for DPE effect (LUX phd units)
-  s1c_phd.push_back(std::abs(s1[5])); // same as corrected pulse area, adjusted/corrected downward for DPE effect (LUX phd units)
-  s1r_spike.push_back(std::abs(s1[6])); // spike count, NO XYZ correction
-  s1c_spike.push_back(std::abs(s1[7]));   // spike count, WITH XYZ correction
-  s1_nhits_thr.push_back(std::abs(int(s1[8]))); // USE FOR EXTERNAL LZLAMA COINCIDENCE CALCULATION
+  // 
+  // MC-true integer hits in same OR different PMTs, NO double phe effect
+  s1_nhits.push_back(std::abs(int(s1[0]))); 
+  // MC-true integer hits WITH double phe effect (Nphe > nHits)
+  s1_nhits_dpe.push_back(std::abs(int(s1[1])));
+  // smeared DAQ pulse areas in phe, NO XYZ correction
+  s1r_phe.push_back(std::abs(s1[2])); 
+  // same as s1r_phe WITH XYZ correction
+  s1c_phe.push_back(std::abs(s1[3])); 
+  //  same as s1r_phe, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
+  s1r_phd.push_back(std::abs(s1[4])); 
+  // same as s1r_phd, but XYZ-corrected
+  s1c_phd.push_back(std::abs(s1[5])); 
+  // spike count, NO XYZ correction
+  s1r_spike.push_back(std::abs(s1[6])); 
+  // spike count, WITH XYZ correction
+  s1c_spike.push_back(std::abs(s1[7]));   
+  // nHits post coincidence window and single PE eff!
+  s1_nhits_thr.push_back(std::abs(int(s1[8]))); 
 
   // Handle S2
-  s2_Nee.push_back(std::abs(int(s2[0])));  // integer number of exstracted electrons into gas
-  s2_Nph.push_back(std::abs(int(s2[1])));  // raw number of photons produced in the gas gap
-  s2_nhits.push_back(std::abs(int(s2[2]))); //  MC-true integer hits in same OR different PMTs, NO DPE effect
-  s2_nhits_dpe.push_back(std::abs(int(s2[3]))); // MC-true integer hits WITH DPE effect (Nphe >  nHits)
-  s2r_phe.push_back(std::abs(s2[4])); // raw smeared DAQ pulse areas in phe, NO XYZ correction
-  s2c_phe.push_back(std::abs(s2[5])); // XYZ corrected smeared DAQ pulse areas in phe
-  s2r_phd.push_back(std::abs(s2[6])); // raw pulse area in units of phd  
-  s2c_phd.push_back(std::abs(s2[7])); // XYZ corrected pulse area in units of phd  
+  // 
+  // integer number of electrons unabsorbed in liquid then getting extracted
+  s2_Nee.push_back(std::abs(int(s2[0])));
+  // raw number of photons produced in the gas gap
+  s2_Nph.push_back(std::abs(int(s2[1])));  
+  // MC-true integer hits in same OR different PMTs, NO double phe effect
+  s2_nhits.push_back(std::abs(int(s2[2]))); 
+  // MC-true integer hits WITH double phe effect (Nphe > nHits)
+  s2_nhits_dpe.push_back(std::abs(int(s2[3]))); 
+  // smeared DAQ pulse areas in phe, NO XYZ correction
+  s2r_phe.push_back(std::abs(s2[4])); 
+  // same as s2r_phe WITH XYZ correction
+  s2c_phe.push_back(std::abs(s2[5])); 
+  // same s2r_phe, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
+  s2r_phd.push_back(std::abs(s2[6])); 
+  // same as s2r_phd, but XYZ-corrected
+  s2c_phd.push_back(std::abs(s2[7])); 
 
   // Handle waveforms
   s1_waveform_time.push_back(s1_wf_time);

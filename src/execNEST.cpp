@@ -355,14 +355,19 @@ NESTObservableArray runNESTvec(
     s2_wf_amp.clear();
     s1_wf_time.clear();
     s2_wf_time.clear();
-
+    
     std::vector<double> truthPos = pos3dxyz[i];
     // ignoring position smearing in this quick function
     std::vector<double> smearPos = truthPos;
-
+    
+    if ( verbosity > 0 &&
+	 ( ( truthPos[0] * truthPos[0] + truthPos[1] * truthPos[1] ) > detector->get_radius() * detector->get_radius() ||
+	   truthPos[2] >= detector->get_TopDrift() || truthPos[2] <= 0. ) )
+      cerr << "\nCAUTION: outside fiducial and/or physical volume of your detector." << endl;
+    
     // Check if the user has requested a given E-field
     double useField = inField < 0.0 ? detector->FitEF(truthPos[0], truthPos[1], truthPos[2]) : inField;
-
+    
     // This is effectivly the yield code where we use NEST to predicate the number of 
     // photons and electrons realeased for a given interaction
     NESTresult result = calc.FullCalculation(

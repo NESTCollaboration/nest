@@ -6,7 +6,7 @@ int verbosity = 1;  // use -1 for off, 0 for eff, and 2 for N-pho model
 unsigned loopNEST = 0;
 // 0 for no or off, 1 for ER, 2 for NR
 // an executable bash script was created in the build directory
-bool PrintSubThr = false;
+bool PrintSubThr = false; //BEWARE that false makes #evts < your req
 // include or exclude the infamous negative S1 & S2 pulses (and 0's)
 
 // General parameters of importance changing the global behavior

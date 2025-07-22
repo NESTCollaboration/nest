@@ -251,7 +251,6 @@ int main(int argc, char** argv) {
   return exec;
 }
 
-
 // Method to store the results from simulating an S1 and an S2
 void NESTObservableArray::store_signals(
   double energy,
@@ -409,7 +408,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
     return 1;
   }
   
-  if ( !PrintSubThr &&
+  if ( !PrintSubThr && // BEWARE that false makes #events < your request!
        ( s1CalculationMode == NEST::S1CalculationMode::Waveform ||
 	 s2CalculationMode == NEST::S2CalculationMode::Waveform ) )
     PrintSubThr = true;  // to ensure proper event alignment for PSD work
@@ -1318,7 +1317,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
               "eff is <100%%. Check your cathode position definition.\n\n");
       }
 
-      if (PrintSubThr ||
+      if (PrintSubThr ||  // BEWARE that false makes #events < your request!!
           (scint[0] > PHE_MIN && scint[1] > PHE_MIN && scint[2] > PHE_MIN &&
            scint[3] > PHE_MIN && scint[4] > PHE_MIN && scint[5] > PHE_MIN &&
            scint[6] > PHE_MIN && scint[7] > PHE_MIN && scint[8] > PHE_MIN &&

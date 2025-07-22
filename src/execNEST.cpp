@@ -309,7 +309,7 @@ void NESTObservableArray::store_signals(
   s2r_phe.push_back(std::abs(s2[4])); 
   // same as s2r_phe WITH XYZ correction
   s2c_phe.push_back(std::abs(s2[5])); 
-  // same s2r_phe, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
+  // same as s2r_phe, adjusted/corrected *downward* for 2-PE effect (LUX phd units)
   s2r_phd.push_back(std::abs(s2[6])); 
   // same as s2r_phd, but XYZ-corrected
   s2c_phd.push_back(std::abs(s2[7])); 

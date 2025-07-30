@@ -5,7 +5,7 @@
 //
 // This file serves as a NEST input to reproduce LZ's WS2022 result
 //
-// Please reach out to Greg Rischbieter (rischbie@umich.edu) and/or
+// Please reach out to
 // Matthew Szydagis (mszydagis@albany.edu) with any questions.
 //
 //////////////////////////////  IMPORTANT !!
@@ -32,9 +32,8 @@
 //  To add this file into execNEST, make sure it is copied into the directory
 //                        nest/include/Detectors/
 //  and add the line ' #include "LZ_WS2022.hh" ' , and make sure the "auto
-//  detector" variable is the "LZ_Detector()" object, as opposed to the LUX
-//  default. You may also want to remove the few lines of LUX-detector comments
-//  between lines 42-45 of execNEST.cpp
+//  detector" variable is the "LZ_Detector()" object.
+//
 ////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef LZ_Detector_hh

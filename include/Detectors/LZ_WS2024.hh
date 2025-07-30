@@ -9,7 +9,7 @@
 // as linked from https://arxiv.org/abs/2410.17036
 // Additional methods to return the specified yield parameters below have been added
 //
-// Please reach out to Greg Rischbieter (rischbie@umich.edu) and/or
+// Please reach out to
 // Matthew Szydagis (mszydagis@albany.edu) with any questions.
 //
 //
@@ -29,14 +29,14 @@
 //  The easiest way to implement this in NEST is to change the "default" vectors in 
 //  lines 120-124 of nest/include/NEST/NEST.hh.
 //  Else, If using execNEST to simulate results, these changes can be made manually 
-//  to execNEST.cpp at lines 183-194 in NESTv2.3.7+
+//  to execNEST.cpp at lines 186-200 in NESTv2.4.0
 //  Or the updated "default" vectors from NEST.hh can be added to the execNEST function
-//  around line 378 of execNEST (i.e. NRYieldsParam = default_NRYieldsParam; etc.) 
+//  around line 30 of execNEST (i.e. NRYieldsParam = default_NRYieldsParam; etc.)
 //
 //  To add this file into execNEST, make sure it is copied into the directory 
 //                        nest/include/Detectors/
-//  and add the line ' #include "LZ_WS2024.hh" ' , and make sure the "auto detector" 
-//  variable is the "LZ_Detector()" object, as opposed to the NEST Default detector.
+//  and add the line ' #include "LZ_WS2024.hh" ' , and make sure the "auto detector"
+//  variable is the "LZ_Detector()" object, as opposed to any earlier NEST default.
 ////////////////////////////////////////////////////////////////////////////////////
 //
 //  To use this detector with nestpy, you'll need to (1) compile a local install of 
@@ -44,7 +44,7 @@
 //  nestpy/lib/nest/include/Detectors
 //  Then (3) add "#include LZ_WS2024.hh" in nestpy/src/nestpy/bindings.cpp, and 
 //  finally (4) create the LZ-specific bindings, similar to the XENON10 and LUX 
-//  bindings examples starting on lines 213 and 221, respectively.
+//  bindings examples.
 //
 //  With nestpy, you can pass the NRYieldsParam and ERYieldsParam vectors as lists 
 //  to NESTCalc.GetYields(...) with the kwargs "nuisance_parameters = NRYieldsParams"

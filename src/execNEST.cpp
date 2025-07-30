@@ -17,7 +17,7 @@
 #include "analysis_G2.hh"
 #include "execNEST.hh"
 
-#include "LZ_SR1.hh"
+#include "LZ_WS2022.hh"
 
 #define tZero 0.00  // day{of the year, 0 is ~Jan. 1}
 #define tStep 0.03

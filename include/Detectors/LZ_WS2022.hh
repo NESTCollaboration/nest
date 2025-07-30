@@ -1,9 +1,9 @@
 //
-// LZ_SR1.hh
+// LZ_WS2022.hh
 //
 // Adapted from Quentin Riffard and Jacob Cutter by Greg Rischbieter, June 2022
 //
-// This file serves as a NEST input to reproduce LZ's SR1 result
+// This file serves as a NEST input to reproduce LZ's WS2022 result
 //
 // Please reach out to Greg Rischbieter (rischbie@umich.edu) and/or
 // Matthew Szydagis (mszydagis@albany.edu) with any questions.
@@ -31,7 +31,7 @@
 //
 //  To add this file into execNEST, make sure it is copied into the directory
 //                        nest/include/Detectors/
-//  and add the line ' #include "LZ_SR1.hh" ' , and make sure the "auto
+//  and add the line ' #include "LZ_WS2022.hh" ' , and make sure the "auto
 //  detector" variable is the "LZ_Detector()" object, as opposed to the LUX
 //  default. You may also want to remove the few lines of LUX-detector comments
 //  between lines 42-45 of execNEST.cpp

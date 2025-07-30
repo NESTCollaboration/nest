@@ -1,9 +1,9 @@
 //
-// LZ_Result2024.hh
+// LZ_WS2024.hh
 //
 // Adapted from Quentin Riffard and Jacob Cutter by Greg Rischbieter, July 2024
 //
-// This file serves as a NEST input to reproduce LZ's Result2024 result
+// This file serves as a NEST input to reproduce LZ's WS2024 result
 //
 // This version of the file was obtained from https://www.hepdata.net/record/155182 
 // as linked from https://arxiv.org/abs/2410.17036
@@ -35,14 +35,14 @@
 //
 //  To add this file into execNEST, make sure it is copied into the directory 
 //                        nest/include/Detectors/
-//  and add the line ' #include "LZ_Result2024.hh" ' , and make sure the "auto detector" 
-//  variable is the "LZ_2024()" object, as opposed to the NEST Default default. 
+//  and add the line ' #include "LZ_WS2024.hh" ' , and make sure the "auto detector" 
+//  variable is the "LZ_Detector()" object, as opposed to the NEST Default detector.
 ////////////////////////////////////////////////////////////////////////////////////
 //
 //  To use this detector with nestpy, you'll need to (1) compile a local install of 
 //  nestpy from github.com:NESTCollaboration/nestpy, and (2) then add this file to 
 //  nestpy/lib/nest/include/Detectors
-//  Then (3) add "#include LZ_Result2024.hh" in nestpy/src/nestpy/bindings.cpp, and 
+//  Then (3) add "#include LZ_WS2024.hh" in nestpy/src/nestpy/bindings.cpp, and 
 //  finally (4) create the LZ-specific bindings, similar to the XENON10 and LUX 
 //  bindings examples starting on lines 213 and 221, respectively.
 //
@@ -54,8 +54,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef LZ_2024_hh
-#define LZ_2024_hh 1
+#ifndef LZ_Detector_hh
+#define LZ_Detector_hh 1
 
 #include "VDetector.hh"
 
@@ -160,7 +160,7 @@ class LZ_Detector : public VDetector {
     return BotTotRat;
   }
 
-  //The following functions were not used in LZ's Result2024, and are copied from the public NEST
+  //The following functions were not used in LZ's WS2024, and are copied from the public NEST
   // file for LUX, just so NEST has them available to prevent errors. 
   double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
     double phoTravT, approxCenter = (TopDrift + cathode) / 2.,

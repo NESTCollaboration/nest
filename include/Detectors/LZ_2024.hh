@@ -61,18 +61,18 @@
 
 using namespace std;
 
-class LZ_2024 : public VDetector {
+class LZ_Detector : public VDetector {
  public:
-  LZ_2024() {
+  LZ_Detector() {
     // Call the initialisation of all the parameters
     Initialization();
   };
-  ~LZ_2024() override = default;
+  ~LZ_Detector() override = default;
 
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   void Initialization() override {
-    name = "LZ 2024";
+    name = "LZ SR3 or WS2024";
     // Primary Scintillation (S1) parameters
     g1 = 0.1122;// +/- 0.002  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     sPEres = 0.338;   // single phe resolution (Gaussian assumed)

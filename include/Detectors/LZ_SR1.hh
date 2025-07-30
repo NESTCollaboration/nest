@@ -47,7 +47,7 @@ using namespace std;
 class LZ_Detector : public VDetector {
  public:
   LZ_Detector() {
-    // Call the initialisation of all the parameters
+    // Call the initialization of all the parameters
     Initialization();
   };
   ~LZ_Detector() override = default;
@@ -55,7 +55,7 @@ class LZ_Detector : public VDetector {
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
   void Initialization() override {
-    name = "LZ SR1";
+    name = "LZ SR1 or WS2022";
     // Primary Scintillation (S1) parameters
     g1 = 0.113569;  // 0.114 +/- 0.002  // phd per S1 phot at dtCntr (not phe).
                     // Divide out 2-PE effect

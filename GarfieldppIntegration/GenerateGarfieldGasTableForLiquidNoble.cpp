@@ -20,7 +20,7 @@
 
 // NEST includes
 #include "NEST.hh"
-#include "LZ_SR1.hh"
+#include "LZ_WS2022.hh"
 
 // Here we choose a correction factor to turn field into "reduced field." This
 // is something that is necessary for Garfield++, which internally scales by the

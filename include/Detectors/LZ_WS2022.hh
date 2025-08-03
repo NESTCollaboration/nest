@@ -85,7 +85,7 @@ class LZ_Detector : public VDetector {
         600. *
         (1.0 +
          P_dphe);  // the S2 threshold in phe or PE, *not* phd. Affects NR most
-    E_gas = 8.42417;   // field in kV/cm between liquid/gas border and anode
+    E_gas = 8.42417;   // effective field in kV/cm between liquid/gas border and anode
     eLife_us = 6500.;  // the drift electron mean lifetime in micro-seconds
 
     // Thermodynamic Properties
@@ -117,16 +117,26 @@ class LZ_Detector : public VDetector {
 
     // 2-D (X & Y) Position Reconstruction
     // Set these to zero to implement "perfect" position corrections
-    // Note: LZ used spatial maps to implement S1 and S2 corrections,
-    // but for simplicity with this header file, we'll circumvent
-    // the need for corrections entirely.
-    PosResExp = 0.0;   // exp increase in pos recon res at hi r, 1/mm
-    PosResBase = 0.0;  // baseline unc in mm, see NEST.cpp for usage
+    // Note: LZ used spatial maps to implement S1 and S2 corrections
+    PosResExp = 0.0;   // exp increase in pos recon res at hi r,1/mm
+    PosResBase = 120.6;// baseline unc in mm, see NEST.cpp for usage
   }
 
-  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm,
-               LCE map) override {
-    return 1.0;
+  // S1 PDE custom fit for function of z
+  // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
+  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
+    //Based on S1 Map from C. Nedlik using MDC3 83m-Kr data
+    double zPos_cm = zPos_mm/10;
+    double Rsq_cm = xPos_mm*xPos_mm/10./10. + yPos_mm*yPos_mm/10/10.;
+    double Rsq_max = (get_radmax()/10.)*(get_radmax()/10.);
+    if (Rsq_cm > Rsq_max)
+      Rsq_cm = Rsq_max;
+    double p0 = 1.3198 + -5.2742e-05*Rsq_cm + 2.2966e-08*pow(Rsq_cm, 2.) + -6.8098e-12*pow(Rsq_cm, 3.) + 6.4871e-16*pow(Rsq_cm, 4.);
+    double p1 = -6.2930e-03 + 2.9826e-06*Rsq_cm + -1.8987e-09*pow(Rsq_cm, 2.) + 5.2800e-13*pow(Rsq_cm, 3.) + -4.4126e-17*pow(Rsq_cm, 4.);
+    double p2 = 3.0634e-05 + -8.1693e-08*Rsq_cm + 6.1091e-11*pow(Rsq_cm, 2.) + -1.7352e-14*pow(Rsq_cm, 3.) + 1.4823e-18*pow(Rsq_cm, 4.);
+    double p3 = -8.0736e-08 + 8.5948e-10*Rsq_cm + -6.8764e-13*pow(Rsq_cm, 2.) + 1.9889e-16*pow(Rsq_cm, 3.) + -1.7312e-20*pow(Rsq_cm, 4.);
+    double p4 = 1.3926e-10 + -2.9924e-12*Rsq_cm + 2.4693e-15*pow(Rsq_cm, 2.) + -7.2454e-19*pow(Rsq_cm, 3.) + 6.3858e-23*pow(Rsq_cm, 4.);
+    return p0 + p1*zPos_cm + p2*pow(zPos_cm, 2.) + p3*pow(zPos_cm, 3.) + p4*pow(zPos_cm, 4.);
   }
 
   // Drift electric field as function of Z in mm
@@ -135,7 +145,22 @@ class LZ_Detector : public VDetector {
     return 192.;
   }
 
-  double FitS2(double xPos_mm, double yPos_mm, LCE map) override { return 1.0; }
+  // S2 PDE custom fit for function of r
+  // s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
+  double FitS2(double xPos_mm, double yPos_mm, LCE map) override {
+    double Rsq_cm = xPos_mm*xPos_mm/10./10. + yPos_mm*yPos_mm/10./10.;
+    double Rsq_max = (get_radmax()/10.)*(get_radmax()/10.);
+    if (Rsq_cm > Rsq_max)
+      Rsq_cm = Rsq_max;
+    double p0 =  1.01728; //   +/-   0.00951576
+    double p1 = -0.000148818;//   +/-   3.73192e-05
+    double p2 =  1.11934e-07;//   +/-   4.70456e-08
+    double p3 = -4.27149e-11;//  +/-   2.50216e-11
+    double p4 =  6.89494e-15;//   +/-   5.85633e-15
+    double p5 = -4.29735e-19;//  +/-   4.97409e-19
+    //polynomial fit by A. Stevens, using April MDC3 Xe-131m data
+    return p0 + Rsq_cm*p1 + Rsq_cm*Rsq_cm*p2 + pow(Rsq_cm, 3.)*p3 + pow(Rsq_cm, 4.)*p4 + pow(Rsq_cm, 5.)*p5; //unitless: `S2(x,y)/S2(0,0)
+  }
 
   vector<double> FitTBA(double xPos_mm, double yPos_mm,
                         double zPos_mm) override {

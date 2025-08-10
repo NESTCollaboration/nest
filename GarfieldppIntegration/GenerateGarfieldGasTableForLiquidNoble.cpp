@@ -249,7 +249,7 @@ void PassTransportInfo(std::ofstream& outFile,
                        std::vector<double> fieldList_V_cm,
                        double temperature_K) {
   // Create a NEST detector and construct the NEST class using this object
-  auto* detector = new LZ_Detector();
+  auto* detector = new LZ_Detector_2022();
   NEST::NESTcalc n(detector);
 
   for (int iF = 0; iF < fieldList_V_cm.size(); ++iF) {

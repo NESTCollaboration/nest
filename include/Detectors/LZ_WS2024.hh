@@ -5,7 +5,7 @@
 //
 // This file serves as a NEST input to reproduce LZ's WS2024 result
 //
-// This version of the file was obtained from https://www.hepdata.net/record/155182 
+// This version of the file is very similar to https://www.hepdata.net/record/155182
 // as linked from https://arxiv.org/abs/2410.17036
 // Additional methods to return the specified yield parameters below have been added
 //
@@ -36,7 +36,7 @@
 //  To add this file into execNEST, make sure it is copied into the directory 
 //                        nest/include/Detectors/
 //  and add the line ' #include "LZ_WS2024.hh" ' , and make sure the "auto detector"
-//  variable is the "LZ_Detector()" object, as opposed to any earlier NEST default.
+//  variable is the "LZ_Detector_2024()" object, as opposed to any earlier NEST default.
 ////////////////////////////////////////////////////////////////////////////////////
 //
 //  To use this detector with nestpy, you'll need to (1) compile a local install of 
@@ -54,20 +54,20 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef LZ_Detector_hh
-#define LZ_Detector_hh 1
+#ifndef LZ_Detector_2024_hh
+#define LZ_Detector_2024_hh 1
 
 #include "VDetector.hh"
 
 using namespace std;
 
-class LZ_Detector : public VDetector {
+class LZ_Detector_2024 : public VDetector {
  public:
-  LZ_Detector() {
+  LZ_Detector_2024() {
     // Call the initialization of all the parameters
     Initialization();
   };
-  ~LZ_Detector() override = default;
+  ~LZ_Detector_2024() override = default;
 
   // Do here the initialization of all the parameters that are not varying as a
   // function of time
@@ -178,7 +178,7 @@ class LZ_Detector : public VDetector {
     vector<double> BotTotRat(2);
 
     BotTotRat[0] = 0.60;  // S1 bottom-to-total ratio
-    BotTotRat[1] = 0.25;  // S2 bottom-to-total ratio, typically only used for
+    BotTotRat[1] = 0.35;  // S2 bottom-to-total ratio, typically only used for
                           // position recon (1-this)
 
     return BotTotRat;

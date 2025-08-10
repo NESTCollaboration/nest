@@ -32,24 +32,24 @@
 //  To add this file into execNEST, make sure it is copied into the directory
 //                        nest/include/Detectors/
 //  and add the line ' #include "LZ_WS2022.hh" ' , and make sure the "auto
-//  detector" variable is the "LZ_Detector()" object.
+//  detector" variable is the "LZ_Detector_2022()" object.
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef LZ_Detector_hh
-#define LZ_Detector_hh 1
+#ifndef LZ_Detector_2022_hh
+#define LZ_Detector_2022_hh 1
 
 #include "VDetector.hh"
 
 using namespace std;
 
-class LZ_Detector : public VDetector {
+class LZ_Detector_2022 : public VDetector {
  public:
-  LZ_Detector() {
+  LZ_Detector_2022() {
     // Call the initialization of all the parameters
     Initialization();
   };
-  ~LZ_Detector() override = default;
+  ~LZ_Detector_2022() override = default;
 
   // Do here the initialization of all the parameters that are not varying as a
   // function of time

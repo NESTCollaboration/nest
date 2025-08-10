@@ -40,7 +40,7 @@ double minTimeSeparation = 0.;  // ns (Kr83m)
 int main(int argc, char** argv) {
   // Instantiate your own VDetector class here, then load into NEST class
   // constructor
-  auto* detector = new LZ_Detector();
+  auto* detector = new LZ_Detector_2024();
   if (verbosity > 0) cerr << "*** Detector definition message ***" << endl;
   if (verbosity > 0)
     cerr << "You are currently using the " << detector->getName() << " detector." << endl << endl;

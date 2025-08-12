@@ -222,9 +222,9 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
   bool HighE;
   int Nq_actual, Ne, Nph, Ni, Nex;
 
-  if (NRERWidthsParam.size() < 11) {
+  if (NRERWidthsParam.size() < 13) {
     throw std::runtime_error(
-        "ERROR: You need a minimum of 11 free parameters for the resolution "
+        "ERROR: You need a minimum of 13 free parameters for the resolution "
         "model.");
   }
 
@@ -261,14 +261,22 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     Nex = Nq_actual - Ni;
 
   } else {
-    double Fano = NRERWidthsParam[0];
+    double Ni_mean = Nq_mean * alf;
+    double Fano = NRERWidthsParam[0] + NRERWidthsParam[11] * Ni_mean;
+    // non-constant F_i (negative or positive slope possible).
+    // Based on work of James Verbus (LUX Run03 DD) and Matthew
+    if ( Fano < 0. ) Fano = 0.;
     Ni = int(floor(RandomGen::rndm()->rand_gauss(
-                       Nq_mean * alf, sqrt(Fano * Nq_mean * alf), true) +
+                       Ni_mean, sqrt(Fano * Ni_mean), true) +
                    0.5));
-    Fano = NRERWidthsParam[1];
+    double Nex_mean = Nq_mean * excitonRatio * alf;
+    Fano = NRERWidthsParam[1] + NRERWidthsParam[12] * Nex_mean;
+    // non-constant F_ex (positive or negative slope possible).
+    // Based on work of Chen Ding (LZ SR1 D-D Migdal)
+    if ( Fano < 0. ) Fano = 0.;
     Nex = int(floor(RandomGen::rndm()->rand_gauss(
-                        Nq_mean * excitonRatio * alf,
-                        sqrt(Fano * Nq_mean * excitonRatio * alf), true) +
+                        Nex_mean,
+                        sqrt(Fano * Nex_mean), true) +
                     0.5));
     Nq_actual = Nex + Ni;
   }

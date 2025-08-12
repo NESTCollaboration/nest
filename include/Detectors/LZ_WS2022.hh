@@ -14,7 +14,7 @@
 //  widths. To make these changes in your copy of NEST, make sure NEST.cpp is
 //  calling an edited NRERWidthsParams vector when using the GetQuanta(...)
 //  function: {0.4.,0.4.,0.04,0.5,0.19,2.25, -0.0015, 0.046452, 0.205, 0.45,
-//  -0.2};
+//  -0.2, 0.,0.};
 //
 //  If using execNEST to simulate results, these changes can be made manually
 //  to execNEST.cpp at lines 183-194 in NESTv2.3.7

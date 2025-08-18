@@ -319,7 +319,8 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
                                      NRERWidthsParam);
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     omega = 0.0;  // Ar has no non-binom sauce
-  double lambdaChen; if ( NRERWidthsParam[2] < 0. ) lambdaChen = fabs(NRERWidthsParam[2]); else lambdaChen = 1.0;
+  double lambdaChen; if ( NRERWidthsParam[2] < 0. ) lambdaChen = 1.0 + NRERWidthsParam[2]; else lambdaChen = 1.0;
+  if ( lambdaChen <= 0. ) lambdaChen = 1E-6;
   double Variance = lambdaChen * // Binomial recombination suppressant -- from Chen Ding's Migdal work (Brown U.)
     recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni; // NOTE: currently applied to both NR and ER!!
   if ( lambdaChen != 1. && omega != 0. ) cerr << "CAUTION - Contradictory recomb fluct parameter values" << endl;

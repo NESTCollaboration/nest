@@ -386,6 +386,223 @@ int main(int argc, char** argv) {
 
     return 0;
   }
+  
+  if (mode == 3) {
+
+    if (argc < 4) {
+      if (verbosity > 0)
+        cerr << "Error, requires 3 inputs: Data file, WIMP spectrum file, reference cross section" << endl;
+      return 1;
+    }
+
+    //Getting input (either data or sims) S1 and S2
+    FILE* ifp = fopen(argv[1], "r");
+    double a, b, c, d, f, g, h, i, j, k, l, m, n, x, y, z;
+    vector<double> inputS1, inputS2;
+    while (1) {
+      int scan1 = fscanf ( ifp, "%lf\t%lf\t%lf\t%lf, %lf, %lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &x, &y, &z, &f, &g, &h, &i, &j, &k, &l, &m);
+      if (feof(ifp)) break;
+      if (usePD <= 0 && std::abs(h) > minS1 && h < maxS1 && std::abs(m * 1.2) > minS2 && (m * 1.2) < maxS2) {
+        inputS1.push_back(h); //using PE
+        inputS2.push_back(log10(m));
+      }
+      else if (usePD == 1 && std::abs(i) > minS1 && i < maxS1 && std::abs(m) > minS2 && m < maxS2) {
+        inputS1.push_back(i); //using phd
+        inputS2.push_back(log10(m));
+      }
+      else if (usePD >= 2 && std::abs(j) > minS1 && j < maxS1 && std::abs(m) > minS2 && m < maxS2) {
+        inputS1.push_back(j); //using spike counting
+        inputS2.push_back(log10(m));
+      }
+    }
+    fclose(ifp);
+
+
+
+    //getting WIMP spectrum S1 and S2
+    FILE* ifp2 = fopen(argv[2], "r");
+    vector<double> spectrumS1, spectrumS2;
+    while (1) {
+      int scan2 = fscanf ( ifp2, "%lf\t%lf\t%lf\t%lf, %lf, %lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf", &a, &b, &c, &x, &y, &z, &f, &g, &h, &i, &j, &k, &l, &m);
+      if (feof(ifp2)) break;
+      if (usePD <= 0 && std::abs(h) > minS1 && h < maxS1 && std::abs(m * 1.2) > minS2 && (m * 1.2) < maxS2) {
+        spectrumS1.push_back(h); //using PE
+        spectrumS2.push_back(log10(m));
+      }
+      else if (usePD == 1 && std::abs(i) > minS1 && i < maxS1 && std::abs(m) > minS2 && m < maxS2) {
+        spectrumS1.push_back(i); //using phd
+        spectrumS2.push_back(log10(m));
+      }
+      else if (usePD >= 2 && std::abs(j) > minS1 && j < maxS1 && std::abs(m) > minS2 && m < maxS2) {
+        spectrumS1.push_back(j); //using spike counting
+        spectrumS2.push_back(log10(m));
+      }
+    }
+    fclose(ifp2);
+
+
+    vector<vector<double>> dmBandPoints(numBins);
+    vector<double> dmBandCenter;
+    double binWidth, border;
+
+    binWidth = (maxS1 - minS1) / double(numBins);
+    border = minS1;
+
+    double s1c, numPts, s2c, s2cTop, s2cBottom;
+
+    for (int i = 0; i < spectrumS1.size(); ++i) {
+      for (int j = 0; j < numBins; ++j) {
+        s1c = border + binWidth / 2. + double(j) * binWidth;
+        if (std::abs(spectrumS1[i]) > (s1c - binWidth / 2.) &&
+            std::abs(spectrumS1[i]) <= (s1c + binWidth / 2.)) {
+              dmBandPoints[j].push_back(spectrumS2[i]);
+              break;
+        }
+      }
+    }
+
+    size_t N;
+    double median;
+
+    for (int i = 0; i < numBins; ++i){
+      N = dmBandPoints[i].size() / 2;
+      if (N < 10) numBins = i; //ensuring we have enough stats
+      nth_element(dmBandPoints[i].begin(), dmBandPoints[i].begin()+N, dmBandPoints[i].end());
+      median = dmBandPoints[i][N];
+      dmBandCenter.push_back(median);
+    }
+
+    double acceptance, s1LeftEdge, s1RightEdge;
+    vector<double> candidateS2InterceptBottom;
+    vector<double> candidateS2InterceptTop;
+
+    double logBinWidth = (logMax - logMin) / double(logBins);
+    double logBorder = logMin;
+    vector<double> lowestPoints(numBins, logMax), secondLowestPoints(numBins, logMax);
+    int s1Idx = 0;
+
+    for (int i = 0; i < inputS1.size(); ++i){
+      s1c = inputS1[i];
+      s1Idx = int((s1c - border - binWidth / 2.)/binWidth);
+      s2c = inputS2[i];
+      if (s1Idx < numBins){
+        if (s2c < lowestPoints[s1Idx]){
+          lowestPoints[s1Idx] = s2c;
+        }
+        else if (s2c < secondLowestPoints[s1Idx]){
+          secondLowestPoints[s1Idx] = s2c;
+        }
+      }
+    }
+
+    for (int i = 0; i < numBins; ++i){
+      s2cBottom = dmBandCenter[i] - lowestPoints[i];
+      if (s2cBottom >= 0){
+        candidateS2InterceptBottom.push_back(s2cBottom);
+        candidateS2InterceptTop.push_back(secondLowestPoints[i] - dmBandCenter[i]);
+      }
+      else candidateS2InterceptTop.push_back(-s2cBottom);
+    }
+
+    candidateS2InterceptBottom.push_back(dmBandCenter[0]);
+
+    //should already be sorted, but just in case
+    sort(candidateS2InterceptTop.begin(), candidateS2InterceptTop.end());
+    sort(candidateS2InterceptBottom.begin(), candidateS2InterceptBottom.end());
+
+    int topIdx = candidateS2InterceptTop.size();
+    int botIdx = 0;
+    int leftIdx = 0;
+    int rightIdx = numBins - 1;
+    bool raiseIntercept = false;
+
+    double best_acceptance, best_s2InterceptBottom, best_s2InterceptTop, best_s1LeftEdge, best_s1RightEdge;
+    best_acceptance = 0.;
+
+    while (topIdx > 0){
+      --topIdx;
+      s2cTop = candidateS2InterceptTop[topIdx];
+      s2cBottom = candidateS2InterceptBottom[botIdx];
+      if (s2cTop <= -s2cBottom){
+        if (raiseIntercept) {
+          topIdx = candidateS2InterceptTop.size(); 
+          ++botIdx; 
+          raiseIntercept = false;
+          continue;
+        }
+        else break;
+      }
+
+      //finding the left Edge of the box (almost always at or close to the S1 ROI)
+      for (int i = 0; i < inputS1.size(); ++i){
+        s1c = inputS1[i];
+        s1Idx = int((s1c - border - binWidth / 2.)/binWidth);
+        s2c = inputS2[i];
+        if (s1Idx >= numBins) continue;
+        if (s1Idx == leftIdx){
+          if (s1c > border + binWidth / 2. + double(leftIdx) * binWidth && s2c < s2cTop + dmBandCenter[s1Idx] && s2c > dmBandCenter[s1Idx] - s2cBottom){
+            ++leftIdx;
+            if (botIdx < candidateS2InterceptBottom.size() - 1) raiseIntercept = true;
+            i = 0;
+          }
+        }
+      }
+      //finding the right edge of the box
+      for (int i = 0; i < inputS1.size(); ++i){
+        s1c = inputS1[i];
+        s1Idx = int((s1c - border - binWidth / 2.)/binWidth);
+        s2c = inputS2[i];
+        if (s1c >= border + binWidth / 2. + double(leftIdx) * binWidth && s1c <= border + binWidth / 2. + double(rightIdx) * binWidth ){
+          if (s2c < s2cTop + dmBandCenter[s1Idx]){
+            if (s2c > dmBandCenter[s1Idx] - s2cBottom){
+              rightIdx = s1Idx;
+              if (botIdx < candidateS2InterceptBottom.size() - 1) raiseIntercept = true;
+            }
+          }
+        }
+      }
+      acceptance = 0.;
+      for (int i = 0; i < spectrumS1.size(); ++i){
+        s1c = spectrumS1[i];
+        s1Idx = int((s1c - border - binWidth / 2.)/binWidth);
+        s2c = spectrumS2[i];
+        if (s1c >= border + binWidth / 2. + double(leftIdx) * binWidth && s1c <= border + binWidth / 2. + double(rightIdx) * binWidth ){
+          if (s2c <= s2cTop + dmBandCenter[s1Idx] && s2c >= dmBandCenter[s1Idx] - s2cBottom) acceptance = acceptance + 1.;
+        }
+      }
+      acceptance = acceptance / spectrumS1.size();
+
+
+      if (acceptance > best_acceptance){
+        best_acceptance = acceptance;
+        best_s2InterceptBottom = s2cBottom;
+        best_s2InterceptTop = s2cTop;
+        best_s1LeftEdge = leftIdx;
+        best_s1RightEdge = rightIdx;
+      }
+      rightIdx = numBins - 1;
+      leftIdx = 0;
+      if (topIdx == 0 && raiseIntercept){
+        topIdx = candidateS2InterceptTop.size(); 
+        ++botIdx; 
+        raiseIntercept = false;
+      }
+    }
+
+    //1.94 from Feldman-Cousins
+    double sigma = 1.94 * atof(argv[3]) / (best_acceptance * spectrumS1.size());
+    fprintf(stdout, "Cross-Section: %e, Signal Acceptance: %f\n", sigma, best_acceptance);
+
+    for (int i = best_s1LeftEdge; i < best_s1RightEdge + 1; ++i){
+      s1c = border + binWidth / 2. + double(i) * binWidth;
+      s2cTop = best_s2InterceptTop + dmBandCenter[i];
+      s2cBottom = dmBandCenter[i] - best_s2InterceptBottom;
+      fprintf(stdout, "%f\t%0.4f\t%0.4f\n", s1c, s2cTop, s2cBottom);
+    }
+
+    return 0;
+
+  }
 
   if (mode == 1) {
     if (argc < 3) {

@@ -388,7 +388,6 @@ int main(int argc, char** argv) {
   }
   
   if (mode == 3) {
-
     if (argc < 4) {
       if (verbosity > 0)
         cerr << "Error, requires 3 inputs: Data file, WIMP spectrum file, reference cross section" << endl;
@@ -603,7 +602,6 @@ int main(int argc, char** argv) {
     return 0;
 
   }
-
   if (mode == 1) {
     if (argc < 3) {
       if (verbosity > 0)

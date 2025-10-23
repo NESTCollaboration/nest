@@ -393,7 +393,6 @@ int main(int argc, char** argv) {
         cerr << "Error, requires 3 inputs: Data file, WIMP spectrum file, reference cross section" << endl;
       return 1;
     }
-
     //Getting input (either data or sims) S1 and S2
     FILE* ifp = fopen(argv[1], "r");
     double a, b, c, d, f, g, h, i, j, k, l, m, n, x, y, z;
@@ -415,9 +414,6 @@ int main(int argc, char** argv) {
       }
     }
     fclose(ifp);
-
-
-
     //getting WIMP spectrum S1 and S2
     FILE* ifp2 = fopen(argv[2], "r");
     vector<double> spectrumS1, spectrumS2;
@@ -438,17 +434,12 @@ int main(int argc, char** argv) {
       }
     }
     fclose(ifp2);
-
-
     vector<vector<double>> dmBandPoints(numBins);
     vector<double> dmBandCenter;
     double binWidth, border;
-
     binWidth = (maxS1 - minS1) / double(numBins);
     border = minS1;
-
     double s1c, numPts, s2c, s2cTop, s2cBottom;
-
     for (int i = 0; i < spectrumS1.size(); ++i) {
       for (int j = 0; j < numBins; ++j) {
         s1c = border + binWidth / 2. + double(j) * binWidth;
@@ -459,10 +450,8 @@ int main(int argc, char** argv) {
         }
       }
     }
-
     size_t N;
     double median;
-
     for (int i = 0; i < numBins; ++i){
       N = dmBandPoints[i].size() / 2;
       if (N < 10) numBins = i; //ensuring we have enough stats
@@ -470,16 +459,13 @@ int main(int argc, char** argv) {
       median = dmBandPoints[i][N];
       dmBandCenter.push_back(median);
     }
-
     double acceptance, s1LeftEdge, s1RightEdge;
     vector<double> candidateS2InterceptBottom;
     vector<double> candidateS2InterceptTop;
-
     double logBinWidth = (logMax - logMin) / double(logBins);
     double logBorder = logMin;
     vector<double> lowestPoints(numBins, logMax), secondLowestPoints(numBins, logMax);
     int s1Idx = 0;
-
     for (int i = 0; i < inputS1.size(); ++i){
       s1c = inputS1[i];
       s1Idx = int((s1c - border - binWidth / 2.)/binWidth);
@@ -493,7 +479,6 @@ int main(int argc, char** argv) {
         }
       }
     }
-
     for (int i = 0; i < numBins; ++i){
       s2cBottom = dmBandCenter[i] - lowestPoints[i];
       if (s2cBottom >= 0){
@@ -502,22 +487,17 @@ int main(int argc, char** argv) {
       }
       else candidateS2InterceptTop.push_back(-s2cBottom);
     }
-
     candidateS2InterceptBottom.push_back(dmBandCenter[0]);
-
     //should already be sorted, but just in case
     sort(candidateS2InterceptTop.begin(), candidateS2InterceptTop.end());
     sort(candidateS2InterceptBottom.begin(), candidateS2InterceptBottom.end());
-
     int topIdx = candidateS2InterceptTop.size();
     int botIdx = 0;
     int leftIdx = 0;
     int rightIdx = numBins - 1;
     bool raiseIntercept = false;
-
     double best_acceptance, best_s2InterceptBottom, best_s2InterceptTop, best_s1LeftEdge, best_s1RightEdge;
     best_acceptance = 0.;
-
     while (topIdx > 0){
       --topIdx;
       s2cTop = candidateS2InterceptTop[topIdx];
@@ -531,7 +511,6 @@ int main(int argc, char** argv) {
         }
         else break;
       }
-
       //finding the left Edge of the box (almost always at or close to the S1 ROI)
       for (int i = 0; i < inputS1.size(); ++i){
         s1c = inputS1[i];
@@ -570,8 +549,6 @@ int main(int argc, char** argv) {
         }
       }
       acceptance = acceptance / spectrumS1.size();
-
-
       if (acceptance > best_acceptance){
         best_acceptance = acceptance;
         best_s2InterceptBottom = s2cBottom;
@@ -587,20 +564,16 @@ int main(int argc, char** argv) {
         raiseIntercept = false;
       }
     }
-
     //1.94 from Feldman-Cousins
     double sigma = 1.94 * atof(argv[3]) / (best_acceptance * spectrumS1.size());
     fprintf(stdout, "Cross-Section: %e, Signal Acceptance: %f\n", sigma, best_acceptance);
-
     for (int i = best_s1LeftEdge; i < best_s1RightEdge + 1; ++i){
       s1c = border + binWidth / 2. + double(i) * binWidth;
       s2cTop = best_s2InterceptTop + dmBandCenter[i];
       s2cBottom = dmBandCenter[i] - best_s2InterceptBottom;
       fprintf(stdout, "%f\t%0.4f\t%0.4f\n", s1c, s2cTop, s2cBottom);
     }
-
     return 0;
-
   }
   if (mode == 1) {
     if (argc < 3) {

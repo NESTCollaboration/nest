@@ -20,6 +20,7 @@
 #include "TGraph.h"
 #include "TH1F.h"
 #include "TMath.h"
+#include "Math/SpecFunc.h"
 #include "TRandom3.h"
 #include "TFitResult.h"
 #include "TFitResultPtr.h"
@@ -82,6 +83,7 @@ int modBinom(int nTot, double prob,
              double preFactor);  // just like above, but for binomial
 double EstimateSkew(double mean, double sigma, vector<double> data);
 double owens_t(double h, double a);
+double inverse_incomplete_gamma(double lambda, double p);
 
 bool loop = false;
 double g1x = 1.0, g2x = 1.0;  // for looping over small changes in g1 and g2
@@ -564,9 +566,16 @@ int main(int argc, char** argv) {
         raiseIntercept = false;
       }
     }
-    //1.94 from Feldman-Cousins
+    TFeldmanCousins fc(CL);
+    double Ul = fc.CalculateUpperLimit(0., 0.5); // For 0 events observed, 0.5 events expected, UL = 1.94
     double sigma = 1.94 * atof(argv[3]) / (best_acceptance * spectrumS1.size());
-    fprintf(stdout, "Cross-Section: %e, Signal Acceptance: %f\n", sigma, best_acceptance);
+    vector<double> gauss_std = {0.02288, 0.1587, 0.8413, 0.9772}; // +/- 1/2 std. dev for a gaussian
+    vector<double> brazil_band; //brazil bands +/- 1/2 std. dev
+    for (int i = 0; i < gauss_std.size(); ++i){
+      brazil_band.push_back(sigma * inverse_incomplete_gamma(Ul, gauss_std[i]) / Ul);
+    }
+    fprintf(stdout, "Cross-Section: %e, 1/2σ bands: %e, %e, %e, %e, Signal Acceptance: %f\n", sigma, brazil_band[0], 
+      brazil_band[1], brazil_band[2], brazil_band[3], best_acceptance);
     for (int i = best_s1LeftEdge; i < best_s1RightEdge + 1; ++i){
       s1c = border + binWidth / 2. + double(i) * binWidth;
       s2cTop = best_s2InterceptTop + dmBandCenter[i];
@@ -1590,4 +1599,12 @@ double owens_t(double h, double a) {
 
   T /= (2. * TMath::Pi());
   return T;
+}
+
+double inverse_incomplete_gamma(double lambda, double p) {
+  //Inverse (Upper) Incomplete Gamma function
+  double stepSize = 0.01;
+  double x = 0.;
+  while(ROOT::Math::inc_gamma_c(x, lambda) < p) x = x + stepSize;
+  return max(0.5, x);
 }

@@ -425,6 +425,19 @@ rootNEST is an extremely diverse and powerful tool, but requires compilation aga
 		formatting examples. 
 	2. 0, 1, or 2 for spin-independent or spin-dependent neutron or proton respectively. 
 		It will ask you questions like #kg-days on screen
+		
+* **mode = 3**: "ADAPTIVE CUT AND COUNT" mode. This will give an estimate for the 90% confidence median cross-sectional limit for
+	a given set of data and WIMP mass using adaptive cut and count. It also outputs the signal acceptance and the "box" used
+	for the acceptance. It takes 3 arguments:
+	1. A file containing the data you are calculating a limit for. This can either be simulated data from execNEST
+		or real data formatted to match the execNEST output.  
+	2. An execNEST output file of the WIMP mass you want the limit for. The execNEST output file should have been
+		generated with the correct number kg-days for your experiment. You should only increase/decrease the number 
+		of events by changing the cross-section you use. Having O(10,000) events should be sufficient.
+	3. Reference cross section. This is the cross-section used to generate the WIMP spectrum file for the second input.
+
+* In the ACC mode, the number of logBins in analysis_G2.hh controls the step size for acceptance optimization. Try increasing the
+	number of logBins if your acceptance seems too low.
 
 There is a new **skewness** parameter in analysis.hh that allows rootNEST to fit skew-Gaussian to the log(S2/S1) 
 or log(S2) distributions for bands and goodness-of-fit calculation. skewness=0 will perform Gaussian fits;

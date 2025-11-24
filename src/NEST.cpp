@@ -1016,19 +1016,20 @@ YieldResult NESTcalc::GetYieldKr83m(double energy, double density,
 YieldResult NESTcalc::GetYieldsAndQuanta ( double keV, double rho, double def,
 INTERACTION_TYPE scatter, const vector<double> &betaMeansPara, const vector<double> &nuclMeansPara ) {//TI
   
+  if ( betaMeansPara.size() != default_betaMeansPara.size() ) throw std::runtime_error("ERROR: You need the correct # of NPs.");
   NESTresult results{};
   YieldResult yields{}; results.yields = yields; QuantaResult quanta{}; results.quanta = quanta;
   
-  double Wq = 20.7 - 3.2 * rho;
-  double aX = 0.07 + .09 * rho;
+  double Wq = betaMeansPara[0] + betaMeansPara[1] * rho;
+  double aX = betaMeansPara[2] + betaMeansPara[3] * rho;
   if ( fdetector->get_OldW13eV() && !fdetector->get_inGas() ) Wq *= ZurichEXOW;
-  double Nq = ( 1000. * keV ) / Wq - 1.10; if ( Nq < 0. ) Nq = 0.;
-  double keVEff = keV + ( 0. - keV ) / ( 1. + pow ( 35. / keV, 1.8 ) );
+  double Nq = ( 1000. * keV ) / Wq + betaMeansPara[4]; if ( Nq < 0. ) Nq = 0.;
+  double keVEff = keV + ( betaMeansPara[5] - keV ) / pow ( ( 1. + pow ( betaMeansPara[6] / keV, betaMeansPara[7] ) ), betaMeansPara[8] );
   
-  double xiBase = 1.44, xiExpo = .5, xiOff = 0.840;
+  double xiBase = betaMeansPara[9], xiExpo = betaMeansPara[10], xiOff = betaMeansPara[11];
   double xiTIB = xiBase * pow ( keVEff + xiOff, xiExpo );
-  double escape = log ( 3.95 + xiTIB ) / xiTIB;
-  yields.ExcitonRatio = ( aX - 0.00 ) * erf ( keVEff / 3.13 ) + 0.00;
+  double escape = log ( betaMeansPara[12] + xiTIB ) / xiTIB;
+  yields.ExcitonRatio = ( aX - betaMeansPara[14] ) * erf ( keVEff / betaMeansPara[13] ) + betaMeansPara[14];
   if ( escape > 1. ) {
     Nq *= escape; escape = 1.;
   }
@@ -1215,6 +1216,7 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
     default:  // beta, CH3T, 14C, the pp solar neutrino background, and
               // Compton/PP spectra of fullGamma
       return GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
+      //return GetYieldsAndQuanta ( energy, density, dfield, NEST::beta, ERYieldsParam, NRYieldsParam );
       break;
   }
 }

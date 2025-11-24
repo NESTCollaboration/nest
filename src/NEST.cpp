@@ -169,7 +169,7 @@ double NESTcalc::RecombOmegaNR(double elecFrac,
   return omega;
 }
 
-double NESTcalc::RecombOmegaER(double efield, double elecFrac,
+double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
                                const std::vector<double> &NRERWidthsParam) {
   double ampl;
   ampl = 0.086036 + (NRERWidthsParam[7] - 0.086036) /
@@ -187,9 +187,15 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac,
       1. / (exp(-0.5 * pow(mode - cntr, 2.) / (wide * wide)) *
             (1. + erf(skew * (mode - cntr) /
                       (wide * sqrt2))));  // makes sure omega never exceeds ampl
-  double omega = norm * ampl *
+  double omega;
+  if ( cntr < 1. )
+    omega = norm * ampl *
                  exp(-0.5 * pow(elecFrac - cntr, 2.) / (wide * wide)) *
                  (1. + erf(skew * (elecFrac - cntr) / (wide * sqrt2)));
+  else
+    omega = norm * ampl *
+      exp(-0.5 * pow(numQuanta - cntr, 2.) / (wide * wide)) *
+      (1. + erf(skew * (numQuanta - cntr) / (wide * sqrt2)));
   if (omega < 0.) omega = 0;
   return omega;
 }
@@ -315,8 +321,8 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
   // whether the Lindhard <1, i.e. this is NR.
   double omega = yields.Lindhard < 1
                      ? RecombOmegaNR(elecFrac, NRERWidthsParam)
-                     : RecombOmegaER(yields.ElectricField, elecFrac,
-                                     NRERWidthsParam);
+                     : RecombOmegaER(yields.ElectricField, elecFrac, Nq_mean
+                                     , NRERWidthsParam);
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     omega = 0.0;  // Ar has no non-binom sauce
   double lambdaChen; if ( NRERWidthsParam[2] < 0. ) lambdaChen = 1.0 + NRERWidthsParam[2]; else lambdaChen = 1.0;
@@ -1017,6 +1023,7 @@ YieldResult NESTcalc::GetYieldsAndQuanta ( double keV, double rho, double def,
 INTERACTION_TYPE scatter, const vector<double> &betaMeansPara, const vector<double> &nuclMeansPara ) {//TI
   
   if ( betaMeansPara.size() != default_betaMeansPara.size() ) throw std::runtime_error("ERROR: You need the correct # of NPs.");
+  //betaMeansPara are {20.7, -3.2, 0.07, 0.09, -1.10, 0., 35., 1.8, 1., 1.44, 0.5, 0.840, 3.95, 3.13, 0.} (defaults 11/24/2025)
   NESTresult results{};
   YieldResult yields{}; results.yields = yields; QuantaResult quanta{}; results.quanta = quanta;
   

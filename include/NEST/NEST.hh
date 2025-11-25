@@ -120,7 +120,7 @@ static constexpr double RealGasB = 5.105e-5;  // m^3/mol. For Ar: 3.201e-5
 const std::vector<double> default_NRYieldsParam = {
     11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};//{11.1, 1.087, 0.1, -0.0932, 2.998, 0.3, 2.94, 0.3, 2., 0.5, 1., 1.}; for LAr
 const std::vector<double> default_NRERWidthsParam = {
-  0.4, 0.4, 0.04, 0.5, 0.19, 2.25, 1., 0.046452, 0.205, 0.45, -0.2, 0., 0.};//for Nq dependence option: 0.205, 0.45 become ~500, ~1,000 (-0.2 -> 0)
+  0.4, 0.4, 0.04, 0.5, 0.19, 2.25, 1., 0.046452, 0.205, 0.45, -0.2, 0., 0.};//for Nq dep opt: 0.046, 0.205, 0.45 become ~.105, .5, 4.6 (-0.2 -> 0)
 // 1 => -0.0015 for old-style ER Fq function instead of a constant value
 const std::vector<double> default_ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
 const std::vector<double> default_betaMeansPara = {20.7, -3.2, 0.07, 0.09, -1.10, 0., 35., 1.8, 1., 1.44, 0.5, 0.840, 3.95, 3.13, 0.};//for future

@@ -42,9 +42,9 @@ NESTresult NESTcalc::FullCalculation(INTERACTION_TYPE species, double energy,
 
 double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
                             double dfield, double energy) {
-  double time_ns = 0., SingTripRatio = 0., tauR = 0., tau3 = 23.97,
-         tau1 =
-             3.27;  // arXiv:1802.06162. NR may need tauR ~0.5-1ns instead of 0
+  double time_ns = 0., SingTripRatio = 0., tauR = 0.,
+    tau3 = RandomGen::rndm()->rand_gauss(24.,1.,true),  // error from weighted average
+    tau1 = RandomGen::rndm()->rand_gauss(3.1,.7,true);  // ibid.
   if (fdetector->get_inGas() || energy < W_DEFAULT * 0.001) {
     // from G4S1Light.cc in old NEST
     tau1 = 5.18;   // uncertainty of 1.55 ns from G4S2Light
@@ -77,6 +77,8 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf) {  // NR
+      tau3 = RandomGen::rndm()->rand_gauss(23.97,0.17,true); //arXiv:1802.06162
+      tau1 = RandomGen::rndm()->rand_gauss( 3.27,0.66,true); //arXiv:1802.06162
       SingTripRatio = 0.269; if (exciton) tauR = 0.5;
     }
     else if (species == ion) {
@@ -85,8 +87,9 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
           0.065 *
           pow(energy,
               0.416);  // spans 2.3 (alpha) and 7.8 (Cf in Xe) from NEST v1
-    } else {
-      tau3 = 25.89;  // ER
+    } else {  // ER
+      tau3 = RandomGen::rndm()->rand_gauss(25.89,0.06,true); //arXiv:1802.06162
+      tau1 = RandomGen::rndm()->rand_gauss( 3.27,0.66,true); //arXiv:1802.06162
       if (!exciton) {
         if (energy > 1e3)
           energy = 1e3;  // MIP above ~1 MeV. Fix thanks to Austin de St. Croix
@@ -194,8 +197,8 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
                  (1. + erf(skew * (elecFrac - cntr) / (wide * sqrt2)));
   else
     omega = norm * ampl *
-      exp(-0.5 * pow(numQuanta - cntr, 2.) / (wide * wide)) *
-      (1. + erf(skew * (numQuanta - cntr) / (wide * sqrt2)));
+      exp(-0.5 * pow(log10(numQuanta) - cntr, 2.) / (wide * wide)) *
+      (1. + erf(skew * (log10(numQuanta) - cntr) / (wide * sqrt2)));
   if (omega < 0.) omega = 0;
   return omega;
 }

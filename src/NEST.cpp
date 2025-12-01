@@ -64,16 +64,14 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     tau3 = RandomGen::rndm()->rand_gauss(1500, 50, true);  // ibid.
     tauR = 0;
     if (species <= Cf) {
-      SingTripRatio =(2.585833+(0.9909913-2.585833)/(1+pow(energy/41.78474, 1.954878)));
-      tauR = RandomGen::rndm()->rand_gauss(57.6539*exp(-0.0066332*dfield), 0.2, true);
+      SingTripRatio =0.51718*pow(energy,0.30667)-(2.6565e-7)*pow(energy, 0.29917);
       }
     else if (species == ion) {  // really only alphas here
       SingTripRatio = (-0.065492 + 1.9996 * exp(-energy / 1e3)) /
                           (1. + 0.082154 / pow(energy / 1e3, 2.)) +
                       2.1811;  // uses energy in MeV not keV
     } else {
-      SingTripRatio = 0.3039284 + (0.9857846 - 0.3039284)/(1 + pow((energy/5.021868),1.426286)); 
-      tauR = RandomGen::rndm()->rand_gauss(314.014*exp(-0.0066332*dfield), 0.2, true);
+      SingTripRatio = (0.89642*pow(energy,-0.317989) + 0.000107*pow(energy, 1.13426));
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf) {  // NR
@@ -127,7 +125,10 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   else {
     time_ns -= tau3 * log(RandomGen::rndm()->rand_uniform());
   }
-
+  if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
+  time_ns = time_ns-0.008*dfield;
+  if (time_ns<0) time_ns=0;
+  }
   return time_ns;
 }
 
@@ -914,7 +915,7 @@ YieldResult NESTcalc::GetYieldIon(
                        ((278037.250283 / 1.21) * (0.653503 / factorE))));
     Ne = Qy * energy;
     Nph = Ly * energy;
-    L = 0.0;
+    L = 1.0;//actually isn't used, because L is "included" in formulae themselves, just to prevent YieldResultsValidity to trigger
     NexONi = 0.21;
     Wq_eV = 19.5;
   }
@@ -1081,24 +1082,17 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
   
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     // Liquid Argon
-    double alpha =
-        32.988 -
-      552.988 / (17.2346 +
-		 pow(dfield / (-4.7 + 0.025115 * exp(1.3954 / 0.265360653)),
-		     0.242671));
-    double beta = 0.778482 + 25.9 / pow(1.105 + pow(dfield / 0.4, 4.55), 7.502);
-    double gamma =
-        0.659509 *
-      (1000 / 19.5 + 6.5 * (5 - 0.5 / pow(dfield / 1047.408, 0.01851)));
-    double delta = 15.7489;
-    double DB = 1052.264 + (14159350000 - 1652.264) /
-      (-5 + pow(dfield / 0.157933, 1.83894));
     double p1 = 1;
     double p2 = 10.304;
-    double p3 = 13.0654;
+    double p3 = 9.765245;
     double p4 = 0.10535;
     double p5 = 0.7;
-    double LET = -2.07763;
+    double alpha = (32.988 - 552.988/(15.08202+pow(dfield/(-4.7+0.025115*exp(1.3954/0.265360653)), 0.1802313)));
+    double beta = (1.58904+25.9/(pow(1.105+pow(dfield/0.4, 4.55),7.502)));
+    double gamma = 0.645597*(1000/19.5 +6.5*(5-0.5/(pow(dfield/1047.408, 0.01851))));
+    double delta = 17.886377;
+    double DB = (1052.264+(14159350000 - 1652.264)/(-5+pow(dfield/0.09059867, 1.890901)));
+    double LET = -1.578774;
     double Nq = energy * 1e3 / Wq_eV;
     double Qy = alpha * beta +
       (gamma - alpha * beta) / pow(p1 + p2 * pow(energy + 0.5, p3), p4) +

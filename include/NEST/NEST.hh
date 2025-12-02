@@ -118,7 +118,7 @@ static constexpr double RealGasA =
 static constexpr double RealGasB = 5.105e-5;  // m^3/mol. For Ar: 3.201e-5
 
 const std::vector<double> default_NRYieldsParam = {
-    11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};//{11.1, 1.087, 0.1162, -0.1155, 2.4547, 0.3, 2.94, 0.3, 2., 0.5, 1., 1.}; for LAr
+    11., 1.1, 0.0480, -0.0533, 12.6, 0.3, 2., 0.3, 2., 0.5, 1., 1.};//{11.1, 1.087, 0.1162, -0.1155, 2.4517, 0.3, 2.94, 0.3, 2., 0.5, 1., 1.}; for LAr
 const std::vector<double> default_NRERWidthsParam = {
   0.4, 0.4, 0.04, 0.5, 0.19, 2.25, 1., 0.046452, 0.205, 0.45, -0.2, 0., 0.};//for Nq dep opt: 0.046, 0.205, 0.45 become ~.105, .5, 4.6 (-0.2 -> 0)
 // 1 => -0.0015 for old-style ER Fq function instead of a constant value

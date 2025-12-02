@@ -1,6 +1,6 @@
 
-#ifndef DetectorExample_LUX_RUN03_hh
-#define DetectorExample_LUX_RUN03_hh 1
+#ifndef DS_hh
+#define DS_hh 1
 
 #include "VDetector.hh"
 using namespace std;

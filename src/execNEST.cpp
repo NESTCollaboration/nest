@@ -219,9 +219,9 @@ int main(int argc, char** argv) {
           11.1025);  // +/-1.10 Everything from
                      // https://docs.google.com/document/d/1vLg8vvY5bcdl4Ah4fzyE182DGWt0Wr7_FJ12_B10ujU
       NRYieldsParam.push_back(1.087399);  // +/-0.025
-      NRYieldsParam.push_back(0.1);       // +/-0.005
-      NRYieldsParam.push_back(-0.0932);   // +/-0.0095
-      NRYieldsParam.push_back(2.998);     // +/-1.026
+      NRYieldsParam.push_back(0.1162);       // +/-0.075
+      NRYieldsParam.push_back(-0.1155);   // +/-0.012
+      NRYieldsParam.push_back(2.4517);     // +/-0.1539
       NRYieldsParam.push_back(0.3);       // Fixed
       NRYieldsParam.push_back(2.94);      // +/-0.12
       NRYieldsParam.push_back(W_DEFAULT / 1000.);

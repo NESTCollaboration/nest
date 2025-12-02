@@ -125,11 +125,8 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   else {
     time_ns -= tau3 * log(RandomGen::rndm()->rand_uniform());
   }
-  if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
-  time_ns = time_ns-0.008*dfield;
-  if (time_ns<0) time_ns=0;
-  }
-  return time_ns;
+  if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) time_ns = time_ns-0.008*dfield;
+  if (time_ns<0) time_ns=0; return time_ns;
 }
 
 // in analytical model, an empirical distribution (Brian Lenardo and Dev A.K.)
@@ -329,10 +326,10 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
                                      , NRERWidthsParam);
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.))
     omega = 0.0;  // Ar has no non-binom sauce
-  double lambdaChen; if ( NRERWidthsParam[2] < 0. ) lambdaChen = 1.0 + NRERWidthsParam[2]; else lambdaChen = 1.0;
-  if ( lambdaChen <= 0. ) lambdaChen = 1E-6;
+  double lambdaChen; if ( NRERWidthsParam[2] < 0. && yields.Lindhard < 1 ) lambdaChen = 1.0 + NRERWidthsParam[2];
+  else lambdaChen = 1.0; if ( lambdaChen <= 0. ) lambdaChen = 1E-6;
   double Variance = lambdaChen * // Binomial recombination suppressant -- from Chen Ding's Migdal work (Brown U.)
-    recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni; // NOTE: currently applied to both NR and ER!!
+    recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   if ( lambdaChen != 1. && omega != 0. ) cerr << "CAUTION - Contradictory recomb fluct parameter values" << endl;
   // if ( !fdetector->get_OldW13eV() ) Variance /= sqrt ( ZurichEXOQ );
 

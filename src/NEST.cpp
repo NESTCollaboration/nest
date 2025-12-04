@@ -194,7 +194,7 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
                  exp(-0.5 * pow(elecFrac - cntr, 2.) / (wide * wide)) *
                  (1. + erf(skew * (elecFrac - cntr) / (wide * sqrt2)));
   else
-    omega = norm * ampl *
+    omega = NRERWidthsParam[7] *
       exp(-0.5 * pow(log10(numQuanta) - cntr, 2.) / (wide * wide)) *
       (1. + erf(skew * (log10(numQuanta) - cntr) / (wide * sqrt2)));
   if (omega < 0.) omega = 0;

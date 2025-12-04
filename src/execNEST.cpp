@@ -197,8 +197,8 @@ int main(int argc, char** argv) {
     // negative 0.0015 restores https://arxiv.org/abs/2211.10726v3 Eq. 8
     NRERWidthsParam.push_back(
         0.046452);  // Minimum amplitude for ER non-binom recomb flucts
-    NRERWidthsParam.push_back(0.205);  // center in e-frac (ER)
-    NRERWidthsParam.push_back(0.45);   // width parameter
+    NRERWidthsParam.push_back(0.205);  // width parameter
+    NRERWidthsParam.push_back(0.45);   // center in e-frac (ER)
     NRERWidthsParam.push_back(-0.2);   // ER non-binom skewness in e-frac
     NRERWidthsParam.push_back(0.000);  // add Fi linear change term
     NRERWidthsParam.push_back(0.000);  // add Fex linear change term

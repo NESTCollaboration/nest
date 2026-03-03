@@ -832,6 +832,22 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
       result, energy, Wq_eV);  // everything needed to calculate fluctuations
 }
 
+YieldResult NESTcalc::GetYieldH(double energy, double density, double dfield,
+				double massNum,
+				const std::vector<double> &NRYieldsParam) {
+
+  YieldResult yieldNR = GetYieldNR(energy, density, dfield,
+				   massNum, NRYieldsParam);
+  
+  // Here, we rescale Nq based on the relative yield expected from H. relative to LXe
+  // From Elizabeth Berzin's TRIM sims
+  double Nq_SF =  6.6479 * pow(energy, -0.0766126);
+  yieldNR.PhotonYield =  yieldNR.PhotonYield * Nq_SF;
+  yieldNR.ElectronYield =  yieldNR.ElectronYield * Nq_SF;
+  yieldNR.Lindhard = yieldNR.Lindhard*Nq_SF;
+  return yieldNR;
+}
+
 YieldResult NESTcalc::GetYieldIon(
     double energy, double density, double dfield, double massNum,
     double atomNum,
@@ -1215,6 +1231,9 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
     case fullGamma_PE:
       return GetYieldGamma(energy, density,
                            dfield);  // PE of the full gamma spectrum
+      break;
+    case H:
+      return GetYieldH(energy, density, dfield, massNum, NRYieldsParam);
       break;
     default:  // beta, CH3T, 14C, the pp solar neutrino background, and
               // Compton/PP spectra of fullGamma

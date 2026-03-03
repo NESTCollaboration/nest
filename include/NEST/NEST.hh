@@ -152,7 +152,8 @@ typedef enum {
   fullGamma = 14,
   fullGamma_PE = 15,
   fullGamma_Compton_PP = 16,
-  NoneType = 17
+  NoneType = 17,
+  H = 18
 
 } INTERACTION_TYPE;
 
@@ -280,6 +281,11 @@ class NESTcalc {
   virtual YieldResult GetYieldNROld(double energy, int alt);
   // Quick and dirty simple analytical approximations saved for earlier NEST
   // versions that were first principles: power laws, ln, sigmoid, exponentials
+
+  virtual YieldResult GetYieldH(
+      double energy, double density, double dfield, double massNum,
+      const std::vector<double> &NRYieldsParam = default_NRYieldsParam);
+  // Assumes NR partitioning and quanta from TRIM/SRIM
 
   virtual YieldResult GetYieldIon(
       double energy, double density, double dfield, double massNum,

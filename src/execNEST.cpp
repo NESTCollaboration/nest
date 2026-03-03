@@ -546,7 +546,10 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
               "interaction, and some "
            << "photons and electrons may go unaccounted." << endl;
     }
-  } else {
+  } else if (type == "H"){
+    type_num = H;
+  }
+  else {
     if (verbosity > 0) {
       string particleTypes =
           "UNRECOGNIZED PARTICLE TYPE!! VALID OPTIONS ARE:\n"
@@ -567,8 +570,9 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
           "pp or ppSolar with many various underscore, hyphen and "
           "capitalization permutations permitted,\n"
           "atmNu,\n"
-          "muon or MIP or LIP or mu or mu-, and\n"
-          "fullGamma\n";
+          "muon or MIP or LIP or mu or mu-,\n"
+          "fullGamma, and\n"
+	  "H\n";
       copy(particleTypes.begin(), particleTypes.end(),
            std::ostream_iterator<char>(cerr, ""));
     }

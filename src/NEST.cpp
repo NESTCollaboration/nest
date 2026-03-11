@@ -2495,7 +2495,7 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField, double De
 
 double NESTcalc::GetDriftVelocity_MagBoltz(double temperature,
 					   double density, double efieldinput, double pressure,
-    double molarMass)  // Nichole Barry UCD 2011
+    double molarMass)  // Nichole Barry UCD 2011; R3 & R4 Piecewise Refit Joseph Lau UCLA 2026
 {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     molarMass = 39.948;
@@ -2510,10 +2510,11 @@ double NESTcalc::GetDriftVelocity_MagBoltz(double temperature,
   double gas1a = 395.50266631436, gas1b = -357384143.004642,
          gas1c = 0.518110447340587;
   // Gas equation two coefficients (E/N of 3.5E-19 to 3.8E-17)
-  double gas2a = -592981.611357632, gas2b = -90261.9643716643,
-         gas2c = -4911.83213989609, gas2d = -115.157545835228,
-         gas2f = -0.990440443390298, gas2g = 1008.30998933704,
-         gas2h = 223.711221224885;
+  // Refit to PyBoltz 2018 MC (60 pts, 2e8 collisions, Levenberg-Marquardt)
+  double gas2a = -502223.177165246, gas2b = -88704.6037103696,
+         gas2c = -4976.27772160615, gas2d = -114.436719565408,
+         gas2f = -0.940702077347825, gas2g = 29.9193608036038,
+         gas2h = 117.945882910319;
   double edrift = 0., gasdep = efieldinput / density, gas1fix = 0.,
          gas2fix = 0.;
 
@@ -2528,7 +2529,7 @@ double NESTcalc::GetDriftVelocity_MagBoltz(double temperature,
               gas2d * pow(gas2fix, 3.) + gas2f * pow(gas2fix, 4.)) *
              (gas2h * exp(gasdep));
   }
-  if (gasdep >= 3.8e-17) edrift = 6e21 * gasdep - 32279.;
+  if (gasdep >= 3.8e-17) edrift = 5.80219505881746e+21 * gasdep - 20524.4178957185;
 
   return std::abs(edrift) * 1e-5;  // from cm/s into mm per microsecond
 }

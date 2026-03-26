@@ -2495,7 +2495,8 @@ double NESTcalc::GetDriftVelocity_Liquid(double Kelvin, double eField, double De
 
 double NESTcalc::GetDriftVelocity_MagBoltz(double temperature,
 					   double density, double efieldinput, double pressure,
-    double molarMass)  // Nichole Barry UCD 2011
+    double molarMass)  // Nichole Barry UCD 2011; R3 & R4 Refit Joseph Lau UCLA 2026
+    // R3+R4: LM piecewise (PyBoltz 2018) + Chebyshev deg9 near R3/R4 boundary
 {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
     molarMass = 39.948;
@@ -2505,31 +2506,86 @@ double NESTcalc::GetDriftVelocity_MagBoltz(double temperature,
              pow(gasdep * 1.e17, 0.2570253);
     return edrift;
   }
+  // R1+R2: unchanged from Nichole Barry UCD 2011 (MagBoltz v8)
   // Gas equation one coefficients (E/N of 1.2E-19 to 3.5E-19)
   density *= NEST_AVO / molarMass;
   double gas1a = 395.50266631436, gas1b = -357384143.004642,
          gas1c = 0.518110447340587;
   // Gas equation two coefficients (E/N of 3.5E-19 to 3.8E-17)
-  double gas2a = -592981.611357632, gas2b = -90261.9643716643,
-         gas2c = -4911.83213989609, gas2d = -115.157545835228,
-         gas2f = -0.990440443390298, gas2g = 1008.30998933704,
-         gas2h = 223.711221224885;
+  // Refit to PyBoltz 2018 MC (60 pts, 2e8 collisions, Levenberg-Marquardt)
+  double gas2a = -502223.177165246, gas2b = -88704.6037103696,
+         gas2c = -4976.27772160615, gas2d = -114.436719565408,
+         gas2f = -0.940702077347825, gas2g = 29.9193608036038,
+         gas2h = 117.945882910319;
   double edrift = 0., gasdep = efieldinput / density, gas1fix = 0.,
          gas2fix = 0.;
 
+  // Regime 1: E/N < 1.2E-19 V cm^2 (linear)
   if (gasdep < 1.2e-19 && gasdep >= 0.) edrift = 4e22 * gasdep;
+  // Regime 2: 1.2E-19 <= E/N < 3.5E-19 (power law)
   if (gasdep < 3.5e-19 && gasdep >= 1.2e-19) {
     gas1fix = gas1b * pow(gasdep, gas1c);
     edrift = gas1a * pow(gasdep, gas1fix);
   }
-  if (gasdep < 3.8e-17 && gasdep >= 3.5e-19) {
-    gas2fix = log(gas2g * gasdep);
-    edrift = (gas2a + gas2b * gas2fix + gas2c * pow(gas2fix, 2.) +
-              gas2d * pow(gas2fix, 3.) + gas2f * pow(gas2fix, 4.)) *
-             (gas2h * exp(gasdep));
-  }
-  if (gasdep >= 3.8e-17) edrift = 6e21 * gasdep - 32279.;
+  // Regimes 3+4: E/N >= 3.5E-19 (LM piecewise + Chebyshev near boundary)
+  // The LM piecewise refit has a 4.65% discontinuity at E/N = 3.8 Td
+  // (the old R3/R4 boundary). A Chebyshev deg 9 polynomial, fit to the
+  // same PyBoltz 2018 MC data, is smooth everywhere and replaces LM in
+  // the zone [2.5, 6.0] Td near the boundary. Hermite
+  // smooth blending (3x^2 - 2x^3) over 0.5 Td at each edge ensures
+  // C1 continuity (zero derivative at both ends of the transition).
+  if (gasdep >= 3.5e-19) {
+    double Td = gasdep * 1e17;
 
+    // LM piecewise value (R3 log-polynomial or R4 linear)
+    double edrift_lm;
+    if (gasdep < 3.8e-17) {
+      gas2fix = log(gas2g * gasdep);
+      edrift_lm = (gas2a + gas2b * gas2fix + gas2c * pow(gas2fix, 2.) +
+                gas2d * pow(gas2fix, 3.) + gas2f * pow(gas2fix, 4.)) *
+               (gas2h * exp(gasdep));
+    } else {
+      edrift_lm = 5.80219505881746e+21 * gasdep - 20524.4178957185;
+    }
+    edrift_lm = std::abs(edrift_lm);
+
+    if (Td < 2.5) {
+      edrift = edrift_lm;  // pure LM (R3 bulk)
+    } else {
+      // Chebyshev deg 9: ln(edrift_cm/s) = P9(t), t in [-1, 1]
+      // Fit to PyBoltz 2018 MC points over [0.6, 20] Td
+      double u = log(gasdep);
+      double t = 2.0 * (u - (-4.195112294025095e+01)) /
+                 5.809142990314022e+00 - 1.0;
+      double ln_ed = 2.143938128066541e+00;
+      ln_ed = ln_ed * t + 2.975900594551476e+00;
+      ln_ed = ln_ed * t + (-3.926749202670321e+00);
+      ln_ed = ln_ed * t + (-7.411260713318530e+00);
+      ln_ed = ln_ed * t + 1.452085040401718e+00;
+      ln_ed = ln_ed * t + 5.451306500170360e+00;
+      ln_ed = ln_ed * t + 1.223996054502669e+00;
+      ln_ed = ln_ed * t + (-3.345597860841636e-01);
+      ln_ed = ln_ed * t + 5.703999334643821e-01;
+      ln_ed = ln_ed * t + 1.180343118713458e+01;
+      double edrift_cheb = exp(ln_ed);
+
+      if (Td < 3.0) {
+        // Blend LM -> Chebyshev (Hermite smoothstep)
+        double x = (Td - 2.5) / 0.5;
+        double alpha = x * x * (3.0 - 2.0 * x);
+        edrift = (1.0 - alpha) * edrift_lm + alpha * edrift_cheb;
+      } else if (Td < 5.5) {
+        edrift = edrift_cheb;  // pure Chebyshev (covers R3/R4 boundary)
+      } else if (Td < 6.0) {
+        // Blend Chebyshev -> LM (Hermite smoothstep)
+        double x = (Td - 5.5) / 0.5;
+        double alpha = x * x * (3.0 - 2.0 * x);
+        edrift = (1.0 - alpha) * edrift_cheb + alpha * edrift_lm;
+      } else {
+        edrift = edrift_lm;  // pure LM (R4 high field)
+      }
+    }
+  }
   return std::abs(edrift) * 1e-5;  // from cm/s into mm per microsecond
 }
 

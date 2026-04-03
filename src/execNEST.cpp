@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(0.4);  // NR Fi (Fano factor for ionization)
     NRERWidthsParam.push_back(0.4);  // NR Fex
     NRERWidthsParam.push_back(
-        0.04);  // amplitude for non-binomial NR recombination fluctuations
+        0.04);  // ampl for non-binom NR recomb fluct (-1 not 0 for off!)
     NRERWidthsParam.push_back(0.50);  // center in e-Frac (NR)
     NRERWidthsParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
     NRERWidthsParam.push_back(2.25);  // raw skewness, for NR
@@ -645,7 +645,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
                     double(atomNum), NRYieldsParam, ERYieldsParam);
   } else if (type_num == B8) {
     yieldsMax =
-        n.GetYields(NR, 4.00, rho, centralField, detector->get_molarMass(),
+        n.GetYields(NR, 5.00, rho, centralField, detector->get_molarMass(),
                     double(atomNum), NRYieldsParam, ERYieldsParam);
   } else {
     double energyMaximum;
@@ -689,9 +689,8 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
           case C14:
             keV = TestSpectra::C14_spectrum(eMin, eMax);
             break;
-          case B8:  // normalize this to ~3500 / 10-ton / year, for E-threshold
-                    // of
-            // 0.5 keVnr, OR 180 evts/t/yr/keV at 1 keV
+          case B8:  // normalize this to 950 events / tonne / year, for no energy threshold
+                    //                   350 events / tonne / year, for .5 keV ""(MC truth)
             keV = TestSpectra::B8_spectrum(eMin, eMax);
             break;
           case AmBe:

@@ -107,17 +107,20 @@ double TestSpectra::C14_spectrum(double xMin, double xMax) {
   return xyTry[0];
 }
 
-double TestSpectra::B8_spectrum(double xMin, double xMax) {
-  if (xMax != 4.) xMax = 4.;
+double TestSpectra::B8_spectrum(double xMin, double xMax, double m1, double m2) {
+  if (xMax != 5.) xMax = 5.;
   if (xMin != 0.) xMin = 0.;
-  double yMax = pow(10., -2.198);
+  double yMax = pow(10., 3.4155);
   vector<double> xyTry = {
       xMin + (xMax - xMin) * RandomGen::rndm()->rand_uniform(),
       yMax * RandomGen::rndm()->rand_uniform(), 1.};
   while (xyTry[2] > 0.) {
-    double FuncValue = 2.198 + 1.2184 * xyTry[0] - 0.32849 * pow(xyTry[0], 2.) +
-                       0.12441 * pow(xyTry[0], 3.);
-    FuncValue = pow(10., -FuncValue);
+    double FuncValue = 3.4155 - 1.2184 * xyTry[0] + 0.32849 * pow(xyTry[0], 2.) -
+      0.12441 * pow(xyTry[0], 3.) + m1 * exp ( m2 * xyTry[0] );
+    // Longfellow et al.: m1 = -6.8926e-18, m2 = 8.6015
+    // Bahcall (DMCalc) : m1 = -2.6455e-10, m2 = 5.0843
+    // Winter (SNO 2013): m1 = -2.2965e-13, m2 = 7.4129
+    FuncValue = pow(10., FuncValue);
     xyTry = RandomGen::rndm()->VonNeumann(xMin, xMax, 0., yMax, xyTry[0],
                                           xyTry[1], FuncValue);
   }

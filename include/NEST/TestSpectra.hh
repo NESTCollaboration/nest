@@ -49,7 +49,7 @@ class TestSpectra {
 
   static double CH3T_spectrum(double emin, double emax);
   static double C14_spectrum(double emin, double emax);
-  static double B8_spectrum(double emin, double emax);
+  static double B8_spectrum(double emin, double emax, double m1=-2.6455e-10, double m2=5.0843);
   static double AmBe_spectrum(double emin, double emax);
   static double PowLawFit_spectrum(double emin, double emax, double exp);
   static double Cf_spectrum(double emin, double emax);

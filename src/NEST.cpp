@@ -2499,12 +2499,57 @@ double NESTcalc::GetDriftVelocity_MagBoltz(double temperature,
     // R3+R4: LM piecewise (PyBoltz 2018) + Chebyshev deg9 near R3/R4 boundary
 {
   if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) {
+    // GAr drift velocity: Chebyshev deg 15 (0.02 to 22 Td) + quadratic (>22 Td)
+    // Fit to 105 PyBoltz 2018 MC points (2e8 collisions). Combined RMS = 0.74%.
+    // Monotonically increasing. Clenshaw recurrence for numerical stability.
+    // Joseph Lau UCLA 2026
     molarMass = 39.948;
     density *= NEST_AVO / molarMass;
-    double edrift = 0., gasdep = efieldinput / density;
-    edrift = 2.991205 * pow(1.00113657, 1. / (gasdep * 1.e17)) *
-             pow(gasdep * 1.e17, 0.2570253);
-    return edrift;
+    double gasdep = efieldinput / density;
+    double Td = gasdep * 1.0e17;
+
+    if (Td > 2.196953035004685e+01) {
+      // Quadratic fit to 15 PyBoltz 2018 MC points (23 to 160 Td)
+      // RMS = 1.00%
+      double dTd = Td - 2.196953035004685e+01;
+      return -7.526167982793750e-04 * dTd * dTd +
+              7.676412612290673e-01 * dTd + 2.039192218977246e+01;
+    }
+
+    // Map ln(Td) to Chebyshev domain [-1, 1]
+    double u = log(Td);
+    double t = 2.0 * (u - (-3.913408949493860e+00)) /
+               7.003065458786462e+00 - 1.0;
+
+    // Chebyshev deg 15 coefficients (fit in ln(v_drift) vs ln(Td) space)
+    static constexpr double c[16] = {
+        1.232665135170256e+00,   // c[0]
+        1.302895762518890e+00,   // c[1]
+        3.282190686579693e-01,   // c[2]
+        1.826012757924152e-01,   // c[3]
+        5.313707825283899e-02,   // c[4]
+       -3.695347384963019e-02,   // c[5]
+       -4.523835429922259e-02,   // c[6]
+       -2.135435936079648e-02,   // c[7]
+        6.048415001627724e-03,   // c[8]
+        1.671628646536734e-02,   // c[9]
+        1.000506474463453e-02,   // c[10]
+        5.110565921611583e-04,   // c[11]
+       -6.487288773395466e-03,   // c[12]
+       -9.546413639078079e-03,   // c[13]
+       -2.952720852070562e-03,   // c[14]
+        4.872318921365352e-03    // c[15]
+    };
+
+    // Clenshaw recurrence: evaluates sum c[k]*T_k(t) for k = 0 to 15
+    double b2 = 0.0, b1 = 0.0;
+    for (int k = 15; k >= 1; --k) {
+      double b0 = 2.0 * t * b1 - b2 + c[k];
+      b2 = b1;
+      b1 = b0;
+    }
+    double ln_vd = t * b1 - b2 + c[0];
+    return exp(ln_vd);  // mm/us
   }
   // R1+R2: unchanged from Nichole Barry UCD 2011 (MagBoltz v8)
   // Gas equation one coefficients (E/N of 1.2E-19 to 3.5E-19)

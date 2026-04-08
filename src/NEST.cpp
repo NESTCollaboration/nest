@@ -14,7 +14,7 @@
 using namespace std;
 using namespace NEST;
 
-static constexpr int podLength = 1000;  // roughly 100-1,000 ns for S1 in LXe, 5000 - roughly 6-11us for LAr
+static constexpr int podLength = 1100;  // roughly 100-1,000 ns for S1 in LXe, 5000 - roughly 6-11us for LAr
 static constexpr double McMConst = 0.0; //NR Nq pow law +const
 bool kr83m_reported_low_deltaT = false;  // to aid in verbosity
 
@@ -65,7 +65,6 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     tauR = 0;
     if (species <= Cf) {
       SingTripRatio =(0.50124402-0.005939726*exp(-dfield/0.10912019))*pow(energy,0.30214913+0.04352277*exp(-dfield/27.56144196));
-      //SingTripRatio =0.51718*pow(energy,0.30667)-(2.6565e-7)*pow(energy, 0.29917);//original from March
       }
     else if (species == ion) {  // really only alphas here
       SingTripRatio = (-0.065492 + 1.9996 * exp(-energy / 1e3)) /
@@ -73,7 +72,6 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
                       2.1811;  // uses energy in MeV not keV
     } else {
       SingTripRatio =(0.89642*pow(energy,-0.317989) + 0.000107*pow(energy, 1.13426));
-      //SingTripRatio = (0.89642*pow(energy,-0.317989) + 0.000107*pow(energy, 1.13426)); //original from Match
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf) {  // NR
@@ -127,7 +125,6 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   else {
     time_ns -= tau3 * log(RandomGen::rndm()->rand_uniform());
   }
-  //if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) time_ns = time_ns-0.008*dfield;
   if (time_ns<0) time_ns=0; return time_ns;
 }
 
@@ -798,7 +795,6 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
                (4. * exp(Ne * ThomasImel / 4.) - (Ne + Nph) * ThomasImel - 4.);
 
   double NexONi = Nex / Ni;
-  //cout << Nex/Ni<<endl;
   Wvalue wvalue = WorkFunction(density, fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   if (NexONi < wvalue.alpha && energy > 1e2) {
@@ -1524,7 +1520,7 @@ const vector<double> &NESTcalc::GetS1(
             (PULSE_WIDTH * sqrt2_PI) *
             exp(-pow(pTime - photon_times[ii], 2.) /
                 (2. * PULSE_WIDTH * PULSE_WIDTH));
-      }//changed to 4 from 10
+      }
       if (total >= 0) {
         if (PEperBin[0] < min) {
           min = PEperBin[0];

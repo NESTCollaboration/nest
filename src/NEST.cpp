@@ -64,14 +64,14 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
     tau3 = RandomGen::rndm()->rand_gauss(1500, 50, true);  // ibid.
     tauR = 0;
     if (species <= Cf) {
-      SingTripRatio =0.51718*pow(energy,0.30667)-(2.6565e-7)*pow(energy, 0.29917);
+      SingTripRatio =(0.50124402-0.005939726*exp(-dfield/0.10912019))*pow(energy,0.30214913+0.04352277*exp(-dfield/27.56144196));
       }
     else if (species == ion) {  // really only alphas here
       SingTripRatio = (-0.065492 + 1.9996 * exp(-energy / 1e3)) /
                           (1. + 0.082154 / pow(energy / 1e3, 2.)) +
                       2.1811;  // uses energy in MeV not keV
     } else {
-      SingTripRatio = (0.89642*pow(energy,-0.317989) + 0.000107*pow(energy, 1.13426));
+      SingTripRatio =(0.89642*pow(energy,-0.317989) + 0.000107*pow(energy, 1.13426));
     }  // lastly is ER for LAr
   } else {
     if (species <= Cf) {  // NR
@@ -125,7 +125,6 @@ double NESTcalc::PhotonTime(INTERACTION_TYPE species, bool exciton,
   else {
     time_ns -= tau3 * log(RandomGen::rndm()->rand_uniform());
   }
-  if (ValidityTests::nearlyEqual(ATOM_NUM, 18.)) time_ns = time_ns-0.008*dfield;
   if (time_ns<0) time_ns=0; return time_ns;
 }
 

@@ -1,4 +1,5 @@
 //use that file (change original pulseShape with that) if you want S1-only count, but not in spike mode
+//was made mostly with LAr in mind
 #include <algorithm>
 #include <cfloat>
 #include <iostream>

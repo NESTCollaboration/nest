@@ -425,10 +425,10 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
     return 1;
   }
   
-  if ( !PrintSubThr && // BEWARE that false makes #events < your request!
+  if ( PrintSubThr <= 0 && // BEWARE that <1 makes #events < your request!
        ( s1CalculationMode == NEST::S1CalculationMode::Waveform ||
 	 s2CalculationMode == NEST::S2CalculationMode::Waveform ) )
-    PrintSubThr = true;  // to ensure proper event alignment for PSD work
+    PrintSubThr = 1;  // to ensure proper event alignment for PSD work
   
   vector<double> signal1, signal2, signalE, vTable;
   string delimiter, token;
@@ -1332,18 +1332,31 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
               "gamma-X i.e. MSSI may be happening. This may be why even high-E "
               "eff is <100%%. Check your cathode position definition.\n\n");
       }
-
-      if (PrintSubThr ||  // BEWARE that false makes #events < your request!!
+      
+      double s1min[3] = { PHE_MIN, PHE_MIN, PHE_MIN },
+	     s1max[3] = { DBL_MAX, DBL_MAX, DBL_MAX }, s2min = PHE_MIN, s2max = DBL_MAX;
+      if ( PrintSubThr == -1 ) {
+	if ( usePD == 0 ) { s1min[0] = minS1; s1max[0] = maxS1; }
+	if ( usePD == 1 ) { s1min[1] = minS1; s1max[1] = maxS1; }
+	if ( usePD == 2 ) { s1min[2] = minS1; s1max[2] = maxS1; }
+	s2max = maxS2;
+	s2min = detector->get_s2_thr();  // minS2 for looser cut
+      }
+      
+      if ( PrintSubThr == 1 ||  // BEWARE that <1 makes #events < your request!!
           (scint[0] > PHE_MIN && scint[1] > PHE_MIN && scint[2] > PHE_MIN &&
-           scint[3] > PHE_MIN && scint[4] > PHE_MIN && scint[5] > PHE_MIN &&
-           scint[6] > PHE_MIN && scint[7] > PHE_MIN && scint[8] > PHE_MIN &&
-           scint2[0] > PHE_MIN && scint2[1] > PHE_MIN && scint2[2] > PHE_MIN &&
-           scint2[3] > PHE_MIN && scint2[4] > PHE_MIN && scint2[5] > PHE_MIN &&
-           scint2[6] > PHE_MIN && scint2[7] > PHE_MIN && scint2[8] > PHE_MIN)) {
+	   scint[3] > s1min[0] && scint[4] > PHE_MIN && scint[5] > s1min[1] &&
+	   scint[6] > PHE_MIN && scint[7] > s1min[2] && scint[8] > PHE_MIN &&
+	   scint[0] < DBL_MAX && scint[1] < DBL_MAX && scint[2] < DBL_MAX &&
+	   scint[3] < s1max[0] && scint[4] < DBL_MAX && scint[5] < s1max[1] &&
+	   scint[6] < DBL_MAX && scint[7] < s1max[2] && scint[8] < DBL_MAX &&
+	   scint2[0] > PHE_MIN && scint2[1] > PHE_MIN && scint2[2] > PHE_MIN &&
+	   scint2[3] > PHE_MIN && scint2[4] > s2min && scint2[5] > PHE_MIN &&
+	   scint2[6] > PHE_MIN && scint2[7] > PHE_MIN && scint2[8] > PHE_MIN &&
+	   scint2[0] < DBL_MAX && scint2[1] < DBL_MAX && scint2[2] < DBL_MAX &&
+	   scint2[3] < DBL_MAX && scint2[4] < DBL_MAX && scint2[5] < DBL_MAX &&
+	   scint2[6] < DBL_MAX && scint2[7] < s2max && scint2[8] < DBL_MAX) ) {
         // for skipping specific sub-threshold events (save screen/disk space)
-        // other suggestions: minS1, minS2 (or s2_thr) for tighter cuts
-        // depending on analysis.hh settings (think of as analysis v. trigger
-        // thresholds) and using max's too, pinching both ends
         if (type_num == Kr83m && verbosity > 0 && (eMin < 10. || eMin > 40.))
           printf("%.6f\t", yields.DeltaT_Scint);
         if (timeStamp > tZero && verbosity > 0) {

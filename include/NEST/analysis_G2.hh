@@ -11,7 +11,7 @@ short PrintSubThr = 0; //BEWARE that non-pos makes #evts < your req
 
 // General parameters of importance changing the global behavior
 bool MCtruthE = true;    // false means reconstructed energy
-bool MCtruthPos = true;  // false means reconstructed position
+bool MCtruthPos = false;  // false means reconstructed position
 
 // Setting the S1 and S2 calculation modes
 NEST::S1CalculationMode s1CalculationMode = NEST::S1CalculationMode::Hybrid;

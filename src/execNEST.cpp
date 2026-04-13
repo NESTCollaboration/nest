@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(0.19);  // width parameter (Gaussian 1-sigma)
     NRERWidthsParam.push_back(2.25);  // raw skewness, for NR
     NRERWidthsParam.push_back(
-       -0.0014);  // ER Fano normalization for non-density dependence
+       -0.00050);  // ER Fano normalization for non-density dependence
     // negative 0.0015 restores https://arxiv.org/abs/2211.10726v3 Eq. 8
     NRERWidthsParam.push_back(
         0.04311);  // Minimum amplitude for ER non-binom recomb flucts
@@ -1406,9 +1406,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
           // of all 8 scint2 vector elements. Change as you
           // desire
         }
-      }  // always execute statement, if(1) above, because if is just
-         // place-holder
-      // in case you want to drop all sub-threshold data
+      }
     } catch (exception& e) {
       if (verbosity > 0) cerr << e.what() << endl;
       return 1;

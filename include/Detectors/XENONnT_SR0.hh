@@ -100,8 +100,8 @@ class XENONnT : public VDetector {
 
     // 2-D (X & Y) Position Reconstruction
     // Set these to zero to implement "perfect" position corrections
-    PosResFlat = 0.0;   // exp increase in pos recon res at hi r, 1/mm
-    PosResBase = 0.0;  // baseline unc in mm, see NEST.cpp for usage
+    PosResFlat = 0.0;  // constant syst unc in position recon res, mm
+    PosResBase = 0.0;  // amplitude in mm, divided by sqrt of S2 area
   }
 
   // S1 PDE custom fit for function of z

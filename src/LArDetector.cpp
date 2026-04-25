@@ -75,7 +75,7 @@ void LArDetector::Initialization() {
   double cathode = 1.00;  // mm. Defines point below which events are gamma-X
 
   // 2-D (X & Y) Position Reconstruction
-  double PosResExp = 0.015;     // exp increase in pos recon res at hi r, 1/mm
-  double PosResBase = 70.8364;  // baseline unc in mm, see NEST.cpp for usage
+  double PosResFlat = 0.000;    // constant syst unc in position recon res, mm
+  double PosResBase = 70.8364;  // amplitude in mm, divided by sqrt of S2 area
   double molarMass = 131.293;   // molar mass, g/mol
 }

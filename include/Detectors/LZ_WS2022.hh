@@ -118,8 +118,8 @@ class LZ_Detector_2022 : public VDetector {
     // 2-D (X & Y) Position Reconstruction
     // Set these to zero to implement "perfect" position corrections
     // Note: LZ used spatial maps to implement S1 and S2 corrections
-    PosResFlat = 0.0;   // exp increase in pos recon res at hi r,1/mm
-    PosResBase = 120.6;// baseline unc in mm, see NEST.cpp for usage
+    PosResFlat = 0.000;  // constant syst unc in position recon res, mm
+    PosResBase = 120.6;  // amplitude in mm, divided by sqrt of S2 area
   }
 
   // S1 PDE custom fit for function of z

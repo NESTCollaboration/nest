@@ -64,14 +64,14 @@ class DS_Detector : public VDetector {
     TopDrift = 306; 
     anode = 316; 
     gate = 256; 
-    cathode = 0; 
+    cathode = 0;
     
     // 2-D (X & Y) Position Reconstruction - still from LUX
-    PosResFlat = 0.015; 
-    PosResBase = 70.8364; 
+    PosResFlat = 3.00;
+    PosResBase = 70.8364;
   }
   
- double FitS1(double xPos_mm, double yPos_mm, double zPos_mm,
+  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm,
                LCE map) override {
     return 1.0;
   }

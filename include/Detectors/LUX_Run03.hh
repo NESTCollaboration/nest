@@ -81,8 +81,8 @@ class DetectorExample_LUX_RUN03 : public VDetector {
     cathode = 55.90;    // 55.9-56 in 1910.04211,1708.02566. UNITS: mm
 
     // 2-D (X & Y) Position Reconstruction
-    PosResFlat = 0.015;     // arXiv:1710.02752 indirectly. UNITS: mm^-1
-    PosResBase = 70.8364;  // 1710.02752 indirectly. UNITS: mm
+    PosResFlat = 3.00;     // constant syst unc in position recon res, mm
+    PosResBase = 70.8364;  // amplitude in mm, divided by sqrt of S2 area
   }
 
   // S1 PDE custom fit for function of xyz

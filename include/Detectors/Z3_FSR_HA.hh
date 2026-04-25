@@ -91,8 +91,8 @@ class DetectorExample_ZEPLIN : public VDetector {
     cathode = 0.;  // mm. Defines point below which events are gamma-X
 
     // 2-D (X & Y) Position Reconstruction (Solovov 2012)
-    PosResFlat = 0.015;     // exp increase in pos recon res at hi r, 1/mm
-    PosResBase = 70.8364;  // baseline unc in mm, see NEST.cpp for usage
+    PosResFlat = 3.00;     // constant syst unc in position recon res, mm
+    PosResBase = 70.8364;  // amplitude in mm, divided by sqrt of S2 area
   }
 
   // S1 PDE custom fit for function of z

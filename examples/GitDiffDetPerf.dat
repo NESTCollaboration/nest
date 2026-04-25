@@ -57,7 +57,7 @@ index a3968f6..caccb9b 100644
 +    cathode = 0.;//55.90;    // 55.9-56 in 1910.04211,1708.02566. UNITS: mm
  
      // 2-D (X & Y) Position Reconstruction
-     PosResExp = 0.015;     // arXiv:1710.02752 indirectly. UNITS: mm^-1
+     PosResFlat = 3.;
 @@ -94,12 +94,12 @@ class DetectorExample_LUX_RUN03 : public VDetector {
      finalCorr /= 307.9;
      if ((finalCorr < 0.5 || finalCorr > 1.5 || std::isnan(finalCorr)) &&

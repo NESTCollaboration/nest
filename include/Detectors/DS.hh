@@ -67,7 +67,7 @@ class DS_Detector : public VDetector {
     cathode = 0; 
     
     // 2-D (X & Y) Position Reconstruction - still from LUX
-    PosResExp = 0.015; 
+    PosResFlat = 0.015; 
     PosResBase = 70.8364; 
   }
   

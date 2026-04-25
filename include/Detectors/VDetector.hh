@@ -62,7 +62,7 @@ class VDetector {
   double get_gate() const { return gate; }
 
   // 2-D (X & Y) Position Reconstruction
-  double get_PosResExp() const { return PosResExp; }
+  double get_PosResFlat() const { return PosResFlat; }
   double get_PosResBase() const { return PosResBase; }
 
   // Xenon properties
@@ -119,7 +119,7 @@ class VDetector {
   void set_gate(double param) { gate = param; }
 
   // 2-D (X & Y) Position Reconstruction
-  void set_PosResExp(double param) { PosResExp = param; }
+  void set_PosResFlat(double param) { PosResFlat = param; }
   void set_PosResBase(double param) { PosResBase = param; }
 
   // Xenon properties
@@ -218,7 +218,7 @@ class VDetector {
   double cathode = 1.00;  // mm. Defines point below which events are gamma-X
 
   // 2-D (X & Y) Position Reconstruction
-  double PosResExp = 0.015;     // exp increase in pos recon res at hi r, 1/mm
+  double PosResFlat = 0.015;     // exp increase in pos recon res at hi r, 1/mm
   double PosResBase = 70.8364;  // baseline unc in mm, see NEST.cpp for usage
 
   double molarMass = 131.293;  // molar mass, g/mol

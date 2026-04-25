@@ -2675,21 +2675,19 @@ vector<double> NESTcalc::xyResolution(double xPos_mm, double yPos_mm,
                                   fdetector->get_TopDrift() / 2.)[1];
 
   double rad = sqrt(pow(xPos_mm, 2.) + pow(yPos_mm, 2.));
-  double kappa = fdetector->get_PosResBase() +
-                 exp(fdetector->get_PosResExp() * rad);  // arXiv:1710.02752
-  if (rad > 150.)
-    kappa = 116.;  // see git issue #131 from Claudio: but, converted from cm to
-                   // mm here
+  double kappa = fdetector->get_PosResBase();
+    //+ exp(fdetector->get_PosResExp() * rad);  // arXiv:1710.02752
   double sigmaR = kappa / sqrt(A_top);  // ibid. But only stat; add syst (~3mm)
   sigmaR = sqrt(sigmaR * sigmaR +
-                9.);  // σ_vertex^2 = ((r_vertex/r_S2)*σ_(x,y))^2 + σ_sys^2
+                fdetector->get_PosResFlat() * fdetector->get_PosResFlat());
+  // σ_vertex^2 = ((r_vertex/r_S2)*σ_(x,y))^2 + σ_sys^2
 
   double phi = two_PI * RandomGen::rndm()->rand_uniform();
   sigmaR = std::abs(RandomGen::rndm()->rand_gauss(0.0, sigmaR, false));
   double sigmaX = sigmaR * cos(phi);
   double sigmaY = sigmaR * sin(phi);
 
-  if (sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR <= 0. ||
+  if (sigmaR > 1e2 || std::isnan(sigmaR) || sigmaR < 0. ||
       std::abs(sigmaX) > 1e2 || std::abs(sigmaY) > 1e2) {
     if (A_top >
         40.) {  // roughly three S2 e-'s in most detectors (or ~1.5 in LZ)

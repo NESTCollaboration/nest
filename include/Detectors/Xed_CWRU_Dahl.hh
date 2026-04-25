@@ -75,7 +75,7 @@ class DetectorExample_XED : public VDetector {
     cathode = 0.;  // mm. Defines point below which events are gamma-X
 
     // 2-D (X & Y) Position Reconstruction
-    PosResExp = 0.015;     // exp increase in pos recon res at hi r, 1/mm
+    PosResFlat = 0.015;     // exp increase in pos recon res at hi r, 1/mm
     PosResBase = 70.8364;  // baseline unc in mm, see NEST.cpp for usage
   }
 

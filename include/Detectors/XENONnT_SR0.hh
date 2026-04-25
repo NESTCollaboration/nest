@@ -100,7 +100,7 @@ class XENONnT : public VDetector {
 
     // 2-D (X & Y) Position Reconstruction
     // Set these to zero to implement "perfect" position corrections
-    PosResExp = 0.0;   // exp increase in pos recon res at hi r, 1/mm
+    PosResFlat = 0.0;   // exp increase in pos recon res at hi r, 1/mm
     PosResBase = 0.0;  // baseline unc in mm, see NEST.cpp for usage
   }
 

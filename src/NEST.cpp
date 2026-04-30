@@ -193,11 +193,29 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
                  exp(-0.5 * pow(elecFrac - cntr, 2.) / (wide * wide)) *
                  (1. + erf(skew * (elecFrac - cntr) / (wide * sqrt2)));
   else
+  {
+    // Double Gaussian default parameters
+    double ampl2 = 0.065;
+    double cntr2 = 4.40;
+    double wide2 = 0.85;
+    double skew2 = 0.0;
+
+    // Check if parameters have been passed
+    if (NRERWidthsParam.size() > 15) {
+      ampl2 = NRERWidthsParam[13];
+      cntr2 = NRERWidthsParam[14];
+      wide2 = NRERWidthsParam[15];
+    }
+    // Check is skew 
+    if (NRERWidthsParam.size() > 16) skew2 = NRERWidthsParam[16];
+
+    double logNQ = log10(numQuanta);
     omega = 0.00 +
-      ampl * exp(-0.5 * pow(log10(numQuanta) - cntr, 2.) / (wide * wide) )*
-      (1. + erf(skew * (log10(numQuanta) - cntr) / (wide * sqrt2)))+
-      .072 * exp(-0.5 * pow(log10(numQuanta) - 4.40, 2.) / (0.85 * 0.85) )*
-      (1. + erf(0.00 * (log10(numQuanta) - 4.40) / (0.85 * sqrt2)));
+      ampl * exp(-0.5 * pow(logNQ - cntr, 2.) / (wide * wide)) *
+      (1. + erf(skew * (logNQ - cntr) / (wide * sqrt2))) +
+      ampl2 * exp(-0.5 * pow(logNQ - cntr2, 2.) / (wide2 * wide2)) *
+      (1. + erf(skew2 * (logNQ - cntr2) / (wide2 * sqrt2)));
+  }
   if (omega < 0.) omega = 0;
   return omega;
 }

@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
        -0.00050);  // ER Fano normalization for non-density dependence
     // negative 0.0015 restores https://arxiv.org/abs/2211.10726v3 Eq. 8
     NRERWidthsParam.push_back(
-        0.03182);  // Minimum amplitude for ER non-binom recomb flucts
+        0.03290);  // Minimum amplitude for ER non-binom recomb flucts
     NRERWidthsParam.push_back(0.2964);// width parameter
     NRERWidthsParam.push_back(2.629); // center in e-frac (ER)
     NRERWidthsParam.push_back(-.3343);// ER non-binom skewness in e-frac

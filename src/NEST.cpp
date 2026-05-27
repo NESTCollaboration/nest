@@ -195,11 +195,11 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
   else
   {
     // Double Gaussian default parameters
-    double ampl2 = 0.065;
-    double cntr2 = 4.40;
-    double wide2 = 0.85;
-    double skew2 = 0.0;
-
+    double ampl2 = 0.04149; // up to 0.1
+    double cntr2 = 5.207; // ~4-5
+    double wide2 = 1.361; // ~0.5-1
+    double skew2 = -2.495; // up to 0.0
+    
     // Check if parameters have been passed
     if (NRERWidthsParam.size() > 15) {
       ampl2 = NRERWidthsParam[13];

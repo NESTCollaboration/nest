@@ -178,7 +178,7 @@ class LZ_Detector_2024 : public VDetector {
     vector<double> BotTotRat(2);
 
     BotTotRat[0] = 0.60;  // S1 bottom-to-total ratio
-    BotTotRat[1] = 0.35;  // S2 bottom-to-total ratio, typically only used for
+    BotTotRat[1] = 0.356; // S2 bottom-to-total ratio, typically only used for
                           // position recon (1-this)
 
     return BotTotRat;

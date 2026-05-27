@@ -196,12 +196,12 @@ int main(int argc, char** argv) {
        -0.00050);  // ER Fano normalization for non-density dependence
     // negative 0.0015 restores https://arxiv.org/abs/2211.10726v3 Eq. 8
     NRERWidthsParam.push_back(
-        0.04311);  // Minimum amplitude for ER non-binom recomb flucts
-    NRERWidthsParam.push_back(0.46); // width parameter
-    NRERWidthsParam.push_back(2.4); // center in e-frac (ER)
-    NRERWidthsParam.push_back(0.0); // ER non-binom skewness in e-frac
-    NRERWidthsParam.push_back(0.000);// add Fi linear change term
-    NRERWidthsParam.push_back(0.000);// add Fex linear change term
+        0.03182);  // Minimum amplitude for ER non-binom recomb flucts
+    NRERWidthsParam.push_back(0.2964);// width parameter
+    NRERWidthsParam.push_back(2.629); // center in e-frac (ER)
+    NRERWidthsParam.push_back(-.3343);// ER non-binom skewness in e-frac
+    NRERWidthsParam.push_back(0.0000);// add Fi linear change term
+    NRERWidthsParam.push_back(0.0000);// add Fex linear change term
 
     // if (type == "ER") {  // Based on XELDA L-shell 5.2 keV yields
     // https://arxiv.org/abs/2109.11487
@@ -1464,9 +1464,10 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
                   "[keVnr]\tEc Res[%%]\tEff[%%>thr]\tEc [keVee]\n");
         keVee /= numEvts;
       } else
-        fprintf(stderr,
-                "S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc "
-                "Res[%%]\tEff[%%>thr]\n");  // the C here refers to the combined
+	if (verbosity > 0)
+	  fprintf(stderr,
+		  "S1 Mean\t\tS1 Res [%%]\tS2 Mean\t\tS2 Res [%%]\tEc Mean\t\tEc "
+		  "Res[%%]\tEff[%%>thr]\n");  // the C here refers to the combined
       // (S1+S2) energy scale
       for (int j = 0; j < numBins; ++j) {
         fprintf(stderr, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t", band[j][0],

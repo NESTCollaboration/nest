@@ -151,8 +151,8 @@ int main(int argc, char** argv) {
     NRERWidthsParam.push_back(2.25);
     NRERWidthsParam.push_back(1.);
     NRERWidthsParam.push_back(0.046452);
-    NRERWidthsParam.push_back(0.205);
     NRERWidthsParam.push_back(0.45);
+    NRERWidthsParam.push_back(0.205);
     NRERWidthsParam.push_back(-0.2);
     NRERWidthsParam.push_back(0.000);
     NRERWidthsParam.push_back(0.000);
@@ -197,8 +197,8 @@ int main(int argc, char** argv) {
     // negative 0.0015 restores https://arxiv.org/abs/2211.10726v3 Eq. 8
     NRERWidthsParam.push_back(
         0.03290);  // Minimum amplitude for ER non-binom recomb flucts
-    NRERWidthsParam.push_back(0.2964);// width parameter
     NRERWidthsParam.push_back(2.629); // center in e-frac (ER)
+    NRERWidthsParam.push_back(0.2964);// width parameter
     NRERWidthsParam.push_back(-.3343);// ER non-binom skewness in e-frac
     NRERWidthsParam.push_back(0.0000);// add Fi linear change term
     NRERWidthsParam.push_back(0.0000);// add Fex linear change term
@@ -1058,7 +1058,7 @@ int execNEST(VDetector* detector, double numEvts, const string& type,
             NRERWidthsParam.clear();
             NRERWidthsParam = {
                 1.00, 1.00,     0.,    0.50, 0.19, 0.,
-                1.,   0.046452, 0.205, 0.45, -0.2, 0., 0.};// zero out non-binom
+                1.,   0.046452, 0.45, 0.205, -0.2, 0., 0.};// zero out non-binom
                                                      // recomb fluct & skew (NR)
           }
           if (!dEOdxBasis)  // last argument -999 for default VV skew mod

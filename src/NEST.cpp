@@ -176,10 +176,9 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
     pow(1. + pow(efield / 295.2, 251.6), 0.0069114);
   // NRERWidthsParam[7] sets the lower-asymptote of field-dependence of ampl
   if (ampl < 0.) ampl = 0.;
-  double wide = NRERWidthsParam[8];  // Width of omega vs. electron-fraction
+  double cntr = NRERWidthsParam[8];  // Center of omega vs. elec-frac
+  double wide = NRERWidthsParam[9];  // Width of omega vs. electron-fraction
                                      // (i.e. recomb. prob.)
-  double cntr =
-      NRERWidthsParam[9];  // Center of omega vs. elec-frac
   double skew =
       NRERWidthsParam[10]; // Skewness of omega vs. elec-frac distribution
   double mode = cntr + 2. * inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);

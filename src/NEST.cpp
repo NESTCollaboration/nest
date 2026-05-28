@@ -198,7 +198,6 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
     double cntr2 = 5.207; // ~4-5
     double wide2 = 1.361; // ~0.5-1
     double skew2 = -2.495; // up to 0.0
-    double mode2 = cntr2 + 2. * inv_sqrt2_PI * skew2 * wide2 / sqrt(1. + skew2 * skew2);
     
     // Check if parameters have been passed
     if (NRERWidthsParam.size() > 15) {
@@ -208,7 +207,8 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
     }
     // Check is skew 
     if (NRERWidthsParam.size() > 16) skew2 = NRERWidthsParam[16];
-
+    
+    double mode2 = cntr2 + 2. * inv_sqrt2_PI * skew2 * wide2 / sqrt(1. + skew2 * skew2);
     double logNQ = log10(numQuanta);
     double norm2 = 1. / (exp(-0.5 * pow(mode2 - cntr2, 2.) / (wide2 * wide2)) * (1. + erf(skew2 * (mode2 - cntr2) / (wide2 * sqrt2))));
     omega = 0.00 +

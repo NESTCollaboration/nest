@@ -146,7 +146,7 @@ photonstream NESTcalc::GetPhotonTimes(INTERACTION_TYPE species,
   int total, excit;
 	
   if (excitons > total_photons) {
-    throw std::runtime_error("You specified more excitons than total photon numbers?! This is physically wrong and please check your inputs.");
+    throw std::runtime_error("You specified more excitons than total photon number?! This is physically wrong, so please check your inputs.");
   }
 	
   for (int ip = 0; ip < total_photons; ++ip) {
@@ -179,6 +179,8 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
   double cntr = NRERWidthsParam[8];  // Center of omega vs. elec-frac
   double wide = NRERWidthsParam[9];  // Width of omega vs. electron-fraction
                                      // (i.e. recomb. prob.)
+  if ( wide > cntr )
+    throw std::runtime_error("Low-E r-fluct Gauss peak's width greater than centroid. This is physically wrong so please check your inputs, in NRERWidthsParam: they must be in the old wrong order.");
   double skew =
       NRERWidthsParam[10]; // Skewness of omega vs. elec-frac distribution
   double mode = cntr + 2. * inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);
@@ -1147,8 +1149,10 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
                            (1. + pow(dfield / 144.65029656, -2.80532006));
   else
     m04 = ERYieldsParam[3];
-  if (ERYieldsParam[4] < 0.)
+  if (ERYieldsParam[4] < 0.) {
     m05 = Nq / energy / (1. + alpha * erf(0.05 * energy)) - m01;
+    cerr << "m5 is slightly energy dependent in the beta model" << endl;
+  }
   else
     m05 = ERYieldsParam[4];
   if (ERYieldsParam[6] < 0.)

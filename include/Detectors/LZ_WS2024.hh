@@ -183,54 +183,73 @@ class LZ_Detector_2024 : public VDetector {
 
     return BotTotRat;
   }
-
-  //The following functions were not used in LZ's WS2024, and are copied from the public NEST
-  // file for LUX, just so NEST has them available to prevent errors. 
+  
   double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
-    double phoTravT, approxCenter = (TopDrift + cathode) / 2.,
-                     relativeZ = zPos_mm - approxCenter;
-
-    double A = 0.048467 - 7.6386e-6 * relativeZ +
-               1.2016e-6 * pow(relativeZ, 2.) - 6.0833e-9 * pow(relativeZ, 3.);
+    double phoTravT, z_m = zPos_mm/1000.;
+    
+    double A = 0.113 - 0.19 * z_m + 0.185 * pow(z_m, 2.);
     if (A < 0.) A = 0.;  // cannot have negative probability
-    double B_a = 0.99373 + 0.0010309 * relativeZ -
-                 2.5788e-6 * pow(relativeZ, 2.) -
-                 1.2000e-8 * pow(relativeZ, 3.);
+    double B_a = 0.983 + 0.137 * z_m + 0.033 * pow(z_m, 2.);
     double B_b = 1. - B_a;
-    double tau_a = 11.15;  // all times in nanoseconds
-    double tau_b = 4.5093 + 0.03437 * relativeZ -
-                   0.00018406 * pow(relativeZ, 2.) -
-                   1.6383e-6 * pow(relativeZ, 3.);
+    double tau_a = 47.304 + 3.26 * z_m - 5.077 * pow(z_m, 2.) + 1.468 * pow(z_m, 3.);  // all times in nanoseconds
+    double tau_b = 14.138 - 30.180 * z_m + 52.954 * pow(z_m, 2.) - 19.330 * pow(z_m, 3.);
     if (tau_b < 0.) tau_b = 0.;  // cannot have negative time
-
-    // A = 0.0574; B_a = 1.062; tau_a = 11.1; tau_b = 2.70; B_b = 1.0 - B_a;
-    // //LUX D-D conditions
-
-    if (RandomGen::rndm()->rand_uniform() < A)
-      phoTravT = 0.;  // direct travel time to PMTs (low)
-    else {            // using P0(t) =
-            // A*delta(t)+(1-A)*[(B_a/tau_a)e^(-t/tau_a)+(B_b/tau_b)e^(-t/tau_b)]
-            // LUX PSD paper, but should apply to all detectors w/ diff #'s
-      if (RandomGen::rndm()->rand_uniform() < B_a)
-        phoTravT = -tau_a * log(RandomGen::rndm()->rand_uniform());
-      else
-        phoTravT = -tau_b * log(RandomGen::rndm()->rand_uniform());
+    
+    double Zmax = max(153.9-z_m*100., 14.8+z_m*100.);
+    double Tdirect = sqrt(pow(82.73, 2.)+pow(Zmax, 2.))/17.75; //in ns
+    
+    vector<double> t_array;
+    for (int ii = 0; ii < 250; ++ii) t_array.push_back(double(ii));
+    vector<double> pdf_array;
+    for (int ip = 0; ip < 250; ++ip) {
+      double pdf = B_a/tau_a*exp(-t_array[ip]/tau_a)+B_b/tau_b*exp(-t_array[ip]/tau_b);
+      pdf_array.push_back(pdf);
     }
-
-    double sig = RandomGen::rndm()->rand_gauss(
-        3.84, .09);  // includes stat unc but not syst
-    phoTravT += RandomGen::rndm()->rand_gauss(
-        0.00, sig);  // the overall width added to photon time spectra by the
-                     // effects in the electronics and the data reduction
-                     // pipeline
-
+    double total = accumulate(pdf_array.begin(), pdf_array.end(), 0.0);
+    vector<double> pdfNorm_array;
+    for (int pp = 0; pp < 250; ++pp) {
+      double newpdf = pdf_array[pp]/total;
+      pdfNorm_array.push_back(newpdf);
+    }
+    vector<double> cdf_array;
+    cdf_array.push_back(0.);
+    for (int c = 1; c < 250; ++c) {
+      double tem = 0.;
+      for (int cc = 0; cc < c; ++cc) tem += pdfNorm_array[cc];
+      cdf_array.push_back(tem);
+    }
+    
+    if ( RandomGen::rndm()->rand_uniform() < A ) {
+      double Zmin = min(153.9-z_m*100., 14.8+z_m*100.);
+      double TdirectMin = Zmin/17.75; // in ns
+      phoTravT = TdirectMin + (Tdirect-TdirectMin)*RandomGen::rndm()->rand_uniform();  // direct travel time to PMTs (low)
+    }
+    else {
+      double y = RandomGen::rndm()->rand_uniform();
+      vector<double> diff_array;
+      for (int dd = 0; dd < 250; ++dd) {
+	double diff = fabs(cdf_array[dd]-y);
+	diff_array.push_back(diff);
+      }
+      auto it = min_element(begin(diff_array), end(diff_array));
+      int ind = distance(begin(diff_array), it);
+      phoTravT = t_array[ind];
+      phoTravT += Tdirect; //ns
+    }
+    
+    double k_add = z_m*100./2.;  // if you want more realistic photon transit times (cf. BACCARAT) keep this smearing
+    phoTravT += k_add * RandomGen::rndm()->rand_uniform();
+    //double sig = RandomGen::rndm()->rand_gauss(3.84, .09, true); // includes stat unc but not syst
+    //phoTravT += RandomGen::rndm()->rand_gauss(0.00, sig,false);  // the overall width added to photon time spectra by the effects in the electronics and the data reduction pipeline
+    
     if (phoTravT > DBL_MAX) phoTravT = tau_a;
-    if (phoTravT < -DBL_MAX) phoTravT = 0.000;
-
-    return phoTravT;  // this function follows LUX (arXiv:1802.06162) not Xe10
-                      // technically but tried to make general
+    if (phoTravT < -DBL_MAX) phoTravT = 0.00;
+    
+    return phoTravT;  // this function follows arXiv:2603.26877
+    
   }
-
+  
+  // The following function was not used in LZ's WS2024. It has been copied from the public NEST file for LUX, just so that NEST has it available, in order to prevent an error.
   vector<double> SinglePEWaveForm(double area, double t0) override {
     vector<double> PEperBin;
 

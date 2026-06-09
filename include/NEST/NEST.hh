@@ -284,8 +284,9 @@ class NESTcalc {
 
   virtual YieldResult GetYieldH(
       double energy, double density, double dfield, double massNum,
-      const std::vector<double> &NRYieldsParam = default_NRYieldsParam);
-  // Assumes NR partitioning and quanta from TRIM/SRIM
+      const std::vector<double> &NRYieldsParam = default_NRYieldsParam,
+      const std::vector<double> &ERYieldsParam = default_ERYieldsParam);
+  // Assumes ER-like recombination and partitionong, scaled to NR yields + SF from TRIM/SRIM
 
   virtual YieldResult GetYieldIon(
       double energy, double density, double dfield, double massNum,

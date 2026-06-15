@@ -502,26 +502,35 @@ YieldResult NESTcalc::GetYieldERWeighted(
 NESTresult NESTcalc::GetYieldERdEOdxBasis(
     const std::vector<double> &dEOdxParam, string muonInitPos,
     vector<double> vTable, const std::vector<double> &NRERWidthsParam) {
+
   Wvalue wvalue = WorkFunction(dEOdxParam[8], fdetector->get_molarMass(),
                                fdetector->get_OldW13eV());
   double Wq_eV = wvalue.Wq_eV;
   double rho = dEOdxParam[8];
+
   double xi = -999., yi = -999., zi = fdetector->get_TopDrift();
-  double xf, yf, zf, pos_x, pos_y, pos_z, r, phi, field,
-      eMin = dEOdxParam[4], z_step = dEOdxParam[5], inField = dEOdxParam[6];
+  double xf, yf, zf, pos_x, pos_y, pos_z, r, phi, field;
+  double eMin = dEOdxParam[4];
+  double z_step = dEOdxParam[5];
+  double inField = dEOdxParam[6];
+
   if (ValidityTests::nearlyEqual(eMin, 0.) || std::isnan(eMin))
     throw std::runtime_error("Energy cannot be zero or undefined");
+
   NESTresult result{};
+
   xf = dEOdxParam[0];
   yf = dEOdxParam[1];
   zf = dEOdxParam[2];
+
   if (ValidityTests::nearlyEqual(dEOdxParam[3], -1.)) {
     if (NRERWidthsParam[0] < 0. && eMin < 0.) {
       xi = xf - 10.;
       yi = yf;
       zi = zf;
     } else {
-      r = fdetector->get_radmax() * sqrt(RandomGen::rndm()->rand_uniform());
+      r = fdetector->get_radmax() *
+          sqrt(RandomGen::rndm()->rand_uniform());
       phi = 2. * M_PI * RandomGen::rndm()->rand_uniform();
       xi = r * cos(phi);
       yi = r * sin(phi);
@@ -531,6 +540,7 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
     string delimiter = ",";
     size_t loc = 0;
     int ii = 0;
+
     while ((loc = position.find(delimiter)) != string::npos) {
       string token = position.substr(0, loc);
       if (ii == 0)
@@ -542,57 +552,96 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
     }
     zi = stof(position);
   }
+
   if (zi <= 0.) zi = fdetector->get_TopDrift();
-  double dEOdx, eStep, refEnergy;
+  if (zf < 0.) zf = 0.;
+
+  double dEOdx = 0.;
+  double eStep = 0.;
+  double refEnergy = 0.;
+
   if (eMin < 0.) {
     refEnergy = -eMin;
+
     if (dEOdxParam[10] > 0. && dEOdxParam[11] != 0.) {
       dEOdx = dEOdxParam[10] * pow(-eMin, dEOdxParam[11]);
       if (dEOdxParam[12] > 0.)
-	; //do nothing yet. Old attempts: Gaussian, Expo, Poisson
-    } else
+        ;  // do nothing yet. Old attempts: Gaussian, Expo, Poisson
+    } else {
       dEOdx = CalcElectronLET(-eMin, ATOM_NUM, dEOdxParam[10]);
-    eStep = rho * z_step * 1e2 * RandomGen::rndm()->rand_zero_trunc_gauss(dEOdx,dEOdx);
+    }
+
+    // full-step energy, for step = z_step
+    eStep = rho * z_step * 1e2 *
+            RandomGen::rndm()->rand_zero_trunc_gauss(dEOdx, dEOdx);
+
   } else {
     refEnergy = dEOdxParam[9];
+
+    // full-step energy, for step = z_step
     eStep = eMin * rho * z_step * 1e2;
   }
+
   double driftTime, vD, keV = 0., Nq_mean;
   int Nph = 0, Ne = 0, Nq = 0;
+
   double xx = xi, yy = yi, zz = zi;
-  if (zf < 0.) zf = 0.;
-  double distance = sqrt((xf - xi) * (xf - xi) + (yf - yi) * (yf - yi) +
+
+  double distance = sqrt((xf - xi) * (xf - xi) +
+                         (yf - yi) * (yf - yi) +
                          (zf - zi) * (zf - zi));
+
+  if (distance <= 0. || std::isnan(distance)) {
+    result.quanta.photons = 0;
+    result.quanta.electrons = 0;
+    result.yields.DeltaT_Scint = zi;
+    result.yields.ElectricField =
+        (inField == -1.) ? fdetector->FitEF(xi, yi, zi) : inField;
+    return result;
+  }
+
   double norm[3];
   double xi_tib;
+
   norm[0] = (xf - xi) / distance;
   norm[1] = (yf - yi) / distance;
   norm[2] = (zf - zi) / distance;
-  bool stopCond = false;
-  while (!stopCond &&
+
+  double travelled = 0.;
+
+  while (travelled < distance &&
          (xx * xx + yy * yy) <
              fdetector->get_radmax() * fdetector->get_radmax() &&
          std::abs(refEnergy) > PHE_MIN) {
-    if (((zf < zi && zz <= zf) || (zf > zi && zz >= zf)) &&
-        ((xx - xf) * (xx - xf) + (yy - yf) * (yy - yf)) <
-            4. * z_step * z_step) {
-      stopCond = true;
+
+    // Use a shortened final step instead of always using full z_step.
+    double step = std::min(z_step, distance - travelled);
+    double step_scale = step / z_step;
+    double eStepLocal = eStep * step_scale;
+
+    if (eMin < 0. && (keV + eStepLocal) > -eMin)
+      eStepLocal = -eMin - keV;
+
+    if (eStepLocal <= 0.)
       break;
-    }
+
     // stop making S1 and S2 if particle exits Xe volume, OR runs out of
     // energy (in case of beta)
     if (inField == -1.)
       field = fdetector->FitEF(xx, yy, zz);
     else
       field = inField;
+
     if (eMin < 0.) {
-      if ((keV + eStep) > -eMin) eStep = -eMin - keV;
       if (NRERWidthsParam[0] < 0.) {
         YieldResult yields{};
-        Nq_mean = -NRERWidthsParam[0] * eStep;
+
+        Nq_mean = -NRERWidthsParam[0] * eStepLocal;
         double Ni_mean = Nq_mean / (1. + NRERWidthsParam[1]);
+
         xi_tib = Ni_mean * (NRERWidthsParam[3] / 4.) *
-                 pow(eStep, NRERWidthsParam[4] - 1.);
+                 pow(eStepLocal, NRERWidthsParam[4] - 1.);
+
         yields.PhotonYield =
             Ni_mean * (1. + NRERWidthsParam[1] -
                        log(NRERWidthsParam[2] + xi_tib) / xi_tib);
@@ -601,102 +650,148 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
         yields.Lindhard = 1.;
         yields.ElectricField = field;
         yields.DeltaT_Scint = -999;
+
         result.yields = yields;
-      } else
-        result.yields = GetYieldBetaGR(eStep, rho, field);
+      } else {
+        result.yields = GetYieldBetaGR(eStepLocal, rho, field);
+      }
     } else {
       result.yields = GetYieldBetaGR(refEnergy, rho, field);
     }
+
     if (eMin < 0. && NRERWidthsParam[0] < 0.) {
       QuantaResult quanta{};
+
       if (Nq_mean < 1.)
         Nq = 0;
-      else //int(ceil(RandomGen::rndm()->rand_gauss(Nq_mean,sqrt(NRERWidthsParam[5]*Nq_mean),true)-0.5))
-        Nq = RandomGen::rndm()->binom_draw(NRERWidthsParam[5]*eStep,Nq_mean/(NRERWidthsParam[5]*eStep));
-      quanta.recombProb = 1. - log(NRERWidthsParam[2] + xi_tib) / xi_tib;
+      else
+        Nq = RandomGen::rndm()->binom_draw(
+            NRERWidthsParam[5] * eStepLocal,
+            Nq_mean / (NRERWidthsParam[5] * eStepLocal));
+
+      quanta.recombProb =
+          1. - log(NRERWidthsParam[2] + xi_tib) / xi_tib;
+
       if (result.yields.PhotonYield < 1. || Nq <= 0)
         quanta.photons = 0;
-      else //int(ceil(RandomGen::rndm()->rand_gauss(result.yields.PhotonYield,sqrt(NRERWidthsParam[6]*result.yields.PhotonYield),true)-0.5))
-        quanta.photons = RandomGen::rndm()->binom_draw(Nq,result.yields.PhotonYield/double(Nq));
+      else
+        quanta.photons = RandomGen::rndm()->binom_draw(
+            Nq, result.yields.PhotonYield / double(Nq));
+
       quanta.electrons = Nq - quanta.photons;
       quanta.ions = int(ceil(double(Nq) / (1. + NRERWidthsParam[1]) - 0.5));
       quanta.excitons = Nq - quanta.ions;
-      quanta.recombProb = 1. - log(NRERWidthsParam[2] + xi_tib) / xi_tib;
+      quanta.recombProb =
+          1. - log(NRERWidthsParam[2] + xi_tib) / xi_tib;
       quanta.Variance = NRERWidthsParam[6] * result.yields.PhotonYield;
+
       result.quanta = quanta;
+
       Ne += result.quanta.electrons;
-    } else
+
+    } else {
       result.quanta =
           GetQuanta(result.yields, rho, default_NRERWidthsParam, -999.);
-    if (eMin > 0.)
-      Nph += result.quanta.photons * (eStep / refEnergy);
-    else {
+    }
+
+    if (eMin > 0.) {
+      Nph += result.quanta.photons * (eStepLocal / refEnergy);
+    } else {
       if (NRERWidthsParam[0] >= 0.) {
         Nq = result.quanta.photons + result.quanta.electrons;
+
         double FanoOverall =
             1.;  // use 6 for ~0.7% energy resolution at 2.6 MeV and 190 V/cm
         double FanoScint =
             200.;  // standin for recombination fluctuations in this approach
+
         Nq = int(floor(
             RandomGen::rndm()->rand_gauss(Nq, sqrt(FanoOverall * Nq), false) +
             0.5));
+
         result.quanta.photons =
             int(floor(RandomGen::rndm()->rand_gauss(
                           result.quanta.photons,
                           sqrt(FanoScint * result.quanta.photons), false) +
                       0.5));
+
         result.quanta.electrons = Nq - result.quanta.photons;
       }
+
       Nph += result.quanta.photons;
     }
+
     int index = int(floor(zz / z_step + 0.5));
     if (index >= vTable.size()) index = vTable.size() - 1;
+
     if (vTable.size() == 0)
       vD = dEOdxParam[7];
     else
       vD = vTable[index];
+
     driftTime = (fdetector->get_TopDrift() - zz) / vD;
+
     if (zz >= fdetector->get_cathode() && NRERWidthsParam[0] >= 0.) {
-      if (eMin > 0.)
+      if (eMin > 0.) {
         Ne += result.quanta.electrons *
-              exp(-driftTime / fdetector->get_eLife_us()) * (eStep / refEnergy);
-      else
+              exp(-driftTime / fdetector->get_eLife_us()) *
+              (eStepLocal / refEnergy);
+      } else {
         Ne += result.quanta.electrons *
               exp(-driftTime / fdetector->get_eLife_us());
+      }
     }
-    keV += eStep;
-    xx += norm[0] * z_step;
-    yy += norm[1] * z_step;
-    zz += norm[2] * z_step;
+
+    keV += eStepLocal;
+
+    xx += norm[0] * step;
+    yy += norm[1] * step;
+    zz += norm[2] * step;
+    travelled += step;
+
     if (eMin < 0.) {
-      refEnergy -= eStep;
+      refEnergy -= eStepLocal;
+
+      if (refEnergy <= PHE_MIN)
+        break;
+
       if (dEOdxParam[10] > 0. && dEOdxParam[11] != 0.) {
         dEOdx = dEOdxParam[10] * pow(refEnergy, dEOdxParam[11]);
         if (dEOdxParam[12] > 0.)
-          dEOdx = RandomGen::rndm()->rand_gauss(dEOdx, dEOdxParam[12] * dEOdx,
-                                                true);
-      } else
+          dEOdx = RandomGen::rndm()->rand_gauss(
+              dEOdx, dEOdxParam[12] * dEOdx, true);
+      } else {
         dEOdx = CalcElectronLET(refEnergy, ATOM_NUM, dEOdxParam[10]);
+      }
+
+      // full-step energy for the next iteration
       eStep = dEOdx * rho * z_step * 1e2;
     }
-    // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << "\t" << Nph <<
-    // "\t" << Ne << endl;
+
+    // cerr << keV << "\t\t" << xx << "\t" << yy << "\t" << zz << "\t"
+    //      << Nph << "\t" << Ne << endl;
   }
+
   if (Nph < 0) Nph = 0;
   if (Ne < 0) Ne = 0;
+
   result.quanta.photons = Nph;
   result.quanta.electrons = Ne;
+
   pos_x =
       0.5 * (xi + xx);  // approximate things not already done right in loop as
   // middle of detector since muon traverses whole length
   pos_y = 0.5 * (yi + yy);
   pos_z = 0.5 * (zi + zz);
+
   if (inField == -1.)
     field = fdetector->FitEF(pos_x, pos_y, pos_z);
   else
     field = inField;
+
   result.yields.DeltaT_Scint = pos_z;
   result.yields.ElectricField = field;
+
   return result;
 }
 

@@ -836,13 +836,13 @@ YieldResult NESTcalc::GetYieldH(double energy, double density, double dfield,
 				double massNum,
                 const std::vector<double> &NRYieldsParam,  const std::vector<double> &ERYieldsParam) {
 
-  YieldResult yieldNR = GetYieldNR(energy, density, dfield,
-				   massNum, NRYieldsParam);
-
   // Here, we rescale Nq based on the relative yield expected from H. relative to LXe
   // From Elizabeth Berzin's TRIM sims
   double Nq_SF =  6.6479 * pow(energy, -0.0766126);
-  double NRtotalYield_scaled = Nq_SF*(yieldNR.PhotonYield + yieldNR.ElectronYield);
+  YieldResult yieldNR = GetYieldNR(energy*Nq_SF, density, dfield,
+				   massNum, NRYieldsParam);
+
+  double NRtotalYield_scaled = yieldNR.PhotonYield + yieldNR.ElectronYield;
 
   YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
 

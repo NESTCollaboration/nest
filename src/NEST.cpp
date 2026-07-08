@@ -839,18 +839,17 @@ YieldResult NESTcalc::GetYieldH(double energy, double density, double dfield,
   // Here, we rescale Nq based on the relative yield expected from H. relative to LXe
   // From Elizabeth Berzin's TRIM sims
   double Nq_SF =  6.6479 * pow(energy, -0.0766126);
-  YieldResult yieldNR = GetYieldNR(energy*Nq_SF, density, dfield,
-				   massNum, NRYieldsParam);
+  
+  // Calculate equivalent NR Lindhard factor, to scale yields correctly
+  YieldResult yieldNR = GetYieldNR(energy, density, dfield,
+                                   massNum, NRYieldsParam);
+  double XeNRLindhard = yieldNR.Lindhard;
 
-  double NRtotalYield_scaled = yieldNR.PhotonYield + yieldNR.ElectronYield;
+  // Nq_SF*XeNRLindhard is our best estimate of the H recoil Lindhard factor
+  // This returns a true Xe ER yield calculation, but with a boost in available energy according to the higher L for H
 
-  YieldResult yieldsB = GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
+  YieldResult yieldsB = GetYieldBetaGR(energy*Nq_SF*XeNRLindhard, density, dfield, ERYieldsParam);
 
-  double ERtotalYield = yieldsB.PhotonYield + yieldsB.ElectronYield;
-
-  double SF_ER = NRtotalYield_scaled/ERtotalYield;
-  yieldsB.PhotonYield =  yieldsB.PhotonYield * SF_ER;
-  yieldsB.ElectronYield =  yieldsB.ElectronYield * SF_ER;
   return yieldsB;
 }
 

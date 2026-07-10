@@ -839,9 +839,41 @@ YieldResult NESTcalc::GetYieldH(double energy, double density, double dfield,
   // Here, we rescale Nq based on the relative yield expected from H. relative to LXe
   // From Elizabeth Berzin's TRIM sims
   double Nq_SF =  6.6479 * pow(energy, -0.0766126);
-  YieldResult yieldNR = GetYieldNR(energy*Nq_SF, density, dfield,
-				   massNum, NRYieldsParam);
-  return yieldNR;
+  // Get baseline Xe NR yields; we want the total yields for H to match this
+  YieldResult yieldXeNR = GetYieldNR(energy, density, dfield,
+                   massNum, NRYieldsParam);
+  double XeNRTotalYield = yieldXeNR.PhotonYield + yieldXeNR.ElectronYield;
+  
+  // We can't simply scale up the photons and electrons independently by Nq_SF (doesn't follow the NR band)
+  // To ensure we get the partitioning right, we need the output to be an unscaled output of GetYieldNR()
+  // If we just scale the energy by Nq_SF, this overestimates yields because NEST will see the higher energy 
+  //  and also assume a higher Lindhard factor, because it treats this as a Xe recoil at higher energy.
+  // The code below just iteratively tries scaling the input energy by the ratio of the prior output 
+  //  to the target yield (Nq_SF*XeNRTotalYield) until it converges or hits the max iterations
+
+  double scale = 1; 
+  YieldResult yieldH = yieldXeNR;
+  double HTotalYield = yieldH.PhotonYield + yieldH.ElectronYield; 
+  double yieldToTargetRatio = (XeNRTotalYield*Nq_SF)/HTotalYield; 
+                   
+  int maxIter = 4; // Maximum total attempts (for the sake of faster run times)
+  double tolerance = 0.05; // Acceptable fractional error on target yield
+  int ii = 0;
+  while (std::abs(yieldToTargetRatio-1) > tolerance){ // keep going until 
+      scale *= yieldToTargetRatio; // Starts at Nq_SF, should converge to 1 after several iterations
+      yieldH = GetYieldNR(energy*scale, density, dfield,
+                   massNum, NRYieldsParam);
+      double HTotalYield = yieldH.PhotonYield + yieldH.ElectronYield; 
+      yieldToTargetRatio = (XeNRTotalYield*Nq_SF)/HTotalYield;           
+      std::cout << "Iteration " << ii << ", ratio of output to target yield is " << yieldToTargetRatio << std::endl;
+      ii++;
+      if (ii >= maxIter){
+          std::cout << "Warning: H yield calculation failed to converge." << std::endl;
+          break;
+      }
+  }
+  return yieldH;
+  
 }
 
 YieldResult NESTcalc::GetYieldIon(

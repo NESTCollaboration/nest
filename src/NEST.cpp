@@ -863,12 +863,12 @@ YieldResult NESTcalc::GetYieldH(double energy, double density, double dfield,
       scale *= yieldToTargetRatio; // Starts at Nq_SF, should converge to 1 after several iterations
       yieldH = GetYieldNR(energy*scale, density, dfield,
                    massNum, NRYieldsParam);
-      double HTotalYield = yieldH.PhotonYield + yieldH.ElectronYield; 
+      HTotalYield = yieldH.PhotonYield + yieldH.ElectronYield; 
       yieldToTargetRatio = (XeNRTotalYield*Nq_SF)/HTotalYield;           
-      std::cout << "Iteration " << ii << ", ratio of output to target yield is " << yieldToTargetRatio << std::endl;
+      //std::cout << "Iteration " << ii << ", ratio of output to target yield is " << yieldToTargetRatio << std::endl;
       ii++;
       if (ii >= maxIter){
-          std::cout << "Warning: H yield calculation failed to converge." << std::endl;
+        //std::cout << "Warning: H yield calculation failed to converge." << std::endl;
           break;
       }
   }

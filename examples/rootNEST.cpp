@@ -567,8 +567,8 @@ int main(int argc, char** argv) {
       }
     }
     TFeldmanCousins fc(CL);
-    double Ul = fc.CalculateUpperLimit(0., 0.5); // For 0 events observed, 0.5 events expected, UL = 1.94
-    double sigma = 1.94 * atof(argv[3]) / (best_acceptance * spectrumS1.size());
+    double Ul = fc.CalculateUpperLimit(0., 0.695); // For 0 events observed, 0.695 events expected (maximim Poisson background rate with median 0)
+    double sigma = Ul * atof(argv[3]) / (best_acceptance * spectrumS1.size());
     vector<double> gauss_std = {0.02288, 0.1587, 0.8413, 0.9772}; // +/- 1/2 std. dev for a gaussian
     vector<double> brazil_band; //brazil bands +/- 1/2 std. dev
     for (int i = 0; i < gauss_std.size(); ++i){

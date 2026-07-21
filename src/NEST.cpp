@@ -2,6 +2,7 @@
 #include <exception>
 #include "NEST.hh"
 #include <stdexcept>
+#include <mutex>
 
 #define ZurichEXOW 1.1716263232
 #define ZurichEXOQ \
@@ -1151,7 +1152,10 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
     m04 = ERYieldsParam[3];
   if (ERYieldsParam[4] < 0.) {
     m05 = Nq / energy / (1. + alpha * erf(0.05 * energy)) - m01;
-    cerr << "m5 is slightly energy dependent in the beta model" << endl;
+    static std::once_flag m5_print_statement;
+    std::call_once(flag, [i]() {
+            cerr << "Warning: m5 is slightly energy dependent in the beta model" << endl;
+        });
   }
   else
     m05 = ERYieldsParam[4];

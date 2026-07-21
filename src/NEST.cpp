@@ -1150,10 +1150,11 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
                            (1. + pow(dfield / 144.65029656, -2.80532006));
   else
     m04 = ERYieldsParam[3];
+  
   if (ERYieldsParam[4] < 0.) {
     m05 = Nq / energy / (1. + alpha * erf(0.05 * energy)) - m01;
     static std::once_flag m5_print_statement;
-    std::call_once(flag, [i]() {
+    std::call_once(m5_print_statement, []() {
             cerr << "Warning: m5 is slightly energy dependent in the beta model" << endl;
         });
   }

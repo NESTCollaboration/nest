@@ -180,8 +180,13 @@ double NESTcalc::RecombOmegaER(double efield, double elecFrac, double numQuanta,
   double cntr = NRERWidthsParam[8];  // Center of omega vs. elec-frac
   double wide = NRERWidthsParam[9];  // Width of omega vs. electron-fraction
                                      // (i.e. recomb. prob.)
-  if ( wide > cntr )
-    throw std::runtime_error("Low-E r-fluct Gauss peak's width greater than centroid. This is physically wrong so please check your inputs, in NRERWidthsParam: they must be in the old wrong order.");
+  if ( wide > cntr ) {
+    //throw std::runtime_error("Low-E r-fluct Gauss peak's width greater than centroid. This is physically wrong so please check your inputs, in NRERWidthsParam: they must be in the old wrong order.");
+    static std::once_flag wrong_order_print_statement;  // Temporary workaround to accept current (incorrect) Skin model in LZLAMA.
+    std::call_once(wrong_order_print_statement, []() {
+            cerr << "Low-E r-fluct Gauss peak's width greater than centroid. This is physically wrong so please check your inputs, in NRERWidthsParam: they must be in the old wrong order." << endl;
+        });
+  }
   double skew =
       NRERWidthsParam[10]; // Skewness of omega vs. elec-frac distribution
   double mode = cntr + 2. * inv_sqrt2_PI * skew * wide / sqrt(1. + skew * skew);

@@ -802,10 +802,25 @@ YieldResult NESTcalc::GetYieldNR(double energy, double density, double dfield,
   if (!fdetector->get_OldW13eV() && ValidityTests::nearlyEqual(ATOM_NUM, 54.)) Nq *= ZurichEXOW;
   double ThomasImel = NRYieldsParam[2] * pow(dfield, NRYieldsParam[3]) *
                       pow(density / DENSITY, 0.3);
+                      
+  double p = NRYieldsParam[9];  
+  if (NRYieldsParam.size() >= 15) {
+    const double a = NRYieldsParam[12];
+    const double b = NRYieldsParam[13];
+    const double E0 = NRYieldsParam[14];
+
+    if (energy > E0) {
+      p = 0.5 + a * log(1. + b * (energy - E0));
+    } else {
+      p = 0.5;
+    }
+  }
   double Qy =
-      1. / (ThomasImel * pow(energy + NRYieldsParam[4], NRYieldsParam[9]));
+      1. / (ThomasImel * pow(energy + NRYieldsParam[4], p));
+
   Qy *= 1. - 1. / pow(1. + pow((energy / NRYieldsParam[5]), NRYieldsParam[6]),
                       NRYieldsParam[10]);
+                      
   if (!fdetector->get_OldW13eV()) Qy *= ZurichEXOQ;
   double Ly = Nq / energy - Qy;
   if (Qy < 0.0) Qy = 0.0;

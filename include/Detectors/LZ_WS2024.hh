@@ -73,6 +73,7 @@ class LZ_Detector_2024 : public VDetector {
   // function of time
   void Initialization() override {
     name = "LZ SR3 or WS2024";
+
     // Primary Scintillation (S1) parameters
     g1 = 0.1122;// +/- 0.002  // phd per S1 phot at dtCntr (not phe). Divide out 2-PE effect
     sPEres = 0.338;   // single phe resolution (Gaussian assumed)
@@ -97,7 +98,7 @@ class LZ_Detector_2024 : public VDetector {
     s2Fano = 4.0;  // Fano-like fudge factor for SE width
     s2_thr = 783.;  // the S2 threshold in phe or PE, *not* phd. Affects NR most
     E_gas = 8.301178;    // effective field in kV/cm between liquid/gas border and anode
-			 // gives extraction efficiency of ~75%
+                         // gives extraction efficiency of ~75%
     eLife_us = 9000.; //the drift electron mean lifetime in micro-seconds
 
     // Thermodynamic Properties
@@ -131,6 +132,24 @@ class LZ_Detector_2024 : public VDetector {
     // Note: LZ used spatial maps to implement S1 and S2 corrections
     PosResFlat = 3.000;  // constant syst unc in position recon res, mm
     PosResBase = 120.6;  // amplitude in mm, divided by sqrt of S2 area
+
+    m_NRYieldsParam = m_NRYieldsParam_WS2024;
+    m_ERYieldsParam = m_ERYieldsParam_WS2024;
+    m_NRERWidthsParam = m_NRERWidthsParam_WS2024;
+  }
+
+  // EFT2024 settings
+  void SetEFT2024Configuration() {
+    name = "LZ EFT2024";
+
+    g1 = 0.1104;
+    g1_gas = 0.07753555;
+    s2_thr = 120.;
+    eLife_us = 15000.;
+
+    m_NRYieldsParam = m_NRYieldsParam_EFT2024;
+    m_ERYieldsParam = m_ERYieldsParam_EFT2024;
+    m_NRERWidthsParam = m_NRERWidthsParam_EFT2024;
   }
   
   // S1 PDE custom fit for function of z
@@ -152,8 +171,8 @@ class LZ_Detector_2024 : public VDetector {
 
   // Drift electric field as function of Z in mm
   double FitEF(double xPos_mm, double yPos_mm,
-                       double zPos_mm) override {  // in V/cm
-		return 96.5; // V/cm
+                        double zPos_mm) override {  // in V/cm
+    return 96.5; // V/cm
   }
 
   // S2 PDE custom fit for function of r
@@ -174,7 +193,7 @@ class LZ_Detector_2024 : public VDetector {
   }
 
   vector<double> FitTBA(double xPos_mm, double yPos_mm,
-                                double zPos_mm) override {
+                                 double zPos_mm) override {
     vector<double> BotTotRat(2);
 
     BotTotRat[0] = 0.60;  // S1 bottom-to-total ratio
@@ -228,8 +247,8 @@ class LZ_Detector_2024 : public VDetector {
       double y = RandomGen::rndm()->rand_uniform();
       vector<double> diff_array;
       for (int dd = 0; dd < 250; ++dd) {
-	double diff = fabs(cdf_array[dd]-y);
-	diff_array.push_back(diff);
+        double diff = fabs(cdf_array[dd]-y);
+        diff_array.push_back(diff);
       }
       auto it = min_element(begin(diff_array), end(diff_array));
       int ind = distance(begin(diff_array), it);
@@ -246,7 +265,6 @@ class LZ_Detector_2024 : public VDetector {
     if (phoTravT < -DBL_MAX) phoTravT = 0.00;
     
     return phoTravT;  // this function follows arXiv:2603.26877
-    
   }
   
   // The following function was not used in LZ's WS2024. It has been copied from the public NEST file for LUX, just so that NEST has it available, in order to prevent an error.
@@ -296,20 +314,33 @@ class LZ_Detector_2024 : public VDetector {
     return PEperBin;
   }
 
-    std::vector<double> get_nr_yield_params(){
-        return m_NRYieldsParam;
-    }
-    std::vector<double> get_er_yield_params(){
-        return m_ERYieldsParam;
-    }
-    std::vector<double> get_nr_er_width_params(){
-        return m_NRERWidthsParam;
-    }
+  std::vector<double> get_nr_yield_params(){
+    return m_NRYieldsParam;
+  }
 
-  private:
-    std::vector<double> m_NRYieldsParam = {10.19, 1.11, 0.0498, -0.0533, 12.46, 0.2942, 1.899, 0.3197, 2.066, 0.509, 0.996, 0.999};
-    std::vector<double> m_ERYieldsParam = {12.4886, 85.0, 0.6050, 2.14687, 25.721, -1.0, 59.651, 3.6869, 0.2872, 0.1121};
-  std::vector<double> m_NRERWidthsParam = {0.404, 0.393, 0.0383, 0.497, 0.1906, 2.220, 0.3, 0.04311, 0.46894, 0.15505, -0.26564, 0., 0.};
+  std::vector<double> get_er_yield_params(){
+    return m_ERYieldsParam;
+  }
+
+  std::vector<double> get_nr_er_width_params(){
+    return m_NRERWidthsParam;
+  }
+
+ private:
+  // WS2024 model parameters
+  std::vector<double> m_NRYieldsParam_WS2024 = {10.19, 1.11, 0.0498, -0.0533, 12.46, 0.2942, 1.899, 0.3197, 2.066, 0.509, 0.996, 0.999};
+  std::vector<double> m_ERYieldsParam_WS2024 = {12.4886, 85.0, 0.6050, 2.14687, 25.721, -1.0, 59.651, 3.6869, 0.2872, 0.1121};
+  std::vector<double> m_NRERWidthsParam_WS2024 = {0.404, 0.393, 0.0383, 0.497, 0.1906, 2.220, 0.3, 0.04311, 0.46894, 0.15505, -0.26564, 0., 0.};
+
+  // EFT2024 model parameters
+  std::vector<double> m_NRYieldsParam_EFT2024 = {11.21, 1.113, 0.0522, -0.0533, 10.8, 0.53, 1.41, 0.31, 2.5, 0.5, 1.39, 1.74, 0.023, 0.0289, 74.7};
+  std::vector<double> m_ERYieldsParam_EFT2024 = {12.31, 84.91, 0.5707, 2.804, 34.04, -1., 82.57, 4.557, 0.2207, 0.1272};
+  std::vector<double> m_NRERWidthsParam_EFT2024 = {1.076, 1.061, -0.707, 0.5, 0.19, 2.25, -0.000905, 0.03174, 2.588, 0.3627, -0.3583, 0.0, 0.02377, 0.06211, 5.2, 1.359, -2.599};
+
+  // Active model parameters
+  std::vector<double> m_NRYieldsParam = m_NRYieldsParam_WS2024;
+  std::vector<double> m_ERYieldsParam = m_ERYieldsParam_WS2024;
+  std::vector<double> m_NRERWidthsParam = m_NRERWidthsParam_WS2024;
 };
 
 #endif

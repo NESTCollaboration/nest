@@ -326,21 +326,46 @@ class LZ_Detector_2024 : public VDetector {
     return m_NRERWidthsParam;
   }
 
+  static std::vector<double> get_ws_nr_yield_params(){
+    return m_NRYieldsParam_WS2024;
+  }
+
+  static std::vector<double> get_ws_er_yield_params(){
+    return m_ERYieldsParam_WS2024;
+  }
+
+  static std::vector<double> get_ws_nr_er_width_params(){
+    return m_NRERWidthsParam_WS2024;
+  }
+
+  static std::vector<double> get_henr_nr_yield_params(){
+    return m_NRYieldsParam_EFT2024;
+  }
+
+  static std::vector<double> get_henr_er_yield_params(){
+    return m_ERYieldsParam_EFT2024;
+  }
+
+  static std::vector<double> get_henr_nr_er_width_params(){
+    return m_NRERWidthsParam_EFT2024;
+  }
+
  private:
   // WS2024 model parameters
-  std::vector<double> m_NRYieldsParam_WS2024 = {10.19, 1.11, 0.0498, -0.0533, 12.46, 0.2942, 1.899, 0.3197, 2.066, 0.509, 0.996, 0.999};
-  std::vector<double> m_ERYieldsParam_WS2024 = {12.4886, 85.0, 0.6050, 2.14687, 25.721, -1.0, 59.651, 3.6869, 0.2872, 0.1121};
-  std::vector<double> m_NRERWidthsParam_WS2024 = {0.404, 0.393, 0.0383, 0.497, 0.1906, 2.220, 0.3, 0.04311, 0.46894, 0.15505, -0.26564, 0., 0.};
+  inline static std::vector<double> m_NRYieldsParam_WS2024 = {10.19, 1.11, 0.0498, -0.0533, 12.46, 0.2942, 1.899, 0.3197, 2.066, 0.509, 0.996, 0.999};
+  inline static std::vector<double> m_ERYieldsParam_WS2024 = {12.4886, 85.0, 0.6050, 2.14687, 25.721, -1.0, 59.651, 3.6869, 0.2872, 0.1121};
+  inline static std::vector<double> m_NRERWidthsParam_WS2024 = {0.404, 0.393, 0.0383, 0.497, 0.1906, 2.220, 0.3, 0.04311, 0.46894, 0.15505, -0.26564, 0., 0.};
 
   // EFT2024 model parameters
-  std::vector<double> m_NRYieldsParam_EFT2024 = {11.21, 1.113, 0.0522, -0.0533, 10.8, 0.53, 1.41, 0.31, 2.5, 0.5, 1.39, 1.74, 0.023, 0.0289, 74.7};
-  std::vector<double> m_ERYieldsParam_EFT2024 = {12.31, 84.91, 0.5707, 2.804, 34.04, -1., 82.57, 4.557, 0.2207, 0.1272};
-  std::vector<double> m_NRERWidthsParam_EFT2024 = {1.076, 1.061, -0.707, 0.5, 0.19, 2.25, -0.000905, 0.03174, 2.588, 0.3627, -0.3583, 0.0, 0.02377, 0.06211, 5.2, 1.359, -2.599};
+  inline static std::vector<double> m_NRYieldsParam_EFT2024 = {11.21, 1.113, 0.0522, -0.0533, 10.8, 0.53, 1.41, 0.31, 2.5, 0.5, 1.39, 1.74, 0.023, 0.0289, 74.7};
+  inline static std::vector<double> m_ERYieldsParam_EFT2024 = {12.31, 84.91, 0.5707, 2.804, 34.04, -1., 82.57, 4.557, 0.2207, 0.1272};
+  inline static std::vector<double> m_NRERWidthsParam_EFT2024 = {1.076, 1.061, -0.707, 0.5, 0.19, 2.25, -0.000905, 0.03174, 2.588, 0.3627, -0.3583, 0.0, 0.02377, 0.06211, 5.2, 1.359, -2.599};
 
   // Active model parameters
   std::vector<double> m_NRYieldsParam = m_NRYieldsParam_WS2024;
   std::vector<double> m_ERYieldsParam = m_ERYieldsParam_WS2024;
   std::vector<double> m_NRERWidthsParam = m_NRERWidthsParam_WS2024;
 };
+
 
 #endif

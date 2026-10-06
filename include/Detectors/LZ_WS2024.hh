@@ -3,7 +3,7 @@
 //
 // Adapted from Quentin Riffard and Jacob Cutter by Greg Rischbieter, July 2024
 //
-// This file serves as a NEST input to reproduce LZ's WS2024 result
+// This file serves as a NEST input to reproduce LZ's WS2024 and EFT2024 result
 //
 // This version of the file is very similar to https://www.hepdata.net/record/155182
 // as linked from https://arxiv.org/abs/2410.17036
@@ -15,9 +15,18 @@
 //
 //////////////////////////////  IMPORTANT !! //////////////////////////////////////
 //  
-//  It is recommended to use NEST v2.4.0 with this detector file. 
+//  It is recommended to use NEST v2.4.5beta with this detector file.
 //
-//  To match our calibration data (3H and D-D), the NEST models parameters were adjusted.
+//  This detector file contains two LZ response settings: WS2024 and EFT2024.
+//  WS2024 is the default setting and reproduces the response model used for
+//  LZ's WS2024 result. Its model parameters were tuned using 3H and D-D
+//  calibration data.
+//
+//  EFT2024 extends the response model using additional calibration data. The NR
+//  model was tuned using D-D and AmBe data, while the ER model was tuned using
+//  3H, 14C, and 220Rn injection data. The EFT2024 setting can be selected with
+//  SetEFT2024Configuration().
+//
 //  To make these changes in your copy of NEST, make sure NEST.cpp is calling the
 //  edited NRYieldsParam, ERYieldsParam, and NRERWidthsParams vectors
 //  when using the GetYields(...) and GetQuanta(...) functions:
@@ -26,10 +35,15 @@
 //    ERYieldsParam = {12.4886, 85.0, 0.6050, 2.14687, 25.721, -1.0, 59.651, 3.6869, 0.2872, 0.1121};
 //    NRERWidthsParam = {0.404, 0.393, 0.0383, 0.497, 0.1906, 2.220, 0.3, 0.04311, 0.46894, 0.15505, -0.26564, 0., 0.};
 //
+//  The vectors above correspond to the WS2024 setting. The EFT2024 parameter
+//  vectors are also defined in this detector file and are selected by
+//  SetEFT2024Configuration().
+//
 //  The easiest way to implement this in NEST is to change the "default" vectors in 
 //  lines 120-124 of nest/include/NEST/NEST.hh.
-//  Else, If using execNEST to simulate results, these changes can be made manually 
-//  to execNEST.cpp at lines 186-200 in NESTv2.4.0
+//  Else, if using execNEST to simulate results, these changes can be made manually in
+//  execNEST.cpp. NRERWidthsParam is set around lines 185-204, NRYieldsParam around
+//  lines 233-248, and ERYieldsParam is initialized around line 31 in NESTv2.4.5beta.
 //  Or the updated "default" vectors from NEST.hh can be added to the execNEST function
 //  around line 30 of execNEST (i.e. NRYieldsParam = default_NRYieldsParam; etc.)
 //

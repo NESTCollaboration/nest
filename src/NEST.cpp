@@ -471,14 +471,41 @@ YieldResult NESTcalc::GetYieldGamma(double energy, double density,
   return YieldResultValidity(result, energy, Wq_eV);
 }
 
+// LXe betas: box model at and below 5 keV unless ERYieldsParam[0-9] hold a
+// custom BetaGR tune, which then applies at every energy. The optional
+// ERYieldsParam[10] = 1 gives the box model at and below 5 keV with the tune
+// from 10 keV. Negative or absent is the default.
+// ERYieldsParam is the vector the caller passes to GetYields. A tune or
+// ERYieldsParam[10] stored in a detector file applies only when the caller
+// passes that vector (execNEST passes default_ERYieldsParam).
 static bool NEST_lowEBoxModel(const VDetector *det, double density,
                               const std::vector<double> &ERYieldsParam) {
+  if (ERYieldsParam.size() < 10)
+    throw std::runtime_error(
+        "ERROR: You need a minimum of 10 nuisance parameters for the mean "
+        "yields.");
+  bool boxWithTune = false;
+  if (ERYieldsParam.size() > 10 && !(ERYieldsParam[10] < 0.)) {
+    if (!ValidityTests::nearlyEqual(ERYieldsParam[10], 1.))
+      throw std::runtime_error(
+          "ERROR: ERYieldsParam[10] must be 1 (box model at low energy with "
+          "a custom ER tune) or negative (default).");
+    boxWithTune = true;
+  }
   if (!ValidityTests::nearlyEqual(ATOM_NUM, 54.) || det->get_inGas() ||
       density < 1. || det->get_T_Kelvin() < 161.40 || !det->get_OldW13eV())
     return false;
-  for (size_t i = 0; i < ERYieldsParam.size() && i < 10; ++i)
-    if (ERYieldsParam[i] >= 0.) return false;
+  if (boxWithTune) return true;
+  for (size_t i = 0; i < 10; ++i)
+    if (!(ERYieldsParam[i] < 0.)) return false;
   return true;
+}
+
+static double NEST_betaGRWeight(double keV) {
+  double t = (keV - 5.) / 5.;
+  if (t <= 0.) return 0.;
+  if (t >= 1.) return 1.;
+  return t * t * t * (10. - 15. * t + 6. * t * t);
 }
 
 YieldResult NESTcalc::GetYieldERWeighted(
@@ -491,12 +518,13 @@ YieldResult NESTcalc::GetYieldERWeighted(
   double Wq_eV = wvalue.Wq_eV;
 
   YieldResult yieldsB{};
-  double wBG = 1. / (1. + exp(-(energy - 15.) / 3.));
-  if (!NEST_lowEBoxModel(fdetector, density, ERYieldsParam)) wBG = 1.;
-  if (wBG < 0.001) {
+  double wBG = NEST_betaGRWeight(energy);
+  if (!NEST_lowEBoxModel(fdetector, density, ERYieldsParam) || !(energy > 0.))
+    wBG = 1.;
+  if (wBG <= 0.) {
     yieldsB = GetYieldsAndQuanta(energy, density, dfield, NEST::beta,
                                  default_betaMeansPara, default_NRYieldsParam);
-  } else if (wBG > 0.999) {
+  } else if (wBG >= 1.) {
     yieldsB = GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
   } else {
     YieldResult yTI =
@@ -640,13 +668,13 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
         yields.DeltaT_Scint = -999;
         result.yields = yields;
       } else {
-        double wBG = 1. / (1. + exp(-(-eMin - 15.) / 3.));
+        double wBG = NEST_betaGRWeight(-eMin);
         if (!NEST_lowEBoxModel(fdetector, rho, default_ERYieldsParam)) wBG = 1.;
-        if (wBG < 0.001) {
+        if (wBG <= 0.) {
           result.yields =
               GetYieldsAndQuanta(eStep, rho, field, NEST::beta,
                                  default_betaMeansPara, default_NRYieldsParam);
-        } else if (wBG > 0.999) {
+        } else if (wBG >= 1.) {
           result.yields = GetYieldBetaGR(eStep, rho, field);
         } else {
           YieldResult yTI =
@@ -665,13 +693,13 @@ NESTresult NESTcalc::GetYieldERdEOdxBasis(
         }
       }
     } else {
-      double wBG = 1. / (1. + exp(-(refEnergy - 15.) / 3.));
+      double wBG = NEST_betaGRWeight(refEnergy);
       if (!NEST_lowEBoxModel(fdetector, rho, default_ERYieldsParam)) wBG = 1.;
-      if (wBG < 0.001) {
+      if (wBG <= 0.) {
         result.yields =
             GetYieldsAndQuanta(refEnergy, rho, field, NEST::beta,
                                default_betaMeansPara, default_NRYieldsParam);
-      } else if (wBG > 0.999) {
+      } else if (wBG >= 1.) {
         result.yields = GetYieldBetaGR(refEnergy, rho, field);
       } else {
         YieldResult yTI =
@@ -1344,12 +1372,14 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       break;
     default: {  // beta, CH3T, 14C, the pp solar neutrino background, and
                 // Compton/PP spectra of fullGamma
-      double wBG = 1. / (1. + exp(-(energy - 15.) / 3.));
-      if (!NEST_lowEBoxModel(fdetector, density, ERYieldsParam)) wBG = 1.;
-      if (wBG < 0.001)
+      double wBG = NEST_betaGRWeight(energy);
+      if (!NEST_lowEBoxModel(fdetector, density, ERYieldsParam) ||
+          !(energy > 0.))
+        wBG = 1.;
+      if (wBG <= 0.)
         return GetYieldsAndQuanta(energy, density, dfield, NEST::beta,
                                   default_betaMeansPara, NRYieldsParam);
-      if (wBG > 0.999)
+      if (wBG >= 1.)
         return GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
       YieldResult yTI =
           GetYieldsAndQuanta(energy, density, dfield, NEST::beta,

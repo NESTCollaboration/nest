@@ -1068,7 +1068,7 @@ YieldResult NESTcalc::GetYieldsAndQuanta ( double keV, double rho, double def,
 INTERACTION_TYPE scatter, const vector<double> &betaMeansPara, const vector<double> &nuclMeansPara ) {//TI
   
   if ( betaMeansPara.size() != default_betaMeansPara.size() ) throw std::runtime_error("ERROR: You need the correct # of NPs.");
-  //betaMeansPara are {20.7, -3.2, 0.07, 0.09, -1.10, 0., 35., 1.8, 1., 1.44, 0.5, 0.840, 3.95, 3.13, 0.} (defaults 11/24/2025)
+  //betaMeansPara are {20.7, -3.2, 0.07, 0.09, -1.10, 0., 35., 1.8, 1., 1.44, 0.5, 0.840, 4.507, 3.13, 0.} (defaults 10/26/2026)
   NESTresult results{};
   YieldResult yields{}; results.yields = yields; QuantaResult quanta{}; results.quanta = quanta;
   
@@ -1078,10 +1078,13 @@ INTERACTION_TYPE scatter, const vector<double> &betaMeansPara, const vector<doub
   double Nq = ( 1000. * keV ) / Wq + betaMeansPara[4]; if ( Nq < 0. ) Nq = 0.;
   double keVEff = keV + ( betaMeansPara[5] - keV ) / pow ( ( 1. + pow ( betaMeansPara[6] / keV, betaMeansPara[7] ) ), betaMeansPara[8] );
   
-  double xiBase = betaMeansPara[9], xiExpo = betaMeansPara[10], xiOff = betaMeansPara[11];
+  double xiBase = betaMeansPara[9], xiOff = betaMeansPara[11];
+  double Lf = log10 ( fmin ( fmax ( def, 1.0 ), 1e4 ) );
+  double xiExpo = 0.740759 + Lf * ( -0.089592 + Lf * ( -0.012392 + Lf * 0.002337 ) );
+  double lambda_F = 1. / ( 0.691673 + Lf * ( -0.286500 + Lf * ( 0.098435 - Lf * 0.013211 ) ) );
   double xiTIB = xiBase * pow ( keVEff + xiOff, xiExpo );
   double escape = log ( betaMeansPara[12] + xiTIB ) / xiTIB;
-  yields.ExcitonRatio = ( aX - betaMeansPara[14] ) * erf ( keVEff / betaMeansPara[13] ) + betaMeansPara[14];
+  yields.ExcitonRatio = ( aX - betaMeansPara[14] ) * erf ( keVEff / lambda_F ) + betaMeansPara[14];
   if ( escape > 1. ) {
     Nq *= escape; escape = 1.;
   }
@@ -1229,6 +1232,12 @@ NESTcalc::GetYieldBetaGR(double energy, double density, double dfield,
       result, energy, Wq_eV);  // everything needed to calculate fluctuations;
 }
 
+// Liquid xenon (not gas, solid or another element) with NEST's default W, as the box model requires.
+[[maybe_unused]] static inline bool NEST_liquidXenon(const VDetector *det, double density) {
+  return ValidityTests::nearlyEqual(ATOM_NUM, 54.) && !det->get_inGas() &&
+         density >= 1. && det->get_T_Kelvin() >= 161.40 && det->get_OldW13eV();
+}
+
 YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
                                 double density, double dfield, double massNum,
                                 double atomNum,
@@ -1266,8 +1275,10 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       break;
     default:  // beta, CH3T, 14C, the pp solar neutrino background, and
               // Compton/PP spectra of fullGamma
+      // Field-dependent box model for liquid-xenon betas at and below 5 keV
+      // (validated 1-5 keV), BetaGR elsewhere: uncomment the next line
+      //if ( energy > 0. && energy <= 5. && NEST_liquidXenon(fdetector, density) ) return GetYieldsAndQuanta ( energy, density, dfield, NEST::beta, default_betaMeansPara, NRYieldsParam );
       return GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
-      //return GetYieldsAndQuanta ( energy, density, dfield, NEST::beta, ERYieldsParam, NRYieldsParam );
       break;
   }
 }

@@ -122,7 +122,7 @@ const std::vector<double> default_NRYieldsParam = {
 const std::vector<double> default_NRERWidthsParam = {
   0.4, 0.4, 0.04, 0.5, 0.19, 2.25, -0.001, 0.046452, 0.45, 0.205, -0.2, 0., 0.};//for Nq dep option: 0.046,0.45,0.205,-0.2 become .03-4,2.4-6,.3-.5,-.3
 const std::vector<double> default_ERYieldsParam = {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.};
-const std::vector<double> default_betaMeansPara = {20.7, -3.2, 0.07, 0.09, -1.10, 0., 35., 1.8, 1., 1.44, 0.5, 0.840, 3.95, 3.13, 0.}; //for future
+const std::vector<double> default_betaMeansPara = {20.7, -3.2, 0.07, 0.09, -1.10, 0., 35., 1.8, 1., 1.44, 0.5, 0.840, 4.507, 3.13, 0.}; //for future
 // Fano factor of ~3 at least for ionization in NRERWidthsParam if using
 // OldW13eV (look at first 2 values). Also, 0.046452 used to be 0.05(53).
 const std::vector<double> default_EnergyParams = {0.23, 0.77, 2.95, -1.44};

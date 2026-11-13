@@ -360,6 +360,7 @@ QuantaResult NESTcalc::GetQuanta(const YieldResult &yields, double density,
     recombProb * (1. - recombProb) * Ni + omega * omega * Ni * Ni;
   if ( lambdaChen != 1. && omega != 0. ) cerr << "CAUTION - Contradictory recomb fluct parameter values" << endl;
   // if ( !fdetector->get_OldW13eV() ) Variance /= sqrt ( ZurichEXOQ );
+  if (Variance <= 0.) Variance = 1E-6;
 
   double skewness;
   if ((yields.PhotonYield + yields.ElectronYield) > 1e4 ||

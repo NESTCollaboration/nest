@@ -1269,8 +1269,8 @@ YieldResult NESTcalc::GetYields(INTERACTION_TYPE species, double energy,
       break;
     default:  // beta, CH3T, 14C, the pp solar neutrino background, and
               // Compton/PP spectra of fullGamma
-      // Field-dependent box model for liquid xenon (validated at 1-5 keV): comment out the next
-      // line, uncomment the one after it, and replace ERYieldsParam there with default_betaMeansPara
+      // Field-dependent box model: comment out the next line, uncomment the
+      // one after it, and replace ERYieldsParam there with default_betaMeansPara
       return GetYieldBetaGR(energy, density, dfield, ERYieldsParam);
       //return GetYieldsAndQuanta ( energy, density, dfield, NEST::beta, ERYieldsParam, NRYieldsParam );
       break;
